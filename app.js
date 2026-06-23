@@ -922,8 +922,17 @@ function attachFoodCardHandlers(card, onAdd) {
   };
   const cancelPress = () => { if (pressTimer) clearTimeout(pressTimer); };
 
-  card.addEventListener('touchstart', startPress, { passive: true });
-  card.addEventListener('touchend', () => {
+  // IMPORTANT: a real tap on a touchscreen fires touchstart -> touchend,
+  // and then the browser ALSO synthesizes a click event afterward (for
+  // compatibility with code that only listens for click). Without
+  // preventDefault() here, a single tap would call onAdd(1) twice — once
+  // from touchend, once from the synthetic click — which is exactly what
+  // happened in production: real logged rows showed pairs of identical
+  // entries 1-20ms apart. touchstart must NOT be passive for
+  // preventDefault() to work in touchend.
+  card.addEventListener('touchstart', startPress);
+  card.addEventListener('touchend', (e) => {
+    e.preventDefault(); // suppresses the browser's synthetic click that would otherwise double-fire onAdd
     cancelPress();
     if (!didLongPress) {
       card.classList.add('flash-add');
@@ -932,11 +941,15 @@ function attachFoodCardHandlers(card, onAdd) {
     }
   });
   card.addEventListener('touchmove', cancelPress);
+  card.addEventListener('touchcancel', cancelPress);
 
   card.addEventListener('mousedown', startPress);
   card.addEventListener('mouseup', () => cancelPress());
   card.addEventListener('mouseleave', cancelPress);
   card.addEventListener('click', () => {
+    // On a touch device this won't fire at all now (preventDefault above
+    // suppresses it). On a real mouse/trackpad (desktop), there is no
+    // touchend at all, so this remains the only path — still needed.
     if (!didLongPress) {
       card.classList.add('flash-add');
       setTimeout(() => card.classList.remove('flash-add'), 200);
