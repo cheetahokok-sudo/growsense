@@ -314,20 +314,20 @@
 
       <!-- Growth chart -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured">Height-for-age, with reference bands</span></div>
+        <div class="card-header"><span class="card-title text-measured">Height-for-age, WHO 2007 reference</span></div>
         <div class="card-body" style="padding-top:8px;">
           <div class="canvas-wrap">
             <canvas id="growthCanvas"></canvas>
           </div>
           <div style="display:flex; gap:10px; margin-top:8px; font-size:10px; color:var(--text2); flex-wrap:wrap;">
-            <span><span style="color:#D7DCD2;">──</span> 3rd %ile</span>
-            <span><span style="color:#AAB3A5;">──</span> 15th %ile</span>
-            <span><span style="color:#7C877A;">──</span> 50th %ile</span>
+            <span><span style="display:inline-block; width:12px; height:8px; background:rgba(170,179,165,0.18); vertical-align:middle;"></span> 3rd–97th %ile</span>
+            <span><span style="display:inline-block; width:12px; height:8px; background:rgba(170,179,165,0.30); vertical-align:middle;"></span> 15th–85th %ile</span>
+            <span><span style="color:#7C877A;">──</span> median</span>
             <span><span style="color:var(--measured);">──</span> measured</span>
             <span style="border-top: 2px dashed var(--estimated); display:inline-block; width:14px; vertical-align:middle;"></span><span> projected</span>
           </div>
           <div class="setup-note" style="margin-top:10px; font-size:11px;">
-            Reference bands are illustrative population curves. Confirm percentile channel placement against your clinic's official CDC/WHO chart — this view is for trend visualization, not diagnosis.
+            Shaded bands are the official WHO 2007 Growth Reference for school-age children and adolescents (5–19 years), transcribed directly from who.int. This is a population reference, not a diagnosis — bring this chart to your pediatrician for clinical interpretation, especially near the band edges.
           </div>
         </div>
       </div>
@@ -567,6 +567,8 @@
   <span id="toastMsg">Saved!</span>
 </div>
 
+<script src="who-reference-data.js"></script>
+<script src="growth-percentile.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

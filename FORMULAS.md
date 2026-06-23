@@ -61,7 +61,9 @@ per child to smooth this.
 < 4.2 cm/yr   → "below range"
 ```
 These thresholds are rough placeholders, not derived from a specific
-reference population table yet — see §5.
+reference population table yet, unlike the percentile calculation in §5
+which now does use real WHO data — these velocity thresholds (5.3 / 4.2
+cm/yr) are still rough cutoffs, not derived from a specific source.
 
 ---
 
@@ -153,39 +155,63 @@ reason.
 
 ---
 
-## 5. Growth percentile / reference channel — PLACEHOLDER, not real math
+## 5. Growth percentile / Z-score — real WHO 2007 reference (implemented 2026-06-23)
 
-**Where:** `updateStats()`, the `channelMarker`/`channelPctLbl` elements
+**Where:** `who-reference-data.js`, `growth-percentile.js`, consumed by
+`updateStats()` and `drawGrowthChart()` in `app.js`
 
-```js
-document.getElementById('channelMarker').style.left = '32%';
-document.getElementById('channelPctLbl').textContent =
-  '15th percentile (reference table not yet connected)';
-```
+This replaces the earlier hardcoded `'32% / 15th percentile (placeholder)'`
+with an actual calculation against real population reference data.
 
-This is hardcoded. It is **not** computed from any actual population
-reference data (WHO, CDC, or Thai Ministry of Public Health growth charts).
-The UI explicitly says so in its own label, on purpose — so it isn't
-mistaken for a real clinical figure.
+**Data source:** the WHO 2007 Growth Reference for school-aged children
+and adolescents, height-for-age, 5–19 years, transcribed directly from the
+official WHO PDFs at `cdn.who.int` (boys and girls, percentile tables).
+This is a different, separate reference from the WHO Child Growth
+Standards used for children under 5 — GrowSense currently only implements
+the 5–19y table; younger children will show as "out of range" until/unless
+the under-5 table is added the same way.
 
-**What real percentile/z-score calculation requires** (not yet built):
-Population growth references (WHO, CDC) use the **LMS method** — three
-age-and-sex-specific parameters (L = Box-Cox power, M = median, S =
-coefficient of variation) that convert a raw height/weight into a Z-score,
-from which an exact percentile is derived. This needs:
-1. The actual LMS parameter tables for the relevant reference population
-   (WHO, CDC, or ideally Thai MoPH data, given the target users)
-2. A Box-Cox transformation calculation: `Z = ((X/M)^L - 1) / (L × S)`
-3. Conversion from Z-score to percentile via the standard normal CDF
+**Method:**
+1. WHO publishes five percentile bands (3rd, 15th, 50th, 85th, 97th) at
+   each age. `interpolateBands()` linearly interpolates these five values
+   to the child's exact age in months, between the two nearest WHO table
+   rows (the data file ships at ~6-month resolution rather than WHO's
+   full monthly table, to keep file size reasonable — see note in
+   `who-reference-data.js` on why this introduces negligible error for
+   this purpose).
+2. The child's actual height is located between two adjacent bands (or
+   extrapolated beyond the 3rd/97th edges using the same local slope,
+   rather than just clipping to "below 3rd" with no magnitude).
+3. That position is converted to a Z-score using the known standard-normal
+   Z-value of each band edge (z = -1.881, -1.036, 0, 1.036, 1.881 for the
+   3rd/15th/50th/85th/97th respectively — these are exact values for a
+   standard normal distribution, verified against `scipy.stats.norm.ppf`).
+4. The Z-score is converted to a percentile via the normal CDF, using the
+   Abramowitz & Stegun erf() approximation (the same approximation the
+   original PDF correctly used; this part of the prior framing was
+   accurate, see §7).
 
-This is genuinely a statistics problem worth doing with a proper numerical
-library (Python's `scipy.stats.norm` for the CDF, `pandas` for handling the
-reference tables) rather than hand-rolled JavaScript — but because the
-reference tables themselves don't change per request, the actual
-*computation* doesn't need a live Python server: it can be done once,
-offline, to produce a static lookup table (JSON) that ships with the app.
-Python would be the right tool for *generating* that table, not for serving
-requests at runtime.
+This is mathematically equivalent to the full LMS method for placing a
+point on a chart, since WHO's published percentile bands already *are*
+the L/M/S curves evaluated at five fixed points — using them directly
+avoids re-deriving or re-transcribing L/M/S parameters from scratch.
+
+**Known limitation, stated in code comments and worth restating here:**
+linear interpolation between band edges is a reasonable local
+approximation but is not exact in the deep tails (true 1st or 99.5th
+percentile, etc.) — the real WHO distribution is not perfectly normal
+between these five points. Adequate for the screening-level question
+"roughly where does this child sit," not for fine clinical distinctions
+at the extremes without the full Box-Cox L/M/S parameters.
+
+**Visual overlay:** `drawGrowthChart()` shades the 3rd–97th band (light)
+and 15th–85th band (slightly darker) using the same real, sampled WHO
+data — not the five hand-picked illustrative numbers the chart used
+before. The child's actual measurements are plotted on the identical
+age/height scale as the bands, so visual position directly reflects
+standing against the real reference curve. The visible age window is
+centered on the child's current age (±3 years, clamped to the table's
+5–19y coverage) rather than a fixed 6–11y range.
 
 ---
 

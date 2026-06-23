@@ -958,11 +958,47 @@ async function updateStats() {
     document.getElementById('heightGain').textContent = '—';
   }
 
-  // Percentile channel marker — still a placeholder position until a real
-  // height-for-age z-score calculation is wired to CDC/WHO/Thai MoPH
-  // reference tables. Flagging this rather than presenting it as computed.
-  document.getElementById('channelMarker').style.left = '32%';
-  document.getElementById('channelPctLbl').textContent = '15th percentile (reference table not yet connected)';
+  // Percentile channel — computed from the WHO 2007 height-for-age
+  // reference (5–19 years) using the child's most recent measurement,
+  // exact decimal age, and recorded biological sex. See growth-percentile.js
+  // for the method; see who-reference-data.js for the source data.
+  const channelMarker = document.getElementById('channelMarker');
+  const channelLbl = document.getElementById('channelPctLbl');
+  const child = APP.children[APP.activeChild];
+  const latestMeasurement = measurements[0];
+
+  if (!child || !latestMeasurement || typeof calculateHeightPercentile !== 'function') {
+    channelMarker.style.left = '50%';
+    channelLbl.textContent = 'no measurement logged yet';
+  } else {
+    const ageYears = (new Date(latestMeasurement.recorded_date) - new Date(child.date_of_birth)) / (365.25 * 86400000);
+    const result = calculateHeightPercentile(
+      Number(latestMeasurement.stature_height_cm),
+      ageYears,
+      child.biological_sex
+    );
+
+    if (!result) {
+      channelMarker.style.left = '50%';
+      channelLbl.textContent = 'reference data unavailable';
+    } else if (result.outOfRange) {
+      channelMarker.style.left = '50%';
+      channelLbl.textContent = `WHO 5–19y reference doesn't cover this age (${ageYears.toFixed(1)}y)`;
+    } else {
+      // Marker position: 3rd percentile = 0% of the bar, 97th = 100%,
+      // using the same Z-score scale as the lookup itself so the dot's
+      // position and the printed percentile always agree.
+      const clampedZ = Math.max(PERCENTILE_Z.p3, Math.min(PERCENTILE_Z.p97, result.zScore));
+      const pct = ((clampedZ - PERCENTILE_Z.p3) / (PERCENTILE_Z.p97 - PERCENTILE_Z.p3)) * 100;
+      channelMarker.style.left = pct.toFixed(1) + '%';
+
+      const displayPct = result.percentile < 1 ? '<1st'
+        : result.percentile > 99 ? '>99th'
+        : Math.round(result.percentile) + (result.percentile < 50 ? 'th' : result.percentile < 85 ? 'th' : 'th') + ' percentile';
+      channelLbl.textContent = `${displayPct} for height-for-age (WHO 2007 reference, z=${result.zScore.toFixed(2)})`;
+      APP.lastPercentileResult = result; // cached for drawGrowthChart()'s overlay
+    }
+  }
 }
 
 async function addMeasurement() {
@@ -993,7 +1029,9 @@ async function addMeasurement() {
 }
 
 // ══════════════════════════════════════════
-// GROWTH CHART
+// GROWTH CHART — real WHO 2007 height-for-age bands (5–19y), shaded
+// percentile overlay, child's actual measurements plotted on top.
+// Requires who-reference-data.js and growth-percentile.js to be loaded.
 // ══════════════════════════════════════════
 function drawGrowthChart() {
   const canvas = document.getElementById('growthCanvas');
@@ -1003,82 +1041,124 @@ function drawGrowthChart() {
   const H = canvas.parentElement.clientHeight;
   canvas.width = W * window.devicePixelRatio;
   canvas.height = H * window.devicePixelRatio;
+  ctx.setTransform(1,0,0,1,0,0);
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
   ctx.clearRect(0, 0, W, H);
 
-  const pad = { t:12, r:12, b:28, l:30 };
+  const pad = { t:12, r:12, b:28, l:32 };
   const w = W - pad.l - pad.r;
   const h = H - pad.t - pad.b;
 
-  // Grid
-  ctx.strokeStyle = '#F0F2F5';
-  ctx.lineWidth = 1;
+  const child = APP.children[APP.activeChild];
+  const measurements = (APP.activeChildMeasurements || []).slice().reverse(); // oldest first
+
+  if (!child || typeof WHO_HFA_BOYS_5_19 === 'undefined') {
+    ctx.fillStyle = '#95A092'; ctx.font = '11px Inter,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(!child ? 'Add a child profile to see this chart' : 'Reference data not loaded', W/2, H/2);
+    return;
+  }
+
+  const table = (child.biological_sex === 'female') ? WHO_HFA_GIRLS_5_19 : WHO_HFA_BOYS_5_19;
+  const tableMinYears = table[0][0] / 12, tableMaxYears = table[table.length-1][0] / 12;
+
+  // Center the visible age window on the child's current age (±3 years),
+  // clamped to what the WHO 5–19y table actually covers.
+  const ageNowYears = (new Date() - new Date(child.date_of_birth)) / (365.25*86400000);
+  let ageMin = Math.max(tableMinYears, ageNowYears - 3);
+  let ageMax = Math.min(tableMaxYears, ageNowYears + 3);
+  if (ageMax - ageMin < 2) { // keep a sane minimum window near the table edges
+    if (ageMin <= tableMinYears) ageMax = Math.min(tableMaxYears, ageMin + 2);
+    else ageMin = Math.max(tableMinYears, ageMax - 2);
+  }
+
+  function pxForAge(ageYears) {
+    const clamped = Math.max(ageMin, Math.min(ageMax, ageYears));
+    return pad.l + ((clamped - ageMin) / (ageMax - ageMin)) * w;
+  }
+
+  // Sample the real WHO bands at N points across the visible window —
+  // this is what makes the shaded region and lines reflect actual
+  // reference data rather than a few hand-picked illustrative numbers.
+  const SAMPLES = 24;
+  const sampled = [];
+  for (let i = 0; i <= SAMPLES; i++) {
+    const ageYears = ageMin + (ageMax - ageMin) * (i / SAMPLES);
+    const bands = GrowthPercentileMath.interpolateBands(table, ageYears * 12);
+    sampled.push({ ageYears, p3: bands[0], p15: bands[1], p50: bands[2], p85: bands[3], p97: bands[4] });
+  }
+
+  // Y-axis scale: fit to the full 3rd–97th band range across the visible
+  // window (plus a little headroom), so the shaded area always fills
+  // most of the chart regardless of the child's age.
+  const allBandValues = sampled.flatMap(s => [s.p3, s.p97]);
+  const yMin = Math.min(...allBandValues) - 3;
+  const yMax = Math.max(...allBandValues) + 3;
+  function hy(cm) { return pad.t + h - ((cm - yMin) / (yMax - yMin)) * h; }
+
+  // Gridlines
+  ctx.strokeStyle = '#F0F2F5'; ctx.lineWidth = 1;
   for (let i=1; i<5; i++) {
     const y = pad.t + (h/5)*i;
     ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+w, y); ctx.stroke();
   }
-  for (let i=0; i<=5; i++) {
-    const x = pad.l + (w/5)*i;
-    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t+h); ctx.stroke();
-  }
 
-  // Age labels (6–12 years)
+  // Age axis labels — whole years across the visible window
   ctx.fillStyle = '#9BA3B4'; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'center';
-  ['6','7','8','9','10','11'].forEach((age,i) => {
-    ctx.fillText(age+'y', pad.l + (w/5)*i, pad.t+h+18);
-  });
-
-  // Thai MoPH percentile reference lines
-  // Heights from age 6–11 (approximate cm)
-  const age6to11 = [0, w/5, w*2/5, w*3/5, w*4/5, w];
-  const refMin = H - pad.b; const refMax = pad.t;
-  function hy(cm) { return refMin - ((cm - 100) / 70) * (refMin - refMax - 5); }
-  function px(i) { return pad.l + age6to11[i]; }
-
-  // 3rd percentile
-  const p3 = [107, 112, 117, 122, 127, 132];
-  drawLine(ctx, p3.map((c,i) => [px(i), hy(c)]), '#D7DCD2', 1.5);
-  // 15th percentile
-  const p15 = [110, 115, 121, 127, 133, 139];
-  drawLine(ctx, p15.map((c,i) => [px(i), hy(c)]), '#AAB3A5', 2);
-  // 50th percentile
-  const p50 = [114, 120, 127, 133, 140, 147];
-  drawLine(ctx, p50.map((c,i) => [px(i), hy(c)]), '#7C877A', 1.5);
-
-  // Plot real measurements for this child, oldest to newest, positioned
-  // by age-at-measurement (computed from date_of_birth) rather than a
-  // fixed mock age axis.
-  const child = APP.children[APP.activeChild];
-  const measurements = (APP.activeChildMeasurements || []).slice().reverse(); // oldest first
-  const ageAt = dateStr => child ? (new Date(dateStr) - new Date(child.date_of_birth)) / (365.25*86400000) : null;
-
-  // x-axis maps age 6–11; clamp/scale measurement ages into that range so
-  // points outside it still render at the chart edges rather than vanishing.
-  function pxForAge(age) {
-    const clamped = Math.max(6, Math.min(11, age));
-    return pad.l + ((clamped - 6) / 5) * w;
+  const startYear = Math.ceil(ageMin), endYear = Math.floor(ageMax);
+  for (let y = startYear; y <= endYear; y++) {
+    ctx.fillText(y + 'y', pxForAge(y), pad.t + h + 18);
   }
 
-  let actual = [];
-  if (child && measurements.length > 0) {
-    actual = measurements.map(m => {
-      const age = ageAt(m.recorded_date);
-      return age != null ? [pxForAge(age), hy(Number(m.stature_height_cm))] : null;
-    }).filter(Boolean);
+  // Shaded 3rd–97th band (outer, lighter) and 15th–85th band (inner,
+  // slightly darker) — this is the visual "highlight area" overlay.
+  function fillBand(lowKey, highKey, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    sampled.forEach((s, i) => {
+      const x = pxForAge(s.ageYears), y = hy(s[highKey]);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    for (let i = sampled.length - 1; i >= 0; i--) {
+      const s = sampled[i];
+      ctx.lineTo(pxForAge(s.ageYears), hy(s[lowKey]));
+    }
+    ctx.closePath();
+    ctx.fill();
   }
+  fillBand('p3', 'p97', 'rgba(170,179,165,0.18)');
+  fillBand('p15', 'p85', 'rgba(170,179,165,0.30)');
+
+  // Band edge lines (3rd, 15th, 50th, 85th, 97th) drawn from the same
+  // real sampled data as the fill above.
+  function lineFor(key, color, width) {
+    drawLine(ctx, sampled.map(s => [pxForAge(s.ageYears), hy(s[key])]), color, width);
+  }
+  lineFor('p3', '#D7DCD2', 1.2);
+  lineFor('p15', '#AAB3A5', 1.4);
+  lineFor('p50', '#7C877A', 1.6);
+  lineFor('p85', '#AAB3A5', 1.4);
+  lineFor('p97', '#D7DCD2', 1.2);
+
+  // Plot this child's actual measurements, positioned by true age-at-
+  // measurement (from date_of_birth), on the exact same scale as the
+  // reference bands above — so visual position directly reflects
+  // standing relative to the real WHO curve, not an approximation.
+  const ageAt = dateStr => (new Date(dateStr) - new Date(child.date_of_birth)) / (365.25*86400000);
+  const actual = measurements.map(m => [pxForAge(ageAt(m.recorded_date)), hy(Number(m.stature_height_cm))]);
 
   if (actual.length > 0) {
     drawLine(ctx, actual, '#2A5C8A', 3);
-    actual.forEach(([x,y]) => {
+    actual.forEach(([x,y], i) => {
+      const isLatest = i === actual.length - 1;
       ctx.fillStyle = '#2A5C8A';
-      ctx.beginPath(); ctx.arc(x, y, 4, 0, 2*Math.PI); ctx.fill();
-      ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(x, y, 2, 0, 2*Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, isLatest ? 5 : 4, 0, 2*Math.PI); ctx.fill();
+      ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(x, y, isLatest ? 2.5 : 2, 0, 2*Math.PI); ctx.fill();
     });
 
     // Forecast: simple linear extrapolation from the last two points, only
     // drawn when there are at least two real measurements to extrapolate
     // from — no fabricated trajectory when there's only one data point.
-    if (actual.length >= 2 && measurements.length >= 2) {
+    if (actual.length >= 2) {
       const last = measurements[measurements.length - 1];
       const prev = measurements[measurements.length - 2];
       const daysBetween = (new Date(last.recorded_date) - new Date(prev.recorded_date)) / 86400000;
