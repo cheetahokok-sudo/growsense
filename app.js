@@ -705,23 +705,30 @@ async function shareChildWithDoctor() {
   if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
   if (!email) { showToast('⚠️', "Enter the doctor or researcher's email"); return; }
 
-  // Look up the target account by email. Note: with RLS as currently
-  // configured (see schema), a plain parent account can only read their
-  // own user_accounts row, so this lookup is expected to require a
-  // dedicated RPC/edge function in a real deployment — this direct query
-  // is a placeholder until that's built, and will likely return no rows.
-  const { data: target, error: lookupError } = await sb
-    .from('user_accounts')
-    .select('user_id, account_role')
-    .eq('email', email)
-    .single();
+  // find_clinician_by_email is a SECURITY DEFINER Postgres function
+  // (see migration_find_clinician_function.sql) — it's the correct fix
+  // for the fact that a direct SELECT on user_accounts by email can
+  // never work under that table's RLS policy (which only lets a user
+  // read their own row, by design — that's not a bug to work around
+  // with a looser policy, since loosening it would let any user browse
+  // every other user's email and role). The function returns only
+  // user_id + account_role, and only for doctor/scientist accounts —
+  // never the email itself or any other field, and it can't be used to
+  // enumerate which emails exist (a parent's email or an unregistered
+  // email both return zero rows, same as a clinician's would if typed
+  // wrong).
+  const { data: matches, error: lookupError } = await sb.rpc('find_clinician_by_email', {
+    lookup_email: email
+  });
 
-  if (lookupError || !target) {
-    showToast('⚠️', 'No account found with that email, or you don\'t have permission to look it up yet');
+  if (lookupError) {
+    showToast('⚠️', 'Could not look up that account: ' + lookupError.message);
     return;
   }
-  if (target.account_role !== 'doctor' && target.account_role !== 'scientist') {
-    showToast('⚠️', 'That account is not registered as a Doctor or Researcher');
+  const target = matches && matches.length > 0 ? matches[0] : null;
+
+  if (!target) {
+    showToast('⚠️', 'No Doctor or Researcher account found with that email');
     return;
   }
 
