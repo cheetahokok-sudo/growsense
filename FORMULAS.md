@@ -257,6 +257,23 @@ decision isn't silently lost or re-litigated from scratch later.
   no auth, and hardcoded the same unverified "+8.5cm" LAGH projection
   directly into a function return value.
 
+### Security note — resolved (2026-06-23)
+
+`Code.js` contained an anon-role API key for Supabase project ref
+`hrldehehdxdaggqddkno`. This was confirmed to be a **separate project**
+from GrowSense (which uses `ogpkmcqaulohexanucng`) — an earlier,
+Gemini-assisted prototype, unrelated to this codebase. The project
+contained test/empty data only, no real user or health data. The key has
+been rotated by the project owner.
+
+**Still true regardless of the outcome here:** `Code.js` should not be
+committed to this repo, since it was built against a different
+architecture (bypasses RLS via an optional service-role key, sets X-ray
+uploads to public-link-viewable, and embeds the unverified LAGH
+projection figures rejected above). It's left out of this repository
+entirely — kept only as a record in conversation history, not as a file
+in version control.
+
 **Net decision:** none of the external document's drug-projection math or
 its citation list were adopted. The verified real trial figures above are
 worth surfacing to a pediatrician directly if/when that conversation is
