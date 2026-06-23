@@ -100,10 +100,22 @@
         <div class="child-switcher" id="childSwitcher"></div>
       </div>
 
+      <!-- Date selector — defaults to today; lets a parent go back and
+           log/revise an earlier day. All Today-screen taps and saves
+           apply to whichever date is selected here. -->
+      <div class="date-selector-bar">
+        <button class="date-nav-btn" onclick="shiftLogDate(-1)" aria-label="Previous day">‹</button>
+        <div class="date-selector-center">
+          <input type="date" id="logEntryDate" class="date-selector-input" onchange="onLogDateChanged()">
+          <button class="date-today-btn" id="jumpToTodayBtn" onclick="jumpToToday()">Today</button>
+        </div>
+        <button class="date-nav-btn" onclick="shiftLogDate(1)" aria-label="Next day">›</button>
+      </div>
+
       <!-- Growth Readiness HUD -->
       <div class="card" style="margin-top:8px; border-top: 3px solid var(--accent);">
         <div class="card-header">
-          <span class="card-title text-accent">Today's readiness reading</span>
+          <span class="card-title text-accent">Readiness reading</span>
           <span id="todayDateBadge" class="badge badge-measured" style="font-size:10px;"></span>
         </div>
         <div class="grs-hud">
@@ -172,6 +184,20 @@
           <div class="setup-note" style="margin-top:10px; font-size:11px;">
             Values are per-100g USDA FoodData Central figures, scaled to a typical portion — real servings vary. Tap a card to add its protein/zinc to today's total; long-press (or right-click) to subtract a misclick. Don't see a food your child ate? Use the steppers below to enter a custom amount, or tap "Protein Boost" if a package label already states the protein content.
           </div>
+
+          <!-- Logged-items list: every tap creates a row here, so a parent
+               can review exactly what was logged (not just the running
+               total) and remove a specific entry rather than guessing
+               which stepper number to undo. -->
+          <div class="card-divider" style="margin: 14px -16px;"></div>
+          <div class="form-row" style="border-bottom:none; padding-bottom:6px;">
+            <div class="form-lbl" style="font-size:12px; color:var(--text2);">Logged today</div>
+            <span class="badge badge-accent" id="logItemCount" style="font-size:10px;">0 items</span>
+          </div>
+          <div id="nutritionLogList" class="nutrition-log-list">
+            <div class="log-list-empty" id="logListEmpty">Nothing logged yet for this date.</div>
+          </div>
+
           <div class="card-divider" style="margin: 14px -16px;"></div>
           <div class="form-row">
             <div><div class="form-lbl">Protein total</div><div class="form-lbl-sub">Target: 44g / day</div></div>

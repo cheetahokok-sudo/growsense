@@ -30,8 +30,22 @@ const APP = {
   activeChild: 0,
   dayStateByChild: {},   // in-memory draft of the Today form per child, before save
   weekStreakByChild: {}, // in-memory only today; not yet reloaded from DB on boot — see loadWeekStreak() TODO
-  signupRole: 'parent_subscriber'
+  signupRole: 'parent_subscriber',
+  logDate: todayISO(),    // which date the Today screen is currently editing — defaults to today, changeable via the date selector
+  nutritionLogItems: []   // nutrition_log_items rows for the active child + logDate, loaded fresh on date/child change
 };
+
+function todayISO() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// Produces the right save-button label depending on whether the
+// currently-selected log date is today or a backdated entry.
+function saveButtonLabel(savedAlready) {
+  const isToday = APP.logDate === todayISO();
+  if (savedAlready) return 'Saved — tap to update';
+  return isToday ? "Save today's data" : 'Save entry for ' + APP.logDate;
+}
 
 function currentState() {
   if (!APP.dayStateByChild[APP.activeChild]) {
@@ -114,6 +128,7 @@ async function enterApp(session) {
   document.getElementById('clinicianPanel').classList.toggle('hidden', !isClinicianRole());
   document.getElementById('parentPanel').classList.toggle('hidden', isClinicianRole());
 
+  initDateSelector();
   await loadChildren();
 
   document.getElementById('authScreen').classList.add('hidden');
@@ -125,6 +140,219 @@ async function enterApp(session) {
 
 // Repaint the entire Today form from the active child's stored state —
 // called on boot and every time the child switcher changes selection.
+// ══════════════════════════════════════════
+// DATE SELECTOR — which date the Today screen edits
+// ══════════════════════════════════════════
+function initDateSelector() {
+  const input = document.getElementById('logEntryDate');
+  input.value = APP.logDate;
+  input.max = todayISO(); // backdating is the point; future-dating isn't meaningful here
+  updateDateSelectorUI();
+}
+
+function updateDateSelectorUI() {
+  const bar = document.querySelector('.date-selector-bar');
+  const todayBtn = document.getElementById('jumpToTodayBtn');
+  const isToday = APP.logDate === todayISO();
+  bar.classList.toggle('backdated', !isToday);
+  todayBtn.classList.toggle('is-today', isToday);
+  document.getElementById('logEntryDate').value = APP.logDate;
+}
+
+function shiftLogDate(deltaDays) {
+  const d = new Date(APP.logDate + 'T00:00:00');
+  d.setDate(d.getDate() + deltaDays);
+  const newDate = d.toISOString().split('T')[0];
+  if (newDate > todayISO()) return; // no future dates
+  setLogDate(newDate);
+}
+
+function jumpToToday() {
+  setLogDate(todayISO());
+}
+
+function onLogDateChanged() {
+  const val = document.getElementById('logEntryDate').value;
+  if (val) setLogDate(val);
+}
+
+// Switching dates means the whole Today form now represents a different
+// day — reload that day's logged food items and daily totals, rather
+// than carrying over whatever was on screen for the previous date.
+async function setLogDate(newDate) {
+  APP.logDate = newDate;
+  updateDateSelectorUI();
+  await loadDayIntoState();
+  loadChildIntoForm();
+}
+
+// Pulls this child's daily_nutrition/sleep/activity rows AND
+// nutrition_log_items for APP.logDate, and populates currentState()
+// from them — so revisiting a past date shows what was actually
+// logged that day, not leftover numbers from today.
+async function loadDayIntoState() {
+  const childId = activeChildId();
+  const s = currentState();
+  if (!childId) { resetStateToDefaults(s); await loadNutritionLogItems(); return; }
+
+  const [nutRes, sleepRes, actRes] = await Promise.all([
+    sb.from('daily_nutrition').select('*').eq('child_id', childId).eq('log_date', APP.logDate).maybeSingle(),
+    sb.from('daily_sleep').select('*').eq('child_id', childId).eq('log_date', APP.logDate).maybeSingle(),
+    sb.from('daily_activity').select('*').eq('child_id', childId).eq('log_date', APP.logDate).maybeSingle()
+  ]);
+
+  resetStateToDefaults(s);
+
+  const nut = nutRes.data;
+  if (nut) {
+    s.protein = Number(nut.total_protein_g) || 0;
+    s.calcium = Number(nut.calcium_mg) || 0;
+    s.zinc = Number(nut.zinc_mg) || 0;
+    s.water = nut.fluids_ml ? Math.round(Number(nut.fluids_ml) / 250) : 0;
+  }
+  const sleep = sleepRes.data;
+  if (sleep) {
+    s.nightWakes = s.nightWakes || 0; // not stored separately yet; kept as session default
+  }
+  const act = actRes.data;
+  if (act) {
+    s.hanging = Number(act.hanging_decompression_sec) || 0;
+    s.jumps = Number(act.box_jumps_reps) || 0;
+    s.yogaMin = Number(act.stretching_yoga_duration_min) || 0;
+  }
+  s.savedToday = !!(nut || sleep || act);
+
+  await loadNutritionLogItems();
+}
+
+function resetStateToDefaults(s) {
+  Object.assign(s, { ...DEFAULT_DAY_STATE });
+}
+
+// ══════════════════════════════════════════
+// NUTRITION LOG ITEMS — the per-food, reviewable, undoable trail
+// underneath the daily_nutrition totals. See migration_nutrition_log_items.sql
+// for why this table is meant to be permanent, not pruned.
+// ══════════════════════════════════════════
+async function loadNutritionLogItems() {
+  const childId = activeChildId();
+  if (!childId) { APP.nutritionLogItems = []; renderNutritionLogList(); return; }
+
+  const { data, error } = await sb
+    .from('nutrition_log_items')
+    .select('*')
+    .eq('child_id', childId)
+    .eq('log_date', APP.logDate)
+    .order('logged_at', { ascending: true });
+
+  if (error) {
+    showToast('⚠️', 'Could not load food log: ' + error.message);
+    APP.nutritionLogItems = [];
+  } else {
+    APP.nutritionLogItems = data || [];
+  }
+  renderNutritionLogList();
+}
+
+function renderNutritionLogList() {
+  const list = document.getElementById('nutritionLogList');
+  const empty = document.getElementById('logListEmpty');
+  const countBadge = document.getElementById('logItemCount');
+  const items = APP.nutritionLogItems;
+
+  countBadge.textContent = items.length + (items.length === 1 ? ' item' : ' items');
+
+  if (items.length === 0) {
+    list.innerHTML = '<div class="log-list-empty" id="logListEmpty">Nothing logged yet for this date.</div>';
+    return;
+  }
+
+  const emojiFor = (foodId) => {
+    if (!foodId) return '💪';
+    const food = (typeof FOOD_REFERENCE_DATA !== 'undefined') ? FOOD_REFERENCE_DATA.find(f => f.id === foodId) : null;
+    return food ? food.emoji : '🍽️';
+  };
+
+  list.innerHTML = items.map(item => {
+    const time = new Date(item.logged_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return `
+      <div class="log-item-row" data-item-id="${item.item_id}">
+        <div class="log-item-left">
+          <span class="log-item-emoji">${emojiFor(item.food_id)}</span>
+          <div class="log-item-info">
+            <span class="log-item-name">${item.food_name}</span>
+            <span class="log-item-meta">${time}${item.meal_slot && item.meal_slot !== 'unspecified' ? ' · ' + item.meal_slot : ''}</span>
+          </div>
+        </div>
+        <div class="log-item-right">
+          <span class="log-item-amount">+${Number(item.protein_g).toFixed(1)}g</span>
+          <button class="log-item-delete" onclick="deleteNutritionLogItem('${item.item_id}')" aria-label="Remove">×</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Inserts one row for a logged food/tap. Called from applyFoodTap()
+// instead of (well, alongside) just bumping the in-memory total — the
+// in-memory total is still updated immediately for instant HUD feedback,
+// but the row in nutrition_log_items is what actually persists and is
+// reviewable/undoable.
+async function recordNutritionLogItem(foodId, foodName, proteinAmt, zincAmt, calciumAmt) {
+  const childId = activeChildId();
+  if (!childId) return;
+
+  const { data, error } = await sb.from('nutrition_log_items').insert({
+    child_id: childId,
+    log_date: APP.logDate,
+    food_id: foodId,
+    food_name: foodName,
+    protein_g: proteinAmt,
+    zinc_mg: zincAmt,
+    calcium_mg: calciumAmt,
+    created_by: APP.session ? APP.session.user.id : null
+  }).select().single();
+
+  if (error) {
+    showToast('⚠️', 'Logged locally but not saved: ' + error.message);
+    return;
+  }
+  APP.nutritionLogItems.push(data);
+  renderNutritionLogList();
+}
+
+// Removes a specific logged item (the × button) and subtracts its
+// amounts back out of the running totals — this is the precise,
+// per-item undo that a flat stepper can't give you.
+async function deleteNutritionLogItem(itemId) {
+  const item = APP.nutritionLogItems.find(i => i.item_id === itemId);
+  if (!item) return;
+
+  const { error } = await sb.from('nutrition_log_items').delete().eq('item_id', itemId);
+  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+
+  APP.nutritionLogItems = APP.nutritionLogItems.filter(i => i.item_id !== itemId);
+  renderNutritionLogList();
+
+  // Reverse this item's contribution from the running totals shown in
+  // the steppers, matching exactly what was added when it was logged.
+  applyFoodTap(null, Number(item.protein_g) || 0, item.zinc_mg != null ? Number(item.zinc_mg) : null, item.calcium_mg != null ? Number(item.calcium_mg) : null, -1, { skipLog: true });
+}
+
+// Used only by the long-press/right-click subtract path in applyFoodTap():
+// that path already adjusted the running totals itself before calling
+// here, so this function's job is strictly "delete this DB row and
+// refresh the visible list" — it must NOT touch totals again, or a
+// long-press would subtract twice (once from the totals math at the top
+// of applyFoodTap, and a second time if this called back into
+// deleteNutritionLogItem(), which also adjusts totals).
+async function removeLoggedItemRowOnly(itemId) {
+  const { error } = await sb.from('nutrition_log_items').delete().eq('item_id', itemId);
+  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  APP.nutritionLogItems = APP.nutritionLogItems.filter(i => i.item_id !== itemId);
+  renderNutritionLogList();
+}
+
 function loadChildIntoForm() {
   const s = currentState();
   document.getElementById('valProtein').textContent = s.protein + ' g';
@@ -154,7 +382,7 @@ function loadChildIntoForm() {
   renderStreakRow();
 
   const btn = document.getElementById('saveBtn');
-  btn.textContent = s.savedToday ? 'Saved — tap to update' : "Save today's data";
+  btn.textContent = saveButtonLabel(s.savedToday);
 }
 
 // ══════════════════════════════════════════
@@ -279,6 +507,7 @@ async function loadChildren() {
     renderAssignedChildrenList();
   }
   if (APP.children.length > 0) {
+    await loadDayIntoState();
     loadChildIntoForm();
     await refreshActiveChildHistory();
     await loadWeekStreak();
@@ -342,7 +571,8 @@ function renderChildSwitcher() {
       if (APP.activeChild === i) return;
       APP.activeChild = i;
       renderChildSwitcher();
-      loadChildIntoForm();   // repaints the entire Today form from this child's draft state
+      await loadDayIntoState();      // pulls this child's data for whatever date is currently selected
+      loadChildIntoForm();
       await refreshActiveChildHistory();
       await loadWeekStreak();
       updateStats();
@@ -669,7 +899,40 @@ function attachFoodCardHandlers(card, onAdd) {
 }
 
 // direction: 1 to add, -1 to subtract (long-press/right-click correction)
-function applyFoodTap(food, proteinAmt, zincAmt, calciumAmt, direction) {
+// direction: 1 to add, -1 to subtract. `food` is the FOOD_REFERENCE_DATA
+// entry (or null for manual entries like Protein Boost) — used to name
+// the log row. opts.skipLog is set by deleteNutritionLogItem(), which
+// already deleted its own row and only needs the totals adjusted here,
+// not a second log-list mutation.
+function applyFoodTap(food, proteinAmt, zincAmt, calciumAmt, direction, opts) {
+  opts = opts || {};
+  adjustNutritionTotals(proteinAmt, zincAmt, calciumAmt, direction);
+
+  if (opts.skipLog) return; // caller (deleteNutritionLogItem) already handled the log row itself
+
+  if (direction > 0) {
+    // A tap: record a new row for this specific food event.
+    const foodName = food ? food.name : 'Protein Boost (manual)';
+    const foodId = food ? food.id : null;
+    recordNutritionLogItem(foodId, foodName, proteinAmt, zincAmt, calciumAmt);
+  } else {
+    // Long-press/right-click subtract with no specific item targeted —
+    // remove the most recent matching log row so the list stays
+    // consistent with the totals. deleteNutritionLogItem() only deletes
+    // the row and updates the list here; it does NOT call back into
+    // applyFoodTap(), since the totals were already adjusted above —
+    // calling it again would double-subtract.
+    const foodName = food ? food.name : 'Protein Boost (manual)';
+    const match = [...APP.nutritionLogItems].reverse().find(i => i.food_name === foodName);
+    if (match) removeLoggedItemRowOnly(match.item_id);
+  }
+}
+
+// Pure totals math, used by both the tap/long-press path above and by
+// the × button's delete path — the only place s.protein/zinc/calcium
+// actually get mutated, so there is exactly one place to audit for
+// correctness.
+function adjustNutritionTotals(proteinAmt, zincAmt, calciumAmt, direction) {
   const s = currentState();
   const [pMin, pMax] = LIMITS.protein;
   s.protein = Math.max(pMin, Math.min(pMax, Math.round((s.protein + proteinAmt * direction) * 10) / 10));
@@ -859,7 +1122,7 @@ async function saveDay() {
   const s = currentState();
   const childId = activeChildId();
   if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
-  const today = new Date().toISOString().split('T')[0];
+  const saveDate = APP.logDate; // the date selected in the date selector — defaults to today, but may be backdated
 
   const btn = document.getElementById('saveBtn');
   btn.textContent = 'Saving…';
@@ -886,7 +1149,7 @@ async function saveDay() {
   const results = await Promise.allSettled([
     sb.from('daily_nutrition').upsert({
       child_id: childId,
-      log_date: today,
+      log_date: saveDate,
       protein_breakfast_g: s.protein,  // single stepper today; per-meal split is a future UI change
       protein_lunch_g: 0,
       protein_dinner_g: 0,
@@ -897,7 +1160,7 @@ async function saveDay() {
 
     sb.from('daily_sleep').upsert({
       child_id: childId,
-      log_date: today,
+      log_date: saveDate,
       total_sleep_min: totalSleepMin,
       sleep_efficiency_score: sleepEfficiency,
       data_source: 'manual'
@@ -905,7 +1168,7 @@ async function saveDay() {
 
     sb.from('daily_activity').upsert({
       child_id: childId,
-      log_date: today,
+      log_date: saveDate,
       hanging_decompression_sec: s.hanging,
       box_jumps_reps: s.jumps,
       stretching_yoga_duration_min: s.yogaMin,
@@ -923,16 +1186,26 @@ async function saveDay() {
   if (failed.length > 0) {
     const msg = failed.map(f => f.label + ': ' + (f.r.reason?.message || f.r.value?.error?.message || 'unknown error')).join(' · ');
     showToast('⚠️', 'Some data did not save — ' + msg);
-    btn.textContent = "Save today's data";
+    btn.textContent = saveButtonLabel(false);
     return;
   }
 
-  const todayIdx = (new Date().getDay() + 6) % 7;
-  currentStreak()[todayIdx] = 1;
+  const savedDateObj = new Date(saveDate + 'T00:00:00');
+  const savedIdx = (savedDateObj.getDay() + 6) % 7;
+  // Only mark the streak if the saved date falls within the currently
+  // displayed week — loadWeekStreak() already scopes its query to the
+  // current week, so an entry further in the past wouldn't show here
+  // anyway, but this avoids writing a stale index if it's ever extended.
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+  weekStart.setHours(0,0,0,0);
+  if (savedDateObj >= weekStart) {
+    currentStreak()[savedIdx] = 1;
+    renderStreakRow();
+  }
   s.savedToday = true;
-  renderStreakRow();
   showToast('✅', 'Saved');
-  btn.textContent = 'Saved — tap to update';
+  btn.textContent = saveButtonLabel(true);
 }
 
 // ══════════════════════════════════════════
