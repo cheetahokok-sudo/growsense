@@ -163,22 +163,38 @@
 
       <!-- 1. Nutrition -->
       <div class="card" style="border-top: 3px solid var(--accent);">
-        <div class="card-header"><span class="card-title text-accent">Nutrition</span></div>
+        <div class="card-header"><span class="card-title text-accent">Nutrition</span><span class="dq-badge measured"><span class="dq-dot measured"></span>USDA sourced</span></div>
         <div class="card-body">
+          <div class="form-row" style="border-bottom:none; padding-bottom:6px;">
+            <div class="form-lbl" style="font-size:12px; color:var(--text2);">Tap a food to add it</div>
+          </div>
+          <div class="food-card-grid" id="foodCardGrid"></div>
+          <div class="setup-note" style="margin-top:10px; font-size:11px;">
+            Values are per-100g USDA FoodData Central figures, scaled to a typical portion — real servings vary. Tap a card to add its protein/zinc to today's total; long-press (or right-click) to subtract a misclick. Don't see a food your child ate? Use the steppers below to enter a custom amount, or tap "Protein Boost" if a package label already states the protein content.
+          </div>
+          <div class="card-divider" style="margin: 14px -16px;"></div>
           <div class="form-row">
-            <div><div class="form-lbl">Protein</div><div class="form-lbl-sub">Target: 44g / day</div></div>
+            <div><div class="form-lbl">Protein total</div><div class="form-lbl-sub">Target: 44g / day</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('protein',-1)">−</button>
-              <div class="step-val" id="valProtein">35 g</div>
+              <div class="step-val" id="valProtein">0 g</div>
               <button class="step-btn" onclick="adj('protein',1)">+</button>
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl">Calcium</div><div class="form-lbl-sub">Target: 1300mg / day</div></div>
+            <div><div class="form-lbl">Calcium total</div><div class="form-lbl-sub">Target: 1300mg / day</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('calcium',-50)">−</button>
-              <div class="step-val" id="valCalcium">750 mg</div>
+              <div class="step-val" id="valCalcium">0 mg</div>
               <button class="step-btn" onclick="adj('calcium',50)">+</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <div><div class="form-lbl">Zinc total</div><div class="form-lbl-sub">Growth plate co-factor · target 8mg/day</div></div>
+            <div class="stepper">
+              <button class="step-btn" onclick="adj('zinc',-1)">−</button>
+              <div class="step-val" id="valZinc">0 mg</div>
+              <button class="step-btn" onclick="adj('zinc',1)">+</button>
             </div>
           </div>
           <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -569,6 +585,7 @@
 
 <script src="who-reference-data.js"></script>
 <script src="growth-percentile.js"></script>
+<script src="food-reference-data.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

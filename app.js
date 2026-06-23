@@ -4,7 +4,7 @@
 // never carries one child's half-entered numbers into another's form.
 // ══════════════════════════════════════════
 const DEFAULT_DAY_STATE = {
-  protein: 0, calcium: 0, water: 0,
+  protein: 0, calcium: 0, zinc: 0, water: 0,
   hanging: 0, jumps: 0, yogaMin: 0,
   deepSleep: 0, nightWakes: 0, steroid: 0,
   bed: '21:15', wake: '06:30',
@@ -129,6 +129,7 @@ function loadChildIntoForm() {
   const s = currentState();
   document.getElementById('valProtein').textContent = s.protein + ' g';
   document.getElementById('valCalcium').textContent = s.calcium + ' mg';
+  document.getElementById('valZinc').textContent = s.zinc + ' mg';
   document.getElementById('valHanging').textContent = s.hanging + ' sec';
   document.getElementById('valJumps').textContent = s.jumps + ' reps';
   document.getElementById('valNightWakes').textContent = s.nightWakes;
@@ -146,6 +147,7 @@ function loadChildIntoForm() {
   const stBtn = document.getElementById(stMap[s.steroid]);
   if (stBtn) stBtn.classList.add('active');
 
+  buildFoodCardGrid();
   buildWaterGrid();
   calcSleep();
   updateHUD();
@@ -521,15 +523,15 @@ async function renderAssignedChildrenList() {
 // STATE ADJUSTERS
 // ══════════════════════════════════════════
 const LIMITS = {
-  protein:[0,150], calcium:[0,3000], water:[0,8],
+  protein:[0,150], calcium:[0,3000], zinc:[0,30], water:[0,8],
   hanging:[0,180], jumps:[0,300], yogaMin:[0,60], nightWakes:[0,10]
 };
 const LABELS = {
-  protein:' g', calcium:' mg', water:' / 8',
+  protein:' g', calcium:' mg', zinc:' mg', water:' / 8',
   hanging:' sec', jumps:' reps', yogaMin:' min', nightWakes:''
 };
 const ELIDS = {
-  protein:'valProtein', calcium:'valCalcium', water:'valWater',
+  protein:'valProtein', calcium:'valCalcium', zinc:'valZinc', water:'valWater',
   hanging:'valHanging', jumps:'valJumps', yogaMin:'valYoga', nightWakes:'valNightWakes'
 };
 
@@ -560,6 +562,130 @@ function setSteroid(val, btn) {
     if (b.id && b.id.startsWith('st')) b.classList.remove('active');
   });
   btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// FOOD CARDS — real USDA-sourced quick-add buttons
+// Tapping a card adds its protein/zinc/calcium (scaled to the card's
+// typical serving) to today's running totals (currentState().protein,
+// .zinc, .calcium) — same fields the manual steppers below edit, so
+// either method reaches the same numbers. Long-press (mobile) or
+// right-click (desktop) subtracts the same amount, for misclick
+// correction, mirroring the original screenshot's interaction model.
+// ══════════════════════════════════════════
+const LONG_PRESS_MS = 550;
+
+function buildFoodCardGrid() {
+  const grid = document.getElementById('foodCardGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (typeof FOOD_REFERENCE_DATA === 'undefined') {
+    grid.innerHTML = '<div class="setup-note" style="font-size:11px;">Food reference data not loaded.</div>';
+    return;
+  }
+
+  FOOD_REFERENCE_DATA.forEach(food => {
+    const scale = food.servingGrams / 100;
+    const addProtein = Math.round(food.per100g.protein_g * scale * 10) / 10;
+    const addZinc = food.per100g.zinc_mg != null ? Math.round(food.per100g.zinc_mg * scale * 100) / 100 : null;
+    const addCalcium = food.per100g.calcium_mg != null ? Math.round(food.per100g.calcium_mg * scale) : null;
+
+    const card = document.createElement('div');
+    card.className = 'food-card';
+    card.title = food.source; // shows on hover (desktop) as a quick provenance check
+    card.innerHTML = `
+      <div class="food-card-top">
+        <span class="food-card-name"><span class="food-card-emoji">${food.emoji}</span>${food.name}</span>
+        <span class="food-card-add">+${addProtein}g</span>
+      </div>
+      <div class="food-card-prep">${food.prepNote}</div>
+    `;
+    attachFoodCardHandlers(card, (direction) => applyFoodTap(food, addProtein, addZinc, addCalcium, direction));
+    grid.appendChild(card);
+  });
+
+  // "Protein Boost" — flat manual +10g, not tied to any food record.
+  // Visually distinguished (estimated-color accent) so it isn't mistaken
+  // for a sourced USDA value the way the food cards above are.
+  const boostCard = document.createElement('div');
+  boostCard.className = 'food-card manual-entry';
+  boostCard.title = 'Manual entry — read the protein amount off any product label and tap to log it';
+  boostCard.innerHTML = `
+    <div class="food-card-top">
+      <span class="food-card-name"><span class="food-card-emoji">💪</span>Protein Boost</span>
+      <span class="food-card-add">+10g</span>
+    </div>
+    <div class="food-card-prep">manual — match to package label</div>
+  `;
+  attachFoodCardHandlers(boostCard, (direction) => applyFoodTap(null, 10, null, null, direction));
+  grid.appendChild(boostCard);
+}
+
+// Wires both the tap/click (add) and long-press/right-click (subtract)
+// behavior onto a single card element.
+function attachFoodCardHandlers(card, onAdd) {
+  let pressTimer = null;
+  let didLongPress = false;
+
+  const startPress = () => {
+    didLongPress = false;
+    pressTimer = setTimeout(() => {
+      didLongPress = true;
+      card.classList.add('flash-subtract');
+      setTimeout(() => card.classList.remove('flash-subtract'), 200);
+      onAdd(-1); // negative direction = subtract
+    }, LONG_PRESS_MS);
+  };
+  const cancelPress = () => { if (pressTimer) clearTimeout(pressTimer); };
+
+  card.addEventListener('touchstart', startPress, { passive: true });
+  card.addEventListener('touchend', () => {
+    cancelPress();
+    if (!didLongPress) {
+      card.classList.add('flash-add');
+      setTimeout(() => card.classList.remove('flash-add'), 200);
+      onAdd(1);
+    }
+  });
+  card.addEventListener('touchmove', cancelPress);
+
+  card.addEventListener('mousedown', startPress);
+  card.addEventListener('mouseup', () => cancelPress());
+  card.addEventListener('mouseleave', cancelPress);
+  card.addEventListener('click', () => {
+    if (!didLongPress) {
+      card.classList.add('flash-add');
+      setTimeout(() => card.classList.remove('flash-add'), 200);
+      onAdd(1);
+    }
+  });
+  card.addEventListener('contextmenu', (e) => {
+    e.preventDefault(); // right-click = subtract, matches the original screenshot's "right-click (PC)" instruction
+    card.classList.add('flash-subtract');
+    setTimeout(() => card.classList.remove('flash-subtract'), 200);
+    onAdd(-1);
+  });
+}
+
+// direction: 1 to add, -1 to subtract (long-press/right-click correction)
+function applyFoodTap(food, proteinAmt, zincAmt, calciumAmt, direction) {
+  const s = currentState();
+  const [pMin, pMax] = LIMITS.protein;
+  s.protein = Math.max(pMin, Math.min(pMax, Math.round((s.protein + proteinAmt * direction) * 10) / 10));
+  document.getElementById('valProtein').textContent = s.protein + ' g';
+
+  if (zincAmt != null) {
+    const [zMin, zMax] = LIMITS.zinc;
+    s.zinc = Math.max(zMin, Math.min(zMax, Math.round((s.zinc + zincAmt * direction) * 100) / 100));
+    document.getElementById('valZinc').textContent = s.zinc + ' mg';
+  }
+  if (calciumAmt != null) {
+    const [cMin, cMax] = LIMITS.calcium;
+    s.calcium = Math.max(cMin, Math.min(cMax, Math.round(s.calcium + calciumAmt * direction)));
+    document.getElementById('valCalcium').textContent = s.calcium + ' mg';
+  }
+  updateHUD();
 }
 
 // ══════════════════════════════════════════
@@ -765,6 +891,7 @@ async function saveDay() {
       protein_lunch_g: 0,
       protein_dinner_g: 0,
       calcium_mg: s.calcium,
+      zinc_mg: s.zinc,
       fluids_ml: s.water * 250  // 1 glass ≈ 250ml
     }, { onConflict: 'child_id,log_date' }),
 
