@@ -177,6 +177,15 @@
       <div class="card" style="border-top: 3px solid var(--accent);">
         <div class="card-header"><span class="card-title text-accent">Nutrition</span><span class="dq-badge measured"><span class="dq-dot measured"></span>USDA sourced</span></div>
         <div class="card-body">
+          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none; padding-bottom:8px;">
+            <div class="form-lbl" style="font-size:12px; color:var(--text2);">Logging for</div>
+            <div class="seg" id="mealSlotSeg" style="width:100%;">
+              <button class="seg-btn active" data-meal="breakfast" onclick="setMealSlot('breakfast', this)">Breakfast</button>
+              <button class="seg-btn" data-meal="lunch" onclick="setMealSlot('lunch', this)">Lunch</button>
+              <button class="seg-btn" data-meal="dinner" onclick="setMealSlot('dinner', this)">Dinner</button>
+              <button class="seg-btn" data-meal="snack" onclick="setMealSlot('snack', this)">Snack</button>
+            </div>
+          </div>
           <div class="form-row" style="border-bottom:none; padding-bottom:6px;">
             <div class="form-lbl" style="font-size:12px; color:var(--text2);">Tap a food to add it</div>
           </div>
@@ -389,7 +398,7 @@
       <div class="card">
         <div class="card-header"><span class="card-title">Clinical events</span></div>
         <div class="card-body" id="eventsList" style="padding-top:6px;">
-          <div class="empty-state" style="padding:16px;"><p>Not yet connected — illness, medication, and lab events aren't saved to your account yet (see Medical tab).</p></div>
+          <div class="empty-state" style="padding:16px;"><p>Medical entries now save (see Medical tab) — this timeline view summarizing them here isn't built yet.</p></div>
         </div>
       </div>
 
@@ -433,7 +442,7 @@
     <!-- ══════════════ SCREEN: MEDICAL ══════════════ -->
     <div class="screen" id="screenMedical">
       <div class="section-hd"><h2>Clinical log</h2><p>Medical factors that affect growth interpretation</p></div>
-      <div class="setup-note" style="font-size:11.5px; background:var(--estimated-light); color:var(--estimated-dark);">This screen is still in development — entries here aren't saved to your account yet and will be lost on reload.</div>
+      <div class="setup-note" style="font-size:11.5px;">Saved per date — use the date selector on the Today tab to revise a past entry, then return here.</div>
 
       <div class="warning-card">
         <div class="warning-title">Development interference log</div>

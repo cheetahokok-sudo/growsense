@@ -32,7 +32,8 @@ const APP = {
   weekStreakByChild: {}, // in-memory only today; not yet reloaded from DB on boot — see loadWeekStreak() TODO
   signupRole: 'parent_subscriber',
   logDate: todayISO(),    // which date the Today screen is currently editing — defaults to today, changeable via the date selector
-  nutritionLogItems: []   // nutrition_log_items rows for the active child + logDate, loaded fresh on date/child change
+  nutritionLogItems: [],  // nutrition_log_items rows for the active child + logDate, loaded fresh on date/child change
+  activeMealSlot: 'breakfast' // which meal new food-card taps get tagged with; defaults to breakfast each load (see setMealSlot)
 };
 
 function todayISO() {
@@ -212,7 +213,13 @@ async function loadDayIntoState() {
   }
   const sleep = sleepRes.data;
   if (sleep) {
-    s.nightWakes = s.nightWakes || 0; // not stored separately yet; kept as session default
+    s.nightWakes = Number(sleep.night_wakes) || 0;
+    // Postgres TIME columns come back as "HH:MM:SS" — the <input type="time">
+    // element expects "HH:MM", so trim to 5 chars. Fall back to the
+    // DEFAULT_DAY_STATE values (already set by resetStateToDefaults above)
+    // if either column is null, e.g. for rows saved before this migration.
+    if (sleep.bedtime) s.bed = String(sleep.bedtime).slice(0, 5);
+    if (sleep.wake_time) s.wake = String(sleep.wake_time).slice(0, 5);
   }
   const act = actRes.data;
   if (act) {
@@ -264,6 +271,7 @@ function renderNutritionLogList() {
 
   if (items.length === 0) {
     list.innerHTML = '<div class="log-list-empty" id="logListEmpty">Nothing logged yet for this date.</div>';
+    updateFoodCardTapCounts();
     return;
   }
 
@@ -291,6 +299,29 @@ function renderNutritionLogList() {
       </div>
     `;
   }).join('');
+
+  updateFoodCardTapCounts();
+}
+
+// Shows, on each food card, how many times that specific food has
+// already been tapped today (e.g. "Milk × 2" so a parent can see at a
+// glance that they've logged 2 × 100ml = 200ml without having to scroll
+// down to the log list and count rows themselves).
+function updateFoodCardTapCounts() {
+  if (typeof FOOD_REFERENCE_DATA === 'undefined') return;
+  FOOD_REFERENCE_DATA.forEach(food => {
+    const el = document.getElementById('tapcount-' + food.id);
+    if (!el) return;
+    const count = APP.nutritionLogItems.filter(i => i.food_id === food.id).length;
+    if (count === 0) {
+      el.textContent = '';
+      el.classList.remove('has-taps');
+    } else {
+      const totalGrams = count * food.servingGrams;
+      el.textContent = `${food.emoji} × ${count} = ${totalGrams}g logged`;
+      el.classList.add('has-taps');
+    }
+  });
 }
 
 // Inserts one row for a logged food/tap. Called from applyFoodTap()
@@ -305,6 +336,7 @@ async function recordNutritionLogItem(foodId, foodName, proteinAmt, zincAmt, cal
   const { data, error } = await sb.from('nutrition_log_items').insert({
     child_id: childId,
     log_date: APP.logDate,
+    meal_slot: APP.activeMealSlot || 'unspecified',
     food_id: foodId,
     food_name: foodName,
     protein_g: proteinAmt,
@@ -355,6 +387,9 @@ async function removeLoggedItemRowOnly(itemId) {
 
 function loadChildIntoForm() {
   const s = currentState();
+  document.querySelectorAll('#mealSlotSeg .seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.meal === APP.activeMealSlot);
+  });
   document.getElementById('valProtein').textContent = s.protein + ' g';
   document.getElementById('valCalcium').textContent = s.calcium + ' mg';
   document.getElementById('valZinc').textContent = s.zinc + ' mg';
@@ -649,6 +684,7 @@ async function removeChild(childId) {
   renderChildList();
   renderChildSwitcher();
   populateShareChildSelect();
+  await loadDayIntoState();
   loadChildIntoForm();
   await refreshActiveChildHistory();
   await loadWeekStreak();
@@ -794,6 +830,18 @@ function setSteroid(val, btn) {
   btn.classList.add('active');
 }
 
+// Which meal new food-card taps get tagged with. Doesn't affect the
+// daily totals shown in the HUD (those stay a flat daily sum, by
+// design — see conversation notes on why the full per-meal HUD rewrite
+// was deliberately not done) — it only tags each nutrition_log_items
+// row, which saveDay() later sums per-meal for the
+// protein_breakfast_g/lunch_g/dinner_g columns.
+function setMealSlot(meal, btn) {
+  APP.activeMealSlot = meal;
+  document.querySelectorAll('#mealSlotSeg .seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
 // ══════════════════════════════════════════
 // FOOD CARDS — real USDA-sourced quick-add buttons
 // Tapping a card adds its protein/zinc/calcium (scaled to the card's
@@ -823,13 +871,16 @@ function buildFoodCardGrid() {
 
     const card = document.createElement('div');
     card.className = 'food-card';
+    card.dataset.foodId = food.id;
     card.title = food.source; // shows on hover (desktop) as a quick provenance check
     card.innerHTML = `
       <div class="food-card-top">
         <span class="food-card-name"><span class="food-card-emoji">${food.emoji}</span>${food.name}</span>
         <span class="food-card-add">+${addProtein}g</span>
       </div>
+      <div class="food-card-portion">${food.servingGrams}g · ${food.portionVisual}</div>
       <div class="food-card-prep">${food.prepNote}</div>
+      <div class="food-card-tapcount" id="tapcount-${food.id}"></div>
     `;
     attachFoodCardHandlers(card, (direction) => applyFoodTap(food, addProtein, addZinc, addCalcium, direction));
     grid.appendChild(card);
@@ -850,6 +901,8 @@ function buildFoodCardGrid() {
   `;
   attachFoodCardHandlers(boostCard, (direction) => applyFoodTap(null, 10, null, null, direction));
   grid.appendChild(boostCard);
+
+  updateFoodCardTapCounts();
 }
 
 // Wires both the tap/click (add) and long-press/right-click (subtract)
@@ -1136,23 +1189,45 @@ async function saveDay() {
   if (bedMins > wakeMins) wakeMins += 1440;
   const totalSleepMin = Math.round(wakeMins - bedMins);
 
-  // Night wake-ups aren't a column on daily_sleep, but the schema does have
-  // sleep_efficiency_score — used here as a 0-100 proxy that drops with
-  // each recorded wake-up, so that signal isn't silently lost.
-  const sleepEfficiency = Math.max(0, 100 - (s.nightWakes * 15));
+  // sleep_efficiency_score now reflects actual sleep duration adequacy
+  // only — night_wakes has its own real column (see migration), so this
+  // no longer needs to double as a wake-up proxy.
+  const sleepEfficiency = Math.max(0, Math.min(100, Math.round((totalSleepMin / (9.5*60)) * 100)));
 
   // Three independent writes — this app screen edits all three domains at
   // once, but each is its own table/concern (the split is deliberate, see
   // schema notes), so each upsert can succeed or fail on its own. If one
   // fails, the user is told specifically which domain didn't save rather
   // than getting one opaque "save failed" for the whole form.
+  // Per-meal protein breakdown: sum nutrition_log_items by meal_slot for
+  // today's logged foods. Manual stepper taps don't create log rows (only
+  // food-card taps do), so any gap between the daily total (s.protein) and
+  // what the log accounts for is attributed to the currently-selected meal
+  // slot — this keeps protein_breakfast_g+lunch_g+dinner_g always equal to
+  // the displayed daily total, rather than silently losing manually-typed
+  // amounts.
+  const mealSums = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 };
+  APP.nutritionLogItems.forEach(item => {
+    const slot = mealSums.hasOwnProperty(item.meal_slot) ? item.meal_slot : 'breakfast';
+    mealSums[slot] += Number(item.protein_g) || 0;
+  });
+  const loggedTotal = mealSums.breakfast + mealSums.lunch + mealSums.dinner + mealSums.snack;
+  const unaccounted = Math.max(0, s.protein - loggedTotal);
+  const fallbackSlot = mealSums.hasOwnProperty(APP.activeMealSlot) ? APP.activeMealSlot : 'breakfast';
+  mealSums[fallbackSlot] += unaccounted;
+  // daily_nutrition only has breakfast/lunch/dinner columns (no snack
+  // column) — fold snack into dinner for storage, which is the schema's
+  // existing 3-meal model; nutrition_log_items itself still keeps the
+  // real 'snack' tag for the detailed history.
+  mealSums.dinner += mealSums.snack;
+
   const results = await Promise.allSettled([
     sb.from('daily_nutrition').upsert({
       child_id: childId,
       log_date: saveDate,
-      protein_breakfast_g: s.protein,  // single stepper today; per-meal split is a future UI change
-      protein_lunch_g: 0,
-      protein_dinner_g: 0,
+      protein_breakfast_g: Math.round(mealSums.breakfast * 10) / 10,
+      protein_lunch_g: Math.round(mealSums.lunch * 10) / 10,
+      protein_dinner_g: Math.round(mealSums.dinner * 10) / 10,
       calcium_mg: s.calcium,
       zinc_mg: s.zinc,
       fluids_ml: s.water * 250  // 1 glass ≈ 250ml
@@ -1163,6 +1238,9 @@ async function saveDay() {
       log_date: saveDate,
       total_sleep_min: totalSleepMin,
       sleep_efficiency_score: sleepEfficiency,
+      night_wakes: s.nightWakes,
+      bedtime: s.bed,
+      wake_time: s.wake,
       data_source: 'manual'
     }, { onConflict: 'child_id,log_date' }),
 
@@ -1677,8 +1755,84 @@ function drawLine(ctx, pts, color, w) {
 // This intentionally does not pretend to save to a backend until that
 // table is designed — see conversation note. Values stay in the form
 // fields for the current session only and are lost on reload.
-function saveMedical() {
-  showToast('⚠️', 'Medical records aren\'t saved to your account yet — this screen is still in development');
+async function saveMedical() {
+  const childId = activeChildId();
+  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+
+  const btn = document.querySelector('#screenMedical .btn-secondary');
+  const originalLabel = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  const igf1 = document.getElementById('labIGF').value;
+  const vitD = document.getElementById('labVitD').value;
+  const ferritin = document.getElementById('labFerritin').value;
+
+  const { error } = await sb.from('medical_logs').upsert({
+    child_id: childId,
+    log_date: APP.logDate,
+    illness_days: parseInt(document.getElementById('medIllness').value) || 0,
+    steroid_level: currentState().steroid,
+    medications: document.getElementById('medMeds').value || null,
+    notes: document.getElementById('medNotes').value || null,
+    igf1_ng_ml: igf1 ? parseFloat(igf1) : null,
+    vitamin_d_nmol_l: vitD ? parseFloat(vitD) : null,
+    ferritin_ng_ml: ferritin ? parseFloat(ferritin) : null,
+    created_by: APP.session ? APP.session.user.id : null
+  }, { onConflict: 'child_id,log_date' });
+
+  if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+
+  if (error) {
+    showToast('⚠️', 'Could not save: ' + error.message);
+    return;
+  }
+  showToast('✅', 'Clinical record saved for ' + APP.logDate);
+}
+
+// Loads this child's medical_logs row for the currently-selected
+// APP.logDate (if any) and populates the Medical screen's fields —
+// called whenever the Medical tab is opened or the date/child changes,
+// mirroring how loadDayIntoState() restores the Today screen.
+async function loadMedicalLogForDate() {
+  const childId = activeChildId();
+  const illnessEl = document.getElementById('medIllness');
+  const medsEl = document.getElementById('medMeds');
+  const notesEl = document.getElementById('medNotes');
+  const igfEl = document.getElementById('labIGF');
+  const vitDEl = document.getElementById('labVitD');
+  const ferritinEl = document.getElementById('labFerritin');
+
+  // Reset to blank defaults first, so switching to a date/child with no
+  // record doesn't show stale values from whatever was viewed before.
+  illnessEl.value = 0;
+  medsEl.value = '';
+  notesEl.value = '';
+  igfEl.value = '';
+  vitDEl.value = '';
+  ferritinEl.value = '';
+  setSteroid(0, document.getElementById('stNone'));
+
+  if (!childId) return;
+
+  const { data, error } = await sb
+    .from('medical_logs')
+    .select('*')
+    .eq('child_id', childId)
+    .eq('log_date', APP.logDate)
+    .maybeSingle();
+
+  if (error || !data) return; // no record for this date — blank form is correct
+
+  illnessEl.value = data.illness_days || 0;
+  medsEl.value = data.medications || '';
+  notesEl.value = data.notes || '';
+  igfEl.value = data.igf1_ng_ml != null ? data.igf1_ng_ml : '';
+  vitDEl.value = data.vitamin_d_nmol_l != null ? data.vitamin_d_nmol_l : '';
+  ferritinEl.value = data.ferritin_ng_ml != null ? data.ferritin_ng_ml : '';
+
+  const stMap = { 0: 'stNone', 1: 'stInhaled', 2: 'stOral' };
+  const stBtn = document.getElementById(stMap[data.steroid_level] || 'stNone');
+  if (stBtn) setSteroid(data.steroid_level || 0, stBtn);
 }
 
 // ══════════════════════════════════════════
@@ -1804,6 +1958,9 @@ async function goTab(name) {
     await updateStats();
     drawGrowthChart();
     drawLabChart();
+  }
+  if (name === 'Medical') {
+    await loadMedicalLogForDate();
   }
 }
 
