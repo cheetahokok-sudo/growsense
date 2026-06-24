@@ -209,6 +209,9 @@ body {
 .food-card-emoji { font-size: 14px; }
 .food-card-add { font-size: 11.5px; font-weight: 700; color: var(--accent-dark); white-space: nowrap; }
 .food-card-prep { font-size: 9.5px; color: var(--text3); line-height: 1.2; }
+.food-card-portion { font-size: 10.5px; color: var(--measured-dark); font-weight: 600; line-height: 1.3; }
+.food-card-tapcount { font-size: 9.5px; color: var(--accent-dark); font-weight: 700; min-height: 12px; margin-top: 1px; }
+.food-card-tapcount.has-taps { background: var(--accent-light); border-radius: 6px; padding: 2px 5px; display: inline-block; }
 .food-card.manual-entry .food-card-add { color: var(--estimated-dark); }
 
 /* ─── NUTRITION LOG LIST ─── */

@@ -292,6 +292,159 @@ centered on the child's current age (±3 years, clamped to the table's
 
 ---
 
+## 5b. Growth standards 0–5 years + SGA catch-up growth tracking (implemented 2026-06-24)
+
+**Where:** `who-reference-data-0-5.js`, `growth-percentile-0-5.js`,
+`migration_sga_tracking.sql`, consumed by `updateStats()`'s SGA card and
+(future work) a dedicated 0-5y chart.
+
+**Data source:** the WHO Child Growth Standards (2006) — a different
+dataset from the WHO 2007 Reference used for 5-19y (§5), with a
+different underlying sample and methodology, reflecting that postnatal
+growth in early childhood is biologically distinct from later
+childhood/adolescence. Two age bands per indicator, each its own table,
+transcribed directly from official WHO PDFs:
+- Length-for-age, 0–2 years (recumbent) — boys/girls
+- Height-for-age, 2–5 years (standing) — boys/girls
+- BMI-for-age, 0–2 years and 2–5 years — boys/girls
+
+**The measurement-method switch — read this before changing the related
+code:** WHO's own documentation states the conversion constant directly:
+standing height = recumbent length − 0.7cm. This isn't just a data
+artifact — it's why this dataset is split into two tables per indicator
+rather than one continuous one. `growth-percentile-0-5.js` requires the
+caller to specify which measurement type was actually taken
+(`'recumbent'` or `'standing'`) and converts automatically if it doesn't
+match what that age band's table expects; if omitted, no conversion is
+applied (the value is assumed to already match the conventional method
+for that age).
+
+**Verification performed** (8 tables this time — boys/girls × 2
+indicators × 2 age bands — same standard as the 5-19y BMI dataset):
+1. **Structural** — all 8 tables checked for sequential months, no
+   gaps/duplicates, monotonically increasing percentiles within every
+   row. (Large month-to-month jumps in the median height curve during
+   months 0-4 were flagged by the automated check and confirmed as real
+   biology, not transcription errors — early infancy growth genuinely is
+   that fast, several cm/month.)
+2. **Internal LMS consistency** — recomputing all 11 percentile columns
+   from transcribed L/M/S, across all 8 tables and every row, reproduced
+   WHO's own published percentile values to within 0.05 units at every
+   checked point.
+3. **Independent fact check** — median length at birth recovered as
+   49.88cm (boys) / 49.15cm (girls), matching the widely-cited WHO
+   reference figures of 49.9cm / 49.1cm.
+4. **Cross-table continuity** — the two independently-transcribed height
+   tables (0-2y vs 2-5y) showed *exactly* a 0.700cm gap at their
+   24-month overlap point, matching WHO's separately-documented
+   recumbent/standing conversion constant precisely. This is meaningful
+   evidence both tables are correct and mutually consistent, since this
+   number wasn't assumed going in — it fell out of two independently
+   transcribed sources agreeing with a third, separate piece of WHO
+   documentation.
+
+### SGA (small-for-gestational-age) catch-up growth tracking
+
+**Why this exists:** per the International Consensus Guideline on SGA
+(a pediatric endocrine consensus document), SGA is defined as birth
+weight and/or length below −2 SDS for gestational age. Catch-up growth
+is specifically defined as height velocity **>0 SDS** — i.e. growing
+*faster than the population median* for age and sex, not just growing
+in absolute cm. About 10% of SGA children fail to show catch-up growth
+and may remain short-statured into adulthood. The same guideline
+recommends growth-hormone-therapy referral evaluation by ages 2-4 if
+catch-up hasn't occurred — but real-world referral commonly happens much
+later (ages 7-9), which is part of the clinical case for consistent
+early tracking rather than infrequent checkups.
+
+**What this app does:** `is_sga` is a parent/clinician-confirmed flag on
+the child profile (see `migration_sga_tracking.sql`), **not** something
+this app computes automatically. This is a deliberate choice, not a
+missing feature: determining SGA status from birth weight/length
+requires a *gestational-age-specific* birth-weight reference chart
+(e.g. Fenton 2013 or INTERGROWTH-21st) — a completely different dataset
+from the WHO *postnatal* growth standards used everywhere else in this
+app. These two reference standards are not just "different versions of
+the same thing" — published comparisons find they meaningfully disagree
+on SGA classification rates in the same cohorts (one comparison found
+INTERGROWTH-21st and Fenton classified 11.5% vs 9.5% of the same infants
+as SGA respectively; another found the gap as wide as 19% vs 14.7%), and
+which standard is most appropriate varies by population with no single
+settled answer in the literature. Auto-computing this inside GrowSense
+would mean silently picking a side in a genuine, ongoing clinical
+disagreement — the same category of mistake flagged in §7's review of
+the external "v2.0" document. A clinician-confirmed flag, entered after
+an actual gestational-age-appropriate assessment, avoids that.
+
+**Catch-up velocity calculation:** uses the *change in height Z-score*
+between two measurements, divided by the time elapsed in years — not raw
+cm/year. This matters: a child growing at exactly the population-median
+rate has a *flat* Z-score over time (same percentile, just bigger) — that's
+not catch-up, it's tracking. Catch-up means gaining SDS, i.e. moving
+up through the percentile bands over time. Classification:
+- `> +0.1 SDS/year` → "catching up"
+- `< -0.1 SDS/year` → "falling further behind"
+- in between → "tracking, not catching up" (flat, deliberately not
+  alarming language for small/noise-level changes near zero)
+
+**Monitoring cadence reminder**, shown directly in the UI, per the same
+consensus guideline: every 3 months in year 1, every 6 months in year 2,
+yearly after.
+
+**Scope boundary, stated plainly:** this card only appears for children
+flagged `is_sga` AND currently under age 5 — both the clinical catch-up-
+growth literature and this app's available reference data are scoped to
+that age range. A flagged SGA child who ages past 5 stops seeing this
+card; their growth is then tracked the same way as any other child via
+§5's 5-19y reference (catch-up growth, in the specific clinical sense
+used here, is a 0-5y phenomenon — by school age, the relevant question
+shifts to general growth-faltering screening, which the standard
+percentile/velocity tracking already covers).
+
+---
+
+## 5c. Age-aware chart rendering + BMI chart (implemented 2026-06-24)
+
+**Where:** `drawGrowthChart()` (height) and `drawBMIChart()` (new), both
+in `app.js`, sharing extracted helpers (`setupChartCanvas`,
+`drawChartGridAndAxis`, `fillChartBand`, `drawChartBandLine`,
+`drawEmptyChartMessage`).
+
+**What changed:** both charts now branch on the active child's current
+age. Under 5, they use the WHO Child Growth Standards (§5b) via a new
+`deriveBandsFromLMS()` helper in `growth-percentile-0-5.js`, which
+computes the same 5 percentile bands (3rd/15th/50th/85th/97th) the
+chart's existing rendering code already knows how to draw — derived
+directly from real L/M/S via the inverse Box-Cox transform, not a
+separate approximation. 5 and over, both charts use the existing 5-19y
+references (§1, §5) exactly as before.
+
+**Curve shape — verified, not assumed:** the 0-5y chart samples at 48
+points across the window (vs 24 for 5-19y) specifically because early
+growth changes shape fast enough that fewer samples would visibly facet
+what should be a smooth curve. The deceleration itself is real WHO data,
+not a rendering trick — checked directly: median height gain per ~6-week
+sample interval is ~3.3cm near birth vs ~0.7cm near age 5, a 4.85×
+difference, confirming the curve the chart draws reflects genuine early-
+childhood growth biology rather than a stretched straight line.
+
+**Measurement-method consistency:** the 0-5y height chart applies the
+exact same recumbent/standing 0.7cm conversion (per §5b) to a child's
+actual logged measurements before plotting them, using the same
+`resolveHeightTableAndValue()` function the numeric percentile
+calculation uses — so the chart and the printed percentile reading can
+never disagree with each other about which measurement basis was used.
+
+**The BMI/obesity chart** is new (previously only a single-point card on
+Analytics, with no trend view at all). It adds dashed reference lines at
+WHO's own +1SD (overweight) and +2SD (obesity) cutoffs, computed at
+every sampled age the same way the single-point classification in §1
+already does — so a parent can see at a glance whether a trend is
+approaching either threshold, not just whether the most recent point is
+past it.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

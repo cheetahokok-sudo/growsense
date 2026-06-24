@@ -612,6 +612,7 @@ function renderChildSwitcher() {
       await loadWeekStreak();
       updateStats();
       drawGrowthChart();
+      drawBMIChart();
     };
     sw.appendChild(chip);
   });
@@ -631,20 +632,50 @@ async function addChild() {
   if (!name) { showToast('⚠️', 'Enter a name'); return; }
   if (!dob) { showToast('⚠️', 'Enter a date of birth'); return; }
 
-  const { data, error } = await sb.from('children').insert({
+  // Optional birth-status fields, for SGA/catch-up-growth tracking (see
+  // migration_sga_tracking.sql for why is_sga is a confirmed flag, not
+  // something this app computes itself).
+  const gestWeeksRaw = document.getElementById('newChildGestWeeks').value;
+  const birthWeightRaw = document.getElementById('newChildBirthWeight').value;
+  const birthLengthRaw = document.getElementById('newChildBirthLength').value;
+  const isSGA = document.getElementById('newChildIsSGA').checked;
+
+  const insertPayload = {
     parent_id: APP.session.user.id,
     name, date_of_birth: dob, biological_sex: sex
-  }).select().single();
+  };
+  if (gestWeeksRaw) insertPayload.gestational_age_weeks = parseInt(gestWeeksRaw);
+  if (birthWeightRaw) insertPayload.birth_weight_kg = parseFloat(birthWeightRaw);
+  if (birthLengthRaw) insertPayload.birth_length_cm = parseFloat(birthLengthRaw);
+  if (isSGA) {
+    insertPayload.is_sga = true;
+    insertPayload.sga_confirmed_by = APP.session.user.id; // parent confirming what a doctor told them — see note below
+  }
+
+  const { data, error } = await sb.from('children').insert(insertPayload).select().single();
 
   if (error) { showToast('⚠️', 'Could not add child: ' + error.message); return; }
 
   APP.children.push(data);
   document.getElementById('newChildName').value = '';
   document.getElementById('newChildDOB').value = '';
+  document.getElementById('newChildGestWeeks').value = '';
+  document.getElementById('newChildBirthWeight').value = '';
+  document.getElementById('newChildBirthLength').value = '';
+  document.getElementById('newChildIsSGA').checked = false;
   renderChildSwitcher();
   renderChildList();
   populateShareChildSelect();
   showToast('✅', `${name} added`);
+}
+
+// Shows/hides the optional birth-details fields on the child creation
+// form — collapsed by default since most parents won't need this.
+function toggleBirthDetails(btn) {
+  const el = document.getElementById('birthDetailsFields');
+  const isHidden = el.classList.contains('hidden');
+  el.classList.toggle('hidden');
+  btn.textContent = isHidden ? '− Hide birth details' : '+ Add birth details (for SGA / catch-up growth tracking)';
 }
 
 function renderChildList() {
@@ -1577,6 +1608,75 @@ async function updateStats() {
       if (bmiResult.classification === 'healthy_range') bmiClassBadge.className = 'velocity-trend up';
     }
   }
+
+  // SGA catch-up growth tracking — only relevant for children flagged
+  // is_sga, only meaningful under age 5 (the age range the clinical
+  // catch-up-growth literature this is built from actually covers — see
+  // FORMULAS.md). Hidden entirely otherwise, including when there
+  // aren't yet two measurements to compute a velocity from.
+  const sgaCard = document.getElementById('sgaCatchupCard');
+  const ageNowYears = child ? (new Date() - new Date(child.date_of_birth)) / (365.25*86400000) : null;
+  const showSGACard = !!(child && child.is_sga && ageNowYears != null && ageNowYears < 5);
+  sgaCard.classList.toggle('hidden', !showSGACard);
+
+  if (showSGACard) {
+    const sgaVelocityEl = document.getElementById('sgaVelocitySDS');
+    const sgaBadge = document.getElementById('sgaCatchupBadge');
+    const sgaMonitoringNote = document.getElementById('sgaMonitoringNote');
+
+    // Monitoring cadence reminder, per the SGA consensus guideline this
+    // feature is built from: every 3 months in year 1, 6-monthly in
+    // year 2, yearly after.
+    const cadence = ageNowYears < 1 ? 'every 3 months (year 1)'
+      : ageNowYears < 2 ? 'every 6 months (year 2)'
+      : 'yearly';
+    sgaMonitoringNote.textContent = `Recommended monitoring frequency at this age: ${cadence}. If catch-up growth (>0 SDS/year) hasn't been observed by age 2–4, guidelines recommend evaluation for growth hormone therapy — bring this chart to that conversation.`;
+
+    if (measurements.length < 2 || typeof calculateHeightPercentile0to5 !== 'function') {
+      sgaVelocityEl.textContent = '—';
+      sgaBadge.textContent = 'need 2+ measurements';
+      sgaBadge.className = 'velocity-trend flat';
+    } else {
+      // Real definition of catch-up growth: the CHANGE in height
+      // Z-score over time, not raw cm/year — a child gaining height at
+      // the population-median rate has a flat Z-score (not catching up,
+      // just tracking the same curve); catch-up means gaining SDS,
+      // i.e. moving up the percentile bands over time.
+      const last = measurements[0], prev = measurements[1]; // measurements is newest-first
+      const lastAgeMonths = (new Date(last.recorded_date) - new Date(child.date_of_birth)) / (30.4375*86400000);
+      const prevAgeMonths = (new Date(prev.recorded_date) - new Date(child.date_of_birth)) / (30.4375*86400000);
+      const yearsBetween = (lastAgeMonths - prevAgeMonths) / 12;
+
+      if (yearsBetween <= 0 || lastAgeMonths > 60 || prevAgeMonths < 0) {
+        sgaVelocityEl.textContent = '—';
+        sgaBadge.textContent = 'out of 0-5y range';
+        sgaBadge.className = 'velocity-trend flat';
+      } else {
+        const lastResult = calculateHeightPercentile0to5(Number(last.stature_height_cm), lastAgeMonths, child.biological_sex);
+        const prevResult = calculateHeightPercentile0to5(Number(prev.stature_height_cm), prevAgeMonths, child.biological_sex);
+
+        if (!lastResult || !prevResult || lastResult.outOfRange || prevResult.outOfRange) {
+          sgaVelocityEl.textContent = '—';
+          sgaBadge.textContent = 'unavailable';
+          sgaBadge.className = 'velocity-trend flat';
+        } else {
+          const sdsPerYear = (lastResult.zScore - prevResult.zScore) / yearsBetween;
+          sgaVelocityEl.textContent = (sdsPerYear >= 0 ? '+' : '') + sdsPerYear.toFixed(2);
+
+          if (sdsPerYear > 0.1) {
+            sgaBadge.textContent = 'catching up';
+            sgaBadge.className = 'velocity-trend up';
+          } else if (sdsPerYear < -0.1) {
+            sgaBadge.textContent = 'falling further behind';
+            sgaBadge.className = 'velocity-trend down';
+          } else {
+            sgaBadge.textContent = 'tracking, not catching up';
+            sgaBadge.className = 'velocity-trend flat';
+          }
+        }
+      }
+    }
+  }
 }
 
 async function addMeasurement() {
@@ -1604,6 +1704,7 @@ async function addMeasurement() {
   await refreshActiveChildHistory();
   updateStats();
   drawGrowthChart();
+  drawBMIChart();
 }
 
 // ══════════════════════════════════════════
@@ -1611,9 +1712,18 @@ async function addMeasurement() {
 // percentile overlay, child's actual measurements plotted on top.
 // Requires who-reference-data.js and growth-percentile.js to be loaded.
 // ══════════════════════════════════════════
-function drawGrowthChart() {
-  const canvas = document.getElementById('growthCanvas');
-  if (!canvas) return;
+// ══════════════════════════════════════════
+// SHARED CHART RENDERING HELPERS
+// Both drawGrowthChart() and drawBMIChart() use these — extracted so
+// the 0-5y/5-19y branching and the height/BMI branching don't each need
+// their own copy of the same canvas-drawing mechanics.
+// ══════════════════════════════════════════
+
+// Sets up a canvas for crisp rendering at the current device pixel
+// ratio and returns the context plus usable width/height after padding.
+function setupChartCanvas(canvasId, padOverride) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
   const ctx = canvas.getContext('2d');
   const W = canvas.parentElement.clientWidth;
   const H = canvas.parentElement.clientHeight;
@@ -1622,31 +1732,110 @@ function drawGrowthChart() {
   ctx.setTransform(1,0,0,1,0,0);
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
   ctx.clearRect(0, 0, W, H);
+  const pad = padOverride || { t:12, r:12, b:28, l:32 };
+  return { canvas, ctx, W, H, pad, w: W-pad.l-pad.r, h: H-pad.t-pad.b };
+}
 
-  const pad = { t:12, r:12, b:28, l:32 };
-  const w = W - pad.l - pad.r;
-  const h = H - pad.t - pad.b;
+function drawEmptyChartMessage(ctx, W, H, message) {
+  ctx.fillStyle = '#95A092'; ctx.font = '11px Inter,sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(message, W/2, H/2);
+}
+
+function drawChartGridAndAxis(ctx, pad, w, h, ageMin, ageMax, pxForAge) {
+  ctx.strokeStyle = '#F0F2F5'; ctx.lineWidth = 1;
+  for (let i=1; i<5; i++) {
+    const y = pad.t + (h/5)*i;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+w, y); ctx.stroke();
+  }
+  ctx.fillStyle = '#9BA3B4'; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'center';
+  // Below age 2, label every 3 months (real early growth changes fast
+  // enough that whole-year labels would leave most of a 0-2y chart
+  // unlabeled); from 2y up, whole-year labels same as the 5-19y chart.
+  if (ageMax <= 2.1) {
+    for (let m = 0; m <= ageMax*12; m += 3) {
+      ctx.fillText(m + 'mo', pxForAge(m/12), pad.t + h + 18);
+    }
+  } else {
+    const startYear = Math.ceil(ageMin), endYear = Math.floor(ageMax);
+    for (let y = startYear; y <= endYear; y++) {
+      ctx.fillText(y + 'y', pxForAge(y), pad.t + h + 18);
+    }
+  }
+}
+
+function fillChartBand(ctx, sampled, pxForAge, hy, lowKey, highKey, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  sampled.forEach((s, i) => {
+    const x = pxForAge(s.ageYears), y = hy(s[highKey]);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  for (let i = sampled.length - 1; i >= 0; i--) {
+    const s = sampled[i];
+    ctx.lineTo(pxForAge(s.ageYears), hy(s[lowKey]));
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawChartBandLine(ctx, sampled, pxForAge, hy, key, color, width) {
+  drawLine(ctx, sampled.map(s => [pxForAge(s.ageYears), hy(s[key])]), color, width);
+}
+
+// ══════════════════════════════════════════
+// HEIGHT-FOR-AGE CHART — branches between the WHO 2007 Reference
+// (5-19y, percentile-band interpolation) and the WHO Child Growth
+// Standards (0-5y, real LMS — naturally renders the actual decelerating
+// early-growth curve shape rather than a straight line, since the
+// underlying median values themselves curve that way).
+// ══════════════════════════════════════════
+function drawGrowthChart() {
+  const setup = setupChartCanvas('growthCanvas');
+  if (!setup) return;
+  const { ctx, W, H, pad, w, h } = setup;
 
   const child = APP.children[APP.activeChild];
   const measurements = (APP.activeChildMeasurements || []).slice().reverse(); // oldest first
+  const titleEl = document.getElementById('growthChartTitle');
+  const noteEl = document.getElementById('growthChartNote');
 
   if (!child || typeof WHO_HFA_BOYS_5_19 === 'undefined') {
-    ctx.fillStyle = '#95A092'; ctx.font = '11px Inter,sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(!child ? 'Add a child profile to see this chart' : 'Reference data not loaded', W/2, H/2);
+    drawEmptyChartMessage(ctx, W, H, !child ? 'Add a child profile to see this chart' : 'Reference data not loaded');
     return;
   }
 
-  const table = (child.biological_sex === 'female') ? WHO_HFA_GIRLS_5_19 : WHO_HFA_BOYS_5_19;
-  const tableMinYears = table[0][0] / 12, tableMaxYears = table[table.length-1][0] / 12;
-
-  // Center the visible age window on the child's current age (±3 years),
-  // clamped to what the WHO 5–19y table actually covers.
   const ageNowYears = (new Date() - new Date(child.date_of_birth)) / (365.25*86400000);
-  let ageMin = Math.max(tableMinYears, ageNowYears - 3);
-  let ageMax = Math.min(tableMaxYears, ageNowYears + 3);
-  if (ageMax - ageMin < 2) { // keep a sane minimum window near the table edges
-    if (ageMin <= tableMinYears) ageMax = Math.min(tableMaxYears, ageMin + 2);
-    else ageMin = Math.max(tableMinYears, ageMax - 2);
+  const use0to5 = ageNowYears < 5 && typeof WHO_HFA_BOYS_0_2 !== 'undefined';
+
+  if (titleEl) titleEl.textContent = use0to5 ? 'Length/Height-for-age (WHO Child Growth Standards)' : 'Height-for-age (WHO 2007 Reference)';
+  if (noteEl) noteEl.textContent = use0to5
+    ? 'Shaded bands are the official WHO Child Growth Standards (0–5 years), transcribed directly from who.int. Curve shape reflects real early-childhood growth deceleration, not a straight-line approximation. Measured 0–2y as recumbent length, 2–5y as standing height — bring this chart to your pediatrician.'
+    : 'Shaded bands are the official WHO 2007 Growth Reference for school-age children and adolescents (5–19 years), transcribed directly from who.int. This is a population reference, not a diagnosis — bring this chart to your pediatrician for clinical interpretation, especially near the band edges.';
+
+  let ageMin, ageMax, sampleBandsAt, yPad;
+
+  if (use0to5) {
+    // Always show the full 0-5y window — unlike the 5-19y chart's
+    // rolling ±3y window, early-childhood growth changes shape so fast
+    // that a partial window would hide the deceleration curve this
+    // view exists to show.
+    ageMin = 0; ageMax = 5; yPad = 2;
+    sampleBandsAt = (ageYears) => {
+      const ageMonths = ageYears * 12;
+      const table = GrowthPercentile0to5Math.heightTableFor(ageMonths, child.biological_sex);
+      return GrowthPercentile0to5Math.deriveBandsFromLMS(table, ageMonths);
+    };
+  } else {
+    const table = (child.biological_sex === 'female') ? WHO_HFA_GIRLS_5_19 : WHO_HFA_BOYS_5_19;
+    const tableMinYears = table[0][0] / 12, tableMaxYears = table[table.length-1][0] / 12;
+    ageMin = Math.max(tableMinYears, ageNowYears - 3);
+    ageMax = Math.min(tableMaxYears, ageNowYears + 3);
+    if (ageMax - ageMin < 2) {
+      if (ageMin <= tableMinYears) ageMax = Math.min(tableMaxYears, ageMin + 2);
+      else ageMin = Math.max(tableMinYears, ageMax - 2);
+    }
+    yPad = 3;
+    sampleBandsAt = (ageYears) => GrowthPercentileMath.interpolateBands(table, ageYears * 12);
   }
 
   function pxForAge(ageYears) {
@@ -1654,75 +1843,49 @@ function drawGrowthChart() {
     return pad.l + ((clamped - ageMin) / (ageMax - ageMin)) * w;
   }
 
-  // Sample the real WHO bands at N points across the visible window —
-  // this is what makes the shaded region and lines reflect actual
-  // reference data rather than a few hand-picked illustrative numbers.
-  const SAMPLES = 24;
+  // More samples for the 0-5y chart than the 5-19y one (48 vs 24) since
+  // the curve genuinely bends faster in early months — more points keep
+  // that real curvature visually smooth rather than visibly faceted.
+  const SAMPLES = use0to5 ? 48 : 24;
   const sampled = [];
   for (let i = 0; i <= SAMPLES; i++) {
     const ageYears = ageMin + (ageMax - ageMin) * (i / SAMPLES);
-    const bands = GrowthPercentileMath.interpolateBands(table, ageYears * 12);
-    sampled.push({ ageYears, p3: bands[0], p15: bands[1], p50: bands[2], p85: bands[3], p97: bands[4] });
+    const [p3, p15, p50, p85, p97] = sampleBandsAt(ageYears);
+    sampled.push({ ageYears, p3, p15, p50, p85, p97 });
   }
 
-  // Y-axis scale: fit to the full 3rd–97th band range across the visible
-  // window (plus a little headroom), so the shaded area always fills
-  // most of the chart regardless of the child's age.
   const allBandValues = sampled.flatMap(s => [s.p3, s.p97]);
-  const yMin = Math.min(...allBandValues) - 3;
-  const yMax = Math.max(...allBandValues) + 3;
+  const yMin = Math.min(...allBandValues) - yPad;
+  const yMax = Math.max(...allBandValues) + yPad;
   function hy(cm) { return pad.t + h - ((cm - yMin) / (yMax - yMin)) * h; }
 
-  // Gridlines
-  ctx.strokeStyle = '#F0F2F5'; ctx.lineWidth = 1;
-  for (let i=1; i<5; i++) {
-    const y = pad.t + (h/5)*i;
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+w, y); ctx.stroke();
-  }
+  drawChartGridAndAxis(ctx, pad, w, h, ageMin, ageMax, pxForAge);
 
-  // Age axis labels — whole years across the visible window
-  ctx.fillStyle = '#9BA3B4'; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'center';
-  const startYear = Math.ceil(ageMin), endYear = Math.floor(ageMax);
-  for (let y = startYear; y <= endYear; y++) {
-    ctx.fillText(y + 'y', pxForAge(y), pad.t + h + 18);
-  }
+  fillChartBand(ctx, sampled, pxForAge, hy, 'p3', 'p97', 'rgba(170,179,165,0.18)');
+  fillChartBand(ctx, sampled, pxForAge, hy, 'p15', 'p85', 'rgba(170,179,165,0.30)');
+  drawChartBandLine(ctx, sampled, pxForAge, hy, 'p3', '#D7DCD2', 1.2);
+  drawChartBandLine(ctx, sampled, pxForAge, hy, 'p15', '#AAB3A5', 1.4);
+  drawChartBandLine(ctx, sampled, pxForAge, hy, 'p50', '#7C877A', 1.6);
+  drawChartBandLine(ctx, sampled, pxForAge, hy, 'p85', '#AAB3A5', 1.4);
+  drawChartBandLine(ctx, sampled, pxForAge, hy, 'p97', '#D7DCD2', 1.2);
 
-  // Shaded 3rd–97th band (outer, lighter) and 15th–85th band (inner,
-  // slightly darker) — this is the visual "highlight area" overlay.
-  function fillBand(lowKey, highKey, color) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    sampled.forEach((s, i) => {
-      const x = pxForAge(s.ageYears), y = hy(s[highKey]);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    for (let i = sampled.length - 1; i >= 0; i--) {
-      const s = sampled[i];
-      ctx.lineTo(pxForAge(s.ageYears), hy(s[lowKey]));
-    }
-    ctx.closePath();
-    ctx.fill();
-  }
-  fillBand('p3', 'p97', 'rgba(170,179,165,0.18)');
-  fillBand('p15', 'p85', 'rgba(170,179,165,0.30)');
-
-  // Band edge lines (3rd, 15th, 50th, 85th, 97th) drawn from the same
-  // real sampled data as the fill above.
-  function lineFor(key, color, width) {
-    drawLine(ctx, sampled.map(s => [pxForAge(s.ageYears), hy(s[key])]), color, width);
-  }
-  lineFor('p3', '#D7DCD2', 1.2);
-  lineFor('p15', '#AAB3A5', 1.4);
-  lineFor('p50', '#7C877A', 1.6);
-  lineFor('p85', '#AAB3A5', 1.4);
-  lineFor('p97', '#D7DCD2', 1.2);
-
-  // Plot this child's actual measurements, positioned by true age-at-
-  // measurement (from date_of_birth), on the exact same scale as the
-  // reference bands above — so visual position directly reflects
-  // standing relative to the real WHO curve, not an approximation.
+  // Plot this child's actual measurements. Under the 0-5y branch, apply
+  // the same recumbent/standing 0.7cm convention used by the percentile
+  // calc itself — height shown on the chart should be on whichever
+  // measurement basis matches the age it's plotted at, exactly the same
+  // logic calculateHeightPercentile0to5() applies, so the chart and the
+  // numeric percentile reading never disagree with each other.
   const ageAt = dateStr => (new Date(dateStr) - new Date(child.date_of_birth)) / (365.25*86400000);
-  const actual = measurements.map(m => [pxForAge(ageAt(m.recorded_date)), hy(Number(m.stature_height_cm))]);
+  const actual = measurements.map(m => {
+    const ageYears = ageAt(m.recorded_date);
+    let heightCm = Number(m.stature_height_cm);
+    if (use0to5) {
+      const ageMonths = ageYears * 12;
+      const { value } = GrowthPercentile0to5Math.resolveHeightTableAndValue(heightCm, ageMonths, child.biological_sex, ageMonths < 24 ? 'recumbent' : 'standing');
+      heightCm = value;
+    }
+    return [pxForAge(ageYears), hy(heightCm)];
+  });
 
   if (actual.length > 0) {
     drawLine(ctx, actual, '#2A5C8A', 3);
@@ -1733,9 +1896,6 @@ function drawGrowthChart() {
       ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(x, y, isLatest ? 2.5 : 2, 0, 2*Math.PI); ctx.fill();
     });
 
-    // Forecast: simple linear extrapolation from the last two points, only
-    // drawn when there are at least two real measurements to extrapolate
-    // from — no fabricated trajectory when there's only one data point.
     if (actual.length >= 2) {
       const last = measurements[measurements.length - 1];
       const prev = measurements[measurements.length - 2];
@@ -1758,8 +1918,116 @@ function drawGrowthChart() {
       ctx.beginPath(); ctx.arc(forecast[forecast.length-1][0], forecast[forecast.length-1][1], 4, 0, 2*Math.PI); ctx.fill();
     }
   } else {
-    ctx.fillStyle = '#95A092'; ctx.font = '11px Inter,sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('No measurements logged yet', W/2, H/2);
+    drawEmptyChartMessage(ctx, W, H, 'No measurements logged yet');
+  }
+}
+
+// ══════════════════════════════════════════
+// BMI-FOR-AGE CHART — same branching pattern as drawGrowthChart(), with
+// added +1SD/+2SD threshold lines (WHO's overweight/obesity cutoffs)
+// since that clinical context matters specifically for BMI, not height.
+// ══════════════════════════════════════════
+function drawBMIChart() {
+  const setup = setupChartCanvas('bmiChartCanvas');
+  if (!setup) return;
+  const { ctx, W, H, pad, w, h } = setup;
+
+  const child = APP.children[APP.activeChild];
+  const measurements = (APP.activeChildMeasurements || []).slice().reverse();
+  const noteEl = document.getElementById('bmiChartNote');
+
+  if (!child || typeof WHO_BMI_BOYS_5_19 === 'undefined') {
+    drawEmptyChartMessage(ctx, W, H, !child ? 'Add a child profile to see this chart' : 'Reference data not loaded');
+    return;
+  }
+
+  const ageNowYears = (new Date() - new Date(child.date_of_birth)) / (365.25*86400000);
+  const use0to5 = ageNowYears < 5 && typeof WHO_BMI_0_5_BOYS_0_2 !== 'undefined';
+
+  if (noteEl) noteEl.textContent = use0to5
+    ? "BMI-for-age, WHO Child Growth Standards (0–5 years). A screening signal, not a diagnosis — BMI can't distinguish muscle from fat. Bring this chart to your pediatrician."
+    : "BMI-for-age, WHO 2007 Reference (5–19 years). A screening signal, not a diagnosis — BMI can't distinguish muscle from fat, which matters most for very active children.";
+
+  let ageMin, ageMax, sampleAt, yPad;
+
+  if (use0to5) {
+    ageMin = 0; ageMax = 5; yPad = 1.5;
+    sampleAt = (ageYears) => {
+      const ageMonths = ageYears * 12;
+      const table = GrowthPercentile0to5Math.bmiTableFor(ageMonths, child.biological_sex);
+      const { L, M, S } = GrowthPercentile0to5Math.interpolateLMS(table, ageMonths);
+      return { L, M, S, bands: GrowthPercentile0to5Math.deriveBandsFromLMS(table, ageMonths) };
+    };
+  } else {
+    const table = (child.biological_sex === 'female') ? WHO_BMI_GIRLS_5_19 : WHO_BMI_BOYS_5_19;
+    const tableMinYears = table[0][0] / 12, tableMaxYears = table[table.length-1][0] / 12;
+    ageMin = Math.max(tableMinYears, ageNowYears - 3);
+    ageMax = Math.min(tableMaxYears, ageNowYears + 3);
+    if (ageMax - ageMin < 2) {
+      if (ageMin <= tableMinYears) ageMax = Math.min(tableMaxYears, ageMin + 2);
+      else ageMin = Math.max(tableMinYears, ageMax - 2);
+    }
+    yPad = 1.5;
+    sampleAt = (ageYears) => {
+      const ageMonths = ageYears * 12;
+      const { L, M, S } = BMIPercentileMath.interpolateLMS(table, ageMonths);
+      const z = PERCENTILE_Z;
+      const lmsVal = (zz) => Math.abs(L) < 1e-9 ? M*Math.exp(S*zz) : M*Math.pow(1+L*S*zz, 1/L);
+      return { L, M, S, bands: [lmsVal(z.p3), lmsVal(z.p15), lmsVal(z.p50), lmsVal(z.p85), lmsVal(z.p97)] };
+    };
+  }
+
+  function pxForAge(ageYears) {
+    const clamped = Math.max(ageMin, Math.min(ageMax, ageYears));
+    return pad.l + ((clamped - ageMin) / (ageMax - ageMin)) * w;
+  }
+
+  const SAMPLES = use0to5 ? 48 : 24;
+  const sampled = [];
+  for (let i = 0; i <= SAMPLES; i++) {
+    const ageYears = ageMin + (ageMax - ageMin) * (i / SAMPLES);
+    const { L, M, S, bands } = sampleAt(ageYears);
+    const lmsVal = (zz) => Math.abs(L) < 1e-9 ? M*Math.exp(S*zz) : M*Math.pow(1+L*S*zz, 1/L);
+    sampled.push({
+      ageYears, p3: bands[0], p15: bands[1], p50: bands[2], p85: bands[3], p97: bands[4],
+      plus1SD: lmsVal(1), plus2SD: lmsVal(2) // WHO's overweight/obesity cutoffs at this exact age
+    });
+  }
+
+  const allValues = sampled.flatMap(s => [s.p3, s.p97, s.plus2SD]);
+  const yMin = Math.min(...allValues) - yPad;
+  const yMax = Math.max(...allValues) + yPad;
+  function hy(val) { return pad.t + h - ((val - yMin) / (yMax - yMin)) * h; }
+
+  drawChartGridAndAxis(ctx, pad, w, h, ageMin, ageMax, pxForAge);
+
+  fillChartBand(ctx, sampled, pxForAge, hy, 'p3', 'p97', 'rgba(170,179,165,0.18)');
+  drawChartBandLine(ctx, sampled, pxForAge, hy, 'p50', '#7C877A', 1.6);
+
+  // WHO's own clinical thresholds, drawn as dashed reference lines —
+  // this is the part that makes it an "obesity chart," not just a
+  // percentile chart: a parent can see at a glance whether the measured
+  // trend is approaching either cutoff.
+  ctx.setLineDash([4, 3]);
+  drawChartBandLine(ctx, sampled, pxForAge, hy, 'plus1SD', '#9C7A3D', 1.5);
+  drawChartBandLine(ctx, sampled, pxForAge, hy, 'plus2SD', '#C0392B', 1.5);
+  ctx.setLineDash([]);
+
+  const ageAt = dateStr => (new Date(dateStr) - new Date(child.date_of_birth)) / (365.25*86400000);
+  const actual = measurements
+    .filter(m => m.calculated_bmi != null)
+    .map(m => [pxForAge(ageAt(m.recorded_date)), hy(Number(m.calculated_bmi))]);
+
+  if (actual.length > 0) {
+    drawLine(ctx, actual, '#2A5C8A', 3);
+    actual.forEach(([x,y], i) => {
+      const isLatest = i === actual.length - 1;
+      ctx.fillStyle = '#2A5C8A';
+      ctx.beginPath(); ctx.arc(x, y, isLatest ? 5 : 4, 0, 2*Math.PI); ctx.fill();
+      ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(x, y, isLatest ? 2.5 : 2, 0, 2*Math.PI); ctx.fill();
+    });
+  } else {
+    drawEmptyChartMessage(ctx, W, H, 'No measurements logged yet');
   }
 }
 
@@ -2057,6 +2325,7 @@ async function goTab(name) {
   if (name === 'Analytics') {
     await updateStats();
     drawGrowthChart();
+    drawBMIChart();
     drawLabChart();
   }
   if (name === 'Medical') {
@@ -2098,5 +2367,5 @@ function showToast(icon, msg) {
 // Resize chart on orientation change
 window.addEventListener('resize', () => {
   const sc = document.getElementById('screenAnalytics');
-  if (sc.classList.contains('active')) { drawGrowthChart(); drawLabChart(); }
+  if (sc.classList.contains('active')) { drawGrowthChart(); drawBMIChart(); drawLabChart(); }
 });

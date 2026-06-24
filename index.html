@@ -324,6 +324,19 @@
     <div class="screen" id="screenAnalytics">
       <div class="section-hd"><h2>Analytics</h2><p>Trend view — built to bring to a clinic visit</p></div>
 
+      <!-- SGA catch-up growth tracking — only shown for children flagged
+           is_sga, and only meaningful under age 5 (catch-up growth is
+           specifically a 0-5y phenomenon per the clinical guideline this
+           is built from — see FORMULAS.md). Hidden entirely otherwise. -->
+      <div class="velocity-card hidden" id="sgaCatchupCard" style="border-left: 3px solid var(--flag);">
+        <div class="velocity-top">
+          <div><span class="velocity-val" id="sgaVelocitySDS" style="font-size:22px;">—</span><span class="velocity-unit">SDS vs. age/sex median</span></div>
+          <span class="velocity-trend flat" id="sgaCatchupBadge">—</span>
+        </div>
+        <div class="velocity-sub" id="sgaSub">Catch-up growth tracking for SGA birth history — height velocity is considered "catching up" at &gt;0 SDS (faster than the population median for this age/sex).</div>
+        <div class="setup-note" style="margin-top:8px; font-size:10.5px;" id="sgaMonitoringNote"></div>
+      </div>
+
       <!-- Height velocity, the primary clinical metric -->
       <div class="velocity-card">
         <div class="velocity-top">
@@ -383,9 +396,12 @@
         </div>
       </div>
 
-      <!-- Growth chart -->
+      <!-- Growth chart — title is set dynamically by drawGrowthChart()
+           since it switches between the WHO 2007 Reference (5-19y) and
+           the WHO Child Growth Standards (0-5y) depending on the
+           active child's current age. -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured">Height-for-age, WHO 2007 reference</span></div>
+        <div class="card-header"><span class="card-title text-measured" id="growthChartTitle">Height-for-age</span></div>
         <div class="card-body" style="padding-top:8px;">
           <div class="canvas-wrap">
             <canvas id="growthCanvas"></canvas>
@@ -397,8 +413,27 @@
             <span><span style="color:var(--measured);">──</span> measured</span>
             <span style="border-top: 2px dashed var(--estimated); display:inline-block; width:14px; vertical-align:middle;"></span><span> projected</span>
           </div>
-          <div class="setup-note" style="margin-top:10px; font-size:11px;">
+          <div class="setup-note" style="margin-top:10px; font-size:11px;" id="growthChartNote">
             Shaded bands are the official WHO 2007 Growth Reference for school-age children and adolescents (5–19 years), transcribed directly from who.int. This is a population reference, not a diagnosis — bring this chart to your pediatrician for clinical interpretation, especially near the band edges.
+          </div>
+        </div>
+      </div>
+
+      <!-- BMI / obesity chart -->
+      <div class="card">
+        <div class="card-header"><span class="card-title text-measured">BMI-for-age</span></div>
+        <div class="card-body" style="padding-top:8px;">
+          <div class="canvas-wrap">
+            <canvas id="bmiChartCanvas"></canvas>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:8px; font-size:10px; color:var(--text2); flex-wrap:wrap;">
+            <span><span style="display:inline-block; width:12px; height:8px; background:rgba(170,179,165,0.18); vertical-align:middle;"></span> 3rd–97th %ile</span>
+            <span><span style="color:var(--estimated);">┄</span> +1SD overweight cutoff</span>
+            <span><span style="color:var(--flag);">┄</span> +2SD obesity cutoff</span>
+            <span><span style="color:var(--measured);">──</span> measured</span>
+          </div>
+          <div class="setup-note" style="margin-top:10px; font-size:11px;" id="bmiChartNote">
+            BMI-for-age, using WHO's official reference for this child's current age. A screening signal, not a diagnosis — BMI can't distinguish muscle from fat, which matters most for very active children.
           </div>
         </div>
       </div>
@@ -609,6 +644,21 @@
             </select>
           </div>
           <button class="btn-secondary" style="margin-top:4px;" onclick="addChild()">Add child profile</button>
+          <button class="btn-link" style="margin-top:2px; font-size:11.5px;" onclick="toggleBirthDetails(this)">+ Add birth details (for SGA / catch-up growth tracking)</button>
+          <div id="birthDetailsFields" class="hidden" style="display:flex; flex-direction:column; gap:6px; width:100%; margin-top:4px; padding-top:8px; border-top:1px solid var(--border2);">
+            <div class="setup-note" style="font-size:10.5px;">Optional. Only relevant if your child was born preterm or small/large for gestational age — this unlocks a dedicated catch-up-growth view for ages 0-5. SGA status itself isn't auto-detected (the reference charts for that are a genuinely separate, contested dataset from postnatal growth standards) — confirm with your pediatrician and enter it directly below.</div>
+            <div style="display:flex; gap:8px;">
+              <input type="number" id="newChildGestWeeks" class="num-input" placeholder="Gestational age (weeks)" style="flex:1;">
+            </div>
+            <div style="display:flex; gap:8px;">
+              <input type="number" id="newChildBirthWeight" class="num-input" placeholder="Birth weight (kg)" step="0.01" style="flex:1;">
+              <input type="number" id="newChildBirthLength" class="num-input" placeholder="Birth length (cm)" step="0.1" style="flex:1;">
+            </div>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2); margin-top:2px;">
+              <input type="checkbox" id="newChildIsSGA" style="width:16px; height:16px;">
+              Confirmed SGA by a doctor (birth weight/length below -2 SD for gestational age)
+            </label>
+          </div>
         </div>
       </div>
 
@@ -642,6 +692,8 @@
 <script src="growth-percentile.js"></script>
 <script src="who-bmi-reference-data.js"></script>
 <script src="bmi-percentile.js"></script>
+<script src="who-reference-data-0-5.js"></script>
+<script src="growth-percentile-0-5.js"></script>
 <script src="food-reference-data.js"></script>
 <script src="app.js"></script>
 </body>
