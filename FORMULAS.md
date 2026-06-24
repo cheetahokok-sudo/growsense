@@ -11,9 +11,9 @@ a validated clinical calculation, that's called out explicitly.
 
 ---
 
-## 1. BMI (Body Mass Index)
+## 1. BMI (Body Mass Index) and BMI-for-age percentile (implemented 2026-06-23)
 
-**Where:** Postgres generated column, `measurements.calculated_bmi`
+**Raw BMI — where:** Postgres generated column, `measurements.calculated_bmi`
 (computed by the database itself, not by client code)
 
 ```
@@ -23,6 +23,83 @@ calculated_bmi = ROUND( mass_weight_kg / (stature_height_cm / 100)², 1 )
 Standard BMI formula. Generated columns mean this can never drift out of
 sync with the underlying height/weight values — there's exactly one place
 this is computed.
+
+**Why a raw BMI number alone is misleading for a child:** adult BMI has
+fixed cutoffs (18.5/25/30) that don't apply to growing children — a BMI
+of 17 means something different for a 5-year-old than a 15-year-old,
+because body composition changes substantially through childhood. The
+correct approach is BMI-*for-age* percentile against a reference
+population, the same way height-for-age works (see §5).
+
+**BMI-for-age — where:** `who-bmi-reference-data.js`, `bmi-percentile.js`,
+consumed by `updateStats()` (the Analytics BMI card) and
+`refreshActiveChildHistory()` (the growth history table's "Channel"
+column).
+
+**Data source:** the WHO 2007 Growth Reference, BMI-for-age, 5–19 years —
+the **full monthly L/M/S table** (not the coarser band-interpolation
+approach used for height-for-age in §5), transcribed directly from the
+official WHO PDFs at `cdn.who.int` (boys and girls, 168 rows each,
+months 61–228).
+
+**Why full monthly LMS instead of the height-for-age band-interpolation
+shortcut:** BMI-for-age has a genuinely skewed distribution — the L
+(Box-Cox power) parameter ranges from about -1.8 to -0.7 across this age
+span, rather than staying near 1 the way height-for-age's does. That
+skew is large enough that the full Box-Cox transform matters, so this
+implementation uses real L/M/S triplets and the actual formula:
+
+```
+Z = ((BMI/M)^L − 1) / (L·S)        when L ≠ 0
+Z = ln(BMI/M) / S                   when L = 0 (limiting case)
+```
+
+rather than interpolating between five fixed percentile points.
+
+**Verification performed before trusting this data** (168 rows × 2 sexes,
+transcribed by hand from PDF text — a meaningfully larger and more
+error-prone transcription task than height-for-age's percentile bands,
+so it got a correspondingly higher verification bar):
+1. **Structural validation** — every row checked programmatically for:
+   sequential months 61–228 with no gaps or duplicates; percentiles
+   monotonically increasing within every row (3rd < 15th < 50th < ... is
+   a structural property any genuine LMS table must have); no
+   implausible jumps in the median curve month-to-month.
+2. **External cross-check against an independent source** — recomputing
+   +1SD/+2SD BMI from the transcribed L/M/S at age 19 reproduced
+   25.45/29.72 kg/m² (boys) and 24.97/29.67 kg/m² (girls), matching a
+   *separately found* PMC paper on the WHO reference's construction,
+   which stated 25.4/29.7 and 25.0/29.7 — independent confirmation, not
+   just internal consistency.
+3. **Internal formula consistency** — recomputing all 11 published
+   percentile columns from the transcribed L/M/S via the actual Box-Cox
+   formula reproduced WHO's own listed values to within 0.05 kg/m² at
+   every checked point, both sexes.
+
+This is the same verify-before-trust standard adopted after the
+fabricated-citation incident in §7 — checked against independent
+sources, not just internally self-consistent.
+
+**Clinical classification thresholds** — WHO's own stated cutoffs for
+this exact reference (not invented categories):
+
+```
+Z > +2        → obesity
++1 < Z ≤ +2   → overweight
+-2 ≤ Z ≤ +1   → healthy range
+-3 ≤ Z < -2   → thinness
+Z < -3        → severe thinness
+```
+
+**Known limitation:** BMI-for-age is a screening signal, not a
+diagnosis — it can't distinguish muscle mass from fat mass, which
+matters for an athletic child. The UI states this directly next to the
+BMI card rather than only in this file.
+
+**Not yet implemented:** weight-for-age (WHO publishes this 5–10 years
+only) and the under-5 BMI/weight standards, which use a different
+underlying sample than the 5–19y reference — same limitation already
+noted for height-for-age in §5.
 
 ---
 

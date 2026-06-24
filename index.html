@@ -339,6 +339,26 @@
         <div class="velocity-sub" style="margin-top:4px;">Currently tracking near the <strong id="channelPctLbl">15th percentile</strong> for height-for-age.</div>
       </div>
 
+      <!-- BMI-for-age analysis — WHO 2007 Reference, real LMS percentile -->
+      <div class="velocity-card">
+        <div class="velocity-top">
+          <div><span class="velocity-val" id="bmiVal">—</span><span class="velocity-unit">kg/m²</span></div>
+          <span class="velocity-trend flat" id="bmiClassBadge">—</span>
+        </div>
+        <div class="velocity-sub" id="bmiSub">BMI-for-age, from the most recent measurement, using the WHO 2007 Reference (5–19 years).</div>
+        <div class="velocity-channel">
+          <span class="channel-lbl">3rd</span>
+          <div class="channel-bar">
+            <div class="channel-marker" id="bmiChannelMarker" style="left:50%; background:var(--measured);"></div>
+            <div class="channel-marker" id="bmiThreshold1SD" style="left:84%; background:var(--estimated); width:2px; border-radius:0; opacity:0.6;"></div>
+            <div class="channel-marker" id="bmiThreshold2SD" style="left:97.7%; background:var(--flag); width:2px; border-radius:0; opacity:0.6;"></div>
+          </div>
+          <span class="channel-lbl">97th</span>
+        </div>
+        <div class="velocity-sub" style="margin-top:4px;">Currently tracking near the <strong id="bmiPctLbl">50th percentile</strong> for BMI-for-age.</div>
+        <div class="setup-note" style="margin-top:8px; font-size:10.5px;">Thresholds shown: amber mark = WHO overweight cutoff (&gt;+1SD), red mark = obesity cutoff (&gt;+2SD). BMI-for-age is a screening signal, not a diagnosis — body composition (muscle vs. fat) isn't distinguished by BMI alone.</div>
+      </div>
+
       <!-- Stats grid -->
       <div class="stat-grid">
         <div class="stat-card">
@@ -620,6 +640,8 @@
 
 <script src="who-reference-data.js"></script>
 <script src="growth-percentile.js"></script>
+<script src="who-bmi-reference-data.js"></script>
+<script src="bmi-percentile.js"></script>
 <script src="food-reference-data.js"></script>
 <script src="app.js"></script>
 </body>

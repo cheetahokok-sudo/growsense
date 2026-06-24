@@ -1340,9 +1340,29 @@ async function refreshActiveChildHistory() {
     return;
   }
 
+  const child = APP.children[APP.activeChild];
+
   tb.innerHTML = data.map(m => {
     const fmt = new Date(m.recorded_date).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
-    return `<tr><td>${fmt}</td><td>${Number(m.stature_height_cm).toFixed(1)}</td><td>${Number(m.mass_weight_kg).toFixed(1)}</td><td>${m.calculated_bmi ?? '—'}</td><td><span class="pct-pill badge-measured">—</span></td></tr>`;
+
+    // Real BMI-for-age percentile (WHO 2007 Reference, full LMS method —
+    // see bmi-percentile.js) replaces the permanent "—" placeholder this
+    // column previously showed, since real percentile math wasn't wired
+    // up before now.
+    let channelCell = '<span class="pct-pill badge-measured">—</span>';
+    if (child && child.date_of_birth && m.calculated_bmi != null && typeof calculateBMIPercentile === 'function') {
+      const ageYears = (new Date(m.recorded_date) - new Date(child.date_of_birth)) / (365.25 * 86400000);
+      const result = calculateBMIPercentile(Number(m.calculated_bmi), ageYears, child.biological_sex);
+      if (result && !result.outOfRange) {
+        const pctLabel = result.percentile < 1 ? '<1st' : result.percentile > 99 ? '>99th' : Math.round(result.percentile) + 'th';
+        const badgeClass = result.classification === 'obesity' || result.classification === 'severe_thinness' ? 'badge-flag'
+          : result.classification === 'overweight' || result.classification === 'thinness' ? 'badge-estimated'
+          : 'badge-measured';
+        channelCell = `<span class="pct-pill ${badgeClass}" title="${result.classification.replace('_',' ')}">${pctLabel}</span>`;
+      }
+    }
+
+    return `<tr><td>${fmt}</td><td>${Number(m.stature_height_cm).toFixed(1)}</td><td>${Number(m.mass_weight_kg).toFixed(1)}</td><td>${m.calculated_bmi ?? '—'}</td><td>${channelCell}</td></tr>`;
   }).join('');
 }
 
@@ -1495,6 +1515,66 @@ async function updateStats() {
         : Math.round(result.percentile) + (result.percentile < 50 ? 'th' : result.percentile < 85 ? 'th' : 'th') + ' percentile';
       channelLbl.textContent = `${displayPct} for height-for-age (WHO 2007 reference, z=${result.zScore.toFixed(2)})`;
       APP.lastPercentileResult = result; // cached for drawGrowthChart()'s overlay
+    }
+  }
+
+  // BMI-for-age — same pattern as the height percentile above, using
+  // the WHO 2007 BMI-for-age reference and the full Box-Cox LMS method
+  // (see bmi-percentile.js). Uses the database's own generated
+  // calculated_bmi column rather than recomputing BMI client-side, so
+  // there's exactly one place BMI is calculated (the Postgres generated
+  // column), matching the principle already applied to total_protein_g.
+  const bmiVal = document.getElementById('bmiVal');
+  const bmiClassBadge = document.getElementById('bmiClassBadge');
+  const bmiSub = document.getElementById('bmiSub');
+  const bmiChannelMarker = document.getElementById('bmiChannelMarker');
+  const bmiPctLbl = document.getElementById('bmiPctLbl');
+
+  if (!child || !latestMeasurement || latestMeasurement.calculated_bmi == null || typeof calculateBMIPercentile !== 'function') {
+    bmiVal.textContent = '—';
+    bmiClassBadge.textContent = 'no data';
+    bmiClassBadge.className = 'velocity-trend flat';
+    bmiPctLbl.textContent = 'not available';
+  } else {
+    const ageYears = (new Date(latestMeasurement.recorded_date) - new Date(child.date_of_birth)) / (365.25 * 86400000);
+    const bmiResult = calculateBMIPercentile(Number(latestMeasurement.calculated_bmi), ageYears, child.biological_sex);
+
+    bmiVal.textContent = Number(latestMeasurement.calculated_bmi).toFixed(1);
+
+    if (!bmiResult) {
+      bmiClassBadge.textContent = 'unavailable';
+      bmiClassBadge.className = 'velocity-trend flat';
+      bmiPctLbl.textContent = 'reference data unavailable';
+    } else if (bmiResult.outOfRange) {
+      bmiClassBadge.textContent = 'out of range';
+      bmiClassBadge.className = 'velocity-trend flat';
+      bmiPctLbl.textContent = `WHO 5–19y reference doesn't cover this age (${ageYears.toFixed(1)}y)`;
+    } else {
+      // Marker position on the same 3rd-97th visual scale as the height
+      // card, for consistent left-to-right reading across both cards.
+      const clampedZ = Math.max(PERCENTILE_Z.p3, Math.min(PERCENTILE_Z.p97, bmiResult.zScore));
+      const pct = ((clampedZ - PERCENTILE_Z.p3) / (PERCENTILE_Z.p97 - PERCENTILE_Z.p3)) * 100;
+      bmiChannelMarker.style.left = pct.toFixed(1) + '%';
+
+      const displayPct = bmiResult.percentile < 1 ? '<1st'
+        : bmiResult.percentile > 99 ? '>99th'
+        : Math.round(bmiResult.percentile) + 'th percentile';
+      bmiPctLbl.textContent = `${displayPct} for BMI-for-age (WHO 2007 reference, z=${bmiResult.zScore.toFixed(2)})`;
+
+      // WHO's own stated classification labels and color treatment —
+      // amber for the single-threshold categories, red (flag) for the
+      // double-threshold ones, matching the badge convention used
+      // elsewhere in the app for measured-vs-flagged data.
+      const classLabels = {
+        obesity: 'obesity range', overweight: 'overweight range',
+        healthy_range: 'healthy range', thinness: 'thinness range', severe_thinness: 'severe thinness'
+      };
+      const classTrend = {
+        obesity: 'down', overweight: 'down', healthy_range: 'flat', thinness: 'down', severe_thinness: 'down'
+      };
+      bmiClassBadge.textContent = classLabels[bmiResult.classification] || bmiResult.classification;
+      bmiClassBadge.className = 'velocity-trend ' + (classTrend[bmiResult.classification] || 'flat');
+      if (bmiResult.classification === 'healthy_range') bmiClassBadge.className = 'velocity-trend up';
     }
   }
 }
