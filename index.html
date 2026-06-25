@@ -399,9 +399,18 @@
       <!-- Growth chart — title is set dynamically by drawGrowthChart()
            since it switches between the WHO 2007 Reference (5-19y) and
            the WHO Child Growth Standards (0-5y) depending on the
-           active child's current age. -->
+           active child's current age. The WHO/Thai toggle only appears
+           for children 2y+ (the Thai approximate data's covered range)
+           — see thai-reference-data-approx.js for why this is labeled
+           "approximate," not "reference," in the UI itself. -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured" id="growthChartTitle">Height-for-age</span></div>
+        <div class="card-header">
+          <span class="card-title text-measured" id="growthChartTitle">Height-for-age</span>
+          <div class="seg hidden" id="referenceToggle" style="width:auto; min-width:140px;">
+            <button class="seg-btn active" data-ref="who" onclick="setReferenceStandard('who', this)">WHO</button>
+            <button class="seg-btn" data-ref="thai" onclick="setReferenceStandard('thai', this)">Thai (approx.)</button>
+          </div>
+        </div>
         <div class="card-body" style="padding-top:8px;">
           <div class="canvas-wrap">
             <canvas id="growthCanvas"></canvas>
@@ -418,6 +427,7 @@
           </div>
         </div>
       </div>
+
 
       <!-- BMI / obesity chart -->
       <div class="card">
@@ -694,6 +704,7 @@
 <script src="bmi-percentile.js"></script>
 <script src="who-reference-data-0-5.js"></script>
 <script src="growth-percentile-0-5.js"></script>
+<script src="thai-reference-data-approx.js"></script>
 <script src="food-reference-data.js"></script>
 <script src="app.js"></script>
 </body>

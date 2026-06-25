@@ -33,7 +33,8 @@ const APP = {
   signupRole: 'parent_subscriber',
   logDate: todayISO(),    // which date the Today screen is currently editing — defaults to today, changeable via the date selector
   nutritionLogItems: [],  // nutrition_log_items rows for the active child + logDate, loaded fresh on date/child change
-  activeMealSlot: 'breakfast' // which meal new food-card taps get tagged with; defaults to breakfast each load (see setMealSlot)
+  activeMealSlot: 'breakfast', // which meal new food-card taps get tagged with; defaults to breakfast each load (see setMealSlot)
+  referenceStandard: 'who' // 'who' or 'thai' — which growth chart reference is displayed; see setReferenceStandard()
 };
 
 function todayISO() {
@@ -878,6 +879,18 @@ function setMealSlot(meal, btn) {
   APP.activeMealSlot = meal;
   document.querySelectorAll('#mealSlotSeg .seg-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+}
+
+// Switches which reference dataset the growth chart overlays — WHO
+// (default, verified) or Thai (approximate, hand-read from a chart
+// image — see thai-reference-data-approx.js for exactly why it's
+// labeled that way and what that means for precision). Only the height
+// chart switches; the BMI chart has no Thai data and stays WHO-only.
+function setReferenceStandard(standard, btn) {
+  APP.referenceStandard = standard;
+  document.querySelectorAll('#referenceToggle .seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  drawGrowthChart();
 }
 
 // ══════════════════════════════════════════
@@ -1807,9 +1820,22 @@ function drawGrowthChart() {
   const ageNowYears = (new Date() - new Date(child.date_of_birth)) / (365.25*86400000);
   const use0to5 = ageNowYears < 5 && typeof WHO_HFA_BOYS_0_2 !== 'undefined';
 
-  if (titleEl) titleEl.textContent = use0to5 ? 'Length/Height-for-age (WHO Child Growth Standards)' : 'Height-for-age (WHO 2007 Reference)';
+  // The Thai approximate toggle only makes sense where that data exists
+  // (2-19y, per the source chart) and only for height (no Thai BMI data
+  // was extracted). Hide it entirely outside that range rather than
+  // showing a toggle that does nothing.
+  const toggleEl = document.getElementById('referenceToggle');
+  const thaiAvailable = !use0to5 && typeof THAI_HFA_BOYS_APPROX !== 'undefined' && ageNowYears >= 2;
+  if (toggleEl) toggleEl.classList.toggle('hidden', !thaiAvailable);
+  const showThai = thaiAvailable && APP.referenceStandard === 'thai';
+
+  if (titleEl) titleEl.textContent = use0to5 ? 'Length/Height-for-age (WHO Child Growth Standards)'
+    : showThai ? 'Height-for-age (Thai national reference — approximate)'
+    : 'Height-for-age (WHO 2007 Reference)';
   if (noteEl) noteEl.textContent = use0to5
     ? 'Shaded bands are the official WHO Child Growth Standards (0–5 years), transcribed directly from who.int. Curve shape reflects real early-childhood growth deceleration, not a straight-line approximation. Measured 0–2y as recumbent length, 2–5y as standing height — bring this chart to your pediatrician.'
+    : showThai
+    ? 'These bands are read by eye from a printed Thai Society for Pediatric Endocrinology chart (citing 2020 Ministry of Public Health national data) — not transcribed from an official numeric table, since none was found published openly. Treat as a rough visual comparison only, not a clinically precise reference. Only 3rd/50th/97th percentiles are shown.'
     : 'Shaded bands are the official WHO 2007 Growth Reference for school-age children and adolescents (5–19 years), transcribed directly from who.int. This is a population reference, not a diagnosis — bring this chart to your pediatrician for clinical interpretation, especially near the band edges.';
 
   let ageMin, ageMax, sampleBandsAt, yPad;
@@ -1824,6 +1850,37 @@ function drawGrowthChart() {
       const ageMonths = ageYears * 12;
       const table = GrowthPercentile0to5Math.heightTableFor(ageMonths, child.biological_sex);
       return GrowthPercentile0to5Math.deriveBandsFromLMS(table, ageMonths);
+    };
+  } else if (showThai) {
+    const thaiTable = (child.biological_sex === 'female') ? THAI_HFA_GIRLS_APPROX : THAI_HFA_BOYS_APPROX;
+    const tableMinYears = thaiTable[0][0], tableMaxYears = thaiTable[thaiTable.length-1][0];
+    ageMin = Math.max(tableMinYears, ageNowYears - 3);
+    ageMax = Math.min(tableMaxYears, ageNowYears + 3);
+    if (ageMax - ageMin < 2) {
+      if (ageMin <= tableMinYears) ageMax = Math.min(tableMaxYears, ageMin + 2);
+      else ageMin = Math.max(tableMinYears, ageMax - 2);
+    }
+    yPad = 3;
+    // Simple linear interpolation between whole-year rows — the Thai
+    // approximate data only has yearly resolution to begin with (read
+    // off a chart with year gridlines), so anything fancier here would
+    // be manufacturing false precision the source data doesn't have.
+    sampleBandsAt = (ageYears) => {
+      const rows = thaiTable;
+      let row0 = rows[0], row1 = rows[rows.length-1];
+      for (let i = 0; i < rows.length - 1; i++) {
+        if (ageYears >= rows[i][0] && ageYears <= rows[i+1][0]) { row0 = rows[i]; row1 = rows[i+1]; break; }
+      }
+      const frac = row1[0] === row0[0] ? 0 : (ageYears - row0[0]) / (row1[0] - row0[0]);
+      const p3 = row0[1] + frac*(row1[1]-row0[1]);
+      const p50 = row0[2] + frac*(row1[2]-row0[2]);
+      const p97 = row0[3] + frac*(row1[3]-row0[3]);
+      // Only 3 lines exist for Thai data — return the same 5-value shape
+      // the chart expects by reusing p50 for the missing p15/p85 slots,
+      // so the inner shaded band simply doesn't render a meaningfully
+      // different region (rendered visually thin/absent) rather than
+      // guessing values that were never read off the chart.
+      return [p3, p50, p50, p50, p97];
     };
   } else {
     const table = (child.biological_sex === 'female') ? WHO_HFA_GIRLS_5_19 : WHO_HFA_BOYS_5_19;
@@ -1862,12 +1919,18 @@ function drawGrowthChart() {
   drawChartGridAndAxis(ctx, pad, w, h, ageMin, ageMax, pxForAge);
 
   fillChartBand(ctx, sampled, pxForAge, hy, 'p3', 'p97', 'rgba(170,179,165,0.18)');
-  fillChartBand(ctx, sampled, pxForAge, hy, 'p15', 'p85', 'rgba(170,179,165,0.30)');
   drawChartBandLine(ctx, sampled, pxForAge, hy, 'p3', '#D7DCD2', 1.2);
-  drawChartBandLine(ctx, sampled, pxForAge, hy, 'p15', '#AAB3A5', 1.4);
   drawChartBandLine(ctx, sampled, pxForAge, hy, 'p50', '#7C877A', 1.6);
-  drawChartBandLine(ctx, sampled, pxForAge, hy, 'p85', '#AAB3A5', 1.4);
   drawChartBandLine(ctx, sampled, pxForAge, hy, 'p97', '#D7DCD2', 1.2);
+  if (!showThai) {
+    // 15th/85th bands only exist for WHO data — Thai approximate data
+    // only has 3rd/50th/97th (see thai-reference-data-approx.js), so
+    // drawing these here would just re-trace the same p50 line twice
+    // with no new information.
+    fillChartBand(ctx, sampled, pxForAge, hy, 'p15', 'p85', 'rgba(170,179,165,0.30)');
+    drawChartBandLine(ctx, sampled, pxForAge, hy, 'p15', '#AAB3A5', 1.4);
+    drawChartBandLine(ctx, sampled, pxForAge, hy, 'p85', '#AAB3A5', 1.4);
+  }
 
   // Plot this child's actual measurements. Under the 0-5y branch, apply
   // the same recumbent/standing 0.7cm convention used by the percentile

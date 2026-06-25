@@ -445,6 +445,118 @@ past it.
 
 ---
 
+## 5d. WHO/Thai reference toggle on the height chart (implemented 2026-06-24)
+
+**Where:** `thai-reference-data-approx.js`, the `referenceToggle` UI on
+the Analytics height chart, `setReferenceStandard()` in `app.js`.
+
+**This is the one dataset in GrowSense that is NOT independently
+verified, and that's stated deliberately and repeatedly — in the data
+file's own header comment, in the chart's note text when Thai is
+selected, and here. Read this before extending it.**
+
+**What it is:** approximate 3rd/50th/97th percentile height-for-age
+values for ages 2–19, for comparing against the WHO reference — useful
+specifically for international-school contexts where a child's peer
+group spans both an international/expat population (WHO reference fits
+better) and the local Thai population (where a national reference would
+fit better, if one were available in verified form).
+
+**Source and why it's only approximate:** read by eye from a printed
+chart ("Boys/Girls aged 2-19 years: Height and Weight," Thai Society for
+Pediatric Endocrinology, 2022), which itself cites "National Growth
+References for children aged 5-19 years, 2020, Bureau of Nutrition,
+Department of Health, Ministry of Public Health" as its underlying data.
+Multiple targeted searches for an openly-published, structured Thai
+national LMS/percentile table came up empty — what exists in the
+literature is citations to this chart's existence, not a downloadable
+dataset. A real candidate (SEANUTS, a peer-reviewed multi-country study)
+was checked and rejected for this purpose: its data is pooled across 4
+countries (not Thailand-specific — the paper's own stated conclusion was
+to use the pooled values, not country-specific ones), only covers ages
+0.5–12y (not 2–19y), and its actual L/M/S values are in a supplementary
+file that wasn't accessible to transcribe. Using it under a "Thai" label
+would have been inaccurate in a way this project has specifically tried
+to avoid (see §7's review of the external "v2.0" document, where exactly
+this kind of mislabeling was the core problem).
+
+**What "approximate" means concretely:** values were estimated against
+the chart's printed gridlines, not transcribed from a numeric source.
+Only 3 of the chart's 7 percentile lines were extracted (3rd/50th/97th,
+not P10/P25/P75/P90) to limit how much could be misread. The only
+checks performed were basic sanity checks (P3 < P50 < P97 at every age;
+no decrease in height as age increases) — there was no independent
+secondary source to cross-check against, unlike every other dataset in
+this app. One specific finding worth flagging for whoever revisits this:
+the eyeballed Thai median came out very close to the verified WHO median
+at several test ages (110 vs 110.0 at age 5, 137 vs 137.8 at age 10,
+163 vs 163.0 at age 14) — this could mean Thai and WHO medians genuinely
+are close while other percentiles diverge more, or it could mean the
+eyeballing wasn't precise enough to detect a real difference. This isn't
+resolved and shouldn't be treated as a finding either way.
+
+**2026-06-24 update — new source files, one new indicator added, no
+change to existing height-for-age numbers:** newer, cleaner vector-PDF
+versions of the Thai charts were supplied, plus two chart types not
+previously available: 0-2y length/weight (confirmed to cite the same
+WHO 2006 standard already verified and built into
+`who-reference-data-0-5.js` — nothing new there, no extraction needed)
+and weight-for-height (a genuinely new indicator, now added as
+`THAI_WFH_BOYS_APPROX`/`THAI_WFH_GIRLS_APPROX`, same eye-read method and
+caveats as the height-for-age data). The existing height-for-age numbers
+were re-checked against the clearer chart renders and held up — no
+revision needed.
+
+**A real attempt was made to extract exact values from the PDF's
+embedded vector data** (these PDFs contain genuine curve coordinate
+objects, not just flat images) rather than reading by eye. It was
+abandoned after producing internally contradictory results — depending
+on which curve-to-percentile-label matching heuristic was tried, the
+same data alternately implied physically impossible results (height
+decreasing with age) or required matches that couldn't be verified with
+confidence. Per this project's standing rule of not shipping numbers
+that fail their own consistency checks, that path was dropped in favor
+of continuing with the eye-read method, which has a known and stated
+error profile rather than an unresolved, possibly-larger one. Full
+technical note is in `thai-reference-data-approx.js`'s header for
+whoever wants to retry the extraction with a more rigorous approach.
+
+**UI behavior:** the toggle only appears for children aged 2+ (the
+approximate data's covered range) and never for the 0-5y chart (no Thai
+data exists for that range at all). Selecting Thai shows only the outer
+3rd-97th band (no inner 15th-85th band, since that data wasn't
+extracted) and replaces the chart note with explicit "approximate, read
+by eye" language — it should never visually look as confident as the
+WHO bands. (Weight-for-height is added to the data file as of this
+update but not yet wired into any chart UI — that's a separate piece of
+work from today's data session.)
+
+**Independent corroboration check, 2026-06-24:** a third-party Python
+script claiming to encode the same TSPE 2022/Thai 2020 reference (via
+PCHIP interpolation from height anchor points) was actually run and
+checked against this file's data, not just read. Its Z-score constants
+are correct, its output passes the same structural checks used
+throughout this project, and — most usefully — its age-2 boundary value
+matches this app's own independently-verified WHO 2-5y data to within
+0.1-0.2cm. Direct comparison against this file's eye-read anchors at 8
+ages gave an average absolute difference of 1.09cm. This is treated as
+corroborating evidence the values here are in a reasonable range — not
+as independent verification, since the script's own anchors have no
+stated extraction method or citation trail and could be another
+estimate of the same uncertain quantity rather than a true source. No
+values in this file were changed as a result. Full detail in
+`thai-reference-data-approx.js`'s header.
+
+**If real Thai national LMS data becomes available later:** replace
+this file's contents with the real numbers, run it through the same
+verification process as every other dataset in this app (structural
+checks, independent cross-check if any secondary source exists, internal
+LMS-formula consistency if L/M/S parameters are available), and update
+both the file header and the chart's note text to drop the "approximate"
+language once that's actually true.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table
