@@ -445,6 +445,48 @@ past it.
 
 ---
 
+## 5e. Full-timeline (0–19y) chart view (implemented 2026-06-25)
+
+**Where:** `chartZoomToggle` UI, `setChartZoom()`, and the `isFullTimeline`
+branch inside `drawGrowthChart()` in `app.js`.
+
+**What it is:** a second toggle, independent of the WHO/Thai one (§5d),
+switching between the existing "zoomed to current age" view (±3y window,
+or the full 0-5y window for younger children — unchanged default
+behavior) and a new "full timeline" view that always shows the entire
+birth-to-19-years span in one chart. Useful for a parent or doctor
+reviewing the overall growth trajectory at a glance — from birth through
+puberty — rather than the day-to-day working view centered on the
+child's current age.
+
+**How the stitching works:** there is no single dataset spanning 0-19
+years — WHO publishes the 0-5y Child Growth Standards and the 5-19y 2007
+Reference as two separate studies (see §5b), and the Thai approximate
+data only covers 2-19y (§5d). The full-timeline view's band-sampling
+function switches data source mid-chart at the real boundary: WHO 0-5y
+→ WHO 5-19y (when the WHO reference is selected), or WHO 0-2y → Thai
+2-19y approximate (when Thai is selected, since Thai has no data below
+age 2). This produces one continuous-looking curve, but a **small, real,
+visible jump at the seam is expected and intentional** — checked
+directly: the WHO-only seam at age 5 is about 0.39cm, consistent with
+these being genuinely separate studies rather than one continuous
+dataset artificially smoothed together. The chart's note text says this
+explicitly when full-timeline mode is active, rather than hiding it.
+
+**Measurement plotting across the seam:** a single full-timeline chart
+can show measurements taken before AND after age 5 together. The
+recumbent/standing 0.7cm conversion (§5b) is applied **per measurement,
+based on that measurement's own age** — not as a single chart-wide
+setting — so a measurement taken at 18 months and another taken at age 9
+each get the correct treatment on the same chart.
+
+**Resolution:** 76 samples across the full 0-19y span (vs 48 for the
+0-5y-only view, 24 for the zoomed 5-19y view) — enough to keep the early,
+fast-bending part of the curve visually smooth even though it's now a
+small fraction of a much wider chart.
+
+---
+
 ## 5d. WHO/Thai reference toggle on the height chart (implemented 2026-06-24)
 
 **Where:** `thai-reference-data-approx.js`, the `referenceToggle` UI on

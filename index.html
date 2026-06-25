@@ -411,7 +411,11 @@
             <button class="seg-btn" data-ref="thai" onclick="setReferenceStandard('thai', this)">Thai (approx.)</button>
           </div>
         </div>
-        <div class="card-body" style="padding-top:8px;">
+        <div class="card-body" style="padding-top:0;">
+          <div class="seg" id="chartZoomToggle" style="margin-bottom:8px;">
+            <button class="seg-btn active" data-zoom="auto" onclick="setChartZoom('auto', this)">Zoomed (this age)</button>
+            <button class="seg-btn" data-zoom="full" onclick="setChartZoom('full', this)">Full timeline (0–19y)</button>
+          </div>
           <div class="canvas-wrap">
             <canvas id="growthCanvas"></canvas>
           </div>

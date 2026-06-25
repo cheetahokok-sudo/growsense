@@ -34,7 +34,8 @@ const APP = {
   logDate: todayISO(),    // which date the Today screen is currently editing — defaults to today, changeable via the date selector
   nutritionLogItems: [],  // nutrition_log_items rows for the active child + logDate, loaded fresh on date/child change
   activeMealSlot: 'breakfast', // which meal new food-card taps get tagged with; defaults to breakfast each load (see setMealSlot)
-  referenceStandard: 'who' // 'who' or 'thai' — which growth chart reference is displayed; see setReferenceStandard()
+  referenceStandard: 'who', // 'who' or 'thai' — which growth chart reference is displayed; see setReferenceStandard()
+  chartZoom: 'auto' // 'auto' (zoomed to current age, existing behavior) or 'full' (always shows 0-19y) — see setChartZoom()
 };
 
 function todayISO() {
@@ -889,6 +890,18 @@ function setMealSlot(meal, btn) {
 function setReferenceStandard(standard, btn) {
   APP.referenceStandard = standard;
   document.querySelectorAll('#referenceToggle .seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  drawGrowthChart();
+}
+
+// Switches between the existing "zoomed to current age" view and a new
+// "full timeline" view showing the entire 0-19y span at once — useful
+// for a parent or doctor reviewing the whole growth trajectory from
+// birth through puberty in one glance, rather than the day-to-day
+// working view.
+function setChartZoom(zoom, btn) {
+  APP.chartZoom = zoom;
+  document.querySelectorAll('#chartZoomToggle .seg-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   drawGrowthChart();
 }
@@ -1829,10 +1842,25 @@ function drawGrowthChart() {
   if (toggleEl) toggleEl.classList.toggle('hidden', !thaiAvailable);
   const showThai = thaiAvailable && APP.referenceStandard === 'thai';
 
-  if (titleEl) titleEl.textContent = use0to5 ? 'Length/Height-for-age (WHO Child Growth Standards)'
+  const isFullTimeline = APP.chartZoom === 'full';
+
+  // Hide the zoom toggle entirely if the data doesn't support a
+  // meaningful "full timeline" (e.g. reference data missing) — in
+  // practice this should always be available once who-reference-data.js
+  // and who-reference-data-0-5.js are both loaded, which they always are.
+  const zoomToggleEl = document.getElementById('chartZoomToggle');
+  if (zoomToggleEl) zoomToggleEl.classList.remove('hidden');
+
+  if (titleEl) titleEl.textContent = isFullTimeline
+    ? (showThai ? 'Height-for-age, birth–19y (WHO 0–2y + Thai 2–19y, approximate)' : 'Height-for-age, birth–19y (WHO reference)')
+    : use0to5 ? 'Length/Height-for-age (WHO Child Growth Standards)'
     : showThai ? 'Height-for-age (Thai national reference — approximate)'
     : 'Height-for-age (WHO 2007 Reference)';
-  if (noteEl) noteEl.textContent = use0to5
+  if (noteEl) noteEl.textContent = isFullTimeline
+    ? (showThai
+        ? 'Full-timeline view, birth to 19 years: WHO Child Growth Standards (0–2y) stitched to the Thai approximate reference (2–19y, read by eye — see above). A small jump where the two sources meet at age 2 is expected, since they come from different studies.'
+        : 'Full-timeline view, birth to 19 years: the WHO Child Growth Standards (0–5y) stitched to the WHO 2007 Reference (5–19y). A small jump where the two sources meet at age 5 is expected and real — these are two separate WHO studies, not one continuous dataset. Useful for an overall visual of the growth trajectory from birth through puberty; use the zoomed view for day-to-day tracking.')
+    : use0to5
     ? 'Shaded bands are the official WHO Child Growth Standards (0–5 years), transcribed directly from who.int. Curve shape reflects real early-childhood growth deceleration, not a straight-line approximation. Measured 0–2y as recumbent length, 2–5y as standing height — bring this chart to your pediatrician.'
     : showThai
     ? 'These bands are read by eye from a printed Thai Society for Pediatric Endocrinology chart (citing 2020 Ministry of Public Health national data) — not transcribed from an official numeric table, since none was found published openly. Treat as a rough visual comparison only, not a clinically precise reference. Only 3rd/50th/97th percentiles are shown.'
@@ -1840,7 +1868,42 @@ function drawGrowthChart() {
 
   let ageMin, ageMax, sampleBandsAt, yPad;
 
-  if (use0to5) {
+  if (isFullTimeline) {
+    // One continuous function spanning the entire 0-19y axis, switching
+    // data source at the real seam (age 5 for WHO-only, age 2 for the
+    // Thai branch where Thai data starts). Returns the same 5-value
+    // [p3,p15,p50,p85,p97] shape every other branch uses, with p15/p85
+    // collapsed to p50 in whichever segment only has 3 percentile lines
+    // (the Thai segment), same convention as the existing Thai branch.
+    ageMin = 0; ageMax = 19; yPad = 3;
+    const sex = child.biological_sex;
+    sampleBandsAt = (ageYears) => {
+      if (showThai) {
+        if (ageYears < 2) {
+          const ageMonths = ageYears * 12;
+          const table = GrowthPercentile0to5Math.heightTableFor(ageMonths, sex);
+          return GrowthPercentile0to5Math.deriveBandsFromLMS(table, ageMonths);
+        }
+        const thaiTable = (sex === 'female') ? THAI_HFA_GIRLS_APPROX : THAI_HFA_BOYS_APPROX;
+        let row0 = thaiTable[0], row1 = thaiTable[thaiTable.length-1];
+        for (let i = 0; i < thaiTable.length - 1; i++) {
+          if (ageYears >= thaiTable[i][0] && ageYears <= thaiTable[i+1][0]) { row0 = thaiTable[i]; row1 = thaiTable[i+1]; break; }
+        }
+        const frac = row1[0] === row0[0] ? 0 : (ageYears - row0[0]) / (row1[0] - row0[0]);
+        const p3 = row0[1] + frac*(row1[1]-row0[1]);
+        const p50 = row0[2] + frac*(row1[2]-row0[2]);
+        const p97 = row0[3] + frac*(row1[3]-row0[3]);
+        return [p3, p50, p50, p50, p97];
+      }
+      if (ageYears < 5) {
+        const ageMonths = ageYears * 12;
+        const table = GrowthPercentile0to5Math.heightTableFor(ageMonths, sex);
+        return GrowthPercentile0to5Math.deriveBandsFromLMS(table, ageMonths);
+      }
+      const table519 = (sex === 'female') ? WHO_HFA_GIRLS_5_19 : WHO_HFA_BOYS_5_19;
+      return GrowthPercentileMath.interpolateBands(table519, ageYears * 12);
+    };
+  } else if (use0to5) {
     // Always show the full 0-5y window — unlike the 5-19y chart's
     // rolling ±3y window, early-childhood growth changes shape so fast
     // that a partial window would hide the deceleration curve this
@@ -1900,10 +1963,13 @@ function drawGrowthChart() {
     return pad.l + ((clamped - ageMin) / (ageMax - ageMin)) * w;
   }
 
-  // More samples for the 0-5y chart than the 5-19y one (48 vs 24) since
-  // the curve genuinely bends faster in early months — more points keep
-  // that real curvature visually smooth rather than visibly faceted.
-  const SAMPLES = use0to5 ? 48 : 24;
+  // More samples for views that include the 0-5y region (use0to5, or
+  // full-timeline which always includes it) — the curve genuinely bends
+  // faster in early months, so more points keep that real curvature
+  // visually smooth rather than visibly faceted. Full-timeline gets the
+  // most samples since it covers the steep early region AND the long
+  // flatter tail in one chart.
+  const SAMPLES = isFullTimeline ? 76 : use0to5 ? 48 : 24;
   const sampled = [];
   for (let i = 0; i <= SAMPLES; i++) {
     const ageYears = ageMin + (ageMax - ageMin) * (i / SAMPLES);
@@ -1932,17 +1998,19 @@ function drawGrowthChart() {
     drawChartBandLine(ctx, sampled, pxForAge, hy, 'p85', '#AAB3A5', 1.4);
   }
 
-  // Plot this child's actual measurements. Under the 0-5y branch, apply
-  // the same recumbent/standing 0.7cm convention used by the percentile
-  // calc itself — height shown on the chart should be on whichever
-  // measurement basis matches the age it's plotted at, exactly the same
-  // logic calculateHeightPercentile0to5() applies, so the chart and the
-  // numeric percentile reading never disagree with each other.
+  // Plot this child's actual measurements. Apply the recumbent/standing
+  // 0.7cm convention PER MEASUREMENT based on that measurement's own
+  // age — not a single chart-wide flag — since full-timeline mode can
+  // show both <5y and 5y+ measurements on the same chart, each needing
+  // whichever convention matches its own age. This matches exactly what
+  // calculateHeightPercentile0to5() does per-measurement elsewhere, so
+  // the chart and the numeric percentile reading never disagree.
   const ageAt = dateStr => (new Date(dateStr) - new Date(child.date_of_birth)) / (365.25*86400000);
   const actual = measurements.map(m => {
     const ageYears = ageAt(m.recorded_date);
     let heightCm = Number(m.stature_height_cm);
-    if (use0to5) {
+    const needsConversion = isFullTimeline ? ageYears < 5 : use0to5;
+    if (needsConversion) {
       const ageMonths = ageYears * 12;
       const { value } = GrowthPercentile0to5Math.resolveHeightTableAndValue(heightCm, ageMonths, child.biological_sex, ageMonths < 24 ? 'recumbent' : 'standing');
       heightCm = value;
