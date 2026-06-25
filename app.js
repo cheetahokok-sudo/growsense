@@ -37,7 +37,8 @@ const APP = {
   referenceStandard: 'who', // 'who' or 'thai' — which growth chart reference is displayed; see setReferenceStandard()
   chartZoom: 'auto', // 'auto' (zoomed to current age, existing behavior) or 'full' (always shows 0-19y) — see setChartZoom()
   labResults: [],    // lab_results rows for the active child, loaded when the Medical tab opens
-  pubertyEvents: []  // puberty_events rows for the active child, loaded when the Medical tab opens
+  pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
+  familyHeightRecords: [] // family_height_records rows - reference only, never used in calculateAndShowTargetHeight()
 };
 
 function todayISO() {
@@ -907,6 +908,151 @@ function setChartZoom(zoom, btn) {
   document.querySelectorAll('#chartZoomToggle .seg-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   drawGrowthChart();
+}
+
+// ══════════════════════════════════════════
+// TARGET (MID-PARENTAL) HEIGHT — see target-height.js for the full
+// method and citations. This function just reads the form, calls the
+// calculation, and displays every value transparently — no hidden
+// substitution of any entered height, per the design decision recorded
+// in target-height.js's header.
+// ══════════════════════════════════════════
+function calculateAndShowTargetHeight() {
+  const child = APP.children[APP.activeChild];
+  if (!child) { showToast('⚠️', 'Add a child profile first'); return; }
+
+  const motherHeight = parseFloat(document.getElementById('thMotherHeight').value);
+  const fatherHeight = parseFloat(document.getElementById('thFatherHeight').value);
+  const motherAgeRaw = document.getElementById('thMotherAge').value;
+  const fatherAgeRaw = document.getElementById('thFatherAge').value;
+
+  if (!motherHeight || !fatherHeight) {
+    showToast('⚠️', "Enter both parents' heights");
+    return;
+  }
+
+  const result = calculateTargetHeight({
+    motherHeightCm: motherHeight,
+    fatherHeightCm: fatherHeight,
+    motherAge: motherAgeRaw ? parseFloat(motherAgeRaw) : null,
+    fatherAge: fatherAgeRaw ? parseFloat(fatherAgeRaw) : null,
+    childSex: child.biological_sex
+  });
+
+  if (!result) { showToast('⚠️', 'Could not calculate — check the entered heights'); return; }
+
+  document.getElementById('targetHeightResult').classList.remove('hidden');
+  document.getElementById('thResultValue').textContent = result.targetHeightCm;
+  document.getElementById('thResultRange').textContent =
+    `Likely adult height range: ${result.rangeLowCm}–${result.rangeHighCm}cm (using the real measured spread from the source study, ±${result.residualSD}cm — not a theoretical guess).`;
+
+  const ageNote = (result.motherAgeShrinkageCm > 0 || result.fatherAgeShrinkageCm > 0)
+    ? ` Age-correction added back ${result.motherAgeShrinkageCm}cm (mother) and ${result.fatherAgeShrinkageCm}cm (father) for natural height loss with age — see target-height.js for the source.`
+    : '';
+  document.getElementById('thResultDetail').innerHTML =
+    `For comparison, the traditional method (flat ±13cm sex adjustment, no age or regression correction) gives <strong>${result.tannerMidParentalCm}cm</strong>.${ageNote} This is a population-based estimate with real uncertainty (the source study notes ~20% variability in the spread itself) — not a precise prediction, and not a substitute for your pediatrician's assessment, especially if bone age or growth velocity look unusual.`;
+}
+
+// ══════════════════════════════════════════
+// EXTENDED FAMILY HEIGHTS — reference-only (family_height_records
+// table). Deliberately NEVER read by calculateAndShowTargetHeight() or
+// anything in target-height.js — see migration_family_height_records.sql
+// for why. If you're tempted to add these into the calculation later,
+// re-read that file's header first: there's no validated method for
+// it, and guessing would repeat the mistake the original "ancestral
+// traceback" proposal was rejected for.
+// ══════════════════════════════════════════
+const FAMILY_RELATION_LABELS = {
+  maternal_grandmother: 'Maternal grandmother', maternal_grandfather: 'Maternal grandfather',
+  paternal_grandmother: 'Paternal grandmother', paternal_grandfather: 'Paternal grandfather',
+  maternal_aunt: 'Maternal aunt', maternal_uncle: 'Maternal uncle',
+  paternal_aunt: 'Paternal aunt', paternal_uncle: 'Paternal uncle',
+  sibling: 'Sibling'
+};
+
+async function loadFamilyHeightRecords() {
+  const childId = activeChildId();
+  const listEl = document.getElementById('familyHeightList');
+  if (!listEl) return;
+  if (!childId) { listEl.innerHTML = ''; return; }
+
+  const { data, error } = await sb
+    .from('family_height_records')
+    .select('*')
+    .eq('child_id', childId)
+    .order('created_at', { ascending: false });
+
+  if (error) { listEl.innerHTML = ''; return; }
+  APP.familyHeightRecords = data || [];
+  renderFamilyHeightList();
+}
+
+function renderFamilyHeightList() {
+  const listEl = document.getElementById('familyHeightList');
+  if (!listEl) return;
+  const items = APP.familyHeightRecords || [];
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="log-list-empty">No extended family heights recorded yet.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(r => {
+    const label = FAMILY_RELATION_LABELS[r.relation] || r.relation;
+    const ageText = r.age_at_measurement ? ` · age ${r.age_at_measurement}` : '';
+    return `
+      <div class="log-item-row">
+        <div class="log-item-left">
+          <span class="log-item-emoji">👤</span>
+          <div class="log-item-info">
+            <span class="log-item-name">${label}</span>
+            <span class="log-item-meta">${r.notes ? r.notes : ''}${ageText}</span>
+          </div>
+        </div>
+        <div class="log-item-right">
+          <span class="log-item-amount">${r.height_cm}cm</span>
+          <button class="log-item-delete" onclick="deleteFamilyHeightRecord('${r.record_id}')" aria-label="Remove">×</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addFamilyHeightRecord() {
+  const childId = activeChildId();
+  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+
+  const relation = document.getElementById('newFamilyRelation').value;
+  const height = document.getElementById('newFamilyHeight').value;
+  const age = document.getElementById('newFamilyAge').value;
+  const notes = document.getElementById('newFamilyNotes').value.trim();
+
+  if (!height) { showToast('⚠️', 'Enter a height'); return; }
+
+  const { data, error } = await sb.from('family_height_records').insert({
+    child_id: childId,
+    relation,
+    height_cm: parseFloat(height),
+    age_at_measurement: age ? parseInt(age) : null,
+    notes: notes || null,
+    created_by: APP.session ? APP.session.user.id : null
+  }).select().single();
+
+  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+
+  APP.familyHeightRecords = APP.familyHeightRecords || [];
+  APP.familyHeightRecords.unshift(data);
+  renderFamilyHeightList();
+
+  document.getElementById('newFamilyHeight').value = '';
+  document.getElementById('newFamilyAge').value = '';
+  document.getElementById('newFamilyNotes').value = '';
+  showToast('✅', 'Added to family record');
+}
+
+async function deleteFamilyHeightRecord(id) {
+  const { error } = await sb.from('family_height_records').delete().eq('record_id', id);
+  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  APP.familyHeightRecords = (APP.familyHeightRecords || []).filter(r => r.record_id !== id);
+  renderFamilyHeightList();
 }
 
 // ══════════════════════════════════════════
@@ -2667,6 +2813,7 @@ async function goTab(name) {
     drawGrowthChart();
     drawBMIChart();
     drawLabChart();
+    await loadFamilyHeightRecords();
   }
   if (name === 'Medical') {
     await loadMedicalLogForDate();

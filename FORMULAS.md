@@ -661,6 +661,113 @@ query speed only, not correctness or any existing behavior.
 
 ---
 
+## 5g. Target (mid-parental) height calculator (implemented 2026-06-25)
+
+**Where:** `target-height.js`, the "Target height (mid-parental)" card
+on Analytics, `calculateAndShowTargetHeight()` in `app.js`.
+
+**What was proposed first, and rejected:** a "3-generation ancestral
+traceback engine" that would convert relatives' heights to Z-scores,
+flag any parent more than 1.5 SD from their own family's median height
+as having a likely "undiagnosed clinical condition," and silently
+substitute their relatives' median height in place of their real
+measured height before averaging. This was rejected for two reasons:
+(1) height varies within families by this much for entirely ordinary
+genetic reasons — treating normal variation as anomalous would
+misclassify healthy parents at a real, non-trivial rate; (2) even when
+a parent's short stature genuinely does come from childhood illness or
+malnutrition, that's real clinical context a doctor needs to see, not
+noise to silently overwrite with a different number. Same category of
+problem as §7's review of the external "v2.0" document — presenting an
+algorithmic guess as more authoritative than the real data it's
+replacing.
+
+**What was built instead:** a real, peer-reviewed method — Zeevi D,
+Ben Yehuda A, Nathan D, Zangen D, Kruglyak L. "Accurate Prediction of
+Children's Target Height from Their Mid-Parental Height." *Children*
+2024, 11(8), 916. doi:10.3390/children11080916. Verified directly
+(full text fetched and read, not summarized from an abstract), including
+reproducing both of the paper's own worked clinical examples through
+this app's actual implementation (159.3cm vs the paper's stated ~159cm
+for a father 170cm/age 45, mother 157cm/age 50 predicting a daughter;
+157.8cm, well above the naive 3rd-percentile expectation, for the
+short-father/average-mother example).
+
+**The three real corrections this implements**, none of them in the
+traditional Tanner method still recommended in clinical guidelines
+today:
+1. **Age-shrinkage correction** — adult height loses height starting
+   around age 30, accelerating with age, not a one-time event. Modeled
+   here as a piecewise-linear approximation of real, independently-
+   published data (Sorkin et al. 1999, Baltimore Longitudinal Study of
+   Aging: ~3cm cumulative loss by 70/5cm by 80 for men, ~5cm/8cm for
+   women) — an approximation of the real shape, not a reproduction of
+   the original paper's own unpublished exact nonlinear coefficients
+   (not available to verify), stated as such in the code and the UI.
+2. **Multiplicative sex correction (×1.08)**, not the traditional flat
+   ±13cm. Verified directly: the real male-female height gap at a given
+   percentile is NOT constant — 12.2cm at the 3rd percentile vs 14.7cm
+   at the 97th, per the paper's CDC growth-chart analysis.
+3. **Regression to the mean** — very tall parents have children who
+   regress toward the population mean; very short parents have children
+   who regress upward. Known since Galton (1886), still not used in
+   current clinical practice per the paper's own review of guidelines.
+   Implemented using the paper's own fitted equation on standardized
+   heights: `Corrected Z = 0.79 × (mid-parental Z) − 0.077`.
+
+**Result spread:** uses the paper's real *measured* residual SD (4.5cm
+sons, 4.2cm daughters, from their large-family cohort) instead of
+Tanner's original theoretical ±8.5cm guess — while also carrying
+forward the paper's own stated caution that this has a ~20% coefficient
+of variation and should be used with care.
+
+**Transparency, by design:** the UI always shows the traditional Tanner
+result alongside the improved estimate, plus exactly how much
+age-correction was added to each parent's entered height — nothing is
+computed or substituted without the parent seeing precisely what went
+into it. Uses GrowSense's existing WHO adult-height mean/SD (already
+in `who-reference-data.js`, age 19y row) rather than introducing a
+third population reference for "adult height."
+
+---
+
+## 5h. Extended family heights — reference only (implemented 2026-06-25)
+
+**Where:** `migration_family_height_records.sql`, the "Extended family
+heights" section inside the Target Height card, `addFamilyHeightRecord()`
+and related functions in `app.js`.
+
+**Why this exists, and why it's structurally isolated from §5g's
+calculation:** a parent may know a grandparent's or aunt/uncle's height
+even when they don't know all of them — e.g. the grandmother's height
+but not the grandfather's. There's a real temptation to fold partial
+data like this into the target-height estimate somehow. This app
+doesn't, on purpose: the only validated method implemented (Zeevi et
+al. 2024, §5g) is parent-to-child; there's no peer-reviewed method here
+for weighting incomplete extended-family data, and inventing weights for
+missing relatives would repeat the exact mistake the original
+"3-generation ancestral traceback" proposal was rejected for.
+
+**What this actually is:** a place to record what's known, for a
+parent's own reference or to show a doctor — nothing more.
+`family_height_records` is a real, persistent table (relation type,
+height, optional age, optional free-text notes), but
+`calculateAndShowTargetHeight()` and everything in `target-height.js`
+never read from it. Verified directly, not just by code inspection:
+added two deliberately extreme family records (195cm grandfather, 140cm
+grandmother) around an existing target-height calculation and confirmed
+the result (159.3cm) was byte-for-byte identical before and after, then
+confirmed it stayed identical after deleting one of those records too.
+
+**If extended-family weighting is ever added properly:** it would need
+its own cited, peer-reviewed method (the kind of coefficient-of-
+relationship weighting from quantitative genetics is real and exists in
+the literature) — not an invented weighting scheme — and should
+probably show its own separate, clearly-labeled estimate rather than
+quietly blending into the validated parent-only number.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

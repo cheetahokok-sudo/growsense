@@ -324,6 +324,85 @@
     <div class="screen" id="screenAnalytics">
       <div class="section-hd"><h2>Analytics</h2><p>Trend view — built to bring to a clinic visit</p></div>
 
+      <!-- Target (mid-parental) height card — implements the real,
+           peer-reviewed corrections from Zeevi et al. 2024 (Children
+           11(8):916) instead of the 50-year-old Tanner method's flat
+           +/-13cm sex offset and no age/regression correction. Shown
+           for every child once both parents' heights are entered, not
+           gated by age or SGA status — this is a general tool. -->
+      <div class="card">
+        <div class="card-header"><span class="card-title text-measured">Target height (mid-parental)</span></div>
+        <div class="card-body">
+          <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Estimates your child's likely adult height range from both parents' heights, using corrections shown in peer-reviewed research to improve on the traditional method (Zeevi et al., <i>Children</i> 2024). Enter each parent's height as measured now — the calculator adjusts for age-related height loss itself, you don't need to estimate their "peak" height.</div>
+          <div class="form-row">
+            <div class="form-lbl">Mother's height (cm)</div>
+            <input type="number" id="thMotherHeight" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Mother's current age (optional)</div>
+            <input type="number" id="thMotherAge" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Father's height (cm)</div>
+            <input type="number" id="thFatherHeight" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Father's current age (optional)</div>
+            <input type="number" id="thFatherAge" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <button class="btn-secondary" onclick="calculateAndShowTargetHeight()">Calculate target height</button>
+
+          <div id="targetHeightResult" class="hidden" style="margin-top:14px;">
+            <div class="velocity-card" style="margin:0;">
+              <div class="velocity-top">
+                <div><span class="velocity-val" id="thResultValue" style="font-size:22px;">—</span><span class="velocity-unit">cm, predicted adult height</span></div>
+              </div>
+              <div class="velocity-sub" id="thResultRange"></div>
+              <div class="setup-note" style="margin-top:8px; font-size:10.5px;" id="thResultDetail"></div>
+            </div>
+          </div>
+
+          <!-- Extended family heights — REFERENCE ONLY. Deliberately
+               NOT wired into calculateAndShowTargetHeight() or
+               target-height.js at all — see migration_family_
+               height_records.sql for why. This section exists so a
+               family can record what they know and a doctor can see it
+               as context, full stop. -->
+          <div class="card-divider" style="margin: 16px -16px;"></div>
+          <div class="form-lbl" style="margin-bottom:4px;">Extended family heights (optional)</div>
+          <div class="setup-note" style="font-size:10.5px; margin-bottom:10px;">For context only — these are <strong>not</strong> used in the calculation above. There's no validated method for weighting partial extended-family data (e.g. knowing one grandparent's height but not the other's), so rather than guess, this is just a record for your own reference or to share with a doctor.</div>
+
+          <div class="form-row">
+            <div class="form-lbl">Relation</div>
+            <select id="newFamilyRelation" class="num-input" style="width:180px; text-align:left; padding-left:10px;">
+              <option value="maternal_grandmother">Maternal grandmother</option>
+              <option value="maternal_grandfather">Maternal grandfather</option>
+              <option value="paternal_grandmother">Paternal grandmother</option>
+              <option value="paternal_grandfather">Paternal grandfather</option>
+              <option value="maternal_aunt">Maternal aunt</option>
+              <option value="maternal_uncle">Maternal uncle</option>
+              <option value="paternal_aunt">Paternal aunt</option>
+              <option value="paternal_uncle">Paternal uncle</option>
+              <option value="sibling">Sibling</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Height (cm)</div>
+            <input type="number" id="newFamilyHeight" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Age when measured (optional)</div>
+            <input type="number" id="newFamilyAge" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <div class="form-lbl">Notes (optional)</div>
+            <input type="text" id="newFamilyNotes" class="text-input" placeholder="e.g. not totally sure of exact height">
+          </div>
+          <button class="btn-secondary" onclick="addFamilyHeightRecord()">Add to family record</button>
+          <div id="familyHeightList" class="nutrition-log-list" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
       <!-- SGA catch-up growth tracking — only shown for children flagged
            is_sga, and only meaningful under age 5 (catch-up growth is
            specifically a 0-5y phenomenon per the clinical guideline this
@@ -785,6 +864,7 @@
 <script src="who-reference-data-0-5.js"></script>
 <script src="growth-percentile-0-5.js"></script>
 <script src="thai-reference-data-approx.js"></script>
+<script src="target-height.js"></script>
 <script src="food-reference-data.js"></script>
 <script src="app.js"></script>
 </body>
