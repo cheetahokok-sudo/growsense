@@ -252,6 +252,7 @@ body {
 .num-input:focus { border-color: var(--measured); }
 .text-input { background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 11px 12px; min-height: 44px; font-size: 13px; font-weight: 500; color: var(--text); outline: none; font-family: inherit; width: 100%; }
 .text-input:focus { border-color: var(--measured); }
+.collapse-chevron { font-size: 14px; color: var(--text2); transition: transform 0.15s; }
 .date-input { background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 10px 10px; min-height: 44px; font-size: 12px; font-weight: 600; color: var(--text); outline: none; font-family: var(--mono); }
 .date-input:focus { border-color: var(--measured); }
 

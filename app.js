@@ -38,7 +38,8 @@ const APP = {
   chartZoom: 'auto', // 'auto' (zoomed to current age, existing behavior) or 'full' (always shows 0-19y) — see setChartZoom()
   labResults: [],    // lab_results rows for the active child, loaded when the Medical tab opens
   pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
-  familyHeightRecords: [] // family_height_records rows - reference only, never used in calculateAndShowTargetHeight()
+  familyHeightRecords: [], // family_height_records rows - reference only by default; see targetHeightFormula
+  targetHeightFormula: 'parents' // 'parents' (validated, default) or 'extended' (exploratory) — see setTargetHeightFormula()
 };
 
 function todayISO() {
@@ -619,6 +620,8 @@ function renderChildSwitcher() {
       updateStats();
       drawGrowthChart();
       drawBMIChart();
+      await loadFamilyHeightRecords();
+      loadTargetHeightForm();
     };
     sw.appendChild(chip);
   });
@@ -917,7 +920,75 @@ function setChartZoom(zoom, btn) {
 // substitution of any entered height, per the design decision recorded
 // in target-height.js's header.
 // ══════════════════════════════════════════
-function calculateAndShowTargetHeight() {
+// Generic collapsible-card-header toggle, used by the Target Height
+// card (and reusable for any future card that wants this pattern).
+function toggleCardCollapse(bodyId, headerEl) {
+  const body = document.getElementById(bodyId);
+  const chevron = document.getElementById(bodyId + '-chevron');
+  const isHidden = body.classList.contains('hidden');
+  body.classList.toggle('hidden');
+  if (chevron) chevron.textContent = isHidden ? '▴' : '▾';
+}
+
+// Switches between the validated parents-only formula and the
+// exploratory extended-family-weighted one. See target-height.js's
+// calculateExploratoryExtendedTargetHeight() header for exactly why
+// these two are NOT equal-confidence and must never be presented as
+// such in the UI.
+function setTargetHeightFormula(formula, btn) {
+  APP.targetHeightFormula = formula;
+  document.querySelectorAll('#targetHeightFormulaToggle .seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const noteEl = document.getElementById('extendedFormulaNote');
+  if (formula === 'extended') {
+    noteEl.classList.remove('hidden');
+    noteEl.textContent = 'Exploratory — there is no peer-reviewed method for weighting partial extended-family data into a height prediction. This blends your validated parents-only estimate (70% weight) with a standard relatedness-weighted average of whatever extended-family heights you\'ve recorded below (30% weight, using real genetics math for the weighting itself, but an arbitrary blend ratio not derived from any study). Treat this as a "what if" exploration, not a more accurate number than the parents-only result.';
+  } else {
+    noteEl.classList.add('hidden');
+  }
+
+  // Recalculate immediately if heights are already on file, so
+  // switching the toggle updates the displayed result right away.
+  const child = APP.children[APP.activeChild];
+  if (child && child.mother_height_cm != null && child.father_height_cm != null) {
+    calculateAndShowTargetHeight();
+  }
+}
+
+// Restores previously-saved parent heights/ages into the form (and
+// shows the calculated result immediately) — fixes the bug where this
+// data was never persisted and had to be retyped every visit.
+function loadTargetHeightForm() {
+  const child = APP.children[APP.activeChild];
+  const motherHeightEl = document.getElementById('thMotherHeight');
+  const motherAgeEl = document.getElementById('thMotherAge');
+  const fatherHeightEl = document.getElementById('thFatherHeight');
+  const fatherAgeEl = document.getElementById('thFatherAge');
+
+  if (!child) {
+    motherHeightEl.value = ''; motherAgeEl.value = '';
+    fatherHeightEl.value = ''; fatherAgeEl.value = '';
+    document.getElementById('targetHeightResult').classList.add('hidden');
+    return;
+  }
+
+  motherHeightEl.value = child.mother_height_cm != null ? child.mother_height_cm : '';
+  motherAgeEl.value = child.mother_current_age != null ? child.mother_current_age : '';
+  fatherHeightEl.value = child.father_height_cm != null ? child.father_height_cm : '';
+  fatherAgeEl.value = child.father_current_age != null ? child.father_current_age : '';
+
+  // If both heights are already on file, show the result right away
+  // rather than making the parent click "Calculate" again just to see
+  // what they already entered last time.
+  if (child.mother_height_cm != null && child.father_height_cm != null) {
+    calculateAndShowTargetHeight();
+  } else {
+    document.getElementById('targetHeightResult').classList.add('hidden');
+  }
+}
+
+async function calculateAndShowTargetHeight() {
   const child = APP.children[APP.activeChild];
   if (!child) { showToast('⚠️', 'Add a child profile first'); return; }
 
@@ -931,16 +1002,47 @@ function calculateAndShowTargetHeight() {
     return;
   }
 
-  const result = calculateTargetHeight({
-    motherHeightCm: motherHeight,
-    fatherHeightCm: fatherHeight,
-    motherAge: motherAgeRaw ? parseFloat(motherAgeRaw) : null,
-    fatherAge: fatherAgeRaw ? parseFloat(fatherAgeRaw) : null,
-    childSex: child.biological_sex
-  });
+  const result = APP.targetHeightFormula === 'extended'
+    ? calculateExploratoryExtendedTargetHeight({
+        motherHeightCm: motherHeight,
+        fatherHeightCm: fatherHeight,
+        motherAge: motherAgeRaw ? parseFloat(motherAgeRaw) : null,
+        fatherAge: fatherAgeRaw ? parseFloat(fatherAgeRaw) : null,
+        childSex: child.biological_sex,
+        familyRecords: APP.familyHeightRecords || []
+      })
+    : calculateTargetHeight({
+        motherHeightCm: motherHeight,
+        fatherHeightCm: fatherHeight,
+        motherAge: motherAgeRaw ? parseFloat(motherAgeRaw) : null,
+        fatherAge: fatherAgeRaw ? parseFloat(fatherAgeRaw) : null,
+        childSex: child.biological_sex
+      });
 
   if (!result) { showToast('⚠️', 'Could not calculate — check the entered heights'); return; }
 
+  // Persist what was entered, so it's there next time this child/tab is
+  // opened — previously this was read-only-from-form and lost on every
+  // reload. See migration_parent_height_persistence.sql.
+  const { error } = await sb.from('children').update({
+    mother_height_cm: motherHeight,
+    father_height_cm: fatherHeight,
+    mother_current_age: motherAgeRaw ? parseInt(motherAgeRaw) : null,
+    father_current_age: fatherAgeRaw ? parseInt(fatherAgeRaw) : null
+  }).eq('child_id', child.child_id);
+
+  if (error) {
+    showToast('⚠️', 'Calculated, but could not save for next time: ' + error.message);
+  } else {
+    // Keep the in-memory child object in sync so switching away and
+    // back within the same session shows the saved values immediately.
+    child.mother_height_cm = motherHeight;
+    child.father_height_cm = fatherHeight;
+    child.mother_current_age = motherAgeRaw ? parseInt(motherAgeRaw) : null;
+    child.father_current_age = fatherAgeRaw ? parseInt(fatherAgeRaw) : null;
+  }
+
+  const resultCard = document.querySelector('#targetHeightResult .velocity-card');
   document.getElementById('targetHeightResult').classList.remove('hidden');
   document.getElementById('thResultValue').textContent = result.targetHeightCm;
   document.getElementById('thResultRange').textContent =
@@ -949,14 +1051,32 @@ function calculateAndShowTargetHeight() {
   const ageNote = (result.motherAgeShrinkageCm > 0 || result.fatherAgeShrinkageCm > 0)
     ? ` Age-correction added back ${result.motherAgeShrinkageCm}cm (mother) and ${result.fatherAgeShrinkageCm}cm (father) for natural height loss with age — see target-height.js for the source.`
     : '';
-  document.getElementById('thResultDetail').innerHTML =
-    `For comparison, the traditional method (flat ±13cm sex adjustment, no age or regression correction) gives <strong>${result.tannerMidParentalCm}cm</strong>.${ageNote} This is a population-based estimate with real uncertainty (the source study notes ~20% variability in the spread itself) — not a precise prediction, and not a substitute for your pediatrician's assessment, especially if bone age or growth velocity look unusual.`;
+
+  if (result.isExploratory) {
+    // Visually distinct from the validated result — amber border, not
+    // the default card style — so an exploratory number never looks
+    // like it carries the same confidence as the parents-only result.
+    resultCard.style.borderLeft = '3px solid var(--estimated)';
+    const extendedNote = result.extendedFamilyUsedCount > 0
+      ? ` Includes ${result.extendedFamilyUsedCount} extended-family record(s); the validated parents-only estimate alone is <strong>${result.parentsOnlyTargetHeightCm}cm</strong>.`
+      : ' No extended-family records found — this matches the parents-only result exactly.';
+    document.getElementById('thResultDetail').innerHTML =
+      `<strong>⚠️ Exploratory result — not equal-confidence with the parents-only method.</strong>${extendedNote} Traditional Tanner method (for reference): <strong>${result.tannerMidParentalCm}cm</strong>.${ageNote}`;
+  } else {
+    resultCard.style.borderLeft = '';
+    document.getElementById('thResultDetail').innerHTML =
+      `For comparison, the traditional method (flat ±13cm sex adjustment, no age or regression correction) gives <strong>${result.tannerMidParentalCm}cm</strong>.${ageNote} This is a population-based estimate with real uncertainty (the source study notes ~20% variability in the spread itself) — not a precise prediction, and not a substitute for your pediatrician's assessment, especially if bone age or growth velocity look unusual.`;
+  }
 }
 
 // ══════════════════════════════════════════
-// EXTENDED FAMILY HEIGHTS — reference-only (family_height_records
-// table). Deliberately NEVER read by calculateAndShowTargetHeight() or
-// anything in target-height.js — see migration_family_height_records.sql
+// EXTENDED FAMILY HEIGHTS (family_height_records table). Used for
+// reference display ALWAYS; also read by
+// calculateExploratoryExtendedTargetHeight() when a parent explicitly
+// switches the formula toggle to "extended" — see
+// setTargetHeightFormula() and target-height.js's header for exactly
+// why that path is labeled exploratory/unvalidated, and is never the
+// default.
 // for why. If you're tempted to add these into the calculation later,
 // re-read that file's header first: there's no validated method for
 // it, and guessing would repeat the mistake the original "ancestral
@@ -2814,6 +2934,7 @@ async function goTab(name) {
     drawBMIChart();
     drawLabChart();
     await loadFamilyHeightRecords();
+    loadTargetHeightForm();
   }
   if (name === 'Medical') {
     await loadMedicalLogForDate();

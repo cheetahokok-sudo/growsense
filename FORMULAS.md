@@ -768,6 +768,60 @@ quietly blending into the validated parent-only number.
 
 ---
 
+## 5i. Target height fixes: persistence, collapse, formula toggle (2026-06-25)
+
+**Where:** `migration_parent_height_persistence.sql`,
+`loadTargetHeightForm()`/`toggleCardCollapse()`/`setTargetHeightFormula()`
+in `app.js`, the new `calculateExploratoryExtendedTargetHeight()` in
+`target-height.js`.
+
+**Bug fixed — parent heights weren't saved.** `calculateAndShowTargetHeight()`
+read mother/father height and age straight from form inputs with no
+database write at all — every reload or tab switch lost them, forcing
+re-entry every time. Fixed by adding `mother_height_cm`,
+`mother_current_age`, `father_height_cm`, `father_current_age` directly
+on `children` (parallel to the existing SGA birth-data columns), saved
+on every successful calculation and restored via `loadTargetHeightForm()`
+whenever the Analytics tab opens or the active child changes — verified
+directly: calculated once, cleared the form, called the restore
+function, confirmed both values came back and the result re-displayed
+automatically.
+
+**UI change — the card is now collapsible, default closed.** Feedback
+was that the calculator felt like a separate mini-tool dominating the
+Analytics page by default. `toggleCardCollapse()` is a small, generic
+helper (reusable for any future card) — click the header, body
+shows/hides, chevron flips. Defaults closed so a parent who isn't using
+this tool today doesn't have to scroll past it.
+
+**New: a formula toggle, with the honesty boundary kept structural, not
+just a UI label.** "Parents only" (default) calls the validated
+`calculateTargetHeight()` from §5g, unchanged. "+ Extended family" calls
+a new, separate function — `calculateExploratoryExtendedTargetHeight()`
+— explicitly marked `isExploratory: true` in its return value, which the
+UI checks to apply different styling (amber border, an explicit
+"⚠️ Exploratory" label, and the parents-only number always shown
+alongside for comparison) rather than ever presenting the two results
+with equal visual confidence.
+
+**What the exploratory formula actually does, and doesn't:** real,
+textbook coefficient-of-relationship weighting (grandparents/aunts/
+uncles at r=0.25, siblings at r=0.5 — standard quantitative genetics,
+not invented) applied to whatever extended-family heights are on file,
+standardized to Z-scores the same way as the main calculation, then
+blended with the validated parents-only Z-score at a **fixed 70/30
+split that is itself arbitrary and stated as such in the code** — not a
+researched constant the way the Zeevi-derived figures are. No
+age-shrinkage correction is applied to extended-family entries (that
+correction was only validated for parents in the source study).
+Verified directly: zero family records produces a result byte-identical
+to the parents-only baseline; adding deliberately tall or short
+extended-family records measurably shifts the result up or down in the
+correct direction; an unrecognized relation type is safely ignored
+rather than corrupting the result.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table
