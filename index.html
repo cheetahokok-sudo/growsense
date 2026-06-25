@@ -570,6 +570,82 @@
           <button class="btn-secondary" onclick="saveMedical()">Save clinical record</button>
         </div>
       </div>
+
+      <!-- Other lab results — any analyte not covered by the 3 fixed
+           fields above (IGF-1/VitD/Ferritin stay as-is; this is for
+           TSH, Free T4, LH, FSH, Testosterone, Estradiol, IGFBP3, or
+           anything else a doctor orders). Feeds lab_results, a generic
+           table designed so adding a new analyte never needs a schema
+           change. -->
+      <div class="card">
+        <div class="card-header"><span class="card-title text-measured">Other lab results</span></div>
+        <div class="card-body">
+          <div class="setup-note" style="font-size:11px; margin-bottom:10px;">For any lab value not listed above — TSH, Free T4, LH, FSH, Testosterone, Estradiol, IGFBP3, or others your doctor orders.</div>
+          <div class="form-row">
+            <div class="form-lbl">Analyte name</div>
+            <input type="text" id="newLabAnalyte" class="text-input" placeholder="e.g. TSH" style="width:140px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Result value</div>
+            <input type="number" id="newLabValue" class="num-input" placeholder="—" style="width:90px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Unit</div>
+            <input type="text" id="newLabUnit" class="text-input" placeholder="e.g. mIU/L" style="width:90px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Reference range (optional)</div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <input type="number" id="newLabRefLow" class="num-input" placeholder="low" style="width:70px;">
+              <span style="color:var(--text2);">–</span>
+              <input type="number" id="newLabRefHigh" class="num-input" placeholder="high" style="width:70px;">
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="addLabResult()">Add lab result</button>
+          <div id="labResultsList" class="nutrition-log-list" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Puberty milestones — new, was a complete gap before. Tanner
+           staging uses the real 1-5 clinical scale; menarche/voice
+           change/etc. are date-only occurrences with no stage. -->
+      <div class="card">
+        <div class="card-header"><span class="card-title text-measured">Puberty milestones</span></div>
+        <div class="card-body">
+          <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Tracking pubertal timing — one of the strongest real predictors of remaining growth window and adult height. Record what your pediatrician observes or what you notice at home.</div>
+          <div class="form-row">
+            <div class="form-lbl">Milestone</div>
+            <select id="newPubertyType" class="num-input" style="width:170px; text-align:left; padding-left:10px;" onchange="togglePubertyStageVisibility()">
+              <option value="breast_development">Breast development</option>
+              <option value="genital_development">Genital development</option>
+              <option value="pubic_hair">Pubic hair</option>
+              <option value="axillary_hair">Axillary (underarm) hair</option>
+              <option value="facial_hair">Facial hair</option>
+              <option value="voice_change">Voice change</option>
+              <option value="body_odor">Body odor</option>
+              <option value="acne">Acne</option>
+              <option value="growth_spurt_feeling">Growth spurt (reported)</option>
+              <option value="menarche">Menarche</option>
+            </select>
+          </div>
+          <div class="form-row" id="tannerStageRow">
+            <div class="form-lbl">Tanner stage</div>
+            <select id="newPubertyStage" class="num-input" style="width:80px; text-align:left; padding-left:10px;">
+              <option value="1">I</option>
+              <option value="2">II</option>
+              <option value="3">III</option>
+              <option value="4">IV</option>
+              <option value="5">V</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Date observed</div>
+            <input type="date" id="newPubertyDate" class="date-input" style="width:140px;">
+          </div>
+          <button class="btn-secondary" onclick="addPubertyEvent()">Add milestone</button>
+          <div id="pubertyEventsList" class="nutrition-log-list" style="margin-top:12px;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ══════════════ SCREEN: AI ASSISTANT ══════════════ -->

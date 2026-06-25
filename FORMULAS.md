@@ -599,6 +599,68 @@ language once that's actually true.
 
 ---
 
+## 5f. Generic lab results + puberty/Tanner tracking (implemented 2026-06-25)
+
+**Where:** `migration_lab_results_and_puberty.sql`, the "Other lab
+results" and "Puberty milestones" cards on the Medical screen, and
+`addLabResult()`/`addPubertyEvent()` (+ their load/render/delete
+counterparts) in `app.js`.
+
+**Context:** an external "Database Architecture v1.1" review document
+proposed a broader schema redesign. After reconciling it against what's
+actually live, most of its tables turned out to already exist under
+different names (its `sleep_daily_summary` is this project's
+`daily_sleep`; its `children` birth-data fields were already added for
+SGA tracking — see §5b) or were left as future/aspirational sections
+with no concrete design (its "AI Feature Store" heading had no table
+under it). Two ideas were judged genuinely new and worth building:
+
+**`lab_results`** — a generic analyte table (`analyte_name`,
+`result_value`, `unit`, `reference_low/high`), so adding a new lab
+value (TSH, LH, FSH, testosterone, estradiol, IGFBP3, etc.) never again
+needs a schema change. **Deliberately does not touch or replace** the 3
+existing hardcoded lab columns on `medical_logs` (`igf1_ng_ml`,
+`vitamin_d_nmol_l`, `ferritin_ng_ml`) — that UI is live and working, and
+per this project's standing rule of not breaking what works, it was left
+exactly as-is. `lab_results` is purely additive capacity for everything
+else. Unlike the daily_nutrition/sleep/activity/medical_logs tables, this
+is **event-based, not date-keyed** — no `UNIQUE(child_id, date)`
+constraint, since a single blood draw can produce several results on
+the same day, and that's a real, valid case, not a duplicate to prevent.
+
+**`puberty_events`** — Tanner staging (real 1-5 clinical scale, enforced
+via a CHECK constraint, not the generic free-text "severity" the source
+document left underspecified) plus binary milestone occurrences
+(menarche, voice change, etc. — date-only, no stage). This was a
+complete gap before: GrowSense had no way to record pubertal timing at
+all, despite it being one of the strongest real predictors of remaining
+growth window and adult height.
+
+**What was deliberately NOT adopted from the source document, and why:**
+- `ethnicity` as a `children` column — sensitive demographic data that
+  needs a clear stated purpose (e.g. an intent to apply ethnicity-
+  specific growth references) before collection, not added reflexively
+  because it's a common epidemiological variable.
+- `media_files` for `puberty_photo`/`body_photo` — storing photos of a
+  minor's body is a meaningfully higher sensitivity category than
+  anything else in this app. Not built without a separate, explicit
+  conversation about encryption at rest, RLS/access design, and
+  retention policy — this isn't a "just add the table" item.
+- The "AI Feature Store" / prediction-model sections — vision statements
+  with no actual schema underneath them, not something to implement
+  from this document directly.
+
+**Performance, no behavior change:** while building this, an explicit
+`DESC`-ordered index was added to `daily_nutrition`, `daily_sleep`,
+`daily_activity`, and `measurements` (all using `IF NOT EXISTS`, so
+re-running the migration is harmless) — these tables already worked
+correctly via their existing unique constraints, but history screens
+always query "most recent N entries for this child," and an explicit
+index serves that read pattern faster as histories grow. This changes
+query speed only, not correctness or any existing behavior.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

@@ -35,7 +35,9 @@ const APP = {
   nutritionLogItems: [],  // nutrition_log_items rows for the active child + logDate, loaded fresh on date/child change
   activeMealSlot: 'breakfast', // which meal new food-card taps get tagged with; defaults to breakfast each load (see setMealSlot)
   referenceStandard: 'who', // 'who' or 'thai' — which growth chart reference is displayed; see setReferenceStandard()
-  chartZoom: 'auto' // 'auto' (zoomed to current age, existing behavior) or 'full' (always shows 0-19y) — see setChartZoom()
+  chartZoom: 'auto', // 'auto' (zoomed to current age, existing behavior) or 'full' (always shows 0-19y) — see setChartZoom()
+  labResults: [],    // lab_results rows for the active child, loaded when the Medical tab opens
+  pubertyEvents: []  // puberty_events rows for the active child, loaded when the Medical tab opens
 };
 
 function todayISO() {
@@ -93,6 +95,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('logDate').valueAsDate = new Date();
+  document.getElementById('newPubertyDate').valueAsDate = new Date();
 });
 
 function showAuthScreen() {
@@ -2335,6 +2338,212 @@ async function loadMedicalLogForDate() {
 }
 
 // ══════════════════════════════════════════
+// LAB RESULTS — generic analyte tracking (lab_results table). Separate
+// from the 3 fixed fields above (IGF-1/VitD/Ferritin, on medical_logs)
+// — this covers anything else. Unlike daily_nutrition/medical_logs,
+// these are event-based, not date-keyed, so there's no upsert-by-date:
+// each entry is its own permanent row, and multiple results on the
+// same day (e.g. a full panel from one blood draw) are all kept.
+// ══════════════════════════════════════════
+async function loadLabResults() {
+  const childId = activeChildId();
+  const listEl = document.getElementById('labResultsList');
+  if (!listEl) return;
+  if (!childId) { listEl.innerHTML = ''; return; }
+
+  const { data, error } = await sb
+    .from('lab_results')
+    .select('*')
+    .eq('child_id', childId)
+    .order('lab_date', { ascending: false })
+    .limit(20); // most-recent-first, capped so the Medical screen doesn't grow unbounded for a child with years of history
+
+  if (error) { listEl.innerHTML = ''; return; }
+  APP.labResults = data || [];
+  renderLabResultsList();
+}
+
+function renderLabResultsList() {
+  const listEl = document.getElementById('labResultsList');
+  if (!listEl) return;
+  const items = APP.labResults || [];
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="log-list-empty">No other lab results logged yet.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(r => {
+    const fmt = new Date(r.lab_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const range = (r.reference_low != null && r.reference_high != null) ? ` (ref ${r.reference_low}–${r.reference_high})` : '';
+    return `
+      <div class="log-item-row">
+        <div class="log-item-left">
+          <span class="log-item-emoji">🧪</span>
+          <div class="log-item-info">
+            <span class="log-item-name">${r.analyte_name}</span>
+            <span class="log-item-meta">${fmt}${range}</span>
+          </div>
+        </div>
+        <div class="log-item-right">
+          <span class="log-item-amount">${r.result_value} ${r.unit}</span>
+          <button class="log-item-delete" onclick="deleteLabResult('${r.lab_result_id}')" aria-label="Remove">×</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addLabResult() {
+  const childId = activeChildId();
+  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+
+  const analyte = document.getElementById('newLabAnalyte').value.trim();
+  const value = document.getElementById('newLabValue').value;
+  const unit = document.getElementById('newLabUnit').value.trim();
+  const refLow = document.getElementById('newLabRefLow').value;
+  const refHigh = document.getElementById('newLabRefHigh').value;
+
+  if (!analyte) { showToast('⚠️', 'Enter the analyte name'); return; }
+  if (!value) { showToast('⚠️', 'Enter the result value'); return; }
+  if (!unit) { showToast('⚠️', 'Enter the unit'); return; }
+
+  const { data, error } = await sb.from('lab_results').insert({
+    child_id: childId,
+    lab_date: APP.logDate,
+    analyte_name: analyte,
+    result_value: parseFloat(value),
+    unit: unit,
+    reference_low: refLow ? parseFloat(refLow) : null,
+    reference_high: refHigh ? parseFloat(refHigh) : null,
+    created_by: APP.session ? APP.session.user.id : null
+  }).select().single();
+
+  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+
+  APP.labResults = APP.labResults || [];
+  APP.labResults.unshift(data);
+  renderLabResultsList();
+
+  document.getElementById('newLabAnalyte').value = '';
+  document.getElementById('newLabValue').value = '';
+  document.getElementById('newLabUnit').value = '';
+  document.getElementById('newLabRefLow').value = '';
+  document.getElementById('newLabRefHigh').value = '';
+  showToast('✅', 'Lab result added');
+}
+
+async function deleteLabResult(id) {
+  const { error } = await sb.from('lab_results').delete().eq('lab_result_id', id);
+  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  APP.labResults = (APP.labResults || []).filter(r => r.lab_result_id !== id);
+  renderLabResultsList();
+}
+
+// ══════════════════════════════════════════
+// PUBERTY EVENTS — Tanner staging and pubertal milestones
+// (puberty_events table). Same event-based pattern as lab_results, not
+// date-keyed — a child can have multiple staged observations over time
+// for the same milestone type, which is exactly the point (tracking
+// Tanner stage PROGRESSION, e.g. breast development II -> III -> IV).
+// ══════════════════════════════════════════
+const PUBERTY_TYPES_WITHOUT_STAGE = ['voice_change', 'body_odor', 'acne', 'growth_spurt_feeling', 'menarche'];
+
+function togglePubertyStageVisibility() {
+  const type = document.getElementById('newPubertyType').value;
+  const row = document.getElementById('tannerStageRow');
+  if (row) row.classList.toggle('hidden', PUBERTY_TYPES_WITHOUT_STAGE.includes(type));
+}
+
+async function loadPubertyEvents() {
+  const childId = activeChildId();
+  const listEl = document.getElementById('pubertyEventsList');
+  if (!listEl) return;
+  if (!childId) { listEl.innerHTML = ''; return; }
+
+  const { data, error } = await sb
+    .from('puberty_events')
+    .select('*')
+    .eq('child_id', childId)
+    .order('event_date', { ascending: false })
+    .limit(20);
+
+  if (error) { listEl.innerHTML = ''; return; }
+  APP.pubertyEvents = data || [];
+  renderPubertyEventsList();
+}
+
+const PUBERTY_TYPE_LABELS = {
+  breast_development: 'Breast development', genital_development: 'Genital development',
+  pubic_hair: 'Pubic hair', axillary_hair: 'Axillary hair', facial_hair: 'Facial hair',
+  voice_change: 'Voice change', body_odor: 'Body odor', acne: 'Acne',
+  growth_spurt_feeling: 'Growth spurt (reported)', menarche: 'Menarche'
+};
+const TANNER_NUMERALS = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V' };
+
+function renderPubertyEventsList() {
+  const listEl = document.getElementById('pubertyEventsList');
+  if (!listEl) return;
+  const items = APP.pubertyEvents || [];
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="log-list-empty">No puberty milestones logged yet.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(ev => {
+    const fmt = new Date(ev.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const label = PUBERTY_TYPE_LABELS[ev.event_type] || ev.event_type;
+    const stageText = ev.tanner_stage ? `Tanner ${TANNER_NUMERALS[ev.tanner_stage]}` : 'observed';
+    return `
+      <div class="log-item-row">
+        <div class="log-item-left">
+          <span class="log-item-emoji">🌱</span>
+          <div class="log-item-info">
+            <span class="log-item-name">${label}</span>
+            <span class="log-item-meta">${fmt}</span>
+          </div>
+        </div>
+        <div class="log-item-right">
+          <span class="log-item-amount">${stageText}</span>
+          <button class="log-item-delete" onclick="deletePubertyEvent('${ev.event_id}')" aria-label="Remove">×</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addPubertyEvent() {
+  const childId = activeChildId();
+  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+
+  const type = document.getElementById('newPubertyType').value;
+  const dateVal = document.getElementById('newPubertyDate').value;
+  if (!dateVal) { showToast('⚠️', 'Enter the date observed'); return; }
+
+  const needsStage = !PUBERTY_TYPES_WITHOUT_STAGE.includes(type);
+  const stage = needsStage ? parseInt(document.getElementById('newPubertyStage').value) : null;
+
+  const { data, error } = await sb.from('puberty_events').insert({
+    child_id: childId,
+    event_date: dateVal,
+    event_type: type,
+    tanner_stage: stage,
+    created_by: APP.session ? APP.session.user.id : null
+  }).select().single();
+
+  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+
+  APP.pubertyEvents = APP.pubertyEvents || [];
+  APP.pubertyEvents.unshift(data);
+  renderPubertyEventsList();
+  showToast('✅', 'Milestone added');
+}
+
+async function deletePubertyEvent(id) {
+  const { error } = await sb.from('puberty_events').delete().eq('event_id', id);
+  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  APP.pubertyEvents = (APP.pubertyEvents || []).filter(ev => ev.event_id !== id);
+  renderPubertyEventsList();
+}
+
+// ══════════════════════════════════════════
 // AI CHAT
 // ══════════════════════════════════════════
 function sendQuick(btn) {
@@ -2461,6 +2670,8 @@ async function goTab(name) {
   }
   if (name === 'Medical') {
     await loadMedicalLogForDate();
+    await loadLabResults();
+    await loadPubertyEvents();
   }
 }
 
