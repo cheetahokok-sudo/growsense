@@ -820,6 +820,24 @@ extended-family records measurably shifts the result up or down in the
 correct direction; an unrecognized relation type is safely ignored
 rather than corrupting the result.
 
+**Follow-up fix, same day — the toggle replaced one result with the
+other instead of showing both.** The original implementation had the
+formula toggle pick which single calculation ran — meaning the only way
+to compare the validated and exploratory numbers was to manually toggle,
+recalculate, write down the number, toggle again, recalculate again.
+Fixed: `calculateAndShowTargetHeight()` now always computes and shows
+the validated parents-only result, and additionally computes and shows
+the exploratory result in a second card right below it (clearly marked,
+amber border, "Exploratory" badge) whenever extended-family records
+exist AND the toggle is set to "extended" — the toggle now controls
+whether the second card is eligible to appear at all, not which single
+number gets calculated. Verified directly, including catching a real
+race condition in the test itself along the way (the toggle handler
+calls the now-`async` calculation function without awaiting it, so a
+test checking the DOM immediately after toggling needs to wait for that
+to settle — same as a real browser's click handler would, this isn't a
+bug, just something the verification needed to account for).
+
 ---
 
 ## 6. Bone age (schema only, not yet used by any UI)

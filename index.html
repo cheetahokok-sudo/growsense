@@ -329,11 +329,22 @@
            11(8):916) instead of the 50-year-old Tanner method's flat
            +/-13cm sex offset and no age/regression correction. Shown
            for every child once both parents' heights are entered, not
-           gated by age or SGA status — this is a general tool. -->
+           gated by age or SGA status — this is a general tool.
+           Collapsible, defaulting closed — this is a deep-dive tool a
+           parent dips into occasionally, not something that should
+           dominate the Analytics screen by default every visit. -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured">Target height (mid-parental)</span></div>
-        <div class="card-body">
+        <div class="card-header" style="cursor:pointer;" onclick="toggleCardCollapse('targetHeightCardBody', this)">
+          <span class="card-title text-measured">Target height (mid-parental)</span>
+          <span class="collapse-chevron" id="targetHeightCardBody-chevron">▾</span>
+        </div>
+        <div class="card-body hidden" id="targetHeightCardBody">
           <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Estimates your child's likely adult height range from both parents' heights, using corrections shown in peer-reviewed research to improve on the traditional method (Zeevi et al., <i>Children</i> 2024). Enter each parent's height as measured now — the calculator adjusts for age-related height loss itself, you don't need to estimate their "peak" height.</div>
+          <div class="seg" id="targetHeightFormulaToggle" style="margin-bottom:12px;">
+            <button class="seg-btn active" data-formula="parents" onclick="setTargetHeightFormula('parents', this)">Parents only</button>
+            <button class="seg-btn" data-formula="extended" onclick="setTargetHeightFormula('extended', this)">+ Extended family</button>
+          </div>
+          <div id="extendedFormulaNote" class="setup-note hidden" style="font-size:10.5px; margin-bottom:10px; background:var(--estimated-light); color:var(--estimated-dark);"></div>
           <div class="form-row">
             <div class="form-lbl">Mother's height (cm)</div>
             <input type="number" id="thMotherHeight" class="num-input" placeholder="—" style="width:80px;">
@@ -352,13 +363,27 @@
           </div>
           <button class="btn-secondary" onclick="calculateAndShowTargetHeight()">Calculate target height</button>
 
-          <div id="targetHeightResult" class="hidden" style="margin-top:14px;">
+          <div id="targetHeightResult" class="hidden" style="margin-top:14px; display:flex; flex-direction:column; gap:10px;">
             <div class="velocity-card" style="margin:0;">
               <div class="velocity-top">
                 <div><span class="velocity-val" id="thResultValue" style="font-size:22px;">—</span><span class="velocity-unit">cm, predicted adult height</span></div>
+                <span class="dq-badge measured" style="font-size:10px;">Validated</span>
               </div>
               <div class="velocity-sub" id="thResultRange"></div>
               <div class="setup-note" style="margin-top:8px; font-size:10.5px;" id="thResultDetail"></div>
+            </div>
+
+            <!-- Exploratory result — only shown once extended-family
+                 records exist, displayed ALONGSIDE the validated result
+                 above rather than replacing it, so a parent can compare
+                 both numbers without re-toggling and re-calculating. -->
+            <div class="velocity-card hidden" id="thExploratoryCard" style="margin:0; border-left: 3px solid var(--estimated);">
+              <div class="velocity-top">
+                <div><span class="velocity-val" id="thExploratoryValue" style="font-size:22px;">—</span><span class="velocity-unit">cm, with extended family</span></div>
+                <span class="dq-badge estimated" style="font-size:10px;">Exploratory</span>
+              </div>
+              <div class="velocity-sub" id="thExploratoryRange"></div>
+              <div class="setup-note" style="margin-top:8px; font-size:10.5px;" id="thExploratoryDetail"></div>
             </div>
           </div>
 

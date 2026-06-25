@@ -1002,23 +1002,19 @@ async function calculateAndShowTargetHeight() {
     return;
   }
 
-  const result = APP.targetHeightFormula === 'extended'
-    ? calculateExploratoryExtendedTargetHeight({
-        motherHeightCm: motherHeight,
-        fatherHeightCm: fatherHeight,
-        motherAge: motherAgeRaw ? parseFloat(motherAgeRaw) : null,
-        fatherAge: fatherAgeRaw ? parseFloat(fatherAgeRaw) : null,
-        childSex: child.biological_sex,
-        familyRecords: APP.familyHeightRecords || []
-      })
-    : calculateTargetHeight({
-        motherHeightCm: motherHeight,
-        fatherHeightCm: fatherHeight,
-        motherAge: motherAgeRaw ? parseFloat(motherAgeRaw) : null,
-        fatherAge: fatherAgeRaw ? parseFloat(fatherAgeRaw) : null,
-        childSex: child.biological_sex
-      });
+  const baseParams = {
+    motherHeightCm: motherHeight,
+    fatherHeightCm: fatherHeight,
+    motherAge: motherAgeRaw ? parseFloat(motherAgeRaw) : null,
+    fatherAge: fatherAgeRaw ? parseFloat(fatherAgeRaw) : null,
+    childSex: child.biological_sex
+  };
 
+  // Always compute the validated parents-only result — this is never
+  // skipped or replaced by the exploratory one. See note below on why
+  // both are computed and shown together rather than the toggle
+  // swapping which single result displays.
+  const result = calculateTargetHeight(baseParams);
   if (!result) { showToast('⚠️', 'Could not calculate — check the entered heights'); return; }
 
   // Persist what was entered, so it's there next time this child/tab is
@@ -1034,15 +1030,12 @@ async function calculateAndShowTargetHeight() {
   if (error) {
     showToast('⚠️', 'Calculated, but could not save for next time: ' + error.message);
   } else {
-    // Keep the in-memory child object in sync so switching away and
-    // back within the same session shows the saved values immediately.
     child.mother_height_cm = motherHeight;
     child.father_height_cm = fatherHeight;
     child.mother_current_age = motherAgeRaw ? parseInt(motherAgeRaw) : null;
     child.father_current_age = fatherAgeRaw ? parseInt(fatherAgeRaw) : null;
   }
 
-  const resultCard = document.querySelector('#targetHeightResult .velocity-card');
   document.getElementById('targetHeightResult').classList.remove('hidden');
   document.getElementById('thResultValue').textContent = result.targetHeightCm;
   document.getElementById('thResultRange').textContent =
@@ -1051,21 +1044,29 @@ async function calculateAndShowTargetHeight() {
   const ageNote = (result.motherAgeShrinkageCm > 0 || result.fatherAgeShrinkageCm > 0)
     ? ` Age-correction added back ${result.motherAgeShrinkageCm}cm (mother) and ${result.fatherAgeShrinkageCm}cm (father) for natural height loss with age — see target-height.js for the source.`
     : '';
+  document.getElementById('thResultDetail').innerHTML =
+    `For comparison, the traditional method (flat ±13cm sex adjustment, no age or regression correction) gives <strong>${result.tannerMidParentalCm}cm</strong>.${ageNote} This is a population-based estimate with real uncertainty (the source study notes ~20% variability in the spread itself) — not a precise prediction, and not a substitute for your pediatrician's assessment, especially if bone age or growth velocity look unusual.`;
 
-  if (result.isExploratory) {
-    // Visually distinct from the validated result — amber border, not
-    // the default card style — so an exploratory number never looks
-    // like it carries the same confidence as the parents-only result.
-    resultCard.style.borderLeft = '3px solid var(--estimated)';
-    const extendedNote = result.extendedFamilyUsedCount > 0
-      ? ` Includes ${result.extendedFamilyUsedCount} extended-family record(s); the validated parents-only estimate alone is <strong>${result.parentsOnlyTargetHeightCm}cm</strong>.`
-      : ' No extended-family records found — this matches the parents-only result exactly.';
-    document.getElementById('thResultDetail').innerHTML =
-      `<strong>⚠️ Exploratory result — not equal-confidence with the parents-only method.</strong>${extendedNote} Traditional Tanner method (for reference): <strong>${result.tannerMidParentalCm}cm</strong>.${ageNote}`;
+  // Exploratory result — shown ALONGSIDE the validated one above
+  // (never replacing it) whenever extended-family records exist AND the
+  // parent has opted into seeing it via the toggle. Previously this
+  // function computed ONE OR THE OTHER depending on the toggle, which
+  // meant the two numbers could never be compared without manually
+  // re-toggling and re-clicking Calculate — fixed here.
+  const exploratoryCard = document.getElementById('thExploratoryCard');
+  const hasFamilyData = (APP.familyHeightRecords || []).length > 0;
+  if (APP.targetHeightFormula === 'extended' && hasFamilyData) {
+    const exploratoryResult = calculateExploratoryExtendedTargetHeight(
+      Object.assign({}, baseParams, { familyRecords: APP.familyHeightRecords })
+    );
+    exploratoryCard.classList.remove('hidden');
+    document.getElementById('thExploratoryValue').textContent = exploratoryResult.targetHeightCm;
+    document.getElementById('thExploratoryRange').textContent =
+      `Likely adult height range: ${exploratoryResult.rangeLowCm}–${exploratoryResult.rangeHighCm}cm.`;
+    document.getElementById('thExploratoryDetail').innerHTML =
+      `<strong>⚠️ Exploratory — not equal-confidence with the validated result above.</strong> Includes ${exploratoryResult.extendedFamilyUsedCount} extended-family record(s), blended with the validated parents-only estimate (70% weight) using standard relatedness weighting — but the 70/30 blend itself is an arbitrary choice, not a researched constant. See target-height.js for the full explanation.`;
   } else {
-    resultCard.style.borderLeft = '';
-    document.getElementById('thResultDetail').innerHTML =
-      `For comparison, the traditional method (flat ±13cm sex adjustment, no age or regression correction) gives <strong>${result.tannerMidParentalCm}cm</strong>.${ageNote} This is a population-based estimate with real uncertainty (the source study notes ~20% variability in the spread itself) — not a precise prediction, and not a substitute for your pediatrician's assessment, especially if bone age or growth velocity look unusual.`;
+    exploratoryCard.classList.add('hidden');
   }
 }
 
