@@ -1211,6 +1211,53 @@ unaffected.
 
 ---
 
+## 5q. Illness events replace the mislabeled "illness days this month" field (2026-06-26)
+
+**Where:** `migration_illness_events.sql`, the redesigned "Development
+interference log" card, `addIllnessEvent()` and related functions in
+`app.js`.
+
+**The real problem, reported directly by the user:** the Medical
+screen's "Illness days this month" field showed a number that appeared
+to persist after refresh — investigated and confirmed this wasn't a
+bug. The field correctly saved/loaded one number tied to one specific
+`log_date`, exactly like every other medical_logs field — the label
+just claimed something the data model never actually did (there was no
+monthly aggregation anywhere in the codebase, confirmed by checking
+every usage of `illness_days`). There's no natural moment a parent
+would think "let me update my running monthly tally typed into one box
+on one arbitrary day" — illness happens as discrete episodes with a
+real start and end, not a number you accumulate mentally and type in
+once.
+
+**The fix — event-based logging, matching the pattern already trusted
+for `lab_results` and `puberty_events`:** a new `illness_events` table
+(`start_date`, optional `end_date` for ongoing illnesses, a broad
+`illness_type` bucket — fever, cold/respiratory, ear infection,
+stomach/GI, flu, skin/rash, injury, hospitalization, other — plus free-
+text notes for real specifics). A parent can log the start immediately
+and fill in the end date once it resolves, rather than waiting until an
+illness is over to log anything. A database constraint
+(`illness_end_after_start`) prevents an end date earlier than the start
+date from ever being saved, enforced at the database level, not just in
+the UI.
+
+**The old field is genuinely gone from the UI, but the old data isn't
+lost:** `medical_logs.illness_days` is left untouched in the database —
+not migrated, not dropped — so any historical data saved under the old
+design still exists if needed later; the screen just no longer reads or
+writes it. `saveMedical()` and `loadMedicalLogForDate()` were both
+updated to drop their references to the removed `medIllness` element.
+
+**Verified directly:** the full add → render → delete cycle, the
+ongoing-illness case (no end date, displays "ongoing"), and both
+validation guards (missing start date, end date before start date) all
+tested and confirmed working; confirmed the old `medIllness` DOM
+element is genuinely gone with no dangling references left anywhere in
+either file.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

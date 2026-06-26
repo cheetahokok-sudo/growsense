@@ -38,6 +38,7 @@ const APP = {
   chartZoom: 'auto', // 'auto' (zoomed to current age, existing behavior) or 'full' (always shows 0-19y) — see setChartZoom()
   labResults: [],    // lab_results rows for the active child, loaded when the Medical tab opens
   pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
+  illnessEvents: [], // illness_events rows for the active child, loaded when the Medical tab opens
   familyHeightRecords: [], // family_height_records rows - reference only by default; see targetHeightFormula
   targetHeightFormula: 'parents', // 'parents' (validated, default) or 'extended' (exploratory) — see setTargetHeightFormula()
   aiChatHistory: [], // [{role:'user'|'assistant', content:'...'}] for the active child's AI coach conversation — reset on child switch, see askClaude()
@@ -2582,7 +2583,6 @@ async function saveMedical() {
   const { error } = await sb.from('medical_logs').upsert({
     child_id: childId,
     log_date: APP.logDate,
-    illness_days: parseInt(document.getElementById('medIllness').value) || 0,
     steroid_level: currentState().steroid,
     medications: document.getElementById('medMeds').value || null,
     notes: document.getElementById('medNotes').value || null,
@@ -2607,7 +2607,6 @@ async function saveMedical() {
 // mirroring how loadDayIntoState() restores the Today screen.
 async function loadMedicalLogForDate() {
   const childId = activeChildId();
-  const illnessEl = document.getElementById('medIllness');
   const medsEl = document.getElementById('medMeds');
   const notesEl = document.getElementById('medNotes');
   const igfEl = document.getElementById('labIGF');
@@ -2616,7 +2615,6 @@ async function loadMedicalLogForDate() {
 
   // Reset to blank defaults first, so switching to a date/child with no
   // record doesn't show stale values from whatever was viewed before.
-  illnessEl.value = 0;
   medsEl.value = '';
   notesEl.value = '';
   igfEl.value = '';
@@ -2635,7 +2633,6 @@ async function loadMedicalLogForDate() {
 
   if (error || !data) return; // no record for this date — blank form is correct
 
-  illnessEl.value = data.illness_days || 0;
   medsEl.value = data.medications || '';
   notesEl.value = data.notes || '';
   igfEl.value = data.igf1_ng_ml != null ? data.igf1_ng_ml : '';
@@ -2851,6 +2848,114 @@ async function deletePubertyEvent(id) {
   if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
   APP.pubertyEvents = (APP.pubertyEvents || []).filter(ev => ev.event_id !== id);
   renderPubertyEventsList();
+}
+
+// ══════════════════════════════════════════
+// ILLNESS EVENTS (illness_events table) — replaces the old single
+// "illness days this month" number that was actually saved per
+// log_date despite the monthly label, a real UX mismatch a user
+// flagged directly: there's no natural moment a parent thinks "let me
+// update my running monthly tally typed into one box on one arbitrary
+// day." Illness happens as discrete episodes with a real start and
+// end — this captures that shape directly, same event-based pattern as
+// lab_results/puberty_events, rather than forcing illness into the
+// daily-log shape it doesn't fit. The old medical_logs.illness_days
+// column is left untouched in the database (old data isn't lost), just
+// no longer written to or read from this screen.
+// ══════════════════════════════════════════
+const ILLNESS_TYPE_LABELS = {
+  fever: 'Fever', cold_respiratory: 'Cold / respiratory', ear_infection: 'Ear infection',
+  stomach_gi: 'Stomach / GI', flu: 'Flu', skin_rash: 'Skin / rash', injury: 'Injury',
+  hospitalization: 'Hospitalization', other: 'Other'
+};
+
+async function loadIllnessEvents() {
+  const childId = activeChildId();
+  const listEl = document.getElementById('illnessEventsList');
+  if (!listEl) return;
+  if (!childId) { listEl.innerHTML = ''; return; }
+
+  const { data, error } = await sb
+    .from('illness_events')
+    .select('*')
+    .eq('child_id', childId)
+    .order('start_date', { ascending: false })
+    .limit(20);
+
+  if (error) { listEl.innerHTML = ''; return; }
+  APP.illnessEvents = data || [];
+  renderIllnessEventsList();
+}
+
+function renderIllnessEventsList() {
+  const listEl = document.getElementById('illnessEventsList');
+  if (!listEl) return;
+  const items = APP.illnessEvents || [];
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="log-list-empty">No illness episodes logged yet.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(ev => {
+    const label = ILLNESS_TYPE_LABELS[ev.illness_type] || ev.illness_type;
+    const startFmt = new Date(ev.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const dateRange = ev.end_date
+      ? `${startFmt} – ${new Date(ev.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+      : `${startFmt} – ongoing`;
+    return `
+      <div class="log-item-row">
+        <div class="log-item-left">
+          <span class="log-item-emoji">🤒</span>
+          <div class="log-item-info">
+            <span class="log-item-name">${label}</span>
+            <span class="log-item-meta">${dateRange}${ev.notes ? ' · ' + ev.notes : ''}</span>
+          </div>
+        </div>
+        <div class="log-item-right">
+          <button class="log-item-delete" onclick="deleteIllnessEvent('${ev.event_id}')" aria-label="Remove">×</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addIllnessEvent() {
+  const childId = activeChildId();
+  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+
+  const startDate = document.getElementById('newIllnessStart').value;
+  const endDate = document.getElementById('newIllnessEnd').value;
+  const type = document.getElementById('newIllnessType').value;
+  const notes = document.getElementById('newIllnessNotes').value.trim();
+
+  if (!startDate) { showToast('⚠️', 'Enter the start date'); return; }
+  if (endDate && endDate < startDate) { showToast('⚠️', 'End date is before start date'); return; }
+
+  const { data, error } = await sb.from('illness_events').insert({
+    child_id: childId,
+    start_date: startDate,
+    end_date: endDate || null,
+    illness_type: type,
+    notes: notes || null,
+    created_by: APP.session ? APP.session.user.id : null
+  }).select().single();
+
+  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+
+  APP.illnessEvents = APP.illnessEvents || [];
+  APP.illnessEvents.unshift(data);
+  renderIllnessEventsList();
+
+  document.getElementById('newIllnessStart').value = '';
+  document.getElementById('newIllnessEnd').value = '';
+  document.getElementById('newIllnessNotes').value = '';
+  showToast('✅', 'Illness episode added');
+}
+
+async function deleteIllnessEvent(id) {
+  const { error } = await sb.from('illness_events').delete().eq('event_id', id);
+  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  APP.illnessEvents = (APP.illnessEvents || []).filter(ev => ev.event_id !== id);
+  renderIllnessEventsList();
 }
 
 // ══════════════════════════════════════════
@@ -3488,6 +3593,7 @@ async function goTab(name) {
     await loadMedicalLogForDate();
     await loadLabResults();
     await loadPubertyEvents();
+    await loadIllnessEvents();
   }
   if (name === 'AI') {
     if (!APP.aiCoachQuestions) {

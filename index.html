@@ -619,10 +619,35 @@
 
       <div class="warning-card">
         <div class="warning-title">Development interference log</div>
-        <div class="form-row" style="border-bottom:none;">
-          <div><div class="form-lbl">Illness days this month</div><div class="form-lbl-sub">Acute illness suppresses GH pulsatility</div></div>
-          <input type="number" id="medIllness" class="num-input" value="0" min="0" style="width:70px;">
+        <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Acute illness can suppress growth hormone pulsatility — logging real illness episodes (not a guessed monthly count) gives a clearer picture of how illness timing relates to growth changes.</div>
+        <div class="form-row">
+          <div class="form-lbl">Start date</div>
+          <input type="date" id="newIllnessStart" class="date-input" style="width:140px;">
         </div>
+        <div class="form-row">
+          <div class="form-lbl">End date (optional — leave blank if ongoing)</div>
+          <input type="date" id="newIllnessEnd" class="date-input" style="width:140px;">
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">Type</div>
+          <select id="newIllnessType" class="num-input" style="width:170px; text-align:left; padding-left:10px;">
+            <option value="fever">Fever</option>
+            <option value="cold_respiratory">Cold / respiratory</option>
+            <option value="ear_infection">Ear infection</option>
+            <option value="stomach_gi">Stomach / GI</option>
+            <option value="flu">Flu</option>
+            <option value="skin_rash">Skin / rash</option>
+            <option value="injury">Injury</option>
+            <option value="hospitalization">Hospitalization</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+          <div class="form-lbl">Notes (optional)</div>
+          <input type="text" id="newIllnessNotes" class="text-input" placeholder="e.g. 38.5°C for 2 days, diagnosed by pediatrician">
+        </div>
+        <button class="btn-secondary" onclick="addIllnessEvent()">Add illness episode</button>
+        <div id="illnessEventsList" class="nutrition-log-list" style="margin-top:12px;"></div>
       </div>
 
       <div class="card">
