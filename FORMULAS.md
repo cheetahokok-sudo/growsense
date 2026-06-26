@@ -1159,6 +1159,58 @@ never presenting unverified sourcing as real.
 
 ---
 
+## 5p. Second verified question batch — 17 more, library now at 182 (2026-06-26)
+
+**Where:** `seed_verified_questions_batch2.sql`.
+
+**Source material this time was a genuine improvement over the earlier
+466-question file:** a new 50-question candidate list was supplied,
+honestly marking 43 of its 50 citations as "PMID: TBD" rather than
+inventing numbers — a real, credit-worthy difference from the prior
+fabricated-citation batch. The 4 questions that DID claim a specific
+PMID (sleep/GH, two zinc claims, vitamin D) were checked the same way
+as everything else in this project: searched directly, including a
+direct PubMed URL fetch attempt. **None of the 4 specific PMIDs could
+be confirmed** — the underlying claims were all real and well-supported
+by genuine literature, just not by the exact numbers given. None of
+those 4 numbers were used; where the claim itself was solid, real
+replacement citations were found independently (e.g. the zinc/DNA-
+synthesis claim is real and well-supported — PMID 9283119 and others
+confirm it directly — just not under the number originally given).
+
+**Of the 50 candidate questions, ~33 were already covered** in the
+existing 165-question library under similar wording (height velocity,
+zinc, vitamin D, CDGP, bone age basics, etc.) — checked by hand, not
+just keyword-matched, since a crude keyword check kept false-flagging
+unrelated questions as "covered" just for sharing a single common word.
+**17 were genuinely new and got the full research treatment**: growth
+plate biology and whether they can reopen (no — confirmed via PMC5798587,
+a real synchrotron microtomography study), catch-down growth (the real,
+distinct mirror-image of catch-up growth, confirmed via PMC3474389),
+Tanner staging's actual definition and origin (PMID 29262142), GnRH as
+the literal trigger for puberty (NBK534827), testosterone/estrogen's
+growth-plate mechanisms, all four bone-age basics questions (definition,
+why ordered, delayed vs. advanced — PMC4266871 and PMC4628949), four
+nutrition questions (milk/dairy — a real, citable effect via IGF-1 from
+a 5,101-girl cohort; ultra-processed foods — directly linked to lower
+height-for-age and 3x higher stunting odds in a real Ecuador study;
+sugary drinks; breakfast skipping — a 1,200-child Tunisian study), and
+two sleep-tracking basics (wearable accuracy — a real 75-participant,
+543-hour polysomnography validation study showing real, substantial
+accuracy variation between devices; sleep efficiency's actual
+definition).
+
+**Verified directly, not just generated:** all 17 pass the same
+placeholder/category/requires_data validation as every prior batch
+(zero errors), checked for exact-text duplicates against the existing
+165-question library (zero found), and confirmed working end-to-end
+against the full reconstructed 182-question library — including a
+citation rendering correctly for a new question, fuzzy matching working
+on new content, and the pre-existing 165 questions completely
+unaffected.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table
