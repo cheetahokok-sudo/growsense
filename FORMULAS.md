@@ -840,6 +840,106 @@ bug, just something the verification needed to account for).
 
 ---
 
+## 5j. AI coach context fix + question library (implemented 2026-06-26)
+
+**Where:** `buildAICoachContext()`, `loadAICoachQuestions()` and related
+functions in `app.js`, `migration_ai_coach_questions.sql`,
+`seed_ai_coach_questions.sql`.
+
+**What was actually wrong, found before building anything new:** the AI
+coach's system prompt only ever included today's daily log (protein,
+sleep, activity) — it had no access to growth percentile, BMI status,
+height velocity, target height, SGA catch-up status, lab results, or
+puberty milestones, despite all of that being real, already-built data
+elsewhere in the app. A parent asking "what does my child's percentile
+mean?" would get a generic answer with no actual percentile in it. Fixed
+with `buildAICoachContext()`, which recomputes every value fresh from
+the same functions the rest of the app uses (not by scraping DOM text,
+which can be stale or not yet rendered) — height/BMI percentile, height
+velocity, target height (if parent heights are on file), SGA catch-up
+velocity (if flagged and under 5), recent labs, recent puberty
+milestones. Verified directly: a fully-populated test child produced
+correct values for every field, including an exact velocity match
+(7.0 cm/yr from a real 7cm-over-365-days case) and a sensible positive
+SGA catch-up rate.
+
+**On "embedding an ML module"** — this was explicitly considered and
+the honest answer given before building anything: a genuinely trained
+ML model needs training data, and this app has WHO's published
+reference *curves*, not a dataset of individual children's longitudinal
+records to train on. What exists (and what was extended here) is the
+same category of thing already in this app — cited statistical formulas
+and an LLM call grounded in real data — not a new trained model. Stated
+plainly rather than building something that looks like ML but isn't.
+
+**The question library — why a database table, not 500 padded
+questions.** Storage was never the real constraint (even 100MB holds
+hundreds of thousands of entries at ~300 bytes/question) — the real
+constraint is authoring quality, so this shipped with 150 genuinely
+distinct, categorized questions rather than 500 stretched out with
+near-duplicates. `ai_coach_questions` lives in Supabase (not a static
+JS file) specifically so it can be filtered live: each question is
+tagged with `requires_data` (e.g. `labs`, `target_height`,
+`measurements_2plus`) and an optional age range, and
+`getAvailableDataTags()` computes — from the exact same context object
+the AI prompt uses — which tags are actually satisfied for the active
+child, so a parent never sees a suggested question their child has no
+data to answer (e.g. no lab-result questions shown with zero labs
+logged, though purely educational lab questions tagged `none` still
+show, by design — see code comments). 12 categories, shown as filter
+chips that only appear when at least one of their questions is
+currently answerable. Falls back to a small hardcoded set if the table
+hasn't loaded (migration not yet run, or a network failure) — verified
+directly by simulating a failed query and confirming the fallback set
+loads correctly.
+
+---
+
+## 5k. AI coach conversation memory + error handling (2026-06-26)
+
+**Where:** `askClaude()`, `resetAIChatForChildSwitch()`,
+`clearAIConversation()` in `app.js`.
+
+**Bug fixed — no conversation memory.** Every call to `askClaude()` sent
+only `[{ role: 'user', content: userMsg }]` — the current message,
+nothing before it. A follow-up like "what about compared to last
+month?" had no prior turn to refer to. Fixed: `APP.aiChatHistory` stores
+the full exchange, and each API call sends the last 20 messages (10
+exchanges) plus the new one — capped to bound token cost and latency,
+since the system prompt already re-supplies a fresh data snapshot on
+every call regardless of history length. Verified directly: a second
+question's request body was confirmed to contain the first question's
+text, proving the history is actually transmitted, not just stored
+locally and forgotten.
+
+**History resets on child switch**, not just manually — a conversation
+about one child's growth data should never silently carry over as
+context for a different child. Also added a user-facing "Clear
+conversation" button for starting a fresh topic without switching
+children. Both call the same `resetAIChatForChildSwitch()`, which also
+re-renders the question library's category chips, since which questions
+are answerable depends on the active child's data.
+
+**Error handling — failures were previously indistinguishable.** A
+network failure, an API error response (rate limit, bad request), and a
+malformed/empty success response all produced the same generic "had
+trouble responding" text with nothing logged anywhere. Now each case is
+handled separately: a real API error object is logged to the console
+with its actual content and shown a distinct message; a malformed
+response (missing `content`) is also logged and distinguished from a
+genuine network failure. None of these failure cases pollute
+`aiChatHistory` with a bad exchange — verified directly by simulating
+both an error response and a malformed response and confirming history
+stayed empty afterward.
+
+**Incidental fix:** `.btn-link` had been used in two places (the SGA
+birth-details toggle from an earlier session, and this session's new
+"Clear conversation" button) with no actual CSS definition — both had
+been rendering as unstyled default browser buttons this whole time.
+Added the missing class.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

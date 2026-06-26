@@ -39,7 +39,8 @@ const APP = {
   labResults: [],    // lab_results rows for the active child, loaded when the Medical tab opens
   pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
   familyHeightRecords: [], // family_height_records rows - reference only by default; see targetHeightFormula
-  targetHeightFormula: 'parents' // 'parents' (validated, default) or 'extended' (exploratory) — see setTargetHeightFormula()
+  targetHeightFormula: 'parents', // 'parents' (validated, default) or 'extended' (exploratory) — see setTargetHeightFormula()
+  aiChatHistory: [] // [{role:'user'|'assistant', content:'...'}] for the active child's AI coach conversation — reset on child switch, see askClaude()
 };
 
 function todayISO() {
@@ -622,6 +623,7 @@ function renderChildSwitcher() {
       drawBMIChart();
       await loadFamilyHeightRecords();
       loadTargetHeightForm();
+      resetAIChatForChildSwitch();
     };
     sw.appendChild(chip);
   });
@@ -2813,6 +2815,118 @@ async function deletePubertyEvent(id) {
 // ══════════════════════════════════════════
 // AI CHAT
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// AI COACH QUESTION LIBRARY (ai_coach_questions table) — ~150
+// categorized questions, each tagged with which data it depends on.
+// Filtered per-child so a parent only sees questions their child
+// actually has the underlying data for (e.g. target-height questions
+// only appear once parent heights are on file).
+// ══════════════════════════════════════════
+const AI_CATEGORY_LABELS = {
+  growth_trend: 'Growth trend', bmi_weight: 'BMI & weight', nutrition: 'Nutrition',
+  sleep: 'Sleep', activity: 'Activity', puberty: 'Puberty', target_height: 'Target height',
+  sga_catchup: 'Catch-up growth', labs: 'Labs', medical: 'Medical', clinic_prep: 'Clinic visit prep',
+  general_understanding: 'General'
+};
+
+// Hardcoded fallback — used only if the table hasn't loaded (migration
+// not yet run, or a network hiccup) so the AI coach screen is never
+// left completely empty of suggestions.
+const AI_FALLBACK_QUESTIONS = [
+  { category: 'general_understanding', question_text: "What does today's readiness reading suggest?", requires_data: ['none'] },
+  { category: 'clinic_prep', question_text: 'What questions should I bring to the next pediatrician visit?', requires_data: ['none'] },
+  { category: 'sleep', question_text: 'How does sleep timing affect growth hormone release?', requires_data: ['none'] },
+  { category: 'growth_trend', question_text: 'Explain the height velocity number on Analytics', requires_data: ['measurements_2plus'] }
+];
+
+async function loadAICoachQuestions() {
+  try {
+    const { data, error } = await sb.from('ai_coach_questions').select('*').eq('is_active', true).order('display_priority');
+    APP.aiCoachQuestions = (!error && data && data.length > 0) ? data : AI_FALLBACK_QUESTIONS;
+  } catch (e) {
+    APP.aiCoachQuestions = AI_FALLBACK_QUESTIONS;
+  }
+  renderAICategoryChips();
+}
+
+// Determines which requires_data tags are actually satisfied for the
+// active child right now — reuses the same context object the AI
+// prompt itself is built from, so "is this question answerable" and
+// "what does the AI actually know" never disagree with each other.
+function getAvailableDataTags() {
+  const ctx = buildAICoachContext();
+  const tags = new Set(['none']);
+  if (ctx.latestHeightCm != null) tags.add('measurements_1plus');
+  if (ctx.heightVelocityCmYr != null) tags.add('measurements_2plus');
+  if (ctx.bmi != null) tags.add('bmi');
+  if (ctx.targetHeightCm != null) tags.add('target_height');
+  if (ctx.isSGA) tags.add('sga_status');
+  if (ctx.recentLabs) tags.add('labs');
+  if (ctx.recentPubertyEvents) tags.add('puberty_events');
+  if ((APP.familyHeightRecords || []).length > 0) tags.add('family_height_records');
+  return tags;
+}
+
+function questionIsAnswerable(q, availableTags, ageYears) {
+  const tagsOk = (q.requires_data || ['none']).every(t => availableTags.has(t));
+  if (!tagsOk) return false;
+  if (q.min_age_years != null && ageYears != null && ageYears < q.min_age_years) return false;
+  if (q.max_age_years != null && ageYears != null && ageYears > q.max_age_years) return false;
+  return true;
+}
+
+function renderAICategoryChips() {
+  const chipsEl = document.getElementById('aiCategoryChips');
+  if (!chipsEl) return;
+  const child = APP.children[APP.activeChild];
+  const ageYears = child ? (new Date() - new Date(child.date_of_birth)) / (365.25*86400000) : null;
+  const availableTags = getAvailableDataTags();
+
+  // Only show category chips that have at least one currently-answerable
+  // question — no point showing a "Labs" chip if this child has zero
+  // lab results logged and every lab question requires that data.
+  const answerableQuestions = (APP.aiCoachQuestions || []).filter(q => questionIsAnswerable(q, availableTags, ageYears));
+  const categoriesPresent = [...new Set(answerableQuestions.map(q => q.category))];
+
+  chipsEl.innerHTML = ['all', ...categoriesPresent].map(cat => {
+    const label = cat === 'all' ? 'All' : (AI_CATEGORY_LABELS[cat] || cat);
+    return `<button class="ai-chip ${cat === 'all' ? 'active' : ''}" data-cat="${cat}" onclick="filterAIQuestionsByCategory('${cat}', this)">${label}</button>`;
+  }).join('');
+
+  renderAIQuestionList('all');
+}
+
+function filterAIQuestionsByCategory(category, btn) {
+  document.querySelectorAll('#aiCategoryChips .ai-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderAIQuestionList(category);
+}
+
+function renderAIQuestionList(category) {
+  const listEl = document.getElementById('quickPrompts');
+  if (!listEl) return;
+  const child = APP.children[APP.activeChild];
+  const ageYears = child ? (new Date() - new Date(child.date_of_birth)) / (365.25*86400000) : null;
+  const availableTags = getAvailableDataTags();
+
+  let questions = (APP.aiCoachQuestions || []).filter(q => questionIsAnswerable(q, availableTags, ageYears));
+  if (category !== 'all') questions = questions.filter(q => q.category === category);
+
+  // Cap the visible list — a parent scanning a chat screen isn't going
+  // to scroll through dozens of buttons; the category filter is there
+  // for when they want more than this default slice.
+  const MAX_SHOWN = 8;
+  const shown = questions.slice(0, MAX_SHOWN);
+
+  if (shown.length === 0) {
+    listEl.innerHTML = '<div class="log-list-empty">No suggested questions for this category yet — try asking directly below.</div>';
+    return;
+  }
+  listEl.innerHTML = shown.map(q =>
+    `<button class="quick-btn" onclick="sendQuick(this)">${q.question_text}</button>`
+  ).join('');
+}
+
 function sendQuick(btn) {
   const msg = btn.textContent.trim();
   document.getElementById('quickPrompts').style.display = 'none';
@@ -2828,6 +2942,28 @@ function sendAI() {
   document.getElementById('quickPrompts').style.display = 'none';
   addUserMsg(msg);
   askClaude(msg);
+}
+
+// Clears AI conversation history and resets the visible chat back to
+// the welcome message when switching children — a conversation about
+// one child's growth data should never silently carry over as context
+// for a different child. Also re-filters the question library, since
+// which questions are answerable depends on the active child's data.
+// User-triggered "Clear conversation" button — same effect as switching
+// children (clears history, resets the visible chat), but explicitly
+// invoked without an actual child switch, for a parent who wants to
+// start a fresh topic without carrying over an unrelated earlier thread.
+function clearAIConversation() {
+  resetAIChatForChildSwitch();
+}
+
+function resetAIChatForChildSwitch() {
+  APP.aiChatHistory = [];
+  const chat = document.getElementById('aiChat');
+  if (chat) {
+    chat.innerHTML = `<div class="ai-msg bot">I can answer questions using this child's logged nutrition, sleep, activity, and clinical data. I'm not a doctor — for diagnosis or treatment decisions, bring the trend data on the Analytics tab to your pediatrician.<br><br>What would you like to know?</div>`;
+  }
+  if (APP.aiCoachQuestions) renderAICategoryChips();
 }
 
 function addUserMsg(text) {
@@ -2862,20 +2998,142 @@ function hideThinking() {
   if (t) t.remove();
 }
 
+// Builds the full data context for the AI coach — recomputes
+// percentile/BMI/target-height results fresh from the same underlying
+// functions the rest of the app uses, rather than reading DOM text
+// (which can be stale, hidden, or not yet rendered). This was added
+// because the AI coach previously only saw today's daily log (protein/
+// sleep/activity) and had no access to growth percentile, BMI status,
+// target height, lab results, puberty milestones, or SGA status — most
+// of what a parent would naturally ask about.
+function buildAICoachContext() {
+  const child = APP.children[APP.activeChild];
+  if (!child) return { hasChild: false };
+
+  const ageYears = (new Date() - new Date(child.date_of_birth)) / (365.25 * 86400000);
+  const measurements = APP.activeChildMeasurements || [];
+  const latest = measurements[0]; // newest-first, per refreshActiveChildHistory()
+  const ctx = { hasChild: true, name: child.name, ageYears: ageYears.toFixed(1), sex: child.biological_sex };
+
+  // Height/BMI percentile — recomputed fresh, same functions the charts use.
+  if (latest) {
+    const use0to5 = ageYears < 5 && typeof calculateHeightPercentile0to5 === 'function';
+    let heightResult = null;
+    if (use0to5) {
+      const ageMonths = ageYears * 12;
+      const { value } = GrowthPercentile0to5Math.resolveHeightTableAndValue(
+        Number(latest.stature_height_cm), ageMonths, child.biological_sex, ageMonths < 24 ? 'recumbent' : 'standing'
+      );
+      heightResult = calculateHeightPercentile0to5(value, ageMonths, child.biological_sex);
+    } else if (typeof calculateHeightPercentile === 'function') {
+      heightResult = calculateHeightPercentile(Number(latest.stature_height_cm), ageYears, child.biological_sex);
+    }
+    if (heightResult && !heightResult.outOfRange) {
+      ctx.heightPercentile = Math.round(heightResult.percentile);
+      ctx.heightZ = heightResult.zScore.toFixed(2);
+    }
+
+    if (latest.calculated_bmi != null) {
+      const bmiResult = use0to5
+        ? calculateBMIPercentile0to5(Number(latest.calculated_bmi), ageYears * 12, child.biological_sex)
+        : (typeof calculateBMIPercentile === 'function' ? calculateBMIPercentile(Number(latest.calculated_bmi), ageYears, child.biological_sex) : null);
+      if (bmiResult && !bmiResult.outOfRange) {
+        ctx.bmi = Number(latest.calculated_bmi).toFixed(1);
+        ctx.bmiPercentile = Math.round(bmiResult.percentile);
+        ctx.bmiClassification = bmiResult.classification;
+      }
+    }
+    ctx.latestHeightCm = latest.stature_height_cm;
+    ctx.latestWeightKg = latest.mass_weight_kg;
+    ctx.latestMeasurementDate = latest.recorded_date;
+  }
+
+  // Height velocity, if 2+ measurements exist.
+  if (measurements.length >= 2) {
+    const prev = measurements[1];
+    const days = (new Date(latest.recorded_date) - new Date(prev.recorded_date)) / 86400000;
+    if (days > 0) {
+      ctx.heightVelocityCmYr = (((Number(latest.stature_height_cm) - Number(prev.stature_height_cm)) / days) * 365.25).toFixed(1);
+    }
+  }
+
+  // Target height, if both parents' heights are on file.
+  if (child.mother_height_cm != null && child.father_height_cm != null && typeof calculateTargetHeight === 'function') {
+    const th = calculateTargetHeight({
+      motherHeightCm: child.mother_height_cm, fatherHeightCm: child.father_height_cm,
+      motherAge: child.mother_current_age, fatherAge: child.father_current_age,
+      childSex: child.biological_sex
+    });
+    if (th) {
+      ctx.targetHeightCm = th.targetHeightCm;
+      ctx.targetHeightRangeLow = th.rangeLowCm;
+      ctx.targetHeightRangeHigh = th.rangeHighCm;
+    }
+  }
+
+  // SGA status + catch-up velocity, if flagged and under 5.
+  if (child.is_sga && ageYears < 5 && measurements.length >= 2 && typeof calculateHeightPercentile0to5 === 'function') {
+    const lastAgeMonths = (new Date(latest.recorded_date) - new Date(child.date_of_birth)) / (30.4375*86400000);
+    const prevAgeMonths = (new Date(measurements[1].recorded_date) - new Date(child.date_of_birth)) / (30.4375*86400000);
+    const yearsBetween = (lastAgeMonths - prevAgeMonths) / 12;
+    if (yearsBetween > 0) {
+      const lastR = calculateHeightPercentile0to5(Number(latest.stature_height_cm), lastAgeMonths, child.biological_sex);
+      const prevR = calculateHeightPercentile0to5(Number(measurements[1].stature_height_cm), prevAgeMonths, child.biological_sex);
+      if (lastR && prevR && !lastR.outOfRange && !prevR.outOfRange) {
+        ctx.isSGA = true;
+        ctx.sgaCatchupSDSPerYear = ((lastR.zScore - prevR.zScore) / yearsBetween).toFixed(2);
+      }
+    }
+  }
+
+  // Recent lab results (most recent 5, name + value + unit only — keep token cost bounded).
+  if ((APP.labResults || []).length > 0) {
+    ctx.recentLabs = APP.labResults.slice(0, 5).map(r => `${r.analyte_name}: ${r.result_value}${r.unit} (${r.lab_date})`);
+  }
+
+  // Puberty milestones (most recent 5).
+  if ((APP.pubertyEvents || []).length > 0) {
+    ctx.recentPubertyEvents = APP.pubertyEvents.slice(0, 5).map(ev => {
+      const label = PUBERTY_TYPE_LABELS[ev.event_type] || ev.event_type;
+      const stage = ev.tanner_stage ? ` (Tanner ${TANNER_NUMERALS[ev.tanner_stage]})` : '';
+      return `${label}${stage} on ${ev.event_date}`;
+    });
+  }
+
+  return ctx;
+}
+
 async function askClaude(userMsg) {
   showThinking();
-  const child = APP.children[APP.activeChild] || { name:'Child', age:9, weight:29, height:127 };
+  const ctx = buildAICoachContext();
   const grs = document.getElementById('grsScore').textContent;
   const s = currentState();
   const totalSleep = document.getElementById('totalSleepLbl').textContent;
 
-  const systemPrompt = `You are the BioGrowth OS AI coach, built for a parent who tracks their child's growth data and consults with a pediatrician/endocrinologist. You are not a doctor and must not diagnose, prescribe, or contradict clinical guidance — your role is to help the parent understand their own logged data and prepare better questions for clinical visits.
+  // Build the growth-data section conditionally — only include lines for
+  // data that actually exists, rather than printing "undefined" or empty
+  // fields for whatever this child doesn't have on file yet.
+  const growthLines = [];
+  if (ctx.hasChild) {
+    growthLines.push(`- Name: ${ctx.name} | Age: ${ctx.ageYears} years | Sex: ${ctx.sex}`);
+    if (ctx.latestHeightCm != null) growthLines.push(`- Latest measurement (${ctx.latestMeasurementDate}): Height ${ctx.latestHeightCm}cm, Weight ${ctx.latestWeightKg}kg`);
+    if (ctx.heightPercentile != null) growthLines.push(`- Height-for-age: ${ctx.heightPercentile}th percentile (Z=${ctx.heightZ}), WHO reference`);
+    if (ctx.bmi != null) growthLines.push(`- BMI: ${ctx.bmi} kg/m², ${ctx.bmiPercentile}th percentile, classification: ${ctx.bmiClassification.replace('_',' ')}`);
+    if (ctx.heightVelocityCmYr != null) growthLines.push(`- Height velocity (from last 2 measurements): ${ctx.heightVelocityCmYr} cm/year`);
+    if (ctx.targetHeightCm != null) growthLines.push(`- Target adult height estimate (mid-parental, Zeevi et al. 2024 method): ${ctx.targetHeightCm}cm (range ${ctx.targetHeightRangeLow}–${ctx.targetHeightRangeHigh}cm)`);
+    if (ctx.isSGA) growthLines.push(`- Born SGA (small for gestational age). Current catch-up growth velocity: ${ctx.sgaCatchupSDSPerYear} SDS/year (>0 SDS/year = catching up; this is the real clinical definition, not raw cm/year)`);
+    if (ctx.recentLabs) growthLines.push(`- Recent lab results: ${ctx.recentLabs.join('; ')}`);
+    if (ctx.recentPubertyEvents) growthLines.push(`- Recent puberty milestones: ${ctx.recentPubertyEvents.join('; ')}`);
+  } else {
+    growthLines.push('- No child profile is currently selected.');
+  }
 
-Current child profile:
-- Name: ${child.name}
-- Age: ${child.age} years
-- Height: ${child.height} cm | Weight: ${child.weight} kg
-- Today's readiness reading: ${grs}/100 (a same-day input score, not a diagnostic measure — single days carry little signal on their own)
+  const systemPrompt = `You are the GrowSense AI coach, built for a parent who tracks their child's growth data and consults with a pediatrician/endocrinologist. You are not a doctor and must not diagnose, prescribe, or contradict clinical guidance — your role is to help the parent understand their own logged data and prepare better questions for clinical visits.
+
+Growth & clinical profile:
+${growthLines.join('\n')}
+
+Today's readiness reading: ${grs}/100 (a same-day input score, not a diagnostic measure — single days carry little signal on their own)
 
 Today's logged inputs:
 - Protein: ${s.protein}g (target ~44g) | Calcium: ${s.calcium}mg (target ~1300mg) | Water: ${s.water}/8 glasses
@@ -2884,12 +3142,25 @@ Today's logged inputs:
 - Corticosteroid use level: ${s.steroid} (0=none, 1=inhaled, 2=oral)
 
 Guidelines:
-- Ground every answer in the data above; don't invent numbers not given.
+- Ground every answer in the data above; don't invent numbers not given. If the parent asks about something with no data on file (e.g. target height with no parent heights entered, or labs with none logged), say so plainly and point them to where in the app they'd add it — don't guess or estimate on their behalf.
 - Never state a diagnosis or tell the parent to change medication/treatment — defer those explicitly to their pediatrician.
 - Growth is judged by velocity and trend over weeks/months, not single days — say so if the parent seems to be over-reading one day's numbers.
+- If a percentile or Z-score number is shared, briefly note that population percentiles describe where a child sits relative to a reference group, not a target to hit — extreme percentiles (very high or very low) deserve a doctor's interpretation, not concern from the number alone.
+- The "exploratory" extended-family target-height variant (if the parent mentions it) is explicitly unvalidated — don't present it with the same confidence as the parents-only target height.
 - Keep responses concise (3–5 sentences unless asked for detail). Plain language, minimal jargon.`;
 
   try {
+    // Send real conversation history, not just the current message —
+    // previously every call sent only userMsg with no prior turns,
+    // meaning a follow-up like "what about compared to last month?"
+    // had nothing to refer back to. Capped to the last 10 exchanges
+    // (20 messages) to keep token cost and latency bounded — a coaching
+    // chat doesn't need unlimited history, and the system prompt already
+    // re-supplies the current data snapshot fresh on every call anyway.
+    const MAX_HISTORY_MESSAGES = 20;
+    const historyToSend = APP.aiChatHistory.slice(-MAX_HISTORY_MESSAGES);
+    const messages = [...historyToSend, { role: 'user', content: userMsg }];
+
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2897,13 +3168,34 @@ Guidelines:
         model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         system: systemPrompt,
-        messages: [{ role: 'user', content: userMsg }]
+        messages: messages
       })
     });
     const data = await res.json();
     hideThinking();
-    const txt = data.content && data.content[0] ? data.content[0].text : 'Sorry, I had trouble responding. Please try again.';
+
+    if (data.error) {
+      // The API responded but with an error object (rate limit, bad
+      // request, etc.) rather than a network failure — previously this
+      // fell through to the generic "trouble responding" text with no
+      // way to tell the two cases apart while debugging.
+      console.error('[AI coach] API error:', data.error);
+      addBotMsg('⚠️ The AI service returned an error. Please try again in a moment.');
+      return;
+    }
+
+    const txt = data.content && data.content[0] ? data.content[0].text : null;
+    if (!txt) {
+      console.error('[AI coach] Unexpected API response shape:', data);
+      addBotMsg('Sorry, I had trouble responding. Please try again.');
+      return;
+    }
+
     addBotMsg(txt.replace(/\n/g, '<br>'));
+
+    // Record this exchange for future turns in the same conversation.
+    APP.aiChatHistory.push({ role: 'user', content: userMsg });
+    APP.aiChatHistory.push({ role: 'assistant', content: txt });
   } catch (e) {
     hideThinking();
     addBotMsg('⚠️ Unable to connect to AI. Check your internet connection and try again.');
@@ -2941,6 +3233,13 @@ async function goTab(name) {
     await loadMedicalLogForDate();
     await loadLabResults();
     await loadPubertyEvents();
+  }
+  if (name === 'AI') {
+    if (!APP.aiCoachQuestions) {
+      await loadAICoachQuestions();
+    } else {
+      renderAICategoryChips(); // re-filter in case the active child or its data changed since last load
+    }
   }
 }
 

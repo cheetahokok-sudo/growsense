@@ -754,7 +754,10 @@
 
     <!-- ══════════════ SCREEN: AI ASSISTANT ══════════════ -->
     <div class="screen" id="screenAI">
-      <div class="section-hd"><h2>AI coach</h2><p>Context from this child's logged data — not a substitute for your pediatrician</p></div>
+      <div class="section-hd" style="display:flex; align-items:flex-start; justify-content:space-between;">
+        <div><h2>AI coach</h2><p>Context from this child's logged data — not a substitute for your pediatrician</p></div>
+        <button class="btn-link" style="font-size:11.5px; white-space:nowrap; margin-top:4px;" onclick="clearAIConversation()">Clear conversation</button>
+      </div>
 
       <div class="card">
         <div class="card-body">
@@ -763,12 +766,14 @@
               I can answer questions using this child's logged nutrition, sleep, activity, and clinical data. I'm not a doctor — for diagnosis or treatment decisions, bring the trend data on the Analytics tab to your pediatrician.<br><br>What would you like to know?
             </div>
           </div>
-          <div class="quick-prompts" id="quickPrompts" style="margin-top:12px;">
-            <button class="quick-btn" onclick="sendQuick(this)">What does today's readiness reading suggest?</button>
-            <button class="quick-btn" onclick="sendQuick(this)">What questions should I bring to the next pediatrician visit?</button>
-            <button class="quick-btn" onclick="sendQuick(this)">How does sleep timing affect growth hormone release?</button>
-            <button class="quick-btn" onclick="sendQuick(this)">Explain the height velocity number on Analytics</button>
-          </div>
+
+          <!-- Category chips + filtered question list, pulled from the
+               ai_coach_questions table. Falls back to a small hardcoded
+               set (see populateQuickPrompts() in app.js) if the table
+               hasn't loaded yet or the migration hasn't been run. -->
+          <div class="ai-category-chips" id="aiCategoryChips" style="margin-top:12px;"></div>
+          <div class="quick-prompts" id="quickPrompts" style="margin-top:8px;"></div>
+
           <div class="ai-input-row">
             <input type="text" class="ai-input" id="aiInput" placeholder="Ask about this child's growth data..." onkeydown="if(event.key==='Enter')sendAI()">
             <button class="ai-send" onclick="sendAI()" aria-label="Send">
