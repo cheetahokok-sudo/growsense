@@ -39,6 +39,8 @@ const APP = {
   labResults: [],    // lab_results rows for the active child, loaded when the Medical tab opens
   pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
   illnessEvents: [], // illness_events rows for the active child, loaded when the Medical tab opens
+  foodFavorites: [], // food_favorites rows for the active child — determines which cards show on the Nutrition grid
+  customFoods: [], // custom_foods rows for the active child — parent-defined foods with manually-entered values
   familyHeightRecords: [], // family_height_records rows - reference only by default; see targetHeightFormula
   targetHeightFormula: 'parents', // 'parents' (validated, default) or 'extended' (exploratory) — see setTargetHeightFormula()
   aiChatHistory: [], // [{role:'user'|'assistant', content:'...'}] for the active child's AI coach conversation — reset on child switch, see askClaude()
@@ -459,6 +461,19 @@ function loadChildIntoForm() {
   const stMap = { 0:'stNone', 1:'stInhaled', 2:'stOral' };
   const stBtn = document.getElementById(stMap[s.steroid]);
   if (stBtn) stBtn.classList.add('active');
+
+  // Favorites/custom foods are per-child — re-fetch whenever the
+  // active child has actually changed, not on every call to this
+  // function (loadChildIntoForm runs often, e.g. after every daily-log
+  // edit, and re-fetching food_favorites on each of those would be
+  // wasteful). buildFoodCardGrid() below renders synchronously from
+  // whatever's already in memory; the async fetch updates and
+  // re-renders again once it resolves, which is fine since the first
+  // render (old or default data) is just a brief placeholder.
+  if (APP._foodFavoritesLoadedForChild !== activeChildId()) {
+    APP._foodFavoritesLoadedForChild = activeChildId();
+    loadFoodFavoritesAndCustomFoods();
+  }
 
   buildFoodCardGrid();
   buildWaterGrid();
@@ -1231,6 +1246,13 @@ async function deleteFamilyHeightRecord(id) {
 // ══════════════════════════════════════════
 const LONG_PRESS_MS = 550;
 
+// Builds the main Nutrition grid from this child's food_favorites —
+// previously this always rendered the same fixed FOOD_REFERENCE_DATA
+// list for every user. Now it renders whichever foods (preset or
+// custom) are in APP.foodFavorites, in their saved display_order. If a
+// child has no favorites set yet (new child, or favorites haven't
+// loaded), falls back to the original default set so the grid is never
+// empty on first use.
 function buildFoodCardGrid() {
   const grid = document.getElementById('foodCardGrid');
   if (!grid) return;
@@ -1241,23 +1263,31 @@ function buildFoodCardGrid() {
     return;
   }
 
-  FOOD_REFERENCE_DATA.forEach(food => {
+  const foodsToShow = resolveFavoriteFoods();
+
+  foodsToShow.forEach(food => {
     const scale = food.servingGrams / 100;
-    const addProtein = Math.round(food.per100g.protein_g * scale * 10) / 10;
-    const addZinc = food.per100g.zinc_mg != null ? Math.round(food.per100g.zinc_mg * scale * 100) / 100 : null;
-    const addCalcium = food.per100g.calcium_mg != null ? Math.round(food.per100g.calcium_mg * scale) : null;
+    const addProtein = food.isCustom
+      ? food.proteinPerServing // custom foods store the value already for THIS serving, not per-100g
+      : Math.round(food.per100g.protein_g * scale * 10) / 10;
+    const addZinc = food.isCustom
+      ? food.zincPerServing
+      : (food.per100g.zinc_mg != null ? Math.round(food.per100g.zinc_mg * scale * 100) / 100 : null);
+    const addCalcium = food.isCustom
+      ? food.calciumPerServing
+      : (food.per100g.calcium_mg != null ? Math.round(food.per100g.calcium_mg * scale) : null);
 
     const card = document.createElement('div');
-    card.className = 'food-card';
+    card.className = 'food-card' + (food.isCustom ? ' manual-entry' : '');
     card.dataset.foodId = food.id;
-    card.title = food.source; // shows on hover (desktop) as a quick provenance check
+    card.title = food.isCustom ? 'Custom food — your own estimated values, not USDA-verified' : food.source;
     card.innerHTML = `
       <div class="food-card-top">
         <span class="food-card-name"><span class="food-card-emoji">${food.emoji}</span>${food.name}</span>
         <span class="food-card-add">+${addProtein}g</span>
       </div>
       <div class="food-card-portion">${food.servingGrams}g · ${food.portionVisual}</div>
-      <div class="food-card-prep">${food.prepNote}</div>
+      <div class="food-card-prep">${food.prepNote || ''}</div>
       <div class="food-card-tapcount" id="tapcount-${food.id}"></div>
     `;
     attachFoodCardHandlers(card, (direction) => applyFoodTap(food, addProtein, addZinc, addCalcium, direction));
@@ -1265,8 +1295,8 @@ function buildFoodCardGrid() {
   });
 
   // "Protein Boost" — flat manual +10g, not tied to any food record.
-  // Visually distinguished (estimated-color accent) so it isn't mistaken
-  // for a sourced USDA value the way the food cards above are.
+  // Always shown, not subject to the favorites system, since it's a
+  // utility quick-add rather than a specific food.
   const boostCard = document.createElement('div');
   boostCard.className = 'food-card manual-entry';
   boostCard.title = 'Manual entry — read the protein amount off any product label and tap to log it';
@@ -1281,6 +1311,246 @@ function buildFoodCardGrid() {
   grid.appendChild(boostCard);
 
   updateFoodCardTapCounts();
+}
+
+// ══════════════════════════════════════════
+// CUSTOMIZABLE FOOD CARDS — food_favorites + custom_foods
+// Previously the Nutrition grid always showed the same fixed 9 USDA
+// preset cards for every user, with no way to add a food not in that
+// list or choose a different subset. Now: a parent can browse the
+// full preset library plus their own custom foods in a popup (the
+// "Food library" modal), star/unstar which ones show on the main
+// grid, and add a new custom food with manually-entered protein/zinc/
+// calcium (explicitly labeled as a self-reported estimate, not a USDA
+// value — there's no auto-lookup yet, noted directly as a later
+// improvement). Favorites and custom foods are both scoped per child.
+// ══════════════════════════════════════════
+
+// Combines this child's favorited preset + custom foods into the
+// single list buildFoodCardGrid() renders, in saved display order.
+// Falls back to the original default 9 presets if no favorites are
+// set yet, so a new child's grid is never empty.
+function resolveFavoriteFoods() {
+  const favorites = APP.foodFavorites || [];
+  if (favorites.length === 0) {
+    // No favorites configured yet — show the original default set
+    // (the first 9 presets, excluding the 2 newly-added ones, so
+    // existing users see exactly what they're used to until they
+    // actively choose to customize).
+    return FOOD_REFERENCE_DATA.filter(f => f.id !== 'peanut_butter' && f.id !== 'tofu');
+  }
+
+  const resolved = [];
+  for (const fav of favorites) {
+    if (fav.food_source === 'preset') {
+      const preset = FOOD_REFERENCE_DATA.find(f => f.id === fav.food_ref_id);
+      if (preset) resolved.push(preset);
+    } else {
+      const custom = (APP.customFoods || []).find(c => c.custom_food_id === fav.food_ref_id);
+      if (custom) {
+        resolved.push({
+          id: custom.custom_food_id,
+          name: custom.name,
+          emoji: custom.emoji || '🍽️',
+          prepNote: '',
+          portionVisual: custom.serving_description || '',
+          servingGrams: custom.serving_grams,
+          isCustom: true,
+          proteinPerServing: custom.protein_g,
+          zincPerServing: custom.zinc_mg,
+          calciumPerServing: custom.calcium_mg
+        });
+      }
+    }
+  }
+  return resolved;
+}
+
+async function loadFoodFavoritesAndCustomFoods() {
+  const childId = activeChildId();
+  if (!childId) { APP.foodFavorites = []; APP.customFoods = []; return; }
+
+  const [favRes, customRes] = await Promise.all([
+    sb.from('food_favorites').select('*').eq('child_id', childId).order('display_order'),
+    sb.from('custom_foods').select('*').eq('child_id', childId).order('created_at', { ascending: false })
+  ]);
+
+  APP.foodFavorites = (!favRes.error && favRes.data) ? favRes.data : [];
+  APP.customFoods = (!customRes.error && customRes.data) ? customRes.data : [];
+  buildFoodCardGrid();
+}
+
+function openFoodLibraryModal() {
+  if (!activeChildId()) { showToast('⚠️', 'Add a child profile first'); return; }
+  renderFoodLibraryBrowseList();
+  renderFoodLibraryMineList();
+  document.getElementById('foodLibraryModal').classList.remove('hidden');
+}
+
+function closeFoodLibraryModal() {
+  document.getElementById('foodLibraryModal').classList.add('hidden');
+}
+
+function setFoodLibraryTab(tab, btn) {
+  document.querySelectorAll('#foodLibraryTabs .seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('foodLibraryBrowsePane').classList.toggle('hidden', tab !== 'browse');
+  document.getElementById('foodLibraryMinePane').classList.toggle('hidden', tab !== 'mine');
+  document.getElementById('foodLibraryAddPane').classList.toggle('hidden', tab !== 'add');
+}
+
+function isFoodFavorited(source, refId) {
+  return (APP.foodFavorites || []).some(f => f.food_source === source && f.food_ref_id === String(refId));
+}
+
+// Renders every preset + custom food with a star toggle. Favorited
+// items sort first, so a parent immediately sees their active set at
+// the top rather than hunting through the full list.
+function renderFoodLibraryBrowseList() {
+  const listEl = document.getElementById('foodLibraryBrowseList');
+  if (!listEl) return;
+
+  const presetItems = FOOD_REFERENCE_DATA.map(f => ({ source: 'preset', refId: f.id, name: f.name, emoji: f.emoji, sub: f.prepNote }));
+  const customItems = (APP.customFoods || []).map(c => ({ source: 'custom', refId: c.custom_food_id, name: c.name, emoji: c.emoji || '🍽️', sub: 'custom' }));
+  const all = [...presetItems, ...customItems];
+
+  all.sort((a, b) => {
+    const aFav = isFoodFavorited(a.source, a.refId), bFav = isFoodFavorited(b.source, b.refId);
+    if (aFav === bFav) return 0;
+    return aFav ? -1 : 1;
+  });
+
+  listEl.innerHTML = all.map(item => {
+    const fav = isFoodFavorited(item.source, item.refId);
+    return `
+      <div class="log-item-row">
+        <div class="log-item-left">
+          <span class="log-item-emoji">${item.emoji}</span>
+          <div class="log-item-info">
+            <span class="log-item-name">${item.name}</span>
+            <span class="log-item-meta">${item.sub || ''}</span>
+          </div>
+        </div>
+        <div class="log-item-right">
+          <button class="favorite-star ${fav ? 'active' : ''}" onclick="toggleFoodFavorite('${item.source}', '${item.refId}', this)" aria-label="${fav ? 'Remove from grid' : 'Add to grid'}">${fav ? '★' : '☆'}</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderFoodLibraryMineList() {
+  const listEl = document.getElementById('foodLibraryMineList');
+  if (!listEl) return;
+  const items = APP.customFoods || [];
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="log-list-empty">No custom foods added yet — use the "Add new" tab.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(c => `
+    <div class="log-item-row">
+      <div class="log-item-left">
+        <span class="log-item-emoji">${c.emoji || '🍽️'}</span>
+        <div class="log-item-info">
+          <span class="log-item-name">${c.name}</span>
+          <span class="log-item-meta">${c.serving_grams}g${c.serving_description ? ' · ' + c.serving_description : ''} · ${c.protein_g}g protein (estimated)</span>
+        </div>
+      </div>
+      <div class="log-item-right">
+        <button class="log-item-delete" onclick="deleteCustomFood('${c.custom_food_id}')" aria-label="Remove">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function toggleFoodFavorite(source, refId, btn) {
+  const childId = activeChildId();
+  const alreadyFav = isFoodFavorited(source, refId);
+
+  if (alreadyFav) {
+    const existing = APP.foodFavorites.find(f => f.food_source === source && f.food_ref_id === String(refId));
+    const { error } = await sb.from('food_favorites').delete().eq('favorite_id', existing.favorite_id);
+    if (error) { showToast('⚠️', 'Could not update: ' + error.message); return; }
+    APP.foodFavorites = APP.foodFavorites.filter(f => f.favorite_id !== existing.favorite_id);
+  } else {
+    const nextOrder = APP.foodFavorites.length;
+    const { data, error } = await sb.from('food_favorites').insert({
+      child_id: childId, food_source: source, food_ref_id: String(refId), display_order: nextOrder
+    }).select().single();
+    if (error) { showToast('⚠️', 'Could not update: ' + error.message); return; }
+    // Reassigns rather than mutating in place — same defensive
+    // pattern as addCustomFood(), avoiding any array-aliasing risk
+    // regardless of what the data layer returns.
+    APP.foodFavorites = [...APP.foodFavorites, data];
+  }
+
+  renderFoodLibraryBrowseList();
+  buildFoodCardGrid();
+}
+
+async function addCustomFood() {
+  const childId = activeChildId();
+  const name = document.getElementById('newCustomFoodName').value.trim();
+  const grams = parseFloat(document.getElementById('newCustomFoodGrams').value);
+  const desc = document.getElementById('newCustomFoodDesc').value.trim();
+  const protein = parseFloat(document.getElementById('newCustomFoodProtein').value);
+  const zincRaw = document.getElementById('newCustomFoodZinc').value;
+  const calciumRaw = document.getElementById('newCustomFoodCalcium').value;
+
+  if (!name) { showToast('⚠️', 'Enter a food name'); return; }
+  if (!grams || grams <= 0) { showToast('⚠️', 'Enter a valid serving size'); return; }
+  if (!protein || protein < 0) { showToast('⚠️', 'Enter the protein amount for this serving'); return; }
+
+  const { data, error } = await sb.from('custom_foods').insert({
+    child_id: childId,
+    name: name,
+    serving_grams: grams,
+    serving_description: desc || null,
+    protein_g: protein,
+    zinc_mg: zincRaw ? parseFloat(zincRaw) : null,
+    calcium_mg: calciumRaw ? parseFloat(calciumRaw) : null,
+    created_by: APP.session ? APP.session.user.id : null
+  }).select().single();
+
+  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+
+  // Reassigns rather than mutating APP.customFoods in place — safer
+  // regardless of whether the data layer happens to return a fresh
+  // array or (as caught directly in testing, when the test stub
+  // returned the same array reference it stored internally) the same
+  // underlying array reference, which a naive .unshift() could double
+  // up against.
+  APP.customFoods = [data, ...(APP.customFoods || [])];
+
+  document.getElementById('newCustomFoodName').value = '';
+  document.getElementById('newCustomFoodGrams').value = '';
+  document.getElementById('newCustomFoodDesc').value = '';
+  document.getElementById('newCustomFoodProtein').value = '';
+  document.getElementById('newCustomFoodZinc').value = '';
+  document.getElementById('newCustomFoodCalcium').value = '';
+
+  renderFoodLibraryMineList();
+  renderFoodLibraryBrowseList();
+  showToast('✅', 'Custom food added — star it in "Browse all" to show it on the grid');
+}
+
+async function deleteCustomFood(id) {
+  // Also remove any favorite pointing at this custom food, so a
+  // deleted food can't leave a dangling, unresolvable favorite that
+  // would silently vanish from the grid with no explanation.
+  const favToRemove = (APP.foodFavorites || []).find(f => f.food_source === 'custom' && f.food_ref_id === id);
+  if (favToRemove) {
+    await sb.from('food_favorites').delete().eq('favorite_id', favToRemove.favorite_id);
+    APP.foodFavorites = APP.foodFavorites.filter(f => f.favorite_id !== favToRemove.favorite_id);
+  }
+
+  const { error } = await sb.from('custom_foods').delete().eq('custom_food_id', id);
+  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+
+  APP.customFoods = (APP.customFoods || []).filter(c => c.custom_food_id !== id);
+  renderFoodLibraryMineList();
+  renderFoodLibraryBrowseList();
+  buildFoodCardGrid();
 }
 
 // Wires both the tap/click (add) and long-press/right-click (subtract)

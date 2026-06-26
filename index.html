@@ -190,8 +190,9 @@
             <div class="form-lbl" style="font-size:12px; color:var(--text2);">Tap a food to add it</div>
           </div>
           <div class="food-card-grid" id="foodCardGrid"></div>
+          <button class="btn-secondary" onclick="openFoodLibraryModal()" style="margin-top:10px;">+ Browse more foods / add your own</button>
           <div class="setup-note" style="margin-top:10px; font-size:11px;">
-            Values are per-100g USDA FoodData Central figures, scaled to a typical portion — real servings vary. Tap a card to add its protein/zinc to today's total; long-press (or right-click) to subtract a misclick. Don't see a food your child ate? Use the steppers below to enter a custom amount, or tap "Protein Boost" if a package label already states the protein content.
+            Preset food values are per-100g USDA FoodData Central figures, scaled to a typical portion — real servings vary. Tap a card to add its protein/zinc to today's total; long-press (or right-click) to subtract a misclick. Tap "Browse more foods" to choose which cards show here, or add your own food with your own estimated values.
           </div>
 
           <!-- Logged-items list: every tap creates a row here, so a parent
@@ -915,6 +916,67 @@
     </div>
 
     <button class="btn-ghost" style="width:100%; margin-top:14px;" onclick="closeSetup()">Close</button>
+  </div>
+</div>
+
+<!-- FOOD LIBRARY MODAL — browse all preset + custom foods, toggle
+     favorites, add a new custom food. Favorites determine what shows
+     on the main Nutrition grid (foodCardGrid) — this modal is purely
+     for managing that selection, not for logging food directly. -->
+<div class="modal-overlay hidden" id="foodLibraryModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Food library</div>
+
+    <div class="seg" id="foodLibraryTabs" style="margin-bottom:14px;">
+      <button class="seg-btn active" data-tab="browse" onclick="setFoodLibraryTab('browse', this)">Browse all</button>
+      <button class="seg-btn" data-tab="mine" onclick="setFoodLibraryTab('mine', this)">My foods</button>
+      <button class="seg-btn" data-tab="add" onclick="setFoodLibraryTab('add', this)">Add new</button>
+    </div>
+
+    <!-- Browse all: every preset + custom food, with a star toggle -->
+    <div id="foodLibraryBrowsePane">
+      <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Tap the star to add or remove a food from the main grid. Your active cards show first.</div>
+      <div id="foodLibraryBrowseList" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+
+    <!-- My foods: just this child's custom foods, with delete -->
+    <div id="foodLibraryMinePane" class="hidden">
+      <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Foods you've added yourself, with your own estimated values — not USDA-verified.</div>
+      <div id="foodLibraryMineList" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+
+    <!-- Add new: create a custom food -->
+    <div id="foodLibraryAddPane" class="hidden">
+      <div class="setup-note" style="font-size:11px; margin-bottom:10px; background:var(--estimated-light); color:var(--estimated-dark);">These values are your own estimate — not looked up automatically yet. Use a package label, a recipe calculator, or your best guess. You can always edit or remove this later.</div>
+      <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+        <div class="form-lbl">Food name</div>
+        <input type="text" id="newCustomFoodName" class="text-input" placeholder="e.g. Grandma's fish soup">
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">Serving size (grams)</div>
+        <input type="number" id="newCustomFoodGrams" class="num-input" placeholder="e.g. 200" style="width:90px;">
+      </div>
+      <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+        <div class="form-lbl">Serving description (optional)</div>
+        <input type="text" id="newCustomFoodDesc" class="text-input" placeholder="e.g. 1 bowl">
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">Protein (g) for this serving</div>
+        <input type="number" id="newCustomFoodProtein" class="num-input" placeholder="e.g. 15" style="width:90px;">
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">Zinc (mg) — optional</div>
+        <input type="number" id="newCustomFoodZinc" class="num-input" placeholder="—" style="width:90px;">
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">Calcium (mg) — optional</div>
+        <input type="number" id="newCustomFoodCalcium" class="num-input" placeholder="—" style="width:90px;">
+      </div>
+      <button class="btn-secondary" onclick="addCustomFood()">Add this food</button>
+    </div>
+
+    <button class="btn-ghost" style="width:100%; margin-top:14px;" onclick="closeFoodLibraryModal()">Close</button>
   </div>
 </div>
 

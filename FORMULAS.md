@@ -1258,6 +1258,68 @@ either file.
 
 ---
 
+## 5r. Customizable food cards — favorites + custom foods (2026-06-26)
+
+**Where:** `migration_custom_foods_favorites.sql`, the "Food library"
+modal in `index.html`, `resolveFavoriteFoods()` and related functions
+in `app.js`. Two new verified preset foods also added to
+`food-reference-data.js`.
+
+**The request:** the original 10 food cards were a fixed list, same
+for every user. Wanted: a way to browse beyond that fixed set, add a
+custom food with manually-entered protein/zinc (no auto-lookup yet —
+explicitly deferred to "find a way to do this later"), and let each
+child have their own chosen set of active cards. Decided together: per-
+child scoping (not shared across siblings) and a modal/popup for
+browsing, rather than an inline expand.
+
+**Two new verified preset foods added first:** peanut butter and tofu,
+both real USDA FoodData Central entries (FDC 174294, FDC 174290),
+values fetched directly from the source page and converted from the
+stated serving size to per-100g — same verification standard as every
+other preset already in the library, not estimated.
+
+**Schema:** `custom_foods` (per-child, parent-named, manually entered
+protein/zinc/calcium for a stated serving — NOT claimed as USDA-sourced
+anywhere, matching the existing "Protein Boost" honesty-labeling
+pattern) and `food_favorites` (per-child, points at either a preset
+food's string ID or a custom food's UUID via a `food_source` +
+`food_ref_id` pair, so one table handles both cases rather than two
+parallel ones).
+
+**UI:** a new "Food library" modal (Browse all / My foods / Add new
+tabs) reachable from a button below the main grid. Browsing shows every
+preset and custom food with a star toggle; favorited items sort to the
+top. The main grid (`buildFoodCardGrid()`) now renders from
+`resolveFavoriteFoods()` instead of the fixed array directly — falls
+back to the original default 9 presets (explicitly excluding the 2 new
+ones) if a child has no favorites configured yet, so an existing user's
+grid looks unchanged until they actively choose to customize it.
+
+**A real bug caught during testing, not assumed away:** the first
+version of `addCustomFood()` and `toggleFoodFavorite()` mutated
+`APP.customFoods`/`APP.foodFavorites` in place (`.unshift()`/`.push()`)
+after an insert. Testing surfaced a duplicate-row case — traced
+precisely to the array-mutation pattern being unsafe if the data layer
+ever returns a reference to the same underlying array rather than a
+fresh one (confirmed happening in the test harness; unlikely but not
+guaranteed impossible with a real client either). Fixed by reassigning
+new arrays instead of mutating in place in both functions — strictly
+safer regardless of what the data layer returns, not a workaround
+specific to the test environment. Re-ran the full suite after the fix:
+every case passed, including the full add → favorite → tap-to-log →
+delete cycle, with correct cleanup of a custom food's favorite entry on
+delete (no dangling reference) and confirmed unrelated favorites stay
+untouched.
+
+**Deferred, as discussed:** automatic nutrition lookup for custom foods
+(the request explicitly named this as a later improvement, not part of
+this pass) — for now, every custom food's values are the parent's own
+estimate, clearly labeled as such everywhere it appears (modal warning
+text, card styling, list metadata).
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

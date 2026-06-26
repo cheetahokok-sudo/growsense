@@ -119,6 +119,26 @@ const FOOD_REFERENCE_DATA = [
     per100g: { protein_g: 14.0, zinc_mg: null, calcium_mg: null }, // generic estimate, not a single specific USDA record — see note below
     servingGrams: 50, // ~2-3 pieces
     source: 'Generic estimate from USDA-category frozen/fast-food chicken nugget products — varies by brand; not tied to a single FDC ID. Replace with the specific product\'s own label values if known.'
+  },
+  {
+    id: 'peanut_butter',
+    name: 'Peanut butter',
+    emoji: '🥜',
+    prepNote: 'smooth',
+    portionVisual: '~2 tbsp',
+    per100g: { protein_g: 21.88, zinc_mg: 2.66, calcium_mg: 54.06 },
+    servingGrams: 32,
+    source: 'USDA FDC 174294 — Peanut Butter, smooth (Includes foods for USDA\'s Food Distribution Program)'
+  },
+  {
+    id: 'tofu',
+    name: 'Tofu',
+    emoji: '🧊',
+    prepNote: 'extra firm, prepared with nigari',
+    portionVisual: '~1/5 block',
+    per100g: { protein_g: 10.00, zinc_mg: 1.07, calcium_mg: 281.98 },
+    servingGrams: 91,
+    source: 'USDA FDC 174290 — Tofu, extra firm, prepared with nigari'
   }
 ];
 
