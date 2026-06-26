@@ -3161,11 +3161,21 @@ Guidelines:
     const historyToSend = APP.aiChatHistory.slice(-MAX_HISTORY_MESSAGES);
     const messages = [...historyToSend, { role: 'user', content: userMsg }];
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    // Calls the ai-coach-proxy Edge Function, NOT api.anthropic.com
+    // directly — a static site has nowhere safe to hold a real
+    // Anthropic API key client-side, and Anthropic's API isn't meant
+    // to be called directly from a browser on another origin anyway
+    // (blocked by CORS for that exact reason). The Edge Function holds
+    // the real key as a server-side secret; the browser only ever
+    // talks to Supabase, never to Anthropic. See
+    // supabase_setup/edge_functions/ai-coach-proxy/index.ts.
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-coach-proxy`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` // Supabase Edge Functions expect this even for public/anon calls
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         system: systemPrompt,
         messages: messages

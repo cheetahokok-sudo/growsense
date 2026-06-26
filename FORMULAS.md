@@ -940,6 +940,58 @@ Added the missing class.
 
 ---
 
+## 5l. AI coach now actually works — Edge Function proxy (2026-06-26)
+
+**Where:** `supabase_setup/edge_functions/ai-coach-proxy/index.ts`
+(new Supabase Edge Function), `askClaude()` in `app.js`.
+
+**The real bug, found after a user report of "Unable to connect to
+AI":** the AI coach had never been able to work at all, on any network.
+`askClaude()` called `https://api.anthropic.com/v1/messages` directly
+from the browser, with no API key attached anywhere in the request.
+Even with a key, this could never have worked: GrowSense is a static
+site (GitHub Pages) with no backend, so there was nowhere safe to hold
+a real Anthropic API key — putting one directly in client-side JS would
+expose it to anyone opening dev tools on the public site, and
+Anthropic's API blocks direct cross-origin browser calls (CORS) for
+exactly that reason regardless. This wasn't a connectivity problem the
+error message suggested; it was a missing piece of architecture.
+
+**The fix:** a new Supabase Edge Function, `ai-coach-proxy`, sits
+between the browser and Anthropic. It holds the real API key as a
+server-side secret (set via `supabase secrets set`, never committed to
+the repo or visible in any client file), accepts only `system`,
+`messages`, and `max_tokens` from the caller (not a raw passthrough, so
+the function fully controls what reaches Anthropic regardless of what a
+caller sends), enforces a hard cap on `max_tokens` server-side
+regardless of what the client requests, and handles CORS preflight
+correctly. The client (`askClaude()` in `app.js`) now calls
+`${SUPABASE_URL}/functions/v1/ai-coach-proxy` instead of Anthropic
+directly, authenticating with the same publishable/anon key already
+used for every other Supabase call in this app (that key is meant to be
+public — unlike the Anthropic key, which is the actual secret this fix
+protects).
+
+**Deployment required, not just a file replace:** unlike every other
+fix in this project, this one needs a real deploy step beyond uploading
+files — the Edge Function itself must be deployed via the Supabase CLI
+(`supabase functions deploy ai-coach-proxy`) and the `ANTHROPIC_API_KEY`
+secret must be set (`supabase secrets set ANTHROPIC_API_KEY=...`)
+before the AI coach will work. Until that's done, the proxy will
+correctly return a "not configured" error rather than crash — verified
+directly by simulating that exact response and confirming the client
+shows a sensible message rather than failing silently.
+
+**Verified directly:** the client now calls the Supabase Edge Function
+URL (not `api.anthropic.com`), sends the correct `Authorization: Bearer
+<publishable key>` header and request body shape (system prompt +
+message history, no `model` field — the proxy decides that
+server-side), and correctly surfaces the proxy's own error responses
+(e.g. the "AI service is not configured" case, which is exactly what
+you'd see if the secret hasn't been set yet).
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table
