@@ -40,7 +40,8 @@ const APP = {
   pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
   familyHeightRecords: [], // family_height_records rows - reference only by default; see targetHeightFormula
   targetHeightFormula: 'parents', // 'parents' (validated, default) or 'extended' (exploratory) — see setTargetHeightFormula()
-  aiChatHistory: [] // [{role:'user'|'assistant', content:'...'}] for the active child's AI coach conversation — reset on child switch, see askClaude()
+  aiChatHistory: [], // [{role:'user'|'assistant', content:'...'}] for the active child's AI coach conversation — reset on child switch, see askClaude()
+  aiCoachMode: null // 'template' or 'live_ai', loaded once from system_settings via getAICoachMode() and cached for the session
 };
 
 function todayISO() {
@@ -76,6 +77,46 @@ function activeChildId() {
 
 function isClinicianRole() {
   return APP.account && (APP.account.account_role === 'doctor' || APP.account.account_role === 'scientist');
+}
+
+function isSystemAdmin() {
+  return APP.account && APP.account.account_role === 'system_admin';
+}
+
+// Loads the current project-wide AI mode and renders the admin toggle
+// panel to match it — only ever called for system_admin accounts (see
+// openSetup()), since the panel itself is also hidden by default.
+async function loadAndRenderAdminAIModePanel() {
+  const panel = document.getElementById('adminAIModePanel');
+  panel.classList.remove('hidden');
+
+  const mode = await getAICoachMode();
+  document.querySelectorAll('#aiModeToggle .seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+}
+
+// Admin-only: flips the project-wide AI coach mode. Writes directly to
+// system_settings — protected by that table's RLS policy (system_admin
+// only), so even if this function were somehow called by a non-admin
+// account, the database itself would reject the write.
+async function setAICoachModeAdmin(mode, btn) {
+  const { error } = await sb.from('system_settings').upsert({
+    setting_key: 'ai_coach_mode',
+    setting_value: mode,
+    updated_by: APP.session ? APP.session.user.id : null,
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) {
+    showToast('⚠️', 'Could not update AI mode: ' + error.message);
+    return;
+  }
+
+  APP.aiCoachMode = mode; // update the cached value immediately for this session too
+  document.querySelectorAll('#aiModeToggle .seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  showToast('✅', `AI coach mode set to ${mode === 'live_ai' ? 'Live AI' : 'Template'}`);
 }
 
 // ══════════════════════════════════════════
@@ -2931,7 +2972,9 @@ function sendQuick(btn) {
   const msg = btn.textContent.trim();
   document.getElementById('quickPrompts').style.display = 'none';
   addUserMsg(msg);
-  askClaude(msg);
+  // The button's text IS an exact library question_text, so pass it
+  // through as an exact-match hint — no fuzzy matching needed for this path.
+  routeAICoachMessage(msg, msg);
 }
 
 function sendAI() {
@@ -2941,7 +2984,115 @@ function sendAI() {
   inp.value = '';
   document.getElementById('quickPrompts').style.display = 'none';
   addUserMsg(msg);
-  askClaude(msg);
+  routeAICoachMessage(msg, null); // free text — needs real matching, not an exact hint
+}
+
+// ══════════════════════════════════════════
+// AI COACH MODE ROUTING — option 1 (template matching, no Anthropic
+// API call, zero cost) vs option 2 (live AI via the Edge Function
+// proxy, real cost). The active mode is a single admin-controlled
+// project-wide setting (system_settings.ai_coach_mode), not a per-user
+// choice — see migration_ai_coach_mode_toggle.sql.
+// ══════════════════════════════════════════
+async function getAICoachMode() {
+  // Cached after first load per session — this setting rarely changes
+  // mid-session, and re-querying on every single message would be
+  // wasteful. An admin toggling it takes effect on next page load.
+  if (APP.aiCoachMode) return APP.aiCoachMode;
+  try {
+    const { data, error } = await sb.from('system_settings').select('setting_value').eq('setting_key', 'ai_coach_mode').maybeSingle();
+    APP.aiCoachMode = (!error && data) ? data.setting_value : 'template';
+  } catch (e) {
+    APP.aiCoachMode = 'template'; // fail safe to the zero-cost mode, not the one that spends money, if this lookup itself fails
+  }
+  return APP.aiCoachMode;
+}
+
+// Fills {{placeholder}} tokens in an answer template using the same
+// context object the live-AI system prompt is built from — one
+// template author writes one sentence, it's correct for every child.
+function fillAnswerTemplate(template, ctx) {
+  return template.replace(/\{\{(\w+)\}\}/g, (match, field) => {
+    const value = ctx[field];
+    if (value == null) return '(not yet logged)';
+    if (Array.isArray(value)) return value.join('; ');
+    return String(value);
+  });
+}
+
+// Finds the best-matching library question for free text input. Real
+// semantic matching would need an embeddings model (itself an API
+// call with its own cost) — this is intentionally simpler: normalized
+// word-overlap scoring, which is a real, well-understood text-
+// similarity technique (not "AI", just string analysis), good enough
+// to catch close rephrasings of an existing question without any API
+// cost. Returns null if nothing clears a minimum similarity bar, so a
+// genuinely novel question doesn't get a wrong, confidently-wrong match.
+function findBestMatchingQuestion(userText, exactHint) {
+  const questions = APP.aiCoachQuestions || [];
+  if (exactHint) {
+    const exact = questions.find(q => q.question_text === exactHint);
+    if (exact) return exact;
+  }
+
+  // Common words excluded from matching — without this, generic shared
+  // words like "what"/"the"/"does"/"my" inflate the overlap score for
+  // ANY two questions, causing false-positive matches on completely
+  // unrelated input (caught directly: "what is the capital of France"
+  // was matching a BMI question purely on shared "what"/"the").
+  const STOPWORDS = new Set(['what','does','the','for','and','this','that','with','from','about',
+    'how','why','when','where','who','which','can','could','should','would','will','are','is','was',
+    'were','has','have','had','not','but','they','their','them','you','your','our','out','into','than',
+    'then','there','here','his','her','its','also','just','more','most','some','any','all','each']);
+
+  const normalize = s => s.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/)
+    .filter(w => w.length > 2 && !STOPWORDS.has(w));
+  const userWords = new Set(normalize(userText));
+  if (userWords.size === 0) return null;
+
+  let best = null, bestScore = 0;
+  for (const q of questions) {
+    const qWords = new Set(normalize(q.question_text)); // de-duplicated, so a repeated word in the question text can't inflate its own match score
+    if (qWords.size === 0) continue;
+    const overlap = [...qWords].filter(w => userWords.has(w)).length;
+    const score = overlap / Math.min(userWords.size, qWords.size);
+    if (score > bestScore) { bestScore = score; best = q; }
+  }
+
+  const MIN_MATCH_SCORE = 0.5; // requires genuine, substantial word overlap, not a stray shared word
+  return bestScore >= MIN_MATCH_SCORE ? best : null;
+}
+
+async function routeAICoachMessage(userText, exactHint) {
+  const mode = await getAICoachMode();
+
+  if (mode === 'live_ai') {
+    askClaude(userText); // unchanged path — real Anthropic call via the Edge Function proxy
+    return;
+  }
+
+  // Template mode (default) — try to match and answer with zero API cost.
+  showThinking();
+  const matched = findBestMatchingQuestion(userText, exactHint);
+
+  if (matched && matched.answer_template) {
+    const ctx = buildAICoachContext();
+    const filled = fillAnswerTemplate(matched.answer_template, ctx);
+    hideThinking();
+    addBotMsg(filled.replace(/\n/g, '<br>'));
+    return;
+  }
+
+  // No good match, or a matched question has no template written yet —
+  // be honest about the limitation rather than fabricate an answer
+  // from nothing, since this mode by design has no language model to
+  // fall back on.
+  hideThinking();
+  if (matched && !matched.answer_template) {
+    addBotMsg(`I recognize that question, but don't have a ready answer template for it yet in this mode. Try browsing the category list above for a related question, or ask your pediatrician directly.`);
+  } else {
+    addBotMsg(`I couldn't match that to one of my prepared answers. Try rephrasing, browse the category buttons above for a similar question, or ask your pediatrician directly. (This app is currently in template-answer mode — no live AI model is being used for this response.)`);
+  }
 }
 
 // Clears AI conversation history and resets the visible chat back to
@@ -3260,6 +3411,7 @@ function openSetup() {
   renderChildList();
   populateShareChildSelect();
   if (isClinicianRole()) renderAssignedChildrenList();
+  if (isSystemAdmin()) loadAndRenderAdminAIModePanel();
   document.getElementById('setupModal').classList.remove('hidden');
 }
 

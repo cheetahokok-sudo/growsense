@@ -828,6 +828,18 @@
       <div class="setup-note" style="font-size:11px;">You can view data only for children a parent or admin has explicitly assigned to you.</div>
     </div>
 
+    <!-- System admin only: AI coach cost mode toggle. Project-wide
+         setting (system_settings.ai_coach_mode), not per-user — see
+         migration_ai_coach_mode_toggle.sql. -->
+    <div class="sheets-config hidden" id="adminAIModePanel">
+      <div class="sheets-config-title">AI coach mode (project-wide)</div>
+      <div class="seg" id="aiModeToggle" style="margin-bottom:8px;">
+        <button class="seg-btn active" data-mode="template" onclick="setAICoachModeAdmin('template', this)">Template (free)</button>
+        <button class="seg-btn" data-mode="live_ai" onclick="setAICoachModeAdmin('live_ai', this)">Live AI (uses API credits)</button>
+      </div>
+      <div class="setup-note" style="font-size:11px;" id="aiModeDescription">Template mode answers from a pre-written library matched to the question — no Anthropic API calls, no cost. Switch to Live AI for more complex, free-form answers, which calls the Anthropic API and incurs real cost per question.</div>
+    </div>
+
     <!-- Parent: children profiles + sharing -->
     <div id="parentPanel">
       <div style="margin-bottom:14px;">

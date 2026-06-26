@@ -992,6 +992,74 @@ you'd see if the secret hasn't been set yet).
 
 ---
 
+## 5m. Two AI coach modes: template (free) vs live AI (real cost) — 2026-06-26
+
+**Where:** `migration_ai_coach_mode_toggle.sql`,
+`seed_ai_coach_answer_templates.sql`, `routeAICoachMessage()`,
+`findBestMatchingQuestion()`, `fillAnswerTemplate()`, the admin panel
+functions in `app.js`.
+
+**Why this exists:** the live-AI coach needs Anthropic API billing to
+work at all (see §5l) — real, ongoing per-question cost. Rather than
+require that before the AI coach can do anything, this adds a default,
+zero-cost mode that answers from the pre-written question library
+(§5j) by matching the user's input to the closest library question and
+filling in that child's real data into a template. A `system_admin`
+account can flip a single project-wide switch to enable live AI when
+ready, rather than it being on by default and accumulating cost before
+billing is even confirmed working.
+
+**Mode 1 — Template (default).** `findBestMatchingQuestion()` does
+real text-similarity matching, not "AI" — normalized word-overlap
+scoring against the question library, after stripping common stopwords
+(`what`, `the`, `does`, etc.). **A real bug was caught and fixed during
+testing, not just assumed away:** the first version had no stopword
+filtering, which caused "what is the capital of France" to falsely
+match a BMI question (both shared only "what" and "the" — common words
+were inflating the overlap score for any two unrelated questions).
+Verified directly: the same input that previously triggered a
+confident, fabricated-context wrong answer about the test child's BMI
+now correctly returns an honest "I couldn't match that" response.
+Matched questions are filled via `fillAnswerTemplate()` using
+`{{placeholder}}` tokens substituted from the exact same context object
+the live-AI system prompt uses — verified that a real percentile number
+and the child's actual name appear in the filled answer, not a literal
+unfilled `{{heightPercentile}}` string. If a question matches but has
+no template written yet, or nothing matches well enough (50% minimum
+word-overlap threshold), the response says so honestly rather than
+fabricating an answer — there's no language model in this mode to fall
+back on.
+
+**Mode 2 — Live AI.** Unchanged from §5k/§5l — routes through
+`askClaude()` and the Edge Function proxy, with full conversation
+history and real Anthropic cost per call.
+
+**The toggle itself:** `system_settings.ai_coach_mode`, a single
+project-wide row, readable by any authenticated user (the client needs
+to know which mode to use) but writable only by `system_admin` accounts
+— enforced by RLS at the database level, not just hidden in the UI, so
+even a direct API call from a non-admin account would be rejected.
+`getAICoachMode()` caches the value for the session after first load.
+The admin panel (visible only in the setup modal for `system_admin`
+accounts) lets an admin flip this with one tap; verified directly that
+switching it mid-session immediately changes which path the very next
+message takes, with no page reload needed.
+
+**Usage tracking:** `ai_usage_log` records each live-AI call (rough
+token estimates, not billing-exact) so cost is visible over time to an
+admin rather than only discoverable after a surprise invoice — not yet
+wired into the client in this pass; the table exists, logging calls
+from `askClaude()` is the next piece if this is extended further.
+
+**Answer template authoring status:** 23 of 151 library questions have
+a written template so far — the highest-priority ones across most
+categories (growth trend, BMI, target height, SGA, labs, puberty). The
+rest will return the honest "no template yet" message in template mode
+until more are written — same quality-over-coverage tradeoff already
+applied to the question library itself in §5j.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table
