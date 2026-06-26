@@ -1060,6 +1060,42 @@ applied to the question library itself in §5j.
 
 ---
 
+## 5n. Follow-up question suggestions (2026-06-26)
+
+**Where:** `CURATED_FOLLOWUPS`, `suggestFollowUps()`,
+`renderFollowUpSuggestions()` in `app.js`.
+
+**What it does:** after a successfully answered question in template
+mode, 2-3 "you might also ask" buttons appear beneath the answer.
+Two sources, in priority order: (1) a small hand-picked set of 15
+cross-category "leads to" chains (e.g. a height percentile question
+naturally leading to a velocity question, or a target-height
+question) — every entry validated at authoring time against the real
+question library, so no chain can silently reference a question that
+doesn't exist; (2) same-category questions, ordered by the library's
+own `display_priority`, filling out up to 3 total suggestions if the
+curated chain doesn't have enough (or any).
+
+**The safety property that actually matters here, verified directly:**
+every suggested follow-up is filtered through the exact same
+data-availability check used for the main question list
+(`questionIsAnswerable()`) — a follow-up is never shown for a question
+the active child doesn't have the data to answer. Verified by testing
+the same curated chain (percentile → target height) twice: once with
+parent heights on file (target-height suggestion correctly appears),
+once without (target-height suggestion correctly disappears, leaving
+only the still-answerable velocity suggestion). A follow-up button is
+never a dead end.
+
+**Scope, deliberately:** this only applies to template mode. Live AI
+mode already has real conversational memory (§5k) and doesn't need
+scripted suggestions the same way. Also deliberately NOT built: the
+AI asking the parent a clarifying question back — that would need real
+conversational reasoning template mode doesn't have, versus this
+feature, which only needed matching + a static lookup table.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

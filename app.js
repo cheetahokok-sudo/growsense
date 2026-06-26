@@ -2863,6 +2863,30 @@ async function deletePubertyEvent(id) {
 // actually has the underlying data for (e.g. target-height questions
 // only appear once parent heights are on file).
 // ══════════════════════════════════════════
+// Hand-picked cross-category "leads to" pairs for the follow-up
+// suggestions shown after an answer — same-category matching alone
+// (suggestFollowUps() below) misses natural sequences that cross
+// category lines, e.g. a percentile question naturally leading to a
+// target-height comparison question. Every entry validated against
+// the real question library at authoring time — see FORMULAS.md.
+const CURATED_FOLLOWUPS = {
+  'What does my child\'s current height percentile mean?': ['Is my child\'s height velocity normal for their age?', 'Is my child currently tracking toward their target height?'],
+  'Is my child\'s height velocity normal for their age?': ['What does my child\'s current height percentile mean?', 'Why did my child\'s percentile shift between visits?'],
+  'What does my child\'s BMI percentile mean?': ['Is my child\'s BMI in a healthy range?', 'Can BMI be misleading for an athletic child?'],
+  'What does it mean that my child was born SGA?': ['Is my child showing real catch-up growth?', 'How often should an SGA child be measured?'],
+  'Is my child showing real catch-up growth?': ['What happens if catch-up growth doesn\'t happen by age 2-4?', 'Should I ask my doctor about growth hormone evaluation?'],
+  'How is my child\'s target height calculated?': ['Is my child currently tracking toward their target height?', 'How accurate is this target height estimate really?'],
+  'Is my child currently tracking toward their target height?': ['What does my child\'s current height percentile mean?', 'Should I bring the target height estimate to a specialist visit?'],
+  'What does this Tanner stage actually mean?': ['Is my child\'s puberty timing typical for their age?', 'How does puberty timing affect how much more height is left to gain?'],
+  'Is my child\'s puberty timing typical for their age?': ['How does growth velocity typically change during puberty?', 'Should I be concerned if I haven\'t seen any puberty signs yet?'],
+  'What does this IGF-1 result mean for growth?': ['Can one lab result alone tell us much about growth?', 'How do lab trends over time matter more than single results?'],
+  'Is my child getting enough protein for growth?': ['What\'s a realistic daily protein target for my child?', 'What happens if my child consistently misses protein targets?'],
+  'How does sleep timing affect growth hormone release?': ['What\'s a healthy amount of sleep for my child\'s age?', 'How can I tell if poor sleep is affecting my child\'s growth trend?'],
+  'Can corticosteroid use actually slow growth?': ['Does inhaled steroid use carry the same growth risk as oral steroids?', 'What\'s the connection between chronic illness and growth velocity?'],
+  'What questions should I bring to the next pediatrician visit?': ['What data from this app is most useful to print or show a doctor?', 'When is it actually time to ask for a specialist referral?'],
+  'Should I be worried if my child is in a low percentile?': ['What does it mean if my child crosses two percentile lines?', 'Is my child currently tracking toward their target height?']
+};
+
 const AI_CATEGORY_LABELS = {
   growth_trend: 'Growth trend', bmi_weight: 'BMI & weight', nutrition: 'Nutrition',
   sleep: 'Sleep', activity: 'Activity', puberty: 'Puberty', target_height: 'Target height',
@@ -2941,6 +2965,66 @@ function filterAIQuestionsByCategory(category, btn) {
   document.querySelectorAll('#aiCategoryChips .ai-chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
   renderAIQuestionList(category);
+}
+
+// Picks 2-3 follow-up questions to show after an answered question —
+// curated cross-category chains first (see CURATED_FOLLOWUPS above),
+// filled out with same-category questions if needed. Only suggests
+// questions that are actually answerable right now for the active
+// child (same data-availability check used for the main question
+// list), so a follow-up button never leads to a dead end.
+function suggestFollowUps(answeredQuestion) {
+  const child = APP.children[APP.activeChild];
+  const ageYears = child ? (new Date() - new Date(child.date_of_birth)) / (365.25*86400000) : null;
+  const availableTags = getAvailableDataTags();
+  const allQuestions = APP.aiCoachQuestions || [];
+
+  const isAnswerable = q => questionIsAnswerable(q, availableTags, ageYears) && q.question_text !== answeredQuestion.question_text;
+
+  const suggestions = [];
+  const seen = new Set();
+
+  // Curated chain first
+  const curated = CURATED_FOLLOWUPS[answeredQuestion.question_text] || [];
+  for (const text of curated) {
+    const q = allQuestions.find(x => x.question_text === text);
+    if (q && isAnswerable(q) && !seen.has(q.question_text)) {
+      suggestions.push(q);
+      seen.add(q.question_text);
+    }
+  }
+
+  // Fill out with same-category questions, ordered by the library's
+  // own display_priority, until we have up to 3 total suggestions.
+  if (suggestions.length < 3) {
+    const sameCategory = allQuestions
+      .filter(q => q.category === answeredQuestion.category && isAnswerable(q) && !seen.has(q.question_text))
+      .sort((a, b) => (a.display_priority || 50) - (b.display_priority || 50));
+    for (const q of sameCategory) {
+      if (suggestions.length >= 3) break;
+      suggestions.push(q);
+      seen.add(q.question_text);
+    }
+  }
+
+  return suggestions.slice(0, 3);
+}
+
+// Renders the follow-up suggestion buttons under a just-answered
+// message — visually distinct from the main quick-prompts list
+// (smaller, inline with the chat) since these are contextual to the
+// specific answer just given, not the general browse list.
+function renderFollowUpSuggestions(answeredQuestion) {
+  const suggestions = suggestFollowUps(answeredQuestion);
+  if (suggestions.length === 0) return;
+
+  const chat = document.getElementById('aiChat');
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-followup-suggestions';
+  wrap.innerHTML = '<div class="ai-followup-label">You might also ask:</div>' +
+    suggestions.map(q => `<button class="quick-btn ai-followup-btn" onclick="sendQuick(this)">${q.question_text}</button>`).join('');
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
 }
 
 function renderAIQuestionList(category) {
@@ -3080,6 +3164,7 @@ async function routeAICoachMessage(userText, exactHint) {
     const filled = fillAnswerTemplate(matched.answer_template, ctx);
     hideThinking();
     addBotMsg(filled.replace(/\n/g, '<br>'));
+    renderFollowUpSuggestions(matched);
     return;
   }
 
