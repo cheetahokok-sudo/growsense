@@ -3163,7 +3163,16 @@ async function routeAICoachMessage(userText, exactHint) {
     const ctx = buildAICoachContext();
     const filled = fillAnswerTemplate(matched.answer_template, ctx);
     hideThinking();
-    addBotMsg(filled.replace(/\n/g, '<br>'));
+    // Citation shown as a distinct, smaller line below the answer —
+    // only for questions that actually have a verified source attached
+    // (citation_source column, added specifically because an earlier
+    // supplied batch of 600 "citations" turned out to be fabricated on
+    // verification; every citation that DOES appear here was
+    // independently checked, see FORMULAS.md).
+    const citationHtml = matched.citation_source
+      ? `<div class="ai-citation">Source: ${matched.citation_source}</div>`
+      : '';
+    addBotMsg(filled.replace(/\n/g, '<br>') + citationHtml);
     renderFollowUpSuggestions(matched);
     return;
   }

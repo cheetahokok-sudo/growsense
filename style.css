@@ -360,6 +360,7 @@ canvas { display: block; width: 100%; height: 100%; }
 .ai-followup-suggestions { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px 0; max-width: 85%; }
 .ai-followup-label { font-size: 10.5px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
 .ai-followup-btn { font-size: 12px; padding: 9px 12px; min-height: 38px; background: var(--surface2); border: 0.5px solid var(--border2); }
+.ai-citation { font-size: 10px; color: var(--text3); margin-top: 8px; padding-top: 6px; border-top: 0.5px solid var(--border2); font-style: italic; }
 
 /* ─── SETUP MODAL ─── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(15,20,16,0.4); z-index: 200; display: flex; align-items: flex-end; }
