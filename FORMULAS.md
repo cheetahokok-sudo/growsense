@@ -1428,6 +1428,36 @@ rather than just trusting the edit call succeeded.
 
 ---
 
+## 5u. Collapsible food note + hydration grid reverted on better data (2026-06-27)
+
+**Where:** `style.css` (water grid, info-icon-btn), `index.html`
+(food note panel, info button), `toggleFoodNote()` in `app.js`.
+
+**Food sourcing note collapsed behind an (i) button.** The USDA-
+sourcing explanation paragraph under the Nutrition grid was always
+visible, taking up real vertical space on a phone screen for text most
+people only need once. Moved behind a small round (i) button next to
+the existing "USDA sourced" badge — same collapse/expand pattern
+already used for the SGA birth-details toggle, hidden by default.
+Verified directly: hidden on load, toggles open and closed correctly
+both directions.
+
+**Hydration grid reverted from 2 rows back to 1 row — and this was a
+genuine correction, not just a preference reversal.** The prior
+session's 2-row fix was justified using a 320px reference screen width,
+which is an old/small Android reference point, not representative of
+any current iPhone — this app's actual target. Recalculated against
+real iPhone widths (iPhone SE/mini 375px through Pro Max 430px): a
+single row of 8 buttons actually lands at roughly 38-45px per button on
+real hardware, much closer to the 44px tap-target guideline than the
+~32px the 320px calculation implied. Given that, and the real, reported
+cost of 2 rows (visible empty space, an objectively worse use of
+screen), reverted to 1 row with a slightly tightened gap (5px → 4px) as
+a small partial recovery, rather than keep a fix justified by a
+miscalibrated reference width.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

@@ -746,6 +746,17 @@ function toggleBirthDetails(btn) {
   btn.textContent = isHidden ? '− Hide birth details' : '+ Add birth details (for SGA / catch-up growth tracking)';
 }
 
+// Collapses the USDA-sourcing explanation behind a small (i) button by
+// default, rather than always showing the full paragraph — on a phone
+// screen that note took up real vertical space every time the
+// Nutrition card was open, for text most people only need to read once.
+function toggleFoodNote(btn) {
+  const el = document.getElementById('foodNotePanel');
+  const isHidden = el.classList.contains('hidden');
+  el.classList.toggle('hidden');
+  btn.classList.toggle('active', isHidden);
+}
+
 function renderChildList() {
   const el = document.getElementById('childList');
   if (APP.children.length === 0) {

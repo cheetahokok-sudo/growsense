@@ -175,7 +175,7 @@
 
       <!-- 1. Nutrition -->
       <div class="card" style="border-top: 3px solid var(--accent);">
-        <div class="card-header"><span class="card-title text-accent">Nutrition</span><span class="dq-badge measured"><span class="dq-dot measured"></span>USDA sourced</span></div>
+        <div class="card-header"><span class="card-title text-accent">Nutrition</span><span style="display:flex; align-items:center; gap:6px;"><span class="dq-badge measured"><span class="dq-dot measured"></span>USDA sourced</span><button class="info-icon-btn" onclick="toggleFoodNote(this)" aria-label="About these values">i</button></span></div>
         <div class="card-body">
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none; padding-bottom:8px;">
             <div class="form-lbl" style="font-size:12px; color:var(--text2);">Logging for</div>
@@ -191,7 +191,7 @@
           </div>
           <div class="food-card-grid" id="foodCardGrid"></div>
           <button class="btn-secondary" onclick="openFoodLibraryModal()" style="margin-top:10px;">+ Browse more foods / add your own</button>
-          <div class="setup-note" style="margin-top:10px; font-size:11px;">
+          <div class="setup-note hidden" id="foodNotePanel" style="margin-top:10px; font-size:11px;">
             Preset food values are per-100g USDA FoodData Central figures, scaled to a typical portion — real servings vary. Tap a card to add its protein/zinc to today's total; long-press (or right-click) to subtract a misclick. Tap "Browse more foods" to choose which cards show here, or add your own food with your own estimated values.
           </div>
 

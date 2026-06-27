@@ -106,6 +106,13 @@ body {
 .dq-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; padding: 2px 7px; border-radius: 5px; }
 .dq-badge.measured { background: var(--measured-light); color: var(--measured-dark); }
 .dq-badge.estimated { background: var(--estimated-light); color: var(--estimated-dark); }
+.info-icon-btn {
+  width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--text3); font-size: 12px; font-weight: 700;
+  font-style: italic; font-family: Georgia, serif; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.info-icon-btn.active { background: var(--accent-light); color: var(--accent-dark); border-color: transparent; }
 .dq-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 .dq-dot.measured { background: var(--measured); }
 .dq-dot.estimated { background: var(--estimated); }
@@ -166,7 +173,7 @@ body {
 .step-val { min-width: 64px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text); font-family: var(--mono); }
 
 /* ─── WATER TRACKER ─── */
-.water-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+.water-grid { display: flex; gap: 4px; margin-top: 10px; }
 
 /* ─── DATE SELECTOR ─── */
 .date-selector-bar { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; }
