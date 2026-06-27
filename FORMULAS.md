@@ -1320,6 +1320,67 @@ text, card styling, list metadata).
 
 ---
 
+## 5s. Nine new verified foods + shrimp portion fix (2026-06-26)
+
+**Where:** `food-reference-data.js` (now 20 entries, up from 11).
+
+**Shrimp fix, reported directly by the user:** the existing shrimp card
+tapped 85g (~3 medium shrimp) per tap — too large a jump for one tap
+compared to every other card's matchbox-sized (~28-30g) convention.
+Fixed by recomputing from the SAME already-verified USDA per-100g
+source (FDC 175180), just at a corrected 28g serving (1 medium shrimp,
+consistent with the original 85g/3-shrimp figure and with industry
+sizing references for "medium" shrimp running ~31-40 per pound) — no
+new sourcing needed, purely a portion-math correction, and the
+underlying nutrient data is untouched.
+
+**Nine new foods, each independently verified the same way as every
+other entry in this file** — real USDA page fetched, exact serving-size
+values read directly (not estimated), converted to per-100g, then
+scaled to a kid-sized matchbox tap (28-30g) to match the established
+convention exactly, per direct instruction: pork loin (FDC 168233),
+bacon (FDC 168322), raw salmon (FDC 173686, matched to the existing
+cooked salmon's "wild Atlantic" species for consistency), squid (FNNDS
+782749, steamed/boiled — the common Thai/Japanese preparation, not raw
+sashimi-style), crab (FDC 172007, Dungeness, fresh-cooked rather than
+canned to avoid an unrepresentative sodium spike), tuna (FDC 172006,
+yellowfin), tilapia (FDC 175177, as the white-fish entry), and duck (FDC
+172411, roasted meat+skin — the common roast/Peking-duck preparation).
+
+**Miso deliberately breaks the matchbox convention, and this was a
+considered decision, not an oversight:** every other new entry uses the
+same 28-30g matchbox-sized tap as the existing library. Miso doesn't fit
+that pattern — it's a concentrated condiment eaten by the tablespoon in
+soup, not a piece of protein eaten in a matchbox-sized portion — so it
+uses a 17g (1 tbsp) serving instead. Both miso and bacon carry a real,
+loud sodium caveat directly in their `source` field, not just a number
+buried in the data: miso's single tablespoon already supplies roughly
+28% of a child's full daily recommended sodium intake; bacon's
+matchbox-sized tap supplies roughly 9%. Both figures were calculated
+directly from the same verified USDA records, not estimated.
+
+**A real bug caught during this addition, not assumed safe:** the
+initial edit introduced a double-backslash escaping error in two of the
+new `source` strings (an artifact of how the replacement was
+constructed), which broke the file's JavaScript syntax outright —
+caught immediately by running `node --check` before considering the
+work done, not discovered later by a user. Fixed directly, then
+re-verified with the same check plus a full value dump confirming every
+one of the 20 entries' per-tap protein/zinc/calcium figures are
+internally consistent and sensible relative to the existing library
+(all land in the same 6-9.6g protein per tap range as the original 11
+matchbox-style cards).
+
+**Verified end-to-end, not just at the data-file level:** confirmed all
+20 foods load without error, appear correctly in the "Browse all" food
+library modal, can be favorited and immediately show on the main grid
+with the exact correct per-tap protein value, and that tapping a new
+food's card logs the exact right amount into the day's totals — the
+same full pipeline test used for the favorites/custom-foods system
+itself in the prior session.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

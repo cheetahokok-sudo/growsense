@@ -85,9 +85,9 @@ const FOOD_REFERENCE_DATA = [
     name: 'Shrimp',
     emoji: '🦐',
     prepNote: 'cooked',
-    portionVisual: '~3 medium shrimp',
+    portionVisual: '1 medium shrimp (tap ~3× for a typical 3-shrimp portion)',
     per100g: { protein_g: 23.98, zinc_mg: 1.64, calcium_mg: null }, // calcium not found in source checked — see note above
-    servingGrams: 85, // ~3 medium shrimp
+    servingGrams: 28, // 1 medium shrimp — fixed from 85g/3-shrimp after direct user feedback that one tap was too large; 28g is the per-shrimp weight implied by the original 85g/3-shrimp figure, consistent with medium shrimp running ~31-40/lb per industry sizing references
     source: 'USDA FDC 175180 — Crustaceans, shrimp, cooked'
   },
   {
@@ -139,16 +139,112 @@ const FOOD_REFERENCE_DATA = [
     per100g: { protein_g: 10.00, zinc_mg: 1.07, calcium_mg: 281.98 },
     servingGrams: 91,
     source: 'USDA FDC 174290 — Tofu, extra firm, prepared with nigari'
+  },
+  {
+    id: 'pork_loin',
+    name: 'Pork loin',
+    emoji: '🥩',
+    prepNote: 'lean, cooked, roasted',
+    portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
+    per100g: { protein_g: 28.62, zinc_mg: 2.5, calcium_mg: 18.0 },
+    servingGrams: 30,
+    source: 'USDA FDC 168233 — Pork, fresh, loin, whole, separable lean only, cooked, roasted'
+  },
+  {
+    id: 'bacon',
+    name: 'Bacon',
+    emoji: '🥓',
+    prepNote: 'cooked, pan-fried',
+    portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
+    per100g: { protein_g: 33.89, zinc_mg: 3.06, calcium_mg: 11.11 },
+    servingGrams: 28,
+    // High sodium relative to other cards: ~1684mg/100g, meaning roughly
+    // 9% of a full day's recommended sodium per single matchbox-sized tap
+    // — flagged in the UI via this note, not just buried in the data.
+    source: 'USDA FDC 168322 — Pork, cured, bacon, pre-sliced, cooked, pan-fried. NOTE: high sodium — one matchbox-sized tap (~28g) provides roughly 9% of a full day\'s recommended sodium intake for a child.'
+  },
+  {
+    id: 'raw_salmon',
+    name: 'Salmon (raw)',
+    emoji: '🍣',
+    prepNote: 'raw, wild Atlantic',
+    portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
+    per100g: { protein_g: 19.88, zinc_mg: 0.64, calcium_mg: 12.00 },
+    servingGrams: 30,
+    source: 'USDA FDC 173686 — Fish, salmon, Atlantic, wild, raw'
+  },
+  {
+    id: 'squid',
+    name: 'Squid',
+    emoji: '🦑',
+    prepNote: 'steamed or boiled',
+    portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
+    per100g: { protein_g: 31.43, zinc_mg: 3.07, calcium_mg: 64.64 },
+    servingGrams: 28,
+    source: 'USDA FNNDS 782749 — Squid, steamed or boiled'
+  },
+  {
+    id: 'crab',
+    name: 'Crab',
+    emoji: '🦀',
+    prepNote: 'Dungeness, cooked',
+    portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
+    per100g: { protein_g: 22.35, zinc_mg: 5.41, calcium_mg: 59.06 },
+    servingGrams: 30,
+    source: 'USDA FDC 172007 — Crustaceans, crab, dungeness, cooked, moist heat'
+  },
+  {
+    id: 'tuna',
+    name: 'Tuna',
+    emoji: '🐟',
+    prepNote: 'yellowfin, cooked',
+    portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
+    per100g: { protein_g: 29.18, zinc_mg: 0.45, calcium_mg: 4.00 },
+    servingGrams: 30,
+    source: 'USDA FDC 172006 — Fish, tuna, yellowfin, fresh, cooked, dry heat'
+  },
+  {
+    id: 'tilapia',
+    name: 'Tilapia (white fish)',
+    emoji: '🐠',
+    prepNote: 'cooked',
+    portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
+    per100g: { protein_g: 26.18, zinc_mg: 0.41, calcium_mg: 14.00 },
+    servingGrams: 30,
+    source: 'USDA FDC 175177 — Fish, tilapia, cooked, dry heat'
+  },
+  {
+    id: 'duck',
+    name: 'Duck',
+    emoji: '🦆',
+    prepNote: 'roasted, meat and skin',
+    portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
+    per100g: { protein_g: 23.50, zinc_mg: 2.57, calcium_mg: 12.00 },
+    servingGrams: 30,
+    source: 'USDA FDC 172411 — Duck, domesticated, meat only, cooked, roasted'
+  },
+  {
+    id: 'miso',
+    name: 'Miso',
+    emoji: '🍲',
+    prepNote: 'soybean paste',
+    portionVisual: '~1 tbsp (typical soup serving — not matchbox-sized, eaten as a condiment)',
+    per100g: { protein_g: 12.94, zinc_mg: 2.59, calcium_mg: 57.06 },
+    servingGrams: 17, // 1 tbsp — deliberately NOT the 28-30g matchbox convention, since miso is a concentrated condiment, not a piece of protein
+    // High sodium: ~3728mg/100g, meaning a single tablespoon already
+    // provides roughly 28% of a full day's recommended sodium intake
+    // for a child — flagged directly, not just in the source note.
+    source: 'USDA FDC 172442 — Miso. NOTE: very high sodium — a single 1-tbsp tap provides roughly 28% of a full day\'s recommended sodium intake for a child.'
   }
 ];
 
-// "Protein Boost" is intentionally NOT a database entry — it's a flat
+// \"Protein Boost\" is intentionally NOT a database entry — it's a flat
 // manual +10g quick-add button for whenever a parent reads a protein
 // number off any product's own label (a supplement, protein bar,
 // fortified drink, etc.) and wants to log it without searching for it.
 // This is explicitly self-reported/manual, not sourced from any
 // nutrition database — see app.js's logProteinBoost() and the
-// dq-badge "estimated" styling applied to it in the UI.
+// dq-badge \"estimated\" styling applied to it in the UI.
 
 if (typeof module !== 'undefined') {
   module.exports = { FOOD_REFERENCE_DATA };
