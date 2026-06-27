@@ -138,8 +138,8 @@ body {
 .grs-ring-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
 .grs-ring-wrap svg { transform: rotate(-90deg); }
 .grs-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.grs-score { font-size: 32px; font-weight: 700; letter-spacing: -1px; color: var(--text); line-height: 1; font-family: var(--mono); }
-.grs-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text2); margin-top: 2px; }
+.grs-score { font-size: 21px; font-weight: 700; letter-spacing: -0.8px; color: var(--text); line-height: 1; font-family: var(--mono); }
+.grs-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text2); margin-top: 1px; }
 .grs-metrics { flex: 1; display: flex; flex-direction: column; gap: 9px; }
 .grs-metric { display: flex; align-items: center; justify-content: space-between; }
 .grs-metric-left { display: flex; align-items: center; gap: 7px; }
@@ -166,7 +166,7 @@ body {
 .step-val { min-width: 64px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text); font-family: var(--mono); }
 
 /* ─── WATER TRACKER ─── */
-.water-grid { display: flex; gap: 5px; margin-top: 10px; }
+.water-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
 
 /* ─── DATE SELECTOR ─── */
 .date-selector-bar { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; }

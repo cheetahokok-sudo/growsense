@@ -1381,6 +1381,53 @@ itself in the prior session.
 
 ---
 
+## 5t. Three UI fixes — hydration tap targets, readiness ring overlap, calcium step (2026-06-26)
+
+**Where:** `style.css` (water grid, GRS score/label), `index.html`
+(calcium stepper buttons).
+
+**Hydration tap targets — measured, not just eyeballed.** The 8 water-
+drop buttons sat in one `display: flex` row (`.water-grid`). Height was
+already a correct 44px, but width was `flex: 1` across 8 items — on a
+320px-wide screen, that works out to roughly 32px per button, measurably
+below the 44px minimum tap-target guideline (Apple HIG and Material
+Design both use 44px as the floor). Fixed by switching to a 4-column
+grid (2 rows of 4) instead of forcing all 8 into one row — recalculated
+the same way: roughly 68px per button on the same 320px screen, more
+than double the previous width and comfortably above the minimum on any
+realistic screen size.
+
+**Readiness ring overlap — traced to a specific, real geometry
+conflict, not a vague "feels cramped."** The innermost ring has `r=25`
+in a 110×110 SVG, meaning the circle the score sits inside is only 50px
+across. The score text was 32px font — for the genuinely reachable
+value of 100 (confirmed directly from `updateHUD()`'s scoring math: all
+three category ratios cap at 1, and `35+35+30=100` is a real achievable
+score, not theoretical), the rendered text width comes out to roughly
+58px — wider than the 50px circle it's sitting in, which is exactly the
+overlap reported. Fixed by reducing to 21px with tightened letter-
+spacing, recalculated to leave roughly 15px of real margin even at the
+3-digit worst case, while staying clearly legible. The "of 100" label
+below it was tightened correspondingly so the two-line stack has room
+to breathe rather than just barely fitting.
+
+**Calcium stepper increment.** Changed from ±50mg to ±100mg per direct
+request. Confirmed before changing: the calcium range (0-3000mg) and
+target (1300mg) both divide cleanly by 100 with no awkward remainder,
+so this isn't just a rounder number — it actually halves the number of
+taps needed to reach a typical day's target (13 taps instead of 26)
+without overshooting past any meaningful threshold.
+
+**Verified directly:** confirmed via functional test that calcium
+increments by exactly 100 per tap and updates the display correctly;
+that the water grid builds without error with all 8 drops present under
+the new layout; and that the readiness score updates without error
+under the new font sizing. CSS values were also double-checked directly
+against the final file to confirm the exact intended numbers landed,
+rather than just trusting the edit call succeeded.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table
