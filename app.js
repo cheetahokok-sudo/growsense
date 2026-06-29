@@ -1240,6 +1240,7 @@ async function addFamilyHeightRecord() {
 }
 
 async function deleteFamilyHeightRecord(id) {
+  if (!confirm('Remove this family height record? This cannot be undone.')) return;
   const { error } = await sb.from('family_height_records').delete().eq('record_id', id);
   if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
   APP.familyHeightRecords = (APP.familyHeightRecords || []).filter(r => r.record_id !== id);
@@ -3020,6 +3021,7 @@ async function addLabResult() {
 }
 
 async function deleteLabResult(id) {
+  if (!confirm('Remove this lab result? This cannot be undone.')) return;
   const { error } = await sb.from('lab_results').delete().eq('lab_result_id', id);
   if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
   APP.labResults = (APP.labResults || []).filter(r => r.lab_result_id !== id);
@@ -3125,6 +3127,7 @@ async function addPubertyEvent() {
 }
 
 async function deletePubertyEvent(id) {
+  if (!confirm('Remove this puberty milestone? This cannot be undone.')) return;
   const { error } = await sb.from('puberty_events').delete().eq('event_id', id);
   if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
   APP.pubertyEvents = (APP.pubertyEvents || []).filter(ev => ev.event_id !== id);
@@ -3233,6 +3236,7 @@ async function addIllnessEvent() {
 }
 
 async function deleteIllnessEvent(id) {
+  if (!confirm('Remove this illness episode? This cannot be undone.')) return;
   const { error } = await sb.from('illness_events').delete().eq('event_id', id);
   if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
   APP.illnessEvents = (APP.illnessEvents || []).filter(ev => ev.event_id !== id);

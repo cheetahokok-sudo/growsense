@@ -1458,6 +1458,50 @@ miscalibrated reference width.
 
 ---
 
+## 5v. Delete confirmations — sorted by real stakes, not applied uniformly (2026-06-27)
+
+**Where:** `deleteLabResult()`, `deletePubertyEvent()`,
+`deleteIllnessEvent()`, `deleteFamilyHeightRecord()` in `app.js`.
+`removeChild()` already had this pattern from an earlier session and
+was the template followed here.
+
+**The actual rule applied, per direct instruction:** confirm before
+deleting anything that's either catastrophic (a whole child profile) or
+genuinely hard to recreate (clinical/developmental records — illness
+episodes, lab results, puberty milestones). Don't confirm same-day
+nutrition log taps or custom food cards — both are cheap to fix by just
+tapping again, and a confirm dialog there would be pure friction with
+no real safety benefit, exactly as specified directly.
+
+**Family height records were a deliberate judgment call, asked and
+answered explicitly rather than assumed:** these aren't clinical data
+and are never used in any calculation (purely reference), so they
+technically belong in the "low stakes" bucket by the same logic applied
+elsewhere — but confirmation was requested anyway, since re-entering a
+relative's height after a misclick is still real tedium even if it's
+not consequential the way a lab result is. Honored as asked rather than
+overridden with the "technically low-stakes" argument.
+
+**Final split across all 7 delete buttons in the app:**
+- **Confirms:** `removeChild`, `deleteIllnessEvent`, `deleteLabResult`,
+  `deletePubertyEvent`, `deleteFamilyHeightRecord`
+- **No confirm:** `deleteNutritionLogItem`, `deleteCustomFood`
+
+All five confirms use native `confirm()` with specific, plain wording
+naming exactly what's being removed — matching the pattern
+`removeChild()` already established, not a generic "Are you sure?"
+across all five.
+
+**Verified directly, not assumed from reading the code:** simulated
+both cancelling and accepting the browser confirm dialog for all four
+newly-guarded functions — confirmed cancelling reaches zero database
+delete calls across all four, confirming lets all four proceed exactly
+once each, and confirmed by inspecting the actual function source that
+the two intentionally-unguarded functions contain no `confirm()` call
+at all.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table
