@@ -1502,6 +1502,59 @@ at all.
 
 ---
 
+## 5w. Real bug: child-delete button silently failed due to a native DOM API name collision (2026-06-27)
+
+**Where:** `app.js` — `removeChild()` renamed to `deleteChildProfile()`.
+
+**The bug, reported as "the × button does nothing":** the actual
+browser console (obtained directly from the user, not assumed) showed:
+`Uncaught TypeError: Failed to execute 'removeChild' on 'Node':
+parameter 1 is not of type 'Node'`. The cause: every DOM `Node` has a
+native built-in method called `removeChild()`
+(`parentNode.removeChild(childNode)`), and this app's own global
+function was named exactly the same thing. The inline
+`onclick="removeChild('${childId}')"` attribute was resolving to the
+native DOM method instead of the app's function in this execution
+context, which then tried to call native `removeChild` with a string
+child_id instead of an actual DOM node — hence the exact error shown.
+This is a real, classic JavaScript naming-collision class of bug, not a
+logic error in the function's own body, which is why the function
+looked completely correct on inspection and the click appeared to "do
+nothing" rather than visibly error in a casual look.
+
+**Fixed by renaming to `deleteChildProfile`** — a name that can't
+collide with any native DOM/JS API. Proactively checked every other
+function name in the app against a list of common native DOM/JS method
+names (`appendChild`, `insertBefore`, `cloneNode`, `submit`, `reset`,
+`close`, `focus`, etc.) to confirm this was an isolated case, not a
+systemic pattern — confirmed clean, no other collisions found.
+
+**Verified directly, reproducing the actual failure mode, not just
+checking the rename:** wrote a test that renders the real child list
+HTML, gets the actual rendered button element, and calls `.click()` on
+it exactly the way a real tap would — confirmed this no longer throws
+the `Node.removeChild` error and the delete call correctly reaches the
+database. Checking only that the function was renamed wouldn't have
+caught a possible re-introduction of the same collision; checking the
+actual click path does.
+
+## 5x. Custom food deletion now requires confirmation (2026-06-27)
+
+**Where:** `deleteCustomFood()` in `app.js`.
+
+Per direct request: a custom food's protein/zinc/calcium values often
+represent real effort — figuring out the actual nutrition for a child's
+specific favorite homemade or specialty food — so accidental deletion
+costs more than the "quick to redo" framing applied to nutrition-log
+taps. Added a `confirm()` gate with wording naming the actual cost
+(re-entering the values), not a generic "are you sure." This is a
+deliberate exception to the earlier "custom foods are low-stakes, no
+confirm needed" decision (§5v) — revised directly based on the user's
+own account of how much thought goes into these entries, not assumed
+from outside.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

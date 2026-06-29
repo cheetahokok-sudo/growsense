@@ -772,12 +772,21 @@ function renderChildList() {
           <div style="font-size:11px; color:var(--text2);">Age ${ageFromDOB(c.date_of_birth) ?? '—'} · born ${c.date_of_birth}</div>
         </div>
       </div>
-      <button onclick="removeChild('${c.child_id}')" style="background:none; border:none; color:var(--flag); font-size:18px; cursor:pointer; padding:4px; min-width:32px; min-height:32px;">×</button>
+      <button onclick="deleteChildProfile('${c.child_id}')" style="background:none; border:none; color:var(--flag); font-size:18px; cursor:pointer; padding:4px; min-width:32px; min-height:32px;">×</button>
     </div>
   `).join('');
 }
 
-async function removeChild(childId) {
+// Named deleteChildProfile, NOT removeChild — every DOM Node has a
+// native removeChild() method (Node.prototype.removeChild), and naming
+// this function the same thing caused a real collision: the inline
+// onclick="removeChild(...)" attribute was resolving to the native DOM
+// method instead of this function in some execution contexts, throwing
+// "Failed to execute 'removeChild' on 'Node': parameter 1 is not of
+// type 'Node'" because the native method expects an actual DOM node
+// argument, not a child_id string. Confirmed directly from a real
+// browser console error, not assumed.
+async function deleteChildProfile(childId) {
   if (APP.children.length <= 1) { showToast('⚠️', 'At least one child profile is required'); return; }
   if (!confirm('Remove this child profile? This permanently deletes all their logged data, including growth history and medical records. This cannot be undone.')) return;
 
@@ -1547,6 +1556,8 @@ async function addCustomFood() {
 }
 
 async function deleteCustomFood(id) {
+  if (!confirm('Remove this custom food? You\'ll need to re-enter its protein/zinc/calcium values if you add it again. This cannot be undone.')) return;
+
   // Also remove any favorite pointing at this custom food, so a
   // deleted food can't leave a dangling, unresolvable favorite that
   // would silently vanish from the grid with no explanation.
