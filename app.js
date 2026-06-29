@@ -326,6 +326,14 @@ async function loadDayIntoState() {
   const s = currentState();
   if (!childId) { resetStateToDefaults(s); await loadNutritionLogItems(); return; }
 
+  // Fire-and-forget background prune — runs once per child per session
+  // (guarded by a session-level flag) so the Free-tier 30-day rolling
+  // retention is enforced without blocking the page load or the parent
+  // noticing any delay. Only actually deletes anything for Free-tier
+  // accounts that have logs older than 30 days — skips immediately and
+  // silently for Premium/Pro.
+  pruneStaleLogItemsIfNeeded(childId);
+
   const [nutRes, sleepRes, actRes] = await Promise.all([
     sb.from('daily_nutrition').select('*').eq('child_id', childId).eq('log_date', APP.logDate).maybeSingle(),
     sb.from('daily_sleep').select('*').eq('child_id', childId).eq('log_date', APP.logDate).maybeSingle(),
@@ -371,6 +379,52 @@ function resetStateToDefaults(s) {
 // underneath the daily_nutrition totals. See migration_nutrition_log_items.sql
 // for why this table is meant to be permanent, not pruned.
 // ══════════════════════════════════════════
+// ── Free-tier daily-log retention pruning ────────────────────────────
+// Free accounts have a 30-day rolling window on nutrition, sleep, and
+// activity log entries (NOT on measurements, labs, puberty events, or
+// illness events — those are never pruned regardless of tier, per the
+// tier design decision documented in FORMULAS.md §5y).
+//
+// This function runs once per child per browser session (session-level
+// flag prevents repeated sweeps) as a fire-and-forget background call.
+// It deliberately does NOT await — the parent should never feel it.
+// On Premium/Pro, it reads the limit, finds it NULL, and exits without
+// touching anything. On Free, it issues a single DELETE for log rows
+// older than 30 days for this child.
+const _prunedThisSession = new Set(); // child_ids pruned in this session
+async function pruneStaleLogItemsIfNeeded(childId) {
+  if (_prunedThisSession.has(childId)) return; // already ran this session
+  _prunedThisSession.add(childId); // mark before the async work to prevent re-entry
+
+  const tier = (APP.account && APP.account.subscription_tier) || 'free';
+  const limitRes = await sb.from('subscription_tier_limits')
+    .select('daily_log_retention_days')
+    .eq('tier', tier)
+    .maybeSingle();
+
+  if (limitRes.error || !limitRes.data) return;
+  const retentionDays = limitRes.data.daily_log_retention_days;
+  if (retentionDays === null) return; // NULL = unlimited — Premium/Pro, do nothing
+
+  // Compute the cutoff date as a plain 'YYYY-MM-DD' string — matches
+  // the log_date column type (date, not timestamptz), so the comparison
+  // is a simple date string comparison rather than a timezone-sensitive
+  // timestamp comparison that could silently prune the wrong day.
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+  const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+  // Three tables to prune: nutrition_log_items, sleep_logs, and
+  // activity_logs — all use the same log_date column pattern.
+  // Errors are silently swallowed — this is a background maintenance
+  // job and a prune failure shouldn't surface as a user-visible error.
+  await Promise.all([
+    sb.from('nutrition_log_items').delete().eq('child_id', childId).lt('log_date', cutoffStr),
+    sb.from('sleep_logs').delete().eq('child_id', childId).lt('log_date', cutoffStr),
+    sb.from('activity_logs').delete().eq('child_id', childId).lt('log_date', cutoffStr)
+  ]).catch(() => {}); // swallow silently — background maintenance
+}
+
 async function loadNutritionLogItems() {
   const childId = activeChildId();
   if (!childId) { APP.nutritionLogItems = []; renderNutritionLogList(); return; }
@@ -816,6 +870,26 @@ async function addChild() {
   const sex = document.getElementById('newChildSex').value;
   if (!name) { showToast('⚠️', 'Enter a name'); return; }
   if (!dob) { showToast('⚠️', 'Enter a date of birth'); return; }
+
+  // ── Tier enforcement: max_children ───────────────────────────────
+  // Check the limit before inserting — a client-side-only check is
+  // trivially bypassed, so this reads the real limit from the
+  // subscription_tier_limits table every time rather than caching it.
+  // NULL max_children means unlimited (Pro tier). Only active
+  // (non-archived) children count toward the cap.
+  const tier = (APP.account && APP.account.subscription_tier) || 'free';
+  const limitRes = await sb.from('subscription_tier_limits')
+    .select('max_children')
+    .eq('tier', tier)
+    .maybeSingle();
+  if (!limitRes.error && limitRes.data && limitRes.data.max_children !== null) {
+    const activeCount = APP.children.filter(c => c.status !== 'archived').length;
+    if (activeCount >= limitRes.data.max_children) {
+      showToast('⚠️', `Your ${tier} plan supports up to ${limitRes.data.max_children} child profile${limitRes.data.max_children === 1 ? '' : 's'} — upgrade to add more`);
+      return;
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────
 
   // Optional birth-status fields, for SGA/catch-up-growth tracking (see
   // migration_sga_tracking.sql for why is_sga is a confirmed flag, not
@@ -3901,7 +3975,72 @@ function buildAICoachContext() {
   return ctx;
 }
 
+// ── Live AI monthly cap enforcement (client-side UX layer) ──────────
+// Reads this account's tier limit, then upserts the monthly usage row
+// atomically. Returns true if the cap has been reached (and shows the
+// user a clear message), false if the call should proceed.
+//
+// The year_month key is 'YYYY-MM' in the user's local time (not UTC)
+// — this avoids the confusing situation where a user makes a call just
+// before midnight UTC and it's counted in the "wrong" month from their
+// perspective. The Edge Function uses the same local-month convention.
+async function checkAndIncrementLiveAIUsage() {
+  const tier = (APP.account && APP.account.subscription_tier) || 'free';
+  const userId = APP.session ? APP.session.user.id : null;
+  if (!userId) return true; // shouldn't happen, but block rather than crash
+
+  // Get the cap for this tier
+  const limitRes = await sb.from('subscription_tier_limits')
+    .select('live_ai_monthly_cap')
+    .eq('tier', tier)
+    .maybeSingle();
+
+  if (limitRes.error || !limitRes.data) return false; // if limit lookup fails, let the call through rather than silently block
+  const cap = limitRes.data.live_ai_monthly_cap;
+  if (cap === null) return false; // NULL = unlimited (Pro future tier)
+  if (cap === 0) {
+    addBotMsg('Live AI is not available on the Free plan. You\'re getting answers from the template library — upgrade to Premium or Pro for live AI responses.');
+    return true;
+  }
+
+  // Build the year-month key in local time
+  const now = new Date();
+  const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  // Read current count first
+  const usageRes = await sb.from('live_ai_usage_monthly')
+    .select('call_count')
+    .eq('user_id', userId)
+    .eq('year_month', yearMonth)
+    .maybeSingle();
+
+  const currentCount = (!usageRes.error && usageRes.data) ? usageRes.data.call_count : 0;
+
+  if (currentCount >= cap) {
+    addBotMsg(`You've used all ${cap} live AI responses for this month (${tier} plan). Your limit resets on the 1st of next month. Template-mode answers are still available — or upgrade to Pro for a higher cap.`);
+    return true;
+  }
+
+  // Increment — upsert so the row is created on first use
+  await sb.from('live_ai_usage_monthly').upsert({
+    user_id: userId,
+    year_month: yearMonth,
+    call_count: currentCount + 1
+  }, { onConflict: 'user_id,year_month' });
+
+  return false; // cap not exceeded, proceed with the call
+}
+
 async function askClaude(userMsg) {
+  // ── Tier enforcement: live AI monthly cap ─────────────────────────
+  // Checked and incremented here (client side) rather than only in the
+  // Edge Function, so the user gets a clear, friendly message before
+  // wasting a round trip to the server. The Edge Function enforces the
+  // same cap server-side as a real hard gate — this is the UX layer.
+  const capExceeded = await checkAndIncrementLiveAIUsage();
+  if (capExceeded) return; // message already shown inside the function
+  // ─────────────────────────────────────────────────────────────────
+
   showThinking();
   const ctx = buildAICoachContext();
   const grs = document.getElementById('grsScore').textContent;

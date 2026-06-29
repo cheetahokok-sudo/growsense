@@ -1615,6 +1615,61 @@ genuinely longer than Free/Premium's 1-year window.
 
 ---
 
+## 5z. Tier enforcement wired into app code (2026-06-30)
+
+**Where:** `addChild()`, `pruneStaleLogItemsIfNeeded()`,
+`checkAndIncrementLiveAIUsage()`, `askClaude()` in `app.js`.
+
+**The three enforcement tasks from §5y, now wired:**
+
+**1. Max-children check in `addChild()`.** Reads
+`subscription_tier_limits.max_children` for this account's actual
+tier before every insert — `NULL` means unlimited (Pro), so Pro users
+are never blocked. The check counts only `status !== 'archived'`
+children, so an archived child (hidden from the parent's view) doesn't
+count against the limit. The user sees a plain message naming their
+tier and telling them to upgrade, not a generic error. Verified: Free
+blocked at 1/1, allowed at 0/1; Premium allowed at 1/2; Pro (null)
+always allowed.
+
+**2. Daily-log pruning in `pruneStaleLogItemsIfNeeded()`.** Runs once
+per child per browser session (session-level Set guards re-entry) as a
+fire-and-forget background call from `loadDayIntoState()` — the parent
+never waits for it. On Premium/Pro, reads the retention limit (`NULL`),
+finds it unlimited, exits without touching anything. On Free (30-day
+rolling window), issues a single DELETE per table
+(`nutrition_log_items`, `sleep_logs`, `activity_logs`) for rows older
+than the cutoff date — all using `log_date < cutoffStr` where
+`cutoffStr` is a plain `YYYY-MM-DD` string matching the `log_date`
+column type, avoiding timezone-sensitive timestamp comparisons that
+could silently prune the wrong day. Errors are swallowed silently since
+this is background maintenance. Measurements, lab results, puberty
+events, and illness events are deliberately NOT included — those are
+never pruned regardless of tier, per the original tier design decision.
+
+**3. Monthly live-AI cap in `checkAndIncrementLiveAIUsage()`.** Called
+at the top of `askClaude()` before any network call. Reads the tier's
+`live_ai_monthly_cap`, then reads and upserts the
+`live_ai_usage_monthly` row for this user and the current local
+calendar month (YYYY-MM, in local time not UTC — a user making a call
+just before midnight UTC shouldn't see it counted in the "wrong"
+month). Free gets a clear message that live AI isn't included in their
+plan. Premium/Pro users who've hit their monthly cap see a plain
+message naming the cap, the current count, and when it resets. The
+counter increments only if the call will actually proceed — cap-
+exceeded calls don't increment the counter. Returns `true` (blocked)
+or `false` (proceed) so `askClaude()` can return early cleanly without
+the caller needing to re-check state. Verified: cap=0 always blocks,
+49/50 allows and increments, 50/50 blocks, 199/200 Pro allows, YYYY-MM
+format correct.
+
+**What's still deferred:** the Edge Function proxy doesn't yet enforce
+the cap server-side — this client-side check is the UX layer, and a
+determined user could bypass it via dev tools. Server-side enforcement
+in the Edge Function is the next step for this feature.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table
