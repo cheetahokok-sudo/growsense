@@ -123,6 +123,84 @@ async function setAICoachModeAdmin(mode, btn) {
 }
 
 // ══════════════════════════════════════════
+// ADMIN ARCHIVE PANEL — system_admin-only view of archived children
+// and accounts, with restore. Reads from the plain views defined in
+// migration_archive_and_subscriptions.sql (archived_children_view,
+// archived_accounts_view) rather than querying children/user_accounts
+// directly with the date-math inline — the view already computes
+// days_until_permanent_delete, so this stays simple.
+// ══════════════════════════════════════════
+async function loadAndRenderAdminArchivePanel() {
+  const panel = document.getElementById('adminArchivePanel');
+  panel.classList.remove('hidden');
+
+  const [childrenRes, accountsRes] = await Promise.all([
+    sb.from('archived_children_view').select('*'),
+    sb.from('archived_accounts_view').select('*')
+  ]);
+
+  renderArchivedChildrenList((!childrenRes.error && childrenRes.data) ? childrenRes.data : []);
+  renderArchivedAccountsList((!accountsRes.error && accountsRes.data) ? accountsRes.data : []);
+}
+
+function renderArchivedChildrenList(rows) {
+  const el = document.getElementById('archivedChildrenList');
+  if (rows.length === 0) { el.innerHTML = '<div class="log-list-empty">None archived.</div>'; return; }
+  el.innerHTML = rows.map(r => `
+    <div class="log-item-row">
+      <div class="log-item-left">
+        <div class="log-item-info">
+          <span class="log-item-name">${r.name}</span>
+          <span class="log-item-meta">${r.days_until_permanent_delete} days until permanent deletion</span>
+        </div>
+      </div>
+      <div class="log-item-right">
+        <button class="btn-link" style="font-size:11.5px;" onclick="restoreArchivedChild('${r.child_id}', this)">Restore</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderArchivedAccountsList(rows) {
+  const el = document.getElementById('archivedAccountsList');
+  if (rows.length === 0) { el.innerHTML = '<div class="log-list-empty">None archived.</div>'; return; }
+  el.innerHTML = rows.map(r => `
+    <div class="log-item-row">
+      <div class="log-item-left">
+        <div class="log-item-info">
+          <span class="log-item-name">${r.email}</span>
+          <span class="log-item-meta">${r.days_until_permanent_delete} days until permanent deletion</span>
+        </div>
+      </div>
+      <div class="log-item-right">
+        <button class="btn-link" style="font-size:11.5px;" onclick="restoreArchivedAccount('${r.user_id}', this)">Restore</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Restoring a child sets status back to 'active' and clears the
+// archive timestamps entirely — a later re-archive (if it ever
+// happens) should start a fresh countdown, not resume a stale one.
+async function restoreArchivedChild(childId, btn) {
+  const { error } = await sb.from('children').update({
+    status: 'active', archived_at: null, archived_by: null, permanent_delete_after: null
+  }).eq('child_id', childId);
+  if (error) { showToast('⚠️', 'Could not restore: ' + error.message); return; }
+  showToast('✅', 'Child profile restored');
+  btn.closest('.log-item-row').remove();
+}
+
+async function restoreArchivedAccount(userId, btn) {
+  const { error } = await sb.from('user_accounts').update({
+    account_status: 'active', archived_at: null, permanent_delete_after: null
+  }).eq('user_id', userId);
+  if (error) { showToast('⚠️', 'Could not restore: ' + error.message); return; }
+  showToast('✅', 'Account restored');
+  btn.closest('.log-item-row').remove();
+}
+
+// ══════════════════════════════════════════
 // BOOT — gated on auth session
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
@@ -584,6 +662,45 @@ async function handleSignOut() {
   showAuthScreen();
 }
 
+// Archives the WHOLE account, not just one child — same "nothing
+// vanishes immediately" guarantee as deleteChildProfile(), one level
+// up. The account and every child under it are flipped to 'archived'
+// as a single unit, so a parent doesn't have to separately delete each
+// child first. Only the scheduled sweep performs real, irreversible
+// deletion, and only after the full grace period (account_archive_
+// retention_days for this account's tier) has elapsed. A system_admin
+// can restore the account at any point before that.
+async function requestAccountDeletion() {
+  const retentionDays = await getAccountArchiveRetentionDays();
+  const confirmed = confirm(
+    `Delete your GrowSense account? Your account and all children's profiles will be archived for ${retentionDays} days, during which you can contact support to restore everything. After that period, your data will be permanently and irreversibly deleted. You will be signed out immediately.`
+  );
+  if (!confirmed) return;
+
+  const archivedAt = new Date();
+  const permanentDeleteAfter = new Date(archivedAt.getTime() + retentionDays * 86400000);
+  const userId = APP.session ? APP.session.user.id : null;
+  if (!userId) return;
+
+  // Archive every child under this account first, then the account
+  // itself — both as plain status updates, nothing cascades or
+  // deletes here.
+  const { error: childrenError } = await sb.from('children').update({
+    status: 'archived', archived_at: archivedAt.toISOString(), archived_by: userId,
+    permanent_delete_after: permanentDeleteAfter.toISOString()
+  }).eq('parent_id', userId).eq('status', 'active');
+  if (childrenError) { showToast('⚠️', 'Could not archive children: ' + childrenError.message); return; }
+
+  const { error: accountError } = await sb.from('user_accounts').update({
+    account_status: 'archived', archived_at: archivedAt.toISOString(),
+    permanent_delete_after: permanentDeleteAfter.toISOString()
+  }).eq('user_id', userId);
+  if (accountError) { showToast('⚠️', 'Could not archive account: ' + accountError.message); return; }
+
+  showToast('✅', 'Account archived. Signing out…');
+  setTimeout(() => handleSignOut(), 1200); // brief pause so the toast is actually visible before the auth screen replaces everything
+}
+
 // ══════════════════════════════════════════
 // CHILD SWITCHER
 // ══════════════════════════════════════════
@@ -592,7 +709,7 @@ async function handleSignOut() {
 // a scientist sees all). Called on boot, after adding a child, and after
 // switching accounts.
 async function loadChildren() {
-  const { data, error } = await sb.from('children').select('*').order('created_at');
+  const { data, error } = await sb.from('children').select('*').eq('status', 'active').order('created_at');
   if (error) {
     showToast('⚠️', 'Could not load children: ' + error.message);
     APP.children = [];
@@ -786,16 +903,39 @@ function renderChildList() {
 // type 'Node'" because the native method expects an actual DOM node
 // argument, not a child_id string. Confirmed directly from a real
 // browser console error, not assumed.
+// Archives a child profile rather than permanently deleting it — per
+// the retention policy, nothing a parent removes vanishes immediately.
+// The child is hidden from this account's view and a 1-year countdown
+// to permanent deletion starts (longer on Pro — see
+// subscription_tier_limits.account_archive_retention_days), but every
+// measurement, lab result, puberty milestone, and log tied to this
+// child stays completely intact in the database. A system_admin can
+// restore the profile at any point before the countdown ends. Only the
+// scheduled sweep (run_archive_permanent_delete_sweep(), once daily)
+// ever performs the real, irreversible delete, and only after the full
+// grace period has elapsed.
 async function deleteChildProfile(childId) {
-  if (APP.children.length <= 1) { showToast('⚠️', 'At least one child profile is required'); return; }
-  if (!confirm('Remove this child profile? This permanently deletes all their logged data, including growth history and medical records. This cannot be undone.')) return;
+  if (APP.children.filter(c => c.status !== 'archived').length <= 1) {
+    showToast('⚠️', 'At least one active child profile is required');
+    return;
+  }
+  if (!confirm('Remove this child profile? It will be archived (not permanently deleted) for 1 year, during which it can still be recovered if needed. After that, it cannot be restored.')) return;
 
-  const { error } = await sb.from('children').delete().eq('child_id', childId);
-  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  const retentionDays = await getAccountArchiveRetentionDays();
+  const archivedAt = new Date();
+  const permanentDeleteAfter = new Date(archivedAt.getTime() + retentionDays * 86400000);
+
+  const { error } = await sb.from('children').update({
+    status: 'archived',
+    archived_at: archivedAt.toISOString(),
+    archived_by: APP.session ? APP.session.user.id : null,
+    permanent_delete_after: permanentDeleteAfter.toISOString()
+  }).eq('child_id', childId);
+  if (error) { showToast('⚠️', 'Could not archive: ' + error.message); return; }
 
   const idx = APP.children.findIndex(c => c.child_id === childId);
   if (idx >= 0) {
-    APP.children.splice(idx, 1);
+    APP.children.splice(idx, 1); // removed from the in-memory active list, not the database
     delete APP.dayStateByChild[idx];
     delete APP.weekStreakByChild[idx];
   }
@@ -807,6 +947,18 @@ async function deleteChildProfile(childId) {
   loadChildIntoForm();
   await refreshActiveChildHistory();
   await loadWeekStreak();
+  showToast('✅', 'Child profile archived — recoverable for ' + retentionDays + ' days');
+}
+
+// Looks up this account's actual archive retention window from
+// subscription_tier_limits rather than hardcoding 365 in the client —
+// Pro gets a longer window (3 years), and a hardcoded client-side
+// number would silently be wrong for that tier, or wrong the moment an
+// admin changes the policy in the database.
+async function getAccountArchiveRetentionDays() {
+  const tier = (APP.account && APP.account.subscription_tier) || 'free';
+  const { data, error } = await sb.from('subscription_tier_limits').select('account_archive_retention_days').eq('tier', tier).maybeSingle();
+  return (!error && data) ? data.account_archive_retention_days : 365; // 365-day fallback if the lookup itself fails, never less protective than the documented default
 }
 
 // ══════════════════════════════════════════
@@ -3907,7 +4059,10 @@ function openSetup() {
   renderChildList();
   populateShareChildSelect();
   if (isClinicianRole()) renderAssignedChildrenList();
-  if (isSystemAdmin()) loadAndRenderAdminAIModePanel();
+  if (isSystemAdmin()) {
+    loadAndRenderAdminAIModePanel();
+    loadAndRenderAdminArchivePanel();
+  }
   document.getElementById('setupModal').classList.remove('hidden');
 }
 

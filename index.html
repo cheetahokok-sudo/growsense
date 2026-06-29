@@ -845,6 +845,7 @@
         </div>
         <button class="btn-ghost" style="padding:8px 14px;" onclick="handleSignOut()">Sign out</button>
       </div>
+      <button class="btn-link" style="margin-top:10px; font-size:11.5px; color:var(--flag);" onclick="requestAccountDeletion()">Delete account</button>
     </div>
 
     <!-- Doctor/researcher: list of assigned children -->
@@ -864,6 +865,21 @@
         <button class="seg-btn" data-mode="live_ai" onclick="setAICoachModeAdmin('live_ai', this)">Live AI (uses API credits)</button>
       </div>
       <div class="setup-note" style="font-size:11px;" id="aiModeDescription">Template mode answers from a pre-written library matched to the question — no Anthropic API calls, no cost. Switch to Live AI for more complex, free-form answers, which calls the Anthropic API and incurs real cost per question.</div>
+    </div>
+
+    <!-- System admin only: archived children/accounts, with restore.
+         Nothing here is permanently deleted until the scheduled sweep
+         (run_archive_permanent_delete_sweep) runs, once the grace
+         period in permanent_delete_after has passed — see
+         migration_archive_and_subscriptions.sql and
+         migration_archive_sweep_cron.sql. -->
+    <div class="sheets-config hidden" id="adminArchivePanel">
+      <div class="sheets-config-title">Archived data (pending permanent deletion)</div>
+      <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Restoring sets status back to active. Nothing below is permanently deleted until its countdown reaches zero — the daily automated sweep only removes entries whose grace period has fully elapsed.</div>
+      <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived children</div>
+      <div id="archivedChildrenList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
+      <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived accounts</div>
+      <div id="archivedAccountsList" style="display:flex; flex-direction:column; gap:8px;"></div>
     </div>
 
     <!-- Parent: children profiles + sharing -->

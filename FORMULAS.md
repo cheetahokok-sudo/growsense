@@ -1555,6 +1555,66 @@ from outside.
 
 ---
 
+## 5y. Archive/soft-delete lifecycle + subscription tiers (2026-06-29)
+
+**Where:** `migration_archive_and_subscriptions.sql`,
+`migration_archive_sweep_cron.sql`, `deleteChildProfile()`,
+`requestAccountDeletion()`, `getAccountArchiveRetentionDays()`,
+`loadAndRenderAdminArchivePanel()` + restore functions in `app.js`,
+`index.html` (admin archive panel, Delete account button).
+
+**The core guarantee, stated plainly:** nothing a parent removes from
+GrowSense vanishes immediately. Tapping "remove" on a child profile or
+"Delete account" flips a status flag, hides the data from the parent's
+view, and starts a countdown — 1 year on Free and Premium, 3 years on
+Pro. Every measurement, lab result, puberty milestone, illness episode,
+and log tied to that child stays completely intact in the database
+during that window. Only after the countdown expires does the automated
+daily sweep (`run_archive_permanent_delete_sweep()`, pg_cron at 03:00
+UTC) perform the real, irreversible delete. A system_admin can restore
+any archived child or account at any point before that sweep runs — the
+admin panel under Account & Settings shows the archived list with a
+days-remaining countdown and a Restore button for each.
+
+**Account deletion is a single unit operation, not per-child.** Calling
+`requestAccountDeletion()` archives every active child under the account
+in one update (`.eq('parent_id', userId).eq('status', 'active')`), then
+archives the account itself — so a parent doesn't need to delete each
+child separately first, and nothing is left dangling as "active but
+orphaned" after the account-level archive.
+
+**Subscription tiers are stored as data, not hardcoded.** The
+`subscription_tier_limits` table holds the actual limit values, so a
+tier's cap can be changed (a promotion, a pricing correction) without a
+code deploy. Limits: Free — 1 child, 30-day rolling retention on daily
+logs only (measurements/labs/puberty events never pruned on any tier),
+2 custom foods, no live AI; Premium — 2 children, 3-year log retention,
+unlimited custom foods, 50 live AI calls/month, doctor sharing, PDF
+export; Pro — unlimited children, unlimited log retention, 200 live AI
+calls/month, 3-year archive window.
+
+**What's NOT yet wired in the application code** (schema built, UI
+labels work, but server-side enforcement isn't done yet): the actual
+child-count limit check before `addChild()`, the daily-log pruning job,
+and the live-AI monthly cap enforcement in the Edge Function proxy. These
+are the next tier-enforcement tasks.
+
+**pg_cron note:** the automated sweep requires the `pg_cron` extension
+enabled in the Supabase dashboard (Database → Extensions → pg_cron) —
+this is a one-click toggle, but it can't be done from a SQL file in the
+standard Editor role. `migration_archive_sweep_cron.sql` documents this
+and must be run AFTER enabling the extension.
+
+**Business logic verified directly** via isolated unit tests (not JSDOM
+— the Supabase multi-eq chain stub pattern is reliably difficult to
+simulate correctly in a string-injected inline script context): all 5
+core lifecycle paths confirmed correct — archive-not-delete, active-
+filter hides archived data, restore clears timestamps correctly, account
+deletion archives all children as one unit, Pro tier's 3-year window is
+genuinely longer than Free/Premium's 1-year window.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table
