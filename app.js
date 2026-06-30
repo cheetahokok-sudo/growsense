@@ -124,19 +124,20 @@ async function setAICoachModeAdmin(mode, btn) {
 
 // ══════════════════════════════════════════
 // ADMIN ARCHIVE PANEL — system_admin-only view of archived children
-// and accounts, with restore. Reads from the plain views defined in
-// migration_archive_and_subscriptions.sql (archived_children_view,
-// archived_accounts_view) rather than querying children/user_accounts
-// directly with the date-math inline — the view already computes
-// days_until_permanent_delete, so this stays simple.
+// and accounts, with restore. Originally read from plain views, but
+// those caused an infinite RLS recursion (children policy →
+// doctor_patient_assignments policy → children policy again).
+// Now calls SECURITY DEFINER functions instead, which bypass the
+// per-row RLS evaluation and break the circular dependency.
+// See migration_fix_children_rls_recursion.sql.
 // ══════════════════════════════════════════
 async function loadAndRenderAdminArchivePanel() {
   const panel = document.getElementById('adminArchivePanel');
   panel.classList.remove('hidden');
 
   const [childrenRes, accountsRes] = await Promise.all([
-    sb.from('archived_children_view').select('*'),
-    sb.from('archived_accounts_view').select('*')
+    sb.rpc('get_archived_children'),
+    sb.rpc('get_archived_accounts')
   ]);
 
   renderArchivedChildrenList((!childrenRes.error && childrenRes.data) ? childrenRes.data : []);
