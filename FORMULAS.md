@@ -1832,9 +1832,50 @@ panels load and render correctly from their new home.
 
 ---
 
+## 6c. Codebase separation, phase 1 — shared design tokens + client (2026-06-30, corrected)
+
+**CORRECTION, same day:** the first version of this entry put the two
+new files in a `shared/` subfolder, referenced as `shared/design-
+tokens.css` and `shared/supabase-client.js`. This broke the live site
+— every other file in this project has always lived flat in the repo
+root (`food-reference-data.js`, `who-reference-data.js`, etc.), and the
+user's GitHub upload workflow matches that: files go straight into the
+repo root, no subfolder. Uploading the two new files the same way they
+always upload files meant they landed flat, not inside an actual
+`shared/` subfolder, so the `<link>` tag 404'd. Because the entire
+`:root` token block had been moved OUT of `style.css` and into the now-
+unreachable file, every CSS custom property in the app went undefined
+at once — the live site lost all styling (plain unstyled buttons, no
+spacing, no colors) for any visitor until this was caught and fixed.
+
+**Root cause, stated plainly:** introducing a new folder-structure
+convention for two files, with no real subfolder consumer yet to
+justify it, broke this project's one consistent deployment assumption
+(everything flat) for no present benefit. The original reasoning for
+"shared/" was preparing for the future `/admin/` bundle — but that
+bundle doesn't exist yet, so there was no actual second consumer
+requiring a relative path that works from two different directory
+depths. The right call was to defer the subfolder until the moment
+it's genuinely needed (when `/admin/index.html` exists and needs to
+reach these files via `../design-tokens.css` or similar), not introduce
+it preemptively.
+
+**Fixed:** both files moved back to flat root-level paths
+(`design-tokens.css`, `supabase-client.js`, no subfolder), `index.html`
+and `app.js` updated to reference the flat paths, and every doc comment
+that mentioned the old `shared/` path corrected for accuracy. Re-ran
+the same end-to-end boot test as the original entry below, plus an
+explicit grep across all four touched files confirming zero remaining
+references to the broken path.
+
+---
+
 ## 6c. Codebase separation, phase 1 — shared design tokens + client (2026-06-30)
 
-**Where:** new `shared/design-tokens.css`, new `shared/supabase-client.js`,
+**Where:** new `design-tokens.css`, new `supabase-client.js` — flat in
+the repo root alongside every other file in this project (see the
+correction above; an earlier version of this entry incorrectly put
+these in a `shared/` subfolder, which broke production),
 both referenced from `index.html`; `style.css` and `app.js` updated to
 consume them instead of defining their own copies.
 

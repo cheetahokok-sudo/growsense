@@ -13,7 +13,7 @@ const DEFAULT_DAY_STATE = {
 
 // ══════════════════════════════════════════
 // SUPABASE CLIENT
-// Initialized via the shared factory in shared/supabase-client.js —
+// Initialized via the shared factory in supabase-client.js —
 // see that file for why URL/key live there instead of here.
 // ══════════════════════════════════════════
 const sb = createGrowSenseClient();
