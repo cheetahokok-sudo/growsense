@@ -1927,6 +1927,165 @@ match textually.
 
 ---
 
+## 6d. Real bug: ambiguous "account_role" column reference (2026-06-30)
+
+**Where:** `migration_fix_ambiguous_account_role.sql` — fixes
+`get_all_users_for_admin()`, `log_admin_action()`,
+`change_user_subscription_tier()`.
+
+**Found via the actual Postgres error, not guessed.** The admin
+overview's 0/0/0/0 stats, traced through the Network tab as suggested,
+showed `get_all_users_for_admin` returning HTTP 400 with:
+`{"code":"42702","message":"column reference \"account_role\" is
+ambiguous"}`.
+
+**Root cause:** `get_all_users_for_admin()`'s `RETURNS TABLE(...)`
+declares a column literally named `account_role`. PL/pgSQL auto-
+registers every `RETURNS TABLE` column name as an in-scope variable for
+the whole function body — so the admin-permission check inside that
+function, which referenced the bare column name `account_role =
+'system_admin'` without qualifying which `account_role` it meant (the
+`user_accounts` table column, or the auto-declared return-table
+variable of the same name), was genuinely unresolvable. Postgres
+correctly refused to guess rather than silently picking one — this is
+why the function failed on every single call.
+
+**Fix:** qualify the reference as `user_accounts.account_role`.
+Applied to all three admin functions sharing the same unqualified
+pattern, not just the one that broke — `log_admin_action()` and
+`change_user_subscription_tier()` don't currently collide (neither
+`RETURNS TABLE` with an `account_role` column), but leaving the same
+unqualified pattern in place was a real landmine for whoever next
+changes either function's return shape. Confirmed via regex scan that
+zero unqualified `account_role = 'system_admin'` references remain in
+any actual function body (one match in an explanatory code comment was
+correctly excluded — that's documentation quoting the old broken line,
+not live SQL).
+
+**No app.js change needed** — the client-side RPC call was always
+correct; the bug was entirely server-side in the function definition.
+
+---
+
+## 6e. Real bug: VARCHAR vs TEXT return-type mismatch (2026-06-30)
+
+**Where:** `migration_fix_varchar_text_mismatch.sql` — fixes
+`get_all_users_for_admin()`, `get_archived_children()`,
+`get_archived_accounts()`.
+
+**Found via the actual Postgres error, immediately after the previous
+fix:** `{"code":"42804","message":"structure of query does not match
+function result type","details":"Returned type text does not match
+expected type character varying in column 2."}`.
+
+**Root cause:** these three table-returning functions were written
+without access to the live base schema (noted earlier in this project
+as having aged out of session outputs) — their `RETURNS TABLE(...)`
+declarations guessed `VARCHAR` for every string-like column (`email`,
+`account_role`, `subscription_tier`, `account_status`, `name`,
+`status`). The real `user_accounts.email` column (and likely its
+siblings) is actually typed `TEXT`. Postgres requires an exact type
+match between a function's declared return shape and what its query
+actually produces, even though `TEXT` and `VARCHAR` hold identical
+data — so every call failed.
+
+**Fix, applied proactively to all three functions at once rather than
+reactively one error message at a time:** explicit `::VARCHAR` casts
+on every column declared `VARCHAR` in each `RETURNS TABLE` signature.
+This is the robust fix, not a guess at the real underlying type — an
+explicit cast always produces exactly the declared output type
+regardless of whether the source column turns out to be `TEXT`,
+`VARCHAR`, or anything else castable, so this exact bug class can't
+resurface even on a column that hasn't been hit by a real call yet.
+Confirmed via direct count that all 8 VARCHAR-declared columns across
+the three functions received a matching cast (one extra textual match
+in the migration's own explanatory comment correctly excluded from
+that count).
+
+**Lesson for any future RETURNS TABLE function in this project:**
+default to explicit casts on string columns rather than guessing
+VARCHAR vs TEXT from memory — this database's actual convention favors
+TEXT for several columns that would naturally be assumed VARCHAR.
+
+---
+
+## 6f. Codebase separation, phase 3 — standalone admin bundle (2026-06-30)
+
+**Where:** new `admin.html`, `admin.css`, `admin.js` — all flat in the
+repo root, alongside every other file in this project.
+
+**A real deviation from the original plan, stated directly:** phase 3
+was originally framed as `/admin/index.html` (a real subfolder, for a
+URL ending in `/admin/`). Given this exact session had just suffered a
+live production outage caused by a subfolder path that wasn't actually
+created correctly on GitHub, building a second new subfolder
+immediately afterward — for the admin bundle this time — carried the
+same risk for no real functional benefit. `admin.html` flat in the
+root achieves the identical goal (a separate, independently-loadable
+bundle most visitors never touch) without any path risk at all. The
+URL is `.../growsense/admin.html` instead of `.../growsense/admin/` —
+cosmetically different, functionally identical. Confirmed every local
+file reference in the new `admin.html` resolves to a file that
+genuinely exists before calling this done, specifically because that
+exact category of mistake just caused a real outage.
+
+**What's genuinely separate now, and what's still reused:** `admin.html`
+loads only two things from outside itself — the Supabase SDK CDN
+script and `createGrowSenseClient()` from `supabase-client.js`, plus
+`design-tokens.css` for colors. Everything else (a small set of UI
+primitives — cards, buttons, lists, inputs, the toast, the segmented
+control) is intentionally duplicated into `admin.css` rather than
+pulled from a new shared file, matching the plan agreed at the start of
+this separation work: only design tokens and the Supabase client
+should ever be shared, since those are the two things that should
+genuinely never be allowed to drift between surfaces; component-level
+styling is fair game to diverge over time and isn't worth the
+cross-file dependency risk this project has now hit twice.
+
+**A real, separate boot sequence, not a copy of `enterApp()`.**
+`admin.html` never shows its own sign-in form — GrowSense accounts are
+created and authenticated through the main app only. Instead, it
+checks for an existing Supabase session on load (sessions persist to
+the browser's `localStorage` scoped by origin, not path, so a session
+from signing in on the main app at `/growsense/` is already visible at
+`/growsense/admin.html` with zero extra work). Three real outcomes,
+each with its own UI state: no session at all → points back to the
+main app; a session that isn't `system_admin` → a clear "not
+authorized" message naming the actual signed-in account, with no
+dashboard content rendered at all; a confirmed `system_admin` → the
+dashboard loads. This mirrors the same security posture as the
+embedded version (the real authorization boundary is server-side, in
+the `SECURITY DEFINER` functions, not this client-side gate), but is a
+genuinely independent check, not a shared function — admin.html assumes
+nothing the parent app's boot sequence assumes.
+
+**State is deliberately NOT shared with the parent app's `APP`
+object.** A new, much smaller `ADMIN` object holds only `session`,
+`account`, `adminUsers`, `aiCoachMode` — not the dozens of fields
+(daily logs, food favorites, growth chart data) the parent app's `APP`
+carries that have no meaning on this page.
+
+**Verified end-to-end, all three boot states plus the dashboard's real
+interactions** — not just that the files parse: confirmed the
+no-session gate shows correctly and nothing else leaks through;
+confirmed a real but non-admin account is correctly blocked with a
+message naming the actual signed-in email, dashboard fully hidden;
+confirmed a real `system_admin` account sees the full dashboard with
+correct overview stats computed from real data; confirmed section
+switching, the full tier-change flow (RPC call, in-memory update,
+overview stats refresh, audit log refresh), and sign-out (correctly
+resets back to the no-session gate) all work identically to the
+embedded version they were ported from.
+
+**Deliberately not done yet, per the agreed phased plan:** nothing was
+removed from the existing `index.html`/`app.js`/`style.css` — the
+embedded Admin tab stays fully functional as a working fallback until
+`admin.html` is confirmed working on the live site. Removing the
+embedded version is step 4, a separate follow-up once that
+confirmation happens.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

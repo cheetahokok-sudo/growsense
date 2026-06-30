@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GrowSense Admin</title>
+<link rel="stylesheet" href="design-tokens.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="admin-topbar">
+  <div class="admin-topbar-brand"><span class="accent">Grow</span>Sense Admin</div>
+  <div class="admin-topbar-right">
+    <span id="adminTopbarEmail" class="hidden"></span>
+    <button class="btn-ghost hidden" id="adminSignOutBtn" onclick="handleAdminSignOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- GATE 1: no session at all — this page never shows its own sign-in
+     form. GrowSense accounts are created and authenticated through the
+     main app; this page only checks for an existing session, the same
+     way the main app's enterApp() does. -->
+<div class="admin-gate" id="adminGateNoSession">
+  <h2>Sign in required</h2>
+  <p>Open the main GrowSense app and sign in there first, then come back to this page — your session will carry over automatically.</p>
+  <a href="./" class="btn-primary" style="display:inline-block; text-decoration:none;">Go to GrowSense</a>
+</div>
+
+<!-- GATE 2: signed in, but not a system_admin account. -->
+<div class="admin-gate hidden" id="adminGateNotAuthorized">
+  <h2>Not authorized</h2>
+  <p id="adminGateNotAuthorizedMsg">This account doesn't have admin access.</p>
+  <button class="btn-secondary" onclick="handleAdminSignOut()">Sign out</button>
+</div>
+
+<!-- THE ACTUAL DASHBOARD — structurally the same five sections as the
+     version that originally lived inside the parent app's screenAdmin,
+     now standalone. -->
+<div class="admin-page hidden" id="adminDashboardRoot">
+  <div class="section-hd">
+    <h2 id="adminGreeting">Admin dashboard</h2>
+    <p>Accounts, tiers, and the trail of every admin action</p>
+  </div>
+
+  <div class="admin-shell">
+    <nav class="admin-nav">
+      <button class="admin-nav-item active" data-section="overview" onclick="setAdminSection('overview', this)">Overview</button>
+      <button class="admin-nav-item" data-section="users" onclick="setAdminSection('users', this)">Users</button>
+      <button class="admin-nav-item" data-section="archive" onclick="setAdminSection('archive', this)">Archived data</button>
+      <button class="admin-nav-item" data-section="audit" onclick="setAdminSection('audit', this)">Audit log</button>
+      <button class="admin-nav-item" data-section="settings" onclick="setAdminSection('settings', this)">Settings</button>
+      <button class="admin-nav-item disabled" disabled>Billing <span class="admin-nav-soon">Soon</span></button>
+    </nav>
+
+    <div class="admin-content">
+
+      <!-- OVERVIEW -->
+      <div class="admin-section active" id="adminSectionOverview">
+        <div class="admin-stat-strip">
+          <div class="admin-stat"><div class="admin-stat-num" id="statTotalUsers">—</div><div class="admin-stat-lbl">Total users</div></div>
+          <div class="admin-stat"><div class="admin-stat-num tier-free" id="statFree">—</div><div class="admin-stat-lbl">Free</div></div>
+          <div class="admin-stat"><div class="admin-stat-num tier-premium" id="statPremium">—</div><div class="admin-stat-lbl">Premium</div></div>
+          <div class="admin-stat"><div class="admin-stat-num tier-pro" id="statPro">—</div><div class="admin-stat-lbl">Pro</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Latest admin activity</span></div>
+          <div class="card-body">
+            <div id="adminAuditLogPreview" style="display:flex; flex-direction:column; gap:8px;"></div>
+            <button class="btn-link" style="margin-top:10px;" onclick="setAdminSection('audit', document.querySelector('.admin-nav-item[data-section=audit]'))">View full audit log →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS -->
+      <div class="admin-section" id="adminSectionUsers">
+        <div class="card">
+          <div class="card-header"><span class="card-title">All users</span></div>
+          <div class="card-body">
+            <input type="text" id="adminUserSearch" class="text-input" placeholder="Search by email…" oninput="renderAdminUserList()" style="margin-bottom:12px;">
+            <div id="adminUserListMeta" class="setup-note" style="margin-bottom:10px;"></div>
+            <div id="adminUserList" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARCHIVED DATA -->
+      <div class="admin-section" id="adminSectionArchive">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Archived data (pending permanent deletion)</span></div>
+          <div class="card-body">
+            <div class="setup-note" style="margin-bottom:10px;">Restoring sets status back to active. Nothing below is permanently deleted until its countdown reaches zero — the daily automated sweep only removes entries whose grace period has fully elapsed.</div>
+            <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived children</div>
+            <div id="archivedChildrenList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
+            <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived accounts</div>
+            <div id="archivedAccountsList" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDIT LOG -->
+      <div class="admin-section" id="adminSectionAudit">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Recent admin actions</span></div>
+          <div class="card-body">
+            <div class="setup-note" style="margin-bottom:10px;">Every tier change, role change, and restore action is recorded here permanently — this is the accountability trail for admin activity.</div>
+            <div id="adminAuditLogList" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="admin-section" id="adminSectionSettings">
+        <div class="card">
+          <div class="card-header"><span class="card-title">AI coach mode (project-wide)</span></div>
+          <div class="card-body">
+            <div class="seg" id="aiModeToggle" style="margin-bottom:8px;">
+              <button class="seg-btn active" data-mode="template" onclick="setAICoachModeAdmin('template', this)">Template (free)</button>
+              <button class="seg-btn" data-mode="live_ai" onclick="setAICoachModeAdmin('live_ai', this)">Live AI (uses API credits)</button>
+            </div>
+            <div class="setup-note" id="aiModeDescription">Template mode answers from a pre-written library matched to the question — no Anthropic API calls, no cost. Switch to Live AI for more complex, free-form answers, which calls the Anthropic API and incurs real cost per question.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon">✅</span>
+  <span id="toastMsg">Saved!</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
