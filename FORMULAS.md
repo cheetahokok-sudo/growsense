@@ -1832,6 +1832,60 @@ panels load and render correctly from their new home.
 
 ---
 
+## 6c. Codebase separation, phase 1 — shared design tokens + client (2026-06-30)
+
+**Where:** new `shared/design-tokens.css`, new `shared/supabase-client.js`,
+both referenced from `index.html`; `style.css` and `app.js` updated to
+consume them instead of defining their own copies.
+
+**The decision, and why it's right beyond just "the file is big":**
+the real driver is the planned Flutter migration. When the parent-
+facing app gets rewritten in Flutter, `index.html`/`app.js` retire
+entirely — if the admin dashboard is physically tangled inside that
+same bundle, untangling it mid-migration is far messier than
+separating it now, while it's small. A web-only internal admin console
+has no reason to ever become a native mobile app, so keeping it
+independent means the Flutter migration never needs to touch it.
+
+**The plan has four phases, agreed directly:**
+1. Extract shared tokens/client (this entry — zero behavior change).
+2. *(same step)* Verify nothing broke.
+3. Stand up `/admin/` as its own `index.html` + `admin.css` + `admin.js`,
+   port the dashboard over section by section.
+4. Remove all admin code from the main bundle once `/admin/` is fully
+   verified working, replacing it with a simple link.
+
+**What's shared, and what's deliberately NOT:** only two things move
+into `shared/` — design tokens (colors, type, radii, shadows) and the
+Supabase client factory (URL + publishable key + the `createClient`
+call). Both are things that should never be allowed to drift between
+the two surfaces. Explicitly NOT shared: the session-check/boot flow
+(`enterApp()`, `showAuthScreen()`) — that logic assumes specific
+screens and element IDs (`#authScreen`, `#appRoot`) that won't exist in
+a separate `admin.html`, and the admin dashboard's own boot sequence
+should check for `system_admin` specifically before showing anything,
+not reuse the parent app's generic "is there a session" check. Forcing
+that into a shared file would have created the wrong kind of coupling
+— this was a deliberate scoping decision, not an oversight.
+
+**Verified the extraction didn't silently corrupt anything**, not just
+that the files parse: did a byte-for-byte comparison of all 30 design-
+token values between the original `:root` block and the extracted
+file (confirmed zero mismatches) — necessary because jsdom's CSS engine
+turned out to have no real support for resolving CSS custom properties
+in `getComputedStyle` at all (confirmed via an isolated control test
+using a single, unsplit file, which failed identically), so a
+rendering-based check would have produced a false negative regardless
+of whether the split was correct. For the client extraction, ran an
+end-to-end boot test confirming `createGrowSenseClient()` is called
+exactly once with the exact correct URL and key, and that the app
+reaches the auth screen with no errors — not just that the constants
+match textually.
+
+**Next session:** phase 3, the actual `/admin/` bundle.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

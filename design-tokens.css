@@ -1,0 +1,48 @@
+/* ══════════════════════════════════════════════════════════════════
+   GrowSense shared design tokens
+   The single source of truth for color, type, radius, and shadow
+   values used by BOTH the parent-facing app (style.css) and the admin
+   dashboard (admin.css). Change a value here once, and it's correct
+   everywhere — this is what keeps the two surfaces from visually
+   drifting apart over time, the same failure mode this project has
+   already hit more than once at the code level (the RLS recursion
+   loop, the duplicate-escaping bug) showing up instead as "the admin
+   dashboard's blue doesn't match the app's blue anymore."
+
+   Loaded via a <link> tag BEFORE style.css / admin.css in each HTML
+   file, so these variables are already defined by the time the
+   surface-specific stylesheet uses them.
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #F6F7F5;
+  --surface: #FFFFFF;
+  --surface2: #EEF0EC;
+  --border: rgba(20,30,25,0.08);
+  --border2: rgba(20,30,25,0.14);
+  --text: #131613;
+  --text2: #5C655C;
+  --text3: #95A092;
+  --ink: #1F2B22;
+  --accent: #2F6B4F;
+  --accent-light: #E1EEE5;
+  --accent-dark: #1B4632;
+  --clinical: #2F6B4F;
+  --measured: #2A5C8A;
+  --measured-light: #E3EDF6;
+  --measured-dark: #1C3F61;
+  --estimated: #9C7A3D;
+  --estimated-light: #F4ECDB;
+  --estimated-dark: #6B5226;
+  --flag: #A23B3B;
+  --flag-light: #F6E4E2;
+  --flag-dark: #6E2424;
+  --mono: 'IBM Plex Mono', 'SF Mono', monospace;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 2px rgba(20,30,25,0.05), 0 2px 8px rgba(20,30,25,0.03);
+  --shadow-lg: 0 4px 16px rgba(20,30,25,0.06);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}

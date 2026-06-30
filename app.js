@@ -13,15 +13,10 @@ const DEFAULT_DAY_STATE = {
 
 // ══════════════════════════════════════════
 // SUPABASE CLIENT
-// These are project-level credentials (URL + publishable key), not a
-// per-user secret — they identify which GrowSense database to talk to,
-// the same way an API base URL would. Actual data access is gated by
-// Postgres Row Level Security policies tied to the signed-in user, not
-// by hiding this key. Never put a secret/service_role key here.
+// Initialized via the shared factory in shared/supabase-client.js —
+// see that file for why URL/key live there instead of here.
 // ══════════════════════════════════════════
-const SUPABASE_URL = 'https://ogpkmcqaulohexanucng.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_tNs8cyaiOYn8Q21wZxIYOQ_y5XXLXnf';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const sb = createGrowSenseClient();
 
 const APP = {
   session: null,        // Supabase auth session
