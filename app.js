@@ -91,9 +91,6 @@ function isSystemAdmin() {
 // panel to match it — only ever called for system_admin accounts (see
 // openSetup()), since the panel itself is also hidden by default.
 async function loadAndRenderAdminAIModePanel() {
-  const panel = document.getElementById('adminAIModePanel');
-  panel.classList.remove('hidden');
-
   const mode = await getAICoachMode();
   document.querySelectorAll('#aiModeToggle .seg-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === mode);
@@ -133,9 +130,6 @@ async function setAICoachModeAdmin(mode, btn) {
 // See migration_fix_children_rls_recursion.sql.
 // ══════════════════════════════════════════
 async function loadAndRenderAdminArchivePanel() {
-  const panel = document.getElementById('adminArchivePanel');
-  panel.classList.remove('hidden');
-
   const [childrenRes, accountsRes] = await Promise.all([
     sb.rpc('get_archived_children'),
     sb.rpc('get_archived_accounts')
@@ -214,7 +208,14 @@ async function restoreArchivedAccount(userId, btn) {
 // migration_admin_audit_and_users.sql.
 // ══════════════════════════════════════════
 
-async function loadAdminUsersAndAuditLog() {
+// Loads everything the admin dashboard needs in one go, since all
+// sections' data is cheap enough to fetch together rather than
+// lazy-loading per nav click — the dashboard feels instant when
+// switching sections this way, at the cost of a few queries up front
+// that this admin-only screen can easily afford.
+async function initAdminDashboard() {
+  setAdminGreeting();
+
   const [usersRes, logRes] = await Promise.all([
     sb.rpc('get_all_users_for_admin'),
     sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(30)
@@ -223,8 +224,44 @@ async function loadAdminUsersAndAuditLog() {
   APP.adminUsers = (!usersRes.error && usersRes.data) ? usersRes.data : [];
   if (usersRes.error) showToast('⚠️', 'Could not load users: ' + usersRes.error.message);
 
+  const auditRows = (!logRes.error && logRes.data) ? logRes.data : [];
+
   renderAdminUserList();
-  renderAdminAuditLog((!logRes.error && logRes.data) ? logRes.data : []);
+  renderAdminAuditLog(auditRows);
+  renderAdminAuditLog(auditRows.slice(0, 5), 'adminAuditLogPreview'); // same renderer, shorter list, for the Overview card
+  renderAdminOverviewStats();
+
+  await loadAndRenderAdminAIModePanel();
+  await loadAndRenderAdminArchivePanel();
+}
+
+function setAdminGreeting() {
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const name = (APP.account && APP.account.email) ? APP.account.email.split('@')[0] : 'admin';
+  document.getElementById('adminGreeting').textContent = `${timeOfDay}, ${name}`;
+}
+
+// Computes the tier-distribution stat strip directly from the already-
+// loaded APP.adminUsers list — no separate aggregate query needed,
+// since the full user list (with each user's tier) is already in
+// memory by the time this runs.
+function renderAdminOverviewStats() {
+  const users = APP.adminUsers || [];
+  document.getElementById('statTotalUsers').textContent = users.length;
+  document.getElementById('statFree').textContent = users.filter(u => u.subscription_tier === 'free').length;
+  document.getElementById('statPremium').textContent = users.filter(u => u.subscription_tier === 'premium').length;
+  document.getElementById('statPro').textContent = users.filter(u => u.subscription_tier === 'pro').length;
+}
+
+// Switches which admin-dashboard section is visible — purely a local
+// UI toggle, no data loading here, since initAdminDashboard() already
+// loaded everything up front when the Admin tab was opened.
+function setAdminSection(section, btn) {
+  document.querySelectorAll('.admin-nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('adminSection' + section.charAt(0).toUpperCase() + section.slice(1)).classList.add('active');
 }
 
 function renderAdminUserList() {
@@ -284,17 +321,21 @@ async function applyTierChange(userId, email, currentTier) {
   if (error) { showToast('⚠️', 'Could not change tier: ' + error.message); return; }
 
   showToast('✅', `${email} moved to ${newTier}`);
-  // Update the in-memory list and audit log without a full reload —
-  // both reflect the change immediately.
+  // Update the in-memory list, overview stats, and audit log without a
+  // full reload — all three reflect the change immediately.
   const userRecord = (APP.adminUsers || []).find(u => u.user_id === userId);
   if (userRecord) userRecord.subscription_tier = newTier;
   renderAdminUserList();
+  renderAdminOverviewStats();
   const logRes = await sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(30);
-  if (!logRes.error) renderAdminAuditLog(logRes.data);
+  if (!logRes.error) {
+    renderAdminAuditLog(logRes.data);
+    renderAdminAuditLog(logRes.data.slice(0, 5), 'adminAuditLogPreview');
+  }
 }
 
-function renderAdminAuditLog(rows) {
-  const listEl = document.getElementById('adminAuditLogList');
+function renderAdminAuditLog(rows, targetElId) {
+  const listEl = document.getElementById(targetElId || 'adminAuditLogList');
   if (!rows || rows.length === 0) {
     listEl.innerHTML = '<div class="log-list-empty">No admin actions recorded yet.</div>';
     return;
@@ -4318,7 +4359,7 @@ async function goTab(name) {
     }
   }
   if (name === 'Admin') {
-    await loadAdminUsersAndAuditLog();
+    await initAdminDashboard();
   }
 }
 
@@ -4329,10 +4370,6 @@ function openSetup() {
   renderChildList();
   populateShareChildSelect();
   if (isClinicianRole()) renderAssignedChildrenList();
-  if (isSystemAdmin()) {
-    loadAndRenderAdminAIModePanel();
-    loadAndRenderAdminArchivePanel();
-  }
   document.getElementById('setupModal').classList.remove('hidden');
 }
 

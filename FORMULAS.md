@@ -1755,6 +1755,83 @@ both explicitly next, not abandoned.
 
 ---
 
+## 6b. Admin dashboard redesign — sidebar shell + overview (2026-06-30)
+
+**Where:** `screenAdmin` in `index.html` (full restructure), new CSS
+block in `style.css` (`.admin-shell`, `.admin-nav`, `.admin-stat-*`),
+`initAdminDashboard()`, `setAdminSection()`, `setAdminGreeting()`,
+`renderAdminOverviewStats()` in `app.js`.
+
+**The ask:** turn the flat admin tab (two stacked cards) into a real
+console-style dashboard — minimal, clean, modern, and structured to
+make adding future management features easy, modeled loosely on the
+Claude Console layout (sidebar nav, greeting, stat cards).
+
+**A real layout decision made explicitly, not silently:** this app is
+otherwise tuned specifically for iPhone widths (a recurring theme in
+this project — the hydration grid and readiness ring both got fixed
+after being calibrated to the wrong reference width). Admin management
+work is a different context — checked confirmed there's no app-wide
+width constraint (`.app` just stretches to fill the viewport), so the
+existing screens already look stretched on a wide desktop browser. The
+admin dashboard is deliberately built desktop-shaped (a persistent left
+sidebar) rather than forced into the same narrow mobile pattern, with a
+CSS breakpoint at 880px collapsing the sidebar into a horizontal
+scrollable pill row for the rare case an admin checks in from a phone.
+
+**No new color palette — reused the app's existing tokens
+deliberately**, per the frontend-design skill's guidance to ground
+choices in the real subject rather than invent a separate identity:
+the same `--accent`/`--surface`/`--text` variables, with `IBM Plex Mono`
+(already used elsewhere for data values like the readiness score)
+applied specifically to the new stat-strip numbers to give the overview
+a console/data-forward feel without introducing new type pairings.
+
+**Five sections behind a sidebar nav:** Overview (new — a 4-stat strip:
+total users, Free/Premium/Pro counts, computed entirely client-side
+from the already-loaded user list with zero extra queries, plus a
+5-item audit log preview), Users (the existing list/search/tier-change,
+relocated as-is), Archived data (moved OUT of the Account & Settings
+modal — this is an admin management function, not a personal account
+setting, so it belongs in the dashboard, not buried in a settings
+sheet), Audit log (the existing full list, also given its own section),
+Settings (the AI coach mode toggle, also relocated out of Account &
+Settings for the same reasoning). A sixth nav item, "Billing," is shown
+disabled with a "Soon" tag — visible placeholder for a feature that
+genuinely has nothing to manage yet (no payment provider integrated),
+rather than hidden entirely, so the dashboard's eventual shape is
+visible now per the "flexible to extend" requirement.
+
+**Relocating the AI-mode and archive panels required real cleanup, not
+just a copy-paste:** both panels previously lived inside the Account &
+Settings modal (`adminAIModePanel`, `adminArchivePanel`), loaded by
+`openSetup()`. Moving them meant: removing their old IDs and the
+`hidden` class toggle logic entirely (visibility is now owned by
+`setAdminSection()`, not a per-panel reveal), removing their load calls
+from `openSetup()`, and folding their loading into the new
+`initAdminDashboard()` instead. Verified directly that zero references
+to the old panel IDs remain anywhere in either file — a stale reference
+here would have silently broken the relocated panels.
+
+**A small UX touch, not load-bearing but intentional:** the dashboard
+greets the admin by name (parsed from their email) and time of day —
+"Good evening, cheetah_ok" — a deliberate small personal moment
+matching the reference's tone, kept restrained rather than expanded
+into anything more elaborate, per the design skill's "spend your
+boldness in one place" guidance.
+
+**Verified directly, all 6 scenarios:** the dashboard loads every
+section's data in one pass with a working greeting; the overview stats
+compute correctly from already-loaded data with confirmed zero extra
+aggregate queries; section switching correctly shows exactly one
+section and marks the right nav item active; the overview's audit
+preview and the full audit list are genuinely independent elements;
+applying a tier change correctly cascades to update the overview counts
+in real time, not just the user list; and the relocated archive/AI-mode
+panels load and render correctly from their new home.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

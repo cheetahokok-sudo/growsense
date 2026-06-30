@@ -435,6 +435,47 @@ canvas { display: block; width: 100%; height: 100%; }
 .tier-badge.premium { background: var(--measured-light); color: var(--measured-dark); }
 .tier-badge.pro { background: #FEF3C7; color: #92400E; }
 
+/* ── Admin dashboard ──────────────────────────────────────────────
+   Deliberately desktop-shaped (sidebar nav), unlike the rest of this
+   app which is tuned for iPhone widths — admin management work
+   happens on a wider screen. Collapses to a horizontal pill row below
+   880px so it still works if checked from a phone. Reuses the app's
+   existing color tokens and Inter/IBM Plex Mono pairing rather than a
+   separate palette, with mono reserved for the stat numbers to give
+   the overview a console-like, data-forward feel. */
+.admin-shell { display: flex; gap: 28px; align-items: flex-start; }
+.admin-nav { display: flex; flex-direction: column; gap: 2px; width: 196px; flex-shrink: 0; position: sticky; top: 16px; }
+.admin-nav-item {
+  text-align: left; padding: 10px 14px; border-radius: 9px; border: none; background: none;
+  font-size: 13.5px; font-weight: 600; color: var(--text2); cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: space-between; transition: background 0.12s;
+}
+.admin-nav-item:hover { background: var(--surface2); }
+.admin-nav-item.active { background: var(--accent-light); color: var(--accent-dark); }
+.admin-nav-item.disabled { color: var(--text3); cursor: default; }
+.admin-nav-item.disabled:hover { background: none; }
+.admin-nav-soon { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; background: var(--surface2); color: var(--text3); padding: 2px 6px; border-radius: 4px; }
+
+.admin-content { flex: 1; min-width: 0; }
+.admin-section { display: none; }
+.admin-section.active { display: block; }
+
+.admin-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.admin-stat { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
+.admin-stat-num { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+.admin-stat-num.tier-free { color: var(--text3); }
+.admin-stat-num.tier-premium { color: var(--measured-dark); }
+.admin-stat-num.tier-pro { color: #92400E; }
+.admin-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 6px; font-weight: 600; }
+
+@media (max-width: 880px) {
+  .admin-shell { flex-direction: column; }
+  .admin-nav { flex-direction: row; width: 100%; overflow-x: auto; position: static; gap: 6px; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+  .admin-nav-item { white-space: nowrap; flex-shrink: 0; }
+  .admin-stat-strip { grid-template-columns: repeat(2, 1fr); }
+}
+
+
 /* Google Sheets config section */
 .sheets-config { background: var(--surface2); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
 .sheets-config-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text2); margin-bottom: 10px; }
