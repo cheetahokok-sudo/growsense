@@ -811,107 +811,6 @@
       </div>
     </div>
 
-    <!-- ADMIN DASHBOARD — only ever shown for system_admin accounts.
-         Hidden by default; goTab('Admin') and the tab button itself
-         are only wired up / made visible after isSystemAdmin() is
-         confirmed at login (see enterApp()). Desktop-oriented layout
-         (sidebar nav) since admin management work happens on a wider
-         screen, unlike the rest of this app which is tuned for iPhone
-         widths — collapses to a horizontal pill row below 880px so it
-         still works if an admin checks in from a phone. -->
-    <div class="screen" id="screenAdmin">
-      <div class="section-hd">
-        <h2 id="adminGreeting">Admin dashboard</h2>
-        <p>Accounts, tiers, and the trail of every admin action</p>
-      </div>
-
-      <div class="admin-shell">
-        <nav class="admin-nav">
-          <button class="admin-nav-item active" data-section="overview" onclick="setAdminSection('overview', this)">Overview</button>
-          <button class="admin-nav-item" data-section="users" onclick="setAdminSection('users', this)">Users</button>
-          <button class="admin-nav-item" data-section="archive" onclick="setAdminSection('archive', this)">Archived data</button>
-          <button class="admin-nav-item" data-section="audit" onclick="setAdminSection('audit', this)">Audit log</button>
-          <button class="admin-nav-item" data-section="settings" onclick="setAdminSection('settings', this)">Settings</button>
-          <button class="admin-nav-item disabled" disabled>Billing <span class="admin-nav-soon">Soon</span></button>
-        </nav>
-
-        <div class="admin-content">
-
-          <!-- OVERVIEW -->
-          <div class="admin-section active" id="adminSectionOverview">
-            <div class="admin-stat-strip">
-              <div class="admin-stat"><div class="admin-stat-num" id="statTotalUsers">—</div><div class="admin-stat-lbl">Total users</div></div>
-              <div class="admin-stat"><div class="admin-stat-num tier-free" id="statFree">—</div><div class="admin-stat-lbl">Free</div></div>
-              <div class="admin-stat"><div class="admin-stat-num tier-premium" id="statPremium">—</div><div class="admin-stat-lbl">Premium</div></div>
-              <div class="admin-stat"><div class="admin-stat-num tier-pro" id="statPro">—</div><div class="admin-stat-lbl">Pro</div></div>
-            </div>
-            <div class="card">
-              <div class="card-header"><span class="card-title">Latest admin activity</span></div>
-              <div class="card-body">
-                <div id="adminAuditLogPreview" style="display:flex; flex-direction:column; gap:8px;"></div>
-                <button class="btn-link" style="margin-top:10px; font-size:11.5px;" onclick="setAdminSection('audit', document.querySelector('.admin-nav-item[data-section=audit]'))">View full audit log →</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- USERS -->
-          <div class="admin-section" id="adminSectionUsers">
-            <div class="card">
-              <div class="card-header"><span class="card-title">All users</span></div>
-              <div class="card-body">
-                <input type="text" id="adminUserSearch" class="text-input" placeholder="Search by email…" oninput="renderAdminUserList()" style="margin-bottom:12px;">
-                <div id="adminUserListMeta" class="setup-note" style="font-size:11px; margin-bottom:10px;"></div>
-                <div id="adminUserList" style="display:flex; flex-direction:column; gap:8px;"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ARCHIVED DATA — moved here from the Account & Settings
-               modal; it's an admin management function, not an
-               account-settings item, so it belongs in the dashboard. -->
-          <div class="admin-section" id="adminSectionArchive">
-            <div class="card">
-              <div class="card-header"><span class="card-title">Archived data (pending permanent deletion)</span></div>
-              <div class="card-body">
-                <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Restoring sets status back to active. Nothing below is permanently deleted until its countdown reaches zero — the daily automated sweep only removes entries whose grace period has fully elapsed.</div>
-                <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived children</div>
-                <div id="archivedChildrenList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
-                <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived accounts</div>
-                <div id="archivedAccountsList" style="display:flex; flex-direction:column; gap:8px;"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- AUDIT LOG -->
-          <div class="admin-section" id="adminSectionAudit">
-            <div class="card">
-              <div class="card-header"><span class="card-title">Recent admin actions</span></div>
-              <div class="card-body">
-                <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Every tier change, role change, and restore action is recorded here permanently — this is the accountability trail for admin activity.</div>
-                <div id="adminAuditLogList" style="display:flex; flex-direction:column; gap:8px;"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- SETTINGS — moved here from the Account & Settings modal,
-               same reasoning as Archived data above. -->
-          <div class="admin-section" id="adminSectionSettings">
-            <div class="card">
-              <div class="card-header"><span class="card-title">AI coach mode (project-wide)</span></div>
-              <div class="card-body">
-                <div class="seg" id="aiModeToggle" style="margin-bottom:8px;">
-                  <button class="seg-btn active" data-mode="template" onclick="setAICoachModeAdmin('template', this)">Template (free)</button>
-                  <button class="seg-btn" data-mode="live_ai" onclick="setAICoachModeAdmin('live_ai', this)">Live AI (uses API credits)</button>
-                </div>
-                <div class="setup-note" style="font-size:11px;" id="aiModeDescription">Template mode answers from a pre-written library matched to the question — no Anthropic API calls, no cost. Switch to Live AI for more complex, free-form answers, which calls the Anthropic API and incurs real cost per question.</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
   </div><!-- end scroll-area -->
 
   <!-- TAB BAR -->
@@ -927,9 +826,6 @@
     </button>
     <button class="tab" id="tabAI" onclick="goTab('AI')">
       <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 10v.01M15 10v.01M8 15c1 1 2.2 1.5 4 1.5s3-.5 4-1.5"/></svg></div><div class="tab-label">AI coach</div>
-    </button>
-    <button class="tab hidden" id="tabAdmin" onclick="goTab('Admin')">
-      <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.5-3 8-8 9-5-1-8-4.5-8-9V7z"/></svg></div><div class="tab-label">Admin</div>
     </button>
   </div>
 </div>
@@ -953,6 +849,7 @@
         </div>
         <button class="btn-ghost" style="padding:8px 14px;" onclick="handleSignOut()">Sign out</button>
       </div>
+      <a href="admin.html" class="btn-link hidden" id="adminDashboardLink" style="margin-top:10px; font-size:11.5px; display:block;">Admin dashboard →</a>
       <button class="btn-link" style="margin-top:10px; font-size:11.5px; color:var(--flag);" onclick="requestAccountDeletion()">Delete account</button>
     </div>
 

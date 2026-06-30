@@ -35,7 +35,6 @@ const APP = {
   pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
   illnessEvents: [], // illness_events rows for the active child, loaded when the Medical tab opens
   foodFavorites: [], // food_favorites rows for the active child — determines which cards show on the Nutrition grid
-  adminUsers: [], // every user account, loaded only for system_admin accounts via get_all_users_for_admin()
   customFoods: [], // custom_foods rows for the active child — parent-defined foods with manually-entered values
   familyHeightRecords: [], // family_height_records rows - reference only by default; see targetHeightFormula
   targetHeightFormula: 'parents', // 'parents' (validated, default) or 'extended' (exploratory) — see setTargetHeightFormula()
@@ -82,276 +81,14 @@ function isSystemAdmin() {
   return APP.account && APP.account.account_role === 'system_admin';
 }
 
-// Loads the current project-wide AI mode and renders the admin toggle
-// panel to match it — only ever called for system_admin accounts (see
-// openSetup()), since the panel itself is also hidden by default.
-async function loadAndRenderAdminAIModePanel() {
-  const mode = await getAICoachMode();
-  document.querySelectorAll('#aiModeToggle .seg-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.mode === mode);
-  });
-}
-
-// Admin-only: flips the project-wide AI coach mode. Writes directly to
-// system_settings — protected by that table's RLS policy (system_admin
-// only), so even if this function were somehow called by a non-admin
-// account, the database itself would reject the write.
-async function setAICoachModeAdmin(mode, btn) {
-  const { error } = await sb.from('system_settings').upsert({
-    setting_key: 'ai_coach_mode',
-    setting_value: mode,
-    updated_by: APP.session ? APP.session.user.id : null,
-    updated_at: new Date().toISOString()
-  });
-
-  if (error) {
-    showToast('⚠️', 'Could not update AI mode: ' + error.message);
-    return;
-  }
-
-  APP.aiCoachMode = mode; // update the cached value immediately for this session too
-  document.querySelectorAll('#aiModeToggle .seg-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  showToast('✅', `AI coach mode set to ${mode === 'live_ai' ? 'Live AI' : 'Template'}`);
-}
-
-// ══════════════════════════════════════════
-// ADMIN ARCHIVE PANEL — system_admin-only view of archived children
-// and accounts, with restore. Originally read from plain views, but
-// those caused an infinite RLS recursion (children policy →
-// doctor_patient_assignments policy → children policy again).
-// Now calls SECURITY DEFINER functions instead, which bypass the
-// per-row RLS evaluation and break the circular dependency.
-// See migration_fix_children_rls_recursion.sql.
-// ══════════════════════════════════════════
-async function loadAndRenderAdminArchivePanel() {
-  const [childrenRes, accountsRes] = await Promise.all([
-    sb.rpc('get_archived_children'),
-    sb.rpc('get_archived_accounts')
-  ]);
-
-  renderArchivedChildrenList((!childrenRes.error && childrenRes.data) ? childrenRes.data : []);
-  renderArchivedAccountsList((!accountsRes.error && accountsRes.data) ? accountsRes.data : []);
-}
-
-function renderArchivedChildrenList(rows) {
-  const el = document.getElementById('archivedChildrenList');
-  if (rows.length === 0) { el.innerHTML = '<div class="log-list-empty">None archived.</div>'; return; }
-  el.innerHTML = rows.map(r => `
-    <div class="log-item-row">
-      <div class="log-item-left">
-        <div class="log-item-info">
-          <span class="log-item-name">${r.name}</span>
-          <span class="log-item-meta">${r.days_until_permanent_delete} days until permanent deletion</span>
-        </div>
-      </div>
-      <div class="log-item-right">
-        <button class="btn-link" style="font-size:11.5px;" onclick="restoreArchivedChild('${r.child_id}', this)">Restore</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderArchivedAccountsList(rows) {
-  const el = document.getElementById('archivedAccountsList');
-  if (rows.length === 0) { el.innerHTML = '<div class="log-list-empty">None archived.</div>'; return; }
-  el.innerHTML = rows.map(r => `
-    <div class="log-item-row">
-      <div class="log-item-left">
-        <div class="log-item-info">
-          <span class="log-item-name">${r.email}</span>
-          <span class="log-item-meta">${r.days_until_permanent_delete} days until permanent deletion</span>
-        </div>
-      </div>
-      <div class="log-item-right">
-        <button class="btn-link" style="font-size:11.5px;" onclick="restoreArchivedAccount('${r.user_id}', this)">Restore</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// Restoring a child sets status back to 'active' and clears the
-// archive timestamps entirely — a later re-archive (if it ever
-// happens) should start a fresh countdown, not resume a stale one.
-async function restoreArchivedChild(childId, btn) {
-  const { error } = await sb.from('children').update({
-    status: 'active', archived_at: null, archived_by: null, permanent_delete_after: null
-  }).eq('child_id', childId);
-  if (error) { showToast('⚠️', 'Could not restore: ' + error.message); return; }
-  showToast('✅', 'Child profile restored');
-  btn.closest('.log-item-row').remove();
-}
-
-async function restoreArchivedAccount(userId, btn) {
-  const { error } = await sb.from('user_accounts').update({
-    account_status: 'active', archived_at: null, permanent_delete_after: null
-  }).eq('user_id', userId);
-  if (error) { showToast('⚠️', 'Could not restore: ' + error.message); return; }
-  showToast('✅', 'Account restored');
-  btn.closest('.log-item-row').remove();
-}
-
-// ══════════════════════════════════════════
-// ADMIN DASHBOARD — system_admin-only user list, tier management, and
-// audit log. Reads go through get_all_users_for_admin() (a SECURITY
-// DEFINER function that bypasses normal RLS, since a regular user can
-// only ever see their own user_accounts row). Tier changes go through
-// change_user_subscription_tier(), which performs the update AND
-// writes the audit log entry as one atomic operation — so a tier
-// change can never happen without a corresponding record of who did
-// it, when, and what the value was before. See
-// migration_admin_audit_and_users.sql.
-// ══════════════════════════════════════════
-
-// Loads everything the admin dashboard needs in one go, since all
-// sections' data is cheap enough to fetch together rather than
-// lazy-loading per nav click — the dashboard feels instant when
-// switching sections this way, at the cost of a few queries up front
-// that this admin-only screen can easily afford.
-async function initAdminDashboard() {
-  setAdminGreeting();
-
-  const [usersRes, logRes] = await Promise.all([
-    sb.rpc('get_all_users_for_admin'),
-    sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(30)
-  ]);
-
-  APP.adminUsers = (!usersRes.error && usersRes.data) ? usersRes.data : [];
-  if (usersRes.error) showToast('⚠️', 'Could not load users: ' + usersRes.error.message);
-
-  const auditRows = (!logRes.error && logRes.data) ? logRes.data : [];
-
-  renderAdminUserList();
-  renderAdminAuditLog(auditRows);
-  renderAdminAuditLog(auditRows.slice(0, 5), 'adminAuditLogPreview'); // same renderer, shorter list, for the Overview card
-  renderAdminOverviewStats();
-
-  await loadAndRenderAdminAIModePanel();
-  await loadAndRenderAdminArchivePanel();
-}
-
-function setAdminGreeting() {
-  const hour = new Date().getHours();
-  const timeOfDay = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const name = (APP.account && APP.account.email) ? APP.account.email.split('@')[0] : 'admin';
-  document.getElementById('adminGreeting').textContent = `${timeOfDay}, ${name}`;
-}
-
-// Computes the tier-distribution stat strip directly from the already-
-// loaded APP.adminUsers list — no separate aggregate query needed,
-// since the full user list (with each user's tier) is already in
-// memory by the time this runs.
-function renderAdminOverviewStats() {
-  const users = APP.adminUsers || [];
-  document.getElementById('statTotalUsers').textContent = users.length;
-  document.getElementById('statFree').textContent = users.filter(u => u.subscription_tier === 'free').length;
-  document.getElementById('statPremium').textContent = users.filter(u => u.subscription_tier === 'premium').length;
-  document.getElementById('statPro').textContent = users.filter(u => u.subscription_tier === 'pro').length;
-}
-
-// Switches which admin-dashboard section is visible — purely a local
-// UI toggle, no data loading here, since initAdminDashboard() already
-// loaded everything up front when the Admin tab was opened.
-function setAdminSection(section, btn) {
-  document.querySelectorAll('.admin-nav-item').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
-  document.getElementById('adminSection' + section.charAt(0).toUpperCase() + section.slice(1)).classList.add('active');
-}
-
-function renderAdminUserList() {
-  const listEl = document.getElementById('adminUserList');
-  const metaEl = document.getElementById('adminUserListMeta');
-  const searchTerm = (document.getElementById('adminUserSearch').value || '').trim().toLowerCase();
-  const allUsers = APP.adminUsers || [];
-
-  const filtered = searchTerm
-    ? allUsers.filter(u => u.email.toLowerCase().includes(searchTerm))
-    : allUsers;
-
-  metaEl.textContent = `${filtered.length} of ${allUsers.length} accounts shown`;
-
-  if (filtered.length === 0) {
-    listEl.innerHTML = '<div class="log-list-empty">No matching accounts.</div>';
-    return;
-  }
-
-  const tierOptions = ['free', 'premium', 'pro'];
-
-  listEl.innerHTML = filtered.map(u => {
-    const tierSelectOptions = tierOptions.map(t =>
-      `<option value="${t}" ${u.subscription_tier === t ? 'selected' : ''}>${t}</option>`
-    ).join('');
-    const statusNote = u.account_status === 'archived' ? ' · <span style="color:var(--flag);">archived</span>' : '';
-    return `
-      <div class="log-item-row" style="flex-wrap:wrap; gap:8px;">
-        <div class="log-item-left" style="flex:1; min-width:200px;">
-          <div class="log-item-info">
-            <span class="log-item-name">${u.email}</span>
-            <span class="log-item-meta">${u.account_role.replace('_',' ')} · ${u.child_count} child${u.child_count === 1 ? '' : 'ren'}${statusNote}</span>
-          </div>
-        </div>
-        <div class="log-item-right" style="display:flex; align-items:center; gap:6px;">
-          <select class="num-input" style="width:110px;" id="tierSelect-${u.user_id}">${tierSelectOptions}</select>
-          <button class="btn-link" style="font-size:11.5px;" onclick="applyTierChange('${u.user_id}', '${u.email}', '${u.subscription_tier}')">Apply</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-async function applyTierChange(userId, email, currentTier) {
-  const select = document.getElementById('tierSelect-' + userId);
-  const newTier = select.value;
-
-  if (newTier === currentTier) { showToast('⚠️', 'Already on that tier'); return; }
-  if (!confirm(`Change ${email}'s subscription tier from ${currentTier} to ${newTier}?`)) return;
-
-  const { error } = await sb.rpc('change_user_subscription_tier', {
-    p_target_user_id: userId,
-    p_new_tier: newTier,
-    p_notes: null
-  });
-
-  if (error) { showToast('⚠️', 'Could not change tier: ' + error.message); return; }
-
-  showToast('✅', `${email} moved to ${newTier}`);
-  // Update the in-memory list, overview stats, and audit log without a
-  // full reload — all three reflect the change immediately.
-  const userRecord = (APP.adminUsers || []).find(u => u.user_id === userId);
-  if (userRecord) userRecord.subscription_tier = newTier;
-  renderAdminUserList();
-  renderAdminOverviewStats();
-  const logRes = await sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(30);
-  if (!logRes.error) {
-    renderAdminAuditLog(logRes.data);
-    renderAdminAuditLog(logRes.data.slice(0, 5), 'adminAuditLogPreview');
-  }
-}
-
-function renderAdminAuditLog(rows, targetElId) {
-  const listEl = document.getElementById(targetElId || 'adminAuditLogList');
-  if (!rows || rows.length === 0) {
-    listEl.innerHTML = '<div class="log-list-empty">No admin actions recorded yet.</div>';
-    return;
-  }
-  listEl.innerHTML = rows.map(r => {
-    const when = new Date(r.created_at).toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-    const changeDesc = (r.before_value && r.after_value)
-      ? `${r.before_value} → ${r.after_value}`
-      : (r.after_value || '');
-    return `
-      <div class="log-item-row">
-        <div class="log-item-left">
-          <div class="log-item-info">
-            <span class="log-item-name">${r.action_type.replace(/_/g,' ')}${r.target_email ? ' — ' + r.target_email : ''}</span>
-            <span class="log-item-meta">${changeDesc ? changeDesc + ' · ' : ''}by ${r.admin_email} · ${when}</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
+// The full admin dashboard (user list, tier management, archived data,
+// audit log, AI mode toggle) used to live here, embedded in this file.
+// It's been moved to its own standalone bundle — admin.html, admin.css,
+// admin.js — confirmed working live, so the embedded copy was removed
+// rather than maintained as a second, divergence-prone version of the
+// same thing. See FORMULAS.md §6f for the full reasoning. isSystemAdmin()
+// itself stays here, since it still gates the small "manage at
+// admin.html" link in Account & Settings (see openSetup()/index.html).
 
 // ══════════════════════════════════════════
 // BOOT — gated on auth session
@@ -415,10 +152,11 @@ async function enterApp(session) {
   const tierLabels = { free: 'Free', premium: '⭐ Premium', pro: '👑 Pro' };
   tierBadge.textContent = tierLabels[tier] || tier;
 
-  // Admin tab is hidden in the HTML by default — only revealed once
-  // the account's real role is confirmed from the database, never
-  // assumed client-side before that.
-  document.getElementById('tabAdmin').classList.toggle('hidden', !isSystemAdmin());
+  // Show a small "Admin dashboard" link for system_admin accounts,
+  // pointing to the standalone admin.html rather than switching to an
+  // embedded tab — the admin dashboard was moved to its own page.
+  const adminLink = document.getElementById('adminDashboardLink');
+  if (adminLink) adminLink.classList.toggle('hidden', !isSystemAdmin());
 
   document.getElementById('clinicianPanel').classList.toggle('hidden', !isClinicianRole());
   document.getElementById('parentPanel').classList.toggle('hidden', isClinicianRole());
@@ -4322,7 +4060,7 @@ function setSyncStatus(state, label) {
 // ══════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════
-const TABS = { Today:'screenToday', Analytics:'screenAnalytics', Medical:'screenMedical', AI:'screenAI', Admin:'screenAdmin' };
+const TABS = { Today:'screenToday', Analytics:'screenAnalytics', Medical:'screenMedical', AI:'screenAI' };
 
 async function goTab(name) {
   Object.values(TABS).forEach(id => document.getElementById(id).classList.remove('active'));
@@ -4350,11 +4088,8 @@ async function goTab(name) {
     if (!APP.aiCoachQuestions) {
       await loadAICoachQuestions();
     } else {
-      renderAICategoryChips(); // re-filter in case the active child or its data changed since last load
+      renderAICategoryChips();
     }
-  }
-  if (name === 'Admin') {
-    await initAdminDashboard();
   }
 }
 
