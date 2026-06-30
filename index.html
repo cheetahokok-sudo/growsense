@@ -841,7 +841,10 @@
       <div class="form-row" style="border-bottom:none; padding:0;">
         <div>
           <div style="font-size:13.5px; font-weight:600;" id="accountEmail">—</div>
-          <span class="role-badge" id="accountRoleBadge" style="margin-top:6px;">—</span>
+          <div style="display:flex; align-items:center; gap:6px; margin-top:6px; flex-wrap:wrap;">
+            <span class="role-badge" id="accountRoleBadge">—</span>
+            <span class="tier-badge free" id="accountTierBadge">Free</span>
+          </div>
         </div>
         <button class="btn-ghost" style="padding:8px 14px;" onclick="handleSignOut()">Sign out</button>
       </div>

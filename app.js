@@ -256,6 +256,12 @@ async function enterApp(session) {
   roleBadge.className = 'role-badge ' + account.account_role;
   roleBadge.textContent = account.account_role.replace('_', ' ');
 
+  const tier = account.subscription_tier || 'free';
+  const tierBadge = document.getElementById('accountTierBadge');
+  tierBadge.className = 'tier-badge ' + tier;
+  const tierLabels = { free: 'Free', premium: '⭐ Premium', pro: '👑 Pro' };
+  tierBadge.textContent = tierLabels[tier] || tier;
+
   document.getElementById('clinicianPanel').classList.toggle('hidden', !isClinicianRole());
   document.getElementById('parentPanel').classList.toggle('hidden', isClinicianRole());
 
