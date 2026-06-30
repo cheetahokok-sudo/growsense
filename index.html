@@ -810,6 +810,31 @@
       </div>
     </div>
 
+    <!-- ADMIN DASHBOARD — only ever shown for system_admin accounts.
+         Hidden by default; goTab('Admin') and the tab button itself
+         are only wired up / made visible after isSystemAdmin() is
+         confirmed at login (see enterApp()). -->
+    <div class="screen" id="screenAdmin">
+      <div class="section-hd"><h2>Admin dashboard</h2><p>User accounts, subscription tiers, and the audit trail of admin actions</p></div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">All users</span></div>
+        <div class="card-body">
+          <input type="text" id="adminUserSearch" class="text-input" placeholder="Search by email…" oninput="renderAdminUserList()" style="margin-bottom:12px;">
+          <div id="adminUserListMeta" class="setup-note" style="font-size:11px; margin-bottom:10px;"></div>
+          <div id="adminUserList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recent admin actions</span></div>
+        <div class="card-body">
+          <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Every tier change, role change, and restore action is recorded here permanently — this is the accountability trail for admin activity.</div>
+          <div id="adminAuditLogList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- end scroll-area -->
 
   <!-- TAB BAR -->
@@ -825,6 +850,9 @@
     </button>
     <button class="tab" id="tabAI" onclick="goTab('AI')">
       <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 10v.01M15 10v.01M8 15c1 1 2.2 1.5 4 1.5s3-.5 4-1.5"/></svg></div><div class="tab-label">AI coach</div>
+    </button>
+    <button class="tab hidden" id="tabAdmin" onclick="goTab('Admin')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.5-3 8-8 9-5-1-8-4.5-8-9V7z"/></svg></div><div class="tab-label">Admin</div>
     </button>
   </div>
 </div>

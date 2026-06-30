@@ -1670,6 +1670,91 @@ in the Edge Function is the next step for this feature.
 
 ---
 
+## 6a. Admin dashboard, phase 1 — audit log + user list (2026-06-30)
+
+**Where:** `migration_admin_audit_and_users.sql`, new "Admin" tab
+(`screenAdmin`) in `index.html`, `loadAdminUsersAndAuditLog()` and
+related functions in `app.js`.
+
+**Context — what existed before this:** there was no admin table, no
+user list, no way to see who's on what tier short of querying Supabase
+directly, and no way to change a tier except a manual SQL UPDATE. "Admin"
+was just one value of `account_role` with two narrow capabilities
+(toggle AI mode, restore archived data) buried inside Account &
+Settings. Admin accounts can only be created by directly editing a row
+in Supabase — there's no self-service signup path, which is the
+correct security posture and is documented here rather than built as
+an in-app flow.
+
+**Decision: this needed to be a dedicated dashboard screen, not an
+expanded modal section.** Confirmed directly — the full requested scope
+(user list/search, tier management, billing status, usage metrics,
+audit log) is too much for a settings modal. Added as a 5th tab,
+hidden by default in the HTML (`class="tab hidden"`) and only revealed
+after `isSystemAdmin()` is confirmed from the real database row at
+login — never assumed or shown speculatively.
+
+**Build order, agreed directly:** audit log + user list first (this
+session), then tier-change UI (built together with the audit log since
+the two are inseparable — a tier change without an audit record isn't
+safe to ship), then usage metrics next. Billing *management* is
+explicitly deferred — there's no payment provider integrated yet, so
+there's nothing real to manage; the tier-status view doubles as the
+billing status view for now.
+
+**The audit log is the safety backbone, built first on purpose.**
+`admin_audit_log` records every admin action: who (`admin_user_id` +
+a denormalized `admin_email` snapshot, so the log stays readable even
+if that admin's email later changes), what (`action_type`), to whom
+(`target_user_id`/`target_child_id`/`target_email`), and the
+before/after values. Critically, the table has no INSERT policy for
+any role — the ONLY way to write to it is through
+`log_admin_action()` or `change_user_subscription_tier()`, both
+`SECURITY DEFINER` functions that re-check the caller is actually a
+system_admin internally (not just trusted because the app called
+them correctly) before writing anything. This means even a
+system_admin querying the table directly through the normal client
+cannot insert a forged entry — only the function path can write,
+which is what makes the trail trustworthy rather than just a
+convention the app happens to follow.
+
+**`get_all_users_for_admin()`** is a second `SECURITY DEFINER`
+function, needed because normal RLS only ever lets a user read their
+own `user_accounts` row — an admin dashboard listing everyone
+requires a deliberate, explicit bypass, gated the same way (raises an
+exception, not just an empty result, if the caller isn't
+system_admin).
+
+**`change_user_subscription_tier()`** performs the tier UPDATE and the
+audit log INSERT as one atomic function call — there's no code path
+where the app could call the update and then fail to log it
+separately, because they're not two separate calls from the client at
+all.
+
+**UI:** the All Users card shows every account (email, role, child
+count, archived status) with a live email search, and an inline
+tier dropdown + Apply button per row — applying re-confirms via a
+native `confirm()` naming the exact change before calling the RPC.
+The Recent Admin Actions card shows the last 30 audit entries with
+who/what/when, refreshed immediately after any action so an admin sees
+their own change land without needing to reload.
+
+**Verified directly, all 7 scenarios:** tab visibility correctly gated
+by real role (not assumed); the user list loads and renders correctly;
+search filters correctly and updates the result count; applying a tier
+change calls the RPC function with the exact correct parameters (not a
+raw table update that would bypass the audit requirement); the
+in-memory list updates immediately; the audit log entry is created
+with the correct before/after values and renders in the UI; and
+selecting the already-current tier correctly skips the RPC call
+entirely rather than logging a no-op change.
+
+**Deferred to the next phase:** usage metrics (active users, AI call
+volume, signups over time) and the billing status/management view —
+both explicitly next, not abandoned.
+
+---
+
 ## 6. Bone age (schema only, not yet used by any UI)
 
 **Where:** `bone_age_assessments` table

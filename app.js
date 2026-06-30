@@ -40,6 +40,7 @@ const APP = {
   pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
   illnessEvents: [], // illness_events rows for the active child, loaded when the Medical tab opens
   foodFavorites: [], // food_favorites rows for the active child — determines which cards show on the Nutrition grid
+  adminUsers: [], // every user account, loaded only for system_admin accounts via get_all_users_for_admin()
   customFoods: [], // custom_foods rows for the active child — parent-defined foods with manually-entered values
   familyHeightRecords: [], // family_height_records rows - reference only by default; see targetHeightFormula
   targetHeightFormula: 'parents', // 'parents' (validated, default) or 'extended' (exploratory) — see setTargetHeightFormula()
@@ -202,6 +203,121 @@ async function restoreArchivedAccount(userId, btn) {
 }
 
 // ══════════════════════════════════════════
+// ADMIN DASHBOARD — system_admin-only user list, tier management, and
+// audit log. Reads go through get_all_users_for_admin() (a SECURITY
+// DEFINER function that bypasses normal RLS, since a regular user can
+// only ever see their own user_accounts row). Tier changes go through
+// change_user_subscription_tier(), which performs the update AND
+// writes the audit log entry as one atomic operation — so a tier
+// change can never happen without a corresponding record of who did
+// it, when, and what the value was before. See
+// migration_admin_audit_and_users.sql.
+// ══════════════════════════════════════════
+
+async function loadAdminUsersAndAuditLog() {
+  const [usersRes, logRes] = await Promise.all([
+    sb.rpc('get_all_users_for_admin'),
+    sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(30)
+  ]);
+
+  APP.adminUsers = (!usersRes.error && usersRes.data) ? usersRes.data : [];
+  if (usersRes.error) showToast('⚠️', 'Could not load users: ' + usersRes.error.message);
+
+  renderAdminUserList();
+  renderAdminAuditLog((!logRes.error && logRes.data) ? logRes.data : []);
+}
+
+function renderAdminUserList() {
+  const listEl = document.getElementById('adminUserList');
+  const metaEl = document.getElementById('adminUserListMeta');
+  const searchTerm = (document.getElementById('adminUserSearch').value || '').trim().toLowerCase();
+  const allUsers = APP.adminUsers || [];
+
+  const filtered = searchTerm
+    ? allUsers.filter(u => u.email.toLowerCase().includes(searchTerm))
+    : allUsers;
+
+  metaEl.textContent = `${filtered.length} of ${allUsers.length} accounts shown`;
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="log-list-empty">No matching accounts.</div>';
+    return;
+  }
+
+  const tierOptions = ['free', 'premium', 'pro'];
+
+  listEl.innerHTML = filtered.map(u => {
+    const tierSelectOptions = tierOptions.map(t =>
+      `<option value="${t}" ${u.subscription_tier === t ? 'selected' : ''}>${t}</option>`
+    ).join('');
+    const statusNote = u.account_status === 'archived' ? ' · <span style="color:var(--flag);">archived</span>' : '';
+    return `
+      <div class="log-item-row" style="flex-wrap:wrap; gap:8px;">
+        <div class="log-item-left" style="flex:1; min-width:200px;">
+          <div class="log-item-info">
+            <span class="log-item-name">${u.email}</span>
+            <span class="log-item-meta">${u.account_role.replace('_',' ')} · ${u.child_count} child${u.child_count === 1 ? '' : 'ren'}${statusNote}</span>
+          </div>
+        </div>
+        <div class="log-item-right" style="display:flex; align-items:center; gap:6px;">
+          <select class="num-input" style="width:110px;" id="tierSelect-${u.user_id}">${tierSelectOptions}</select>
+          <button class="btn-link" style="font-size:11.5px;" onclick="applyTierChange('${u.user_id}', '${u.email}', '${u.subscription_tier}')">Apply</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function applyTierChange(userId, email, currentTier) {
+  const select = document.getElementById('tierSelect-' + userId);
+  const newTier = select.value;
+
+  if (newTier === currentTier) { showToast('⚠️', 'Already on that tier'); return; }
+  if (!confirm(`Change ${email}'s subscription tier from ${currentTier} to ${newTier}?`)) return;
+
+  const { error } = await sb.rpc('change_user_subscription_tier', {
+    p_target_user_id: userId,
+    p_new_tier: newTier,
+    p_notes: null
+  });
+
+  if (error) { showToast('⚠️', 'Could not change tier: ' + error.message); return; }
+
+  showToast('✅', `${email} moved to ${newTier}`);
+  // Update the in-memory list and audit log without a full reload —
+  // both reflect the change immediately.
+  const userRecord = (APP.adminUsers || []).find(u => u.user_id === userId);
+  if (userRecord) userRecord.subscription_tier = newTier;
+  renderAdminUserList();
+  const logRes = await sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(30);
+  if (!logRes.error) renderAdminAuditLog(logRes.data);
+}
+
+function renderAdminAuditLog(rows) {
+  const listEl = document.getElementById('adminAuditLogList');
+  if (!rows || rows.length === 0) {
+    listEl.innerHTML = '<div class="log-list-empty">No admin actions recorded yet.</div>';
+    return;
+  }
+  listEl.innerHTML = rows.map(r => {
+    const when = new Date(r.created_at).toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const changeDesc = (r.before_value && r.after_value)
+      ? `${r.before_value} → ${r.after_value}`
+      : (r.after_value || '');
+    return `
+      <div class="log-item-row">
+        <div class="log-item-left">
+          <div class="log-item-info">
+            <span class="log-item-name">${r.action_type.replace(/_/g,' ')}${r.target_email ? ' — ' + r.target_email : ''}</span>
+            <span class="log-item-meta">${changeDesc ? changeDesc + ' · ' : ''}by ${r.admin_email} · ${when}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
 // BOOT — gated on auth session
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
@@ -262,6 +378,11 @@ async function enterApp(session) {
   tierBadge.className = 'tier-badge ' + tier;
   const tierLabels = { free: 'Free', premium: '⭐ Premium', pro: '👑 Pro' };
   tierBadge.textContent = tierLabels[tier] || tier;
+
+  // Admin tab is hidden in the HTML by default — only revealed once
+  // the account's real role is confirmed from the database, never
+  // assumed client-side before that.
+  document.getElementById('tabAdmin').classList.toggle('hidden', !isSystemAdmin());
 
   document.getElementById('clinicianPanel').classList.toggle('hidden', !isClinicianRole());
   document.getElementById('parentPanel').classList.toggle('hidden', isClinicianRole());
@@ -4165,7 +4286,7 @@ function setSyncStatus(state, label) {
 // ══════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════
-const TABS = { Today:'screenToday', Analytics:'screenAnalytics', Medical:'screenMedical', AI:'screenAI' };
+const TABS = { Today:'screenToday', Analytics:'screenAnalytics', Medical:'screenMedical', AI:'screenAI', Admin:'screenAdmin' };
 
 async function goTab(name) {
   Object.values(TABS).forEach(id => document.getElementById(id).classList.remove('active'));
@@ -4195,6 +4316,9 @@ async function goTab(name) {
     } else {
       renderAICategoryChips(); // re-filter in case the active child or its data changed since last load
     }
+  }
+  if (name === 'Admin') {
+    await loadAdminUsersAndAuditLog();
   }
 }
 
