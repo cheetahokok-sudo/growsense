@@ -3593,12 +3593,31 @@ async function runBoneAgeAIAnalysis(assessmentId) {
     const blob = await imgRes.blob();
     const mediaType = blob.type || 'image/jpeg';
 
-    // Step 2: Convert to base64
+    // Step 2: Convert to base64 — downscale to 800px max first to keep
+    // the payload to Anthropic under ~200KB. Vision analysis doesn't
+    // need the full 832×888 resolution; bones are clearly readable at
+    // 600-800px and the request completes much faster.
     const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX = 800;
+        let w = img.naturalWidth, h = img.naturalHeight;
+        if (w > MAX || h > MAX) {
+          const ratio = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(dataUrl.split(',')[1]);
+      };
+      img.onerror = reject;
+      img.src = url;
     });
 
     // Step 3: Send to Edge Function
@@ -3618,7 +3637,16 @@ async function runBoneAgeAIAnalysis(assessmentId) {
     });
 
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || 'Analysis failed');
+    if (!res.ok || data.error) {
+      // Extract the real error — Anthropic errors come back in data.detail
+      const anthropicMsg = data.detail?.error?.message
+        || data.detail?.message
+        || (typeof data.detail === 'string' ? data.detail : null)
+        || data.error
+        || 'Unknown error from AI service';
+      console.error('[Bone Age AI] Full error response:', data);
+      throw new Error(anthropicMsg);
+    }
 
     // Step 4: Update in-memory record + re-render
     const idx = (APP.boneAgeAssessments || []).findIndex(r => r.assessment_id === assessmentId);
