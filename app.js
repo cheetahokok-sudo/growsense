@@ -3683,25 +3683,34 @@ function buildAnnotationOverlaySVG(aiResult) {
   const carpals = aiResult.carpal_analysis || {};
   const epiObs = aiResult.epiphyseal_observations || [];
 
-  // Color map keyed to the qualitative appearance descriptors Claude returns
+  // Color map aligned to the app's design tokens (from design-tokens.css).
+  // These are the exact hex values of each token, used here as hex because
+  // SVG inside a JS template literal can't reference CSS custom properties.
+  //
+  //   absent        → --text3       #95A092  (muted, de-emphasised)
+  //   barely_visible→ --measured    #2A5C8A  (blue — just appearing)
+  //   small_clear   → --accent      #2F6B4F  (green — normal for age)
+  //   well_formed   → --estimated   #9C7A3D  (amber — maturing)
+  //   wide_capping  → --flag        #A23B3B  (red — advanced maturation)
+  //   carpals       → --estimated   #9C7A3D  (amber — primary reference)
   const C = {
-    absent:        '#555',
-    barely_visible:'#00bcd4',
-    small_clear:   '#4caf50',
-    well_formed:   '#ff9800',
-    wide_capping:  '#f44336'
+    absent:         '#95A092',
+    barely_visible: '#2A5C8A',
+    small_clear:    '#2F6B4F',
+    well_formed:    '#9C7A3D',
+    wide_capping:   '#A23B3B'
   };
+  const CARPAL_COLOR = '#9C7A3D'; // --estimated
 
   const getColor = (boneGroup) => {
     const obs = epiObs.find(o => o.bone_group === boneGroup);
-    return C[obs?.appearance] || '#888';
+    return C[obs?.appearance] || '#95A092';
   };
   const getLabel = (boneGroup) => {
     const obs = epiObs.find(o => o.bone_group === boneGroup);
     return (obs?.appearance || '').replace(/_/g, ' ');
   };
 
-  // Which individual carpal bones were identified
   const ids = (carpals.bones_identified || []).map(b => b.toLowerCase());
   const hasCap  = ids.some(b => b.includes('capitate'));
   const hasHam  = ids.some(b => b.includes('hamate'));
@@ -3735,24 +3744,24 @@ function buildAnnotationOverlaySVG(aiResult) {
 
   <!-- Carpal region ellipse -->
   <ellipse cx="46" cy="73" rx="16" ry="7.5"
-    fill="#FFD70010" stroke="#FFD700" stroke-width="0.7" stroke-dasharray="2.5,2"/>
-  <text x="64" y="70" fill="#FFD700" font-size="3.2" font-family="monospace"
+    fill="${CARPAL_COLOR}10" stroke="${CARPAL_COLOR}" stroke-width="0.7" stroke-dasharray="2.5,2"/>
+  <text x="64" y="70" fill="${CARPAL_COLOR}" font-size="3.2" font-family="monospace"
     font-weight="bold">Carpals</text>
-  <text x="64" y="73.5" fill="#FFD700" font-size="2.5" font-family="monospace"
+  <text x="64" y="73.5" fill="${CARPAL_COLOR}" font-size="2.5" font-family="monospace"
     opacity="0.85">${carpals.count_visible || 0}/8 found</text>
-  <line x1="62" y1="72" x2="63.5" y2="71.5" stroke="#FFD700" stroke-width="0.4"/>
+  <line x1="62" y1="72" x2="63.5" y2="71.5" stroke="${CARPAL_COLOR}" stroke-width="0.4"/>
 
   <!-- Individual carpal circles -->
-  ${hasCap  ? `<circle cx="51" cy="72" r="2.8" fill="#FFD70028" stroke="#FFD700" stroke-width="0.8"/>
-    <text x="51" y="77.5" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Cap</text>` : ''}
-  ${hasHam  ? `<circle cx="43" cy="74.5" r="2.3" fill="#FFD70028" stroke="#FFD700" stroke-width="0.8"/>
-    <text x="43" y="79.5" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Ham</text>` : ''}
-  ${hasTrq  ? `<circle cx="36" cy="76.5" r="2" fill="#FFD70028" stroke="#FFD700" stroke-width="0.7" stroke-dasharray="1.5,1"/>
-    <text x="36" y="81" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Triq</text>` : ''}
-  ${hasLun  ? `<circle cx="58" cy="71" r="2" fill="#FFD70028" stroke="#FFD700" stroke-width="0.7"/>
-    <text x="58" y="75.5" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Lun</text>` : ''}
-  ${hasScap ? `<circle cx="55" cy="68" r="2" fill="#FFD70028" stroke="#FFD700" stroke-width="0.7"/>
-    <text x="55" y="72.5" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Scap</text>` : ''}
+  ${hasCap  ? `<circle cx="51" cy="72" r="2.8" fill="${CARPAL_COLOR}28" stroke="${CARPAL_COLOR}" stroke-width="0.8"/>
+    <text x="51" y="77.5" fill="${CARPAL_COLOR}" font-size="2.3" text-anchor="middle" font-family="monospace">Cap</text>` : ''}
+  ${hasHam  ? `<circle cx="43" cy="74.5" r="2.3" fill="${CARPAL_COLOR}28" stroke="${CARPAL_COLOR}" stroke-width="0.8"/>
+    <text x="43" y="79.5" fill="${CARPAL_COLOR}" font-size="2.3" text-anchor="middle" font-family="monospace">Ham</text>` : ''}
+  ${hasTrq  ? `<circle cx="36" cy="76.5" r="2" fill="${CARPAL_COLOR}28" stroke="${CARPAL_COLOR}" stroke-width="0.7" stroke-dasharray="1.5,1"/>
+    <text x="36" y="81" fill="${CARPAL_COLOR}" font-size="2.3" text-anchor="middle" font-family="monospace">Triq</text>` : ''}
+  ${hasLun  ? `<circle cx="58" cy="71" r="2" fill="${CARPAL_COLOR}28" stroke="${CARPAL_COLOR}" stroke-width="0.7"/>
+    <text x="58" y="75.5" fill="${CARPAL_COLOR}" font-size="2.3" text-anchor="middle" font-family="monospace">Lun</text>` : ''}
+  ${hasScap ? `<circle cx="55" cy="68" r="2" fill="${CARPAL_COLOR}28" stroke="${CARPAL_COLOR}" stroke-width="0.7"/>
+    <text x="55" y="72.5" fill="${CARPAL_COLOR}" font-size="2.3" text-anchor="middle" font-family="monospace">Scap</text>` : ''}
 
   <!-- Metacarpal distal epiphyses -->
   <ellipse cx="44" cy="57" rx="20" ry="5.5"
@@ -3791,17 +3800,17 @@ function buildAnnotationOverlaySVG(aiResult) {
   <line x1="57" y1="18" x2="58.5" y2="17.5" stroke="${dpC}" stroke-width="0.4"/>
 
   <!-- Legend panel bottom-left -->
-  <rect x="1" y="88" width="40" height="11" rx="1.5" fill="#000000aa"/>
-  <text x="2.5" y="91.5" fill="#aaa" font-size="2.4" font-family="monospace"
+  <rect x="1" y="88" width="40" height="11" rx="1.5" fill="#1F2B2299"/>
+  <text x="2.5" y="91.5" fill="#95A092" font-size="2.4" font-family="monospace"
     font-weight="bold">APPEARANCE SCALE</text>
-  <circle cx="4" cy="94.5" r="1.2" fill="#00bcd4"/>
-  <text x="6.5" y="95.5" fill="#ccc" font-size="2.2" font-family="monospace">barely visible</text>
-  <circle cx="21" cy="94.5" r="1.2" fill="#4caf50"/>
-  <text x="23.5" y="95.5" fill="#ccc" font-size="2.2" font-family="monospace">small, clear</text>
-  <circle cx="4" cy="98" r="1.2" fill="#ff9800"/>
-  <text x="6.5" y="99" fill="#ccc" font-size="2.2" font-family="monospace">well formed</text>
-  <circle cx="21" cy="98" r="1.2" fill="#f44336"/>
-  <text x="23.5" y="99" fill="#ccc" font-size="2.2" font-family="monospace">wide/capping</text>
+  <circle cx="4" cy="94.5" r="1.2" fill="#2A5C8A"/>
+  <text x="6.5" y="95.5" fill="#EEF0EC" font-size="2.2" font-family="monospace">barely visible</text>
+  <circle cx="21" cy="94.5" r="1.2" fill="#2F6B4F"/>
+  <text x="23.5" y="95.5" fill="#EEF0EC" font-size="2.2" font-family="monospace">small, clear</text>
+  <circle cx="4" cy="98" r="1.2" fill="#9C7A3D"/>
+  <text x="6.5" y="99" fill="#EEF0EC" font-size="2.2" font-family="monospace">well formed</text>
+  <circle cx="21" cy="98" r="1.2" fill="#A23B3B"/>
+  <text x="23.5" y="99" fill="#EEF0EC" font-size="2.2" font-family="monospace">wide/capping</text>
 </svg>`;
 }
 
@@ -3863,10 +3872,11 @@ function renderBoneAgeAIPanel(result, doctorBoneAgeMonths, chronologicalAgeMonth
 
   // Epiphyseal observations table
   const appearanceLabel = { absent: '—', barely_visible: 'Barely visible', small_clear: 'Small, clear', well_formed: 'Well formed', wide_capping: 'Wide / capping' };
+  const appearanceClass = { absent: 'absent', barely_visible: 'barely-visible', small_clear: 'small-clear', well_formed: 'well-formed', wide_capping: 'wide-capping' };
   const obsRows = epiObs.map(o => `
     <tr>
       <td style="color:var(--text2);">${(o.bone_group || '').replace(/_/g, ' ')}</td>
-      <td><span class="stage-lbl" style="font-size:10px;">${appearanceLabel[o.appearance] || o.appearance}</span></td>
+      <td><span class="stage-lbl ${appearanceClass[o.appearance] || ''}">${appearanceLabel[o.appearance] || o.appearance}</span></td>
       <td style="color:var(--text2); font-size:10px;">${o.observation || ''}</td>
     </tr>`).join('');
 

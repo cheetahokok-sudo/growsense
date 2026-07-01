@@ -364,9 +364,9 @@ canvas { display: block; width: 100%; height: 100%; }
 .bone-age-ai-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 
 /* Annotated X-ray overlay */
-.xray-annotated-container { position: relative; width: 100%; background: #000; border-radius: 10px; overflow: hidden; margin-bottom: 10px; aspect-ratio: 832/888; }
+.xray-annotated-container { position: relative; width: 100%; background: #000; border-radius: 10px; overflow: hidden; margin-bottom: 12px; aspect-ratio: 832/888; }
 .xray-annotated-img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.xray-annotated-label { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: #888; font-size: 9px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-family: monospace; }
+.xray-annotated-label { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); color: var(--text3); font-size: 9px; padding: 2px 10px; border-radius: 4px; white-space: nowrap; font-family: var(--mono); letter-spacing: 0.2px; }
 .bone-age-ai-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text2); margin: 10px 0 6px; }
 .bone-age-ai-carpal-row { display: flex; align-items: flex-start; gap: 10px; background: var(--surface); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
 .bone-age-ai-comparison { background: var(--surface); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
@@ -380,7 +380,12 @@ canvas { display: block; width: 100%; height: 100%; }
 .bone-age-ai-caveat { font-size: 9.5px; color: var(--text3); background: var(--surface); border-radius: 8px; padding: 7px 9px; margin-bottom: 6px; line-height: 1.4; }
 .bone-age-ai-dicom-note { font-size: 10px; color: var(--measured-dark); background: var(--measured-light); border-radius: 8px; padding: 7px 9px; margin-bottom: 6px; line-height: 1.4; }
 .bone-age-ai-disclaimer { font-size: 9px; color: var(--text3); font-style: italic; line-height: 1.4; }
-.stage-lbl { font-size: 10px; font-weight: 600; color: var(--measured-dark); background: var(--measured-light); padding: 1px 6px; border-radius: 4px; }
+.stage-lbl { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+.stage-lbl.barely-visible { color: var(--measured-dark); background: var(--measured-light); }
+.stage-lbl.small-clear   { color: var(--accent-dark);   background: var(--accent-light); }
+.stage-lbl.well-formed   { color: var(--estimated-dark); background: var(--estimated-light); }
+.stage-lbl.wide-capping  { color: var(--flag-dark);     background: var(--flag-light); }
+.stage-lbl.absent        { color: var(--text3);         background: var(--surface2); }
 .spinner-sm { width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
