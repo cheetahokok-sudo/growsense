@@ -1,63 +1,216 @@
 /* ══════════════════════════════════════════════════════════════════
    GrowSense Admin Dashboard — standalone stylesheet
-   Loaded by admin.html, which is its own independent bundle, separate
-   from the parent-facing app's index.html/style.css. Colors and type
-   come from design-tokens.css (shared, see that file) — everything
-   else here is intentionally self-contained, including a small set of
-   UI primitives (cards, buttons, lists, inputs, toast) that mirror
-   style.css's versions. This duplication is a deliberate, agreed
-   tradeoff: the alternative (a second shared "components" file) adds
-   another cross-file dependency, and this project has already hit a
-   real production outage once from an under-specified shared-file
-   path. If a primitive's look changes in style.css, mirror the change
-   here too — there's no automatic sync.
+   Colors from design-tokens.css (shared). Everything else here is
+   self-contained. Two layout modes:
+   · Desktop (>768px): sticky left sidebar, collapses to icon-only rail
+   · Mobile (≤768px): topbar hamburger opens a drawer overlay
    ══════════════════════════════════════════════════════════════════ */
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+
+html, body { height: 100%; }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
   color: var(--text);
   font-size: 14px;
-  /* Unlike the parent app (a fixed-height single-screen shell with its
-     own internal scroll-area), this is an ordinary scrolling page —
-     admin content can be taller than the viewport and that's fine. */
-  min-height: 100vh;
 }
 
 .hidden { display: none !important; }
 
-/* ── Page chrome ─────────────────────────────────────────────────── */
+/* ── Topbar ────────────────────────────────────────────────────── */
 .admin-topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 52px;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 24px; background: var(--surface); border-bottom: 0.5px solid var(--border);
+  padding: 0 16px;
+  background: var(--surface);
+  border-bottom: 0.5px solid var(--border);
 }
-.admin-topbar-brand { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+.admin-topbar-left { display: flex; align-items: center; gap: 10px; }
+.admin-topbar-brand { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
 .admin-topbar-brand .accent { color: var(--accent); }
-.admin-topbar-right { display: flex; align-items: center; gap: 14px; font-size: 12.5px; color: var(--text2); }
-.admin-page { max-width: 1180px; margin: 0 auto; padding: 24px; }
+.admin-topbar-right { display: flex; align-items: center; gap: 12px; font-size: 12.5px; color: var(--text2); }
 
-/* ── Gate states: not signed in / not authorized ─────────────────── */
-.admin-gate { max-width: 420px; margin: 80px auto; text-align: center; padding: 0 24px; }
+.topbar-icon-btn {
+  width: 36px; height: 36px; border-radius: 8px; border: none;
+  background: none; color: var(--text2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+}
+.topbar-icon-btn:hover { background: var(--surface2); }
+
+/* ── Layout shell — fills viewport below topbar ─────────────────── */
+.admin-layout {
+  display: flex;
+  height: calc(100vh - 52px);
+  margin-top: 52px;
+  overflow: hidden;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────── */
+.admin-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 0.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* Collapsed: icon-only rail */
+.admin-sidebar.collapsed {
+  width: 56px;
+}
+
+/* Desktop collapse toggle button */
+.sidebar-collapse-btn {
+  align-self: flex-end;
+  margin: 10px 10px 4px;
+  width: 28px; height: 28px;
+  border-radius: 7px; border: none;
+  background: none; color: var(--text3); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.sidebar-collapse-btn:hover { background: var(--surface2); color: var(--text); }
+.collapse-icon { transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1); }
+.admin-sidebar.collapsed .collapse-icon { transform: rotate(180deg); }
+
+/* ── Nav items ──────────────────────────────────────────────────── */
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px;
+  flex: 1;
+  overflow: hidden; /* prevents label wrapping causing layout glitch during transition */
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: none;
+  background: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+  text-align: left;
+}
+.admin-nav-item:hover { background: var(--surface2); color: var(--text); }
+.admin-nav-item.active { background: var(--accent-light); color: var(--accent-dark); }
+.admin-nav-item.disabled { color: var(--text3); cursor: default; pointer-events: none; }
+
+.nav-icon {
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+.nav-label {
+  flex: 1;
+  overflow: hidden;
+  transition: opacity 0.15s, width 0.22s;
+  opacity: 1;
+}
+.admin-sidebar.collapsed .nav-label { opacity: 0; width: 0; }
+.admin-sidebar.collapsed .admin-nav-soon { opacity: 0; width: 0; }
+
+.admin-nav-soon {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.3px; background: var(--surface2); color: var(--text3);
+  padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+/* Tooltip on hover when collapsed — shows section name */
+.admin-sidebar.collapsed .admin-nav-item {
+  position: relative;
+  justify-content: center;
+}
+.admin-sidebar.collapsed .admin-nav-item::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--ink);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 7px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 200;
+}
+.admin-sidebar.collapsed .admin-nav-item:hover::after { opacity: 1; }
+
+/* ── Mobile sidebar backdrop ────────────────────────────────────── */
+.sidebar-backdrop {
+  position: fixed; inset: 0; z-index: 149;
+  background: rgba(0,0,0,0.35);
+}
+
+/* ── Main content area ──────────────────────────────────────────── */
+.admin-main {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-content-inner {
+  max-width: 900px;
+  padding: 24px;
+  margin: 0 auto;
+}
+
+/* ── Section switching ──────────────────────────────────────────── */
+.admin-section { display: none; }
+.admin-section.active { display: block; }
+
+/* ── Gate states ────────────────────────────────────────────────── */
+.admin-gate { max-width: 420px; margin: 100px auto; text-align: center; padding: 0 24px; }
 .admin-gate h2 { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
 .admin-gate p { font-size: 13.5px; color: var(--text2); line-height: 1.5; margin-bottom: 18px; }
 
-/* ── Section header (matches style.css's .section-hd) ─────────────── */
-.section-hd { margin: 0 0 16px; }
-.section-hd h2 { font-size: 21px; font-weight: 700; letter-spacing: -0.4px; color: var(--text); }
-.section-hd p { font-size: 12.5px; color: var(--text2); margin-top: 2px; }
+/* ── Section header ─────────────────────────────────────────────── */
+.section-hd { margin: 0 0 20px; }
+.section-hd h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; color: var(--text); }
+.section-hd p { font-size: 12.5px; color: var(--text2); margin-top: 3px; }
 
-/* ── Cards ────────────────────────────────────────────────────────── */
-.card { background: var(--surface); border-radius: var(--radius-lg); border: 0.5px solid var(--border); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+/* ── Cards ──────────────────────────────────────────────────────── */
+.card { background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
 .card-header { padding: 14px 16px 0; display: flex; align-items: center; justify-content: space-between; }
 .card-body { padding: 16px; }
-.card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text2); display: flex; align-items: center; gap: 5px; }
-
-/* ── Setup note (small explanatory text used throughout) ───────────── */
+.card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text2); }
 .setup-note { font-size: 12px; color: var(--text2); line-height: 1.45; background: var(--surface2); padding: 10px 12px; border-radius: 10px; }
 
-/* ── Lists (log-item-row pattern, used for users/audit/archive) ────── */
+/* ── Stat strip ─────────────────────────────────────────────────── */
+.admin-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.admin-stat { background: var(--surface); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px; }
+.admin-stat-num { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+.admin-stat-num.tier-free { color: var(--text3); }
+.admin-stat-num.tier-premium { color: var(--measured-dark); }
+.admin-stat-num.tier-pro { color: #92400E; }
+.admin-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 6px; font-weight: 600; }
+
+/* ── Lists ──────────────────────────────────────────────────────── */
 .log-list-empty { font-size: 12px; color: var(--text3); padding: 10px 0; text-align: center; }
 .log-item-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; background: var(--surface2); border-radius: 10px; }
 .log-item-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -66,65 +219,59 @@ body {
 .log-item-meta { font-size: 10px; color: var(--text3); }
 .log-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-/* ── Buttons ──────────────────────────────────────────────────────── */
-.btn-primary { background: var(--accent); color: white; border: none; border-radius: var(--radius); padding: 12px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.btn-primary:active { opacity: 0.85; }
-.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.btn-secondary:active { opacity: 0.7; }
-.btn-ghost { background: none; border: 1.5px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 14px; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; font-family: inherit; }
-.btn-link { background: none; border: none; color: var(--measured); font-weight: 600; cursor: pointer; font-family: inherit; padding: 4px 0; text-align: left; font-size: 12.5px; }
+/* ── Buttons ────────────────────────────────────────────────────── */
+.btn-primary { background: var(--accent); color: white; border: none; border-radius: 12px; padding: 12px 20px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); border-radius: 10px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-ghost { background: none; border: 1.5px solid var(--border2); border-radius: 9px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; font-family: inherit; }
+.btn-link { background: none; border: none; color: var(--measured); font-weight: 600; cursor: pointer; font-family: inherit; padding: 4px 0; font-size: 12.5px; }
 .btn-link:active { opacity: 0.6; }
 
-/* ── Inputs ───────────────────────────────────────────────────────── */
+/* ── Inputs ─────────────────────────────────────────────────────── */
 .text-input { background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 11px 12px; min-height: 44px; font-size: 13px; font-weight: 500; color: var(--text); outline: none; font-family: inherit; width: 100%; }
 .text-input:focus { border-color: var(--measured); }
 .num-input { background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 9px 10px; min-height: 38px; font-size: 13px; font-weight: 600; color: var(--text); outline: none; font-family: inherit; }
 .num-input:focus { border-color: var(--measured); }
 
-/* ── Segmented control (AI mode toggle) ─────────────────────────────── */
+/* ── Segmented control ──────────────────────────────────────────── */
 .seg { display: flex; background: var(--surface2); border-radius: 11px; padding: 3px; gap: 2px; }
-.seg-btn { flex: 1; background: none; border: none; padding: 11px 6px; min-height: 40px; font-size: 11.5px; font-weight: 600; color: var(--text2); border-radius: 8px; cursor: pointer; font-family: inherit; transition: all 0.15s; white-space: nowrap; }
+.seg-btn { flex: 1; background: none; border: none; padding: 10px 6px; font-size: 11.5px; font-weight: 600; color: var(--text2); border-radius: 8px; cursor: pointer; font-family: inherit; transition: all 0.15s; white-space: nowrap; }
 .seg-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(20,30,25,0.08); }
 
-/* ── Toast ────────────────────────────────────────────────────────── */
-.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: white; border-radius: 12px; padding: 13px 16px; font-size: 13.5px; font-weight: 500; z-index: 300; display: flex; align-items: center; gap: 10px; opacity: 0; transition: all 0.25s ease; pointer-events: none; }
+/* ── Toast ──────────────────────────────────────────────────────── */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: white; border-radius: 12px; padding: 12px 16px; font-size: 13.5px; font-weight: 500; z-index: 300; display: flex; align-items: center; gap: 10px; opacity: 0; transition: all 0.25s ease; pointer-events: none; white-space: nowrap; }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 .toast-icon { font-size: 16px; }
 
-/* ── Admin shell: sidebar nav + content ─────────────────────────────
-   Desktop-shaped by default (this is the whole reason admin lives in
-   its own bundle, separate from the iPhone-tuned parent app) — see
-   FORMULAS.md §6b for the original reasoning. Collapses to a
-   horizontal pill row below 880px. ───────────────────────────────── */
-.admin-shell { display: flex; gap: 28px; align-items: flex-start; }
-.admin-nav { display: flex; flex-direction: column; gap: 2px; width: 196px; flex-shrink: 0; position: sticky; top: 16px; }
-.admin-nav-item {
-  text-align: left; padding: 10px 14px; border-radius: 9px; border: none; background: none;
-  font-size: 13.5px; font-weight: 600; color: var(--text2); cursor: pointer; font-family: inherit;
-  display: flex; align-items: center; justify-content: space-between; transition: background 0.12s;
-}
-.admin-nav-item:hover { background: var(--surface2); }
-.admin-nav-item.active { background: var(--accent-light); color: var(--accent-dark); }
-.admin-nav-item.disabled { color: var(--text3); cursor: default; }
-.admin-nav-item.disabled:hover { background: none; }
-.admin-nav-soon { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; background: var(--surface2); color: var(--text3); padding: 2px 6px; border-radius: 4px; }
+/* ── Mobile breakpoint (≤768px) ─────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Hamburger visible, sidebar collapse btn hidden */
+  #adminHamburger { display: flex; }
+  .sidebar-collapse-btn { display: none; }
 
-.admin-content { flex: 1; min-width: 0; }
-.admin-section { display: none; }
-.admin-section.active { display: block; }
+  /* Sidebar becomes a fixed drawer overlay, starts off-screen left */
+  .admin-sidebar {
+    position: fixed;
+    top: 52px; bottom: 0; left: 0;
+    z-index: 150;
+    width: 240px !important; /* override collapsed width on mobile */
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-lg);
+  }
+  .admin-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  /* Never show collapsed state on mobile — always full labels in the drawer */
+  .admin-sidebar .nav-label { opacity: 1 !important; width: auto !important; }
+  .admin-sidebar .admin-nav-soon { opacity: 1 !important; width: auto !important; }
+  .admin-sidebar .admin-nav-item::after { display: none; } /* no tooltip needed */
 
-.admin-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-.admin-stat { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
-.admin-stat-num { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
-.admin-stat-num.tier-free { color: var(--text3); }
-.admin-stat-num.tier-premium { color: var(--measured-dark); }
-.admin-stat-num.tier-pro { color: #92400E; }
-.admin-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 6px; font-weight: 600; }
-
-@media (max-width: 880px) {
-  .admin-shell { flex-direction: column; }
-  .admin-nav { flex-direction: row; width: 100%; overflow-x: auto; position: static; gap: 6px; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
-  .admin-nav-item { white-space: nowrap; flex-shrink: 0; }
+  .admin-main { width: 100%; }
+  .admin-content-inner { padding: 16px; }
   .admin-stat-strip { grid-template-columns: repeat(2, 1fr); }
-  .admin-page { padding: 16px; }
+}
+
+/* ── Desktop: hamburger hidden ──────────────────────────────────── */
+@media (min-width: 769px) {
+  #adminHamburger { display: none; }
 }

@@ -79,6 +79,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   ADMIN.account = account;
   showAdminGate('dashboard');
+  restoreSidebarState();
   await initAdminDashboard();
 });
 
@@ -227,6 +228,42 @@ async function restoreArchivedAccount(userId, btn) {
 // update AND writes the audit log entry atomically.
 // ══════════════════════════════════════════
 
+// ══════════════════════════════════════════
+// SIDEBAR CONTROLS
+// ══════════════════════════════════════════
+
+// Desktop: toggle between full sidebar (220px) and icon-only rail
+// (56px). State saved to localStorage so the preference persists
+// across page visits and reloads — an admin who collapses the sidebar
+// to see more of the user list shouldn't have to do it again every
+// visit.
+function toggleSidebarCollapse() {
+  const sidebar = document.getElementById('adminSidebar');
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  try { localStorage.setItem('adminSidebarCollapsed', isCollapsed ? '1' : '0'); } catch (e) {}
+}
+
+// Mobile: slide the sidebar drawer in/out as a full overlay,
+// with a semi-transparent backdrop. The backdrop click also
+// calls this to dismiss, matching standard mobile drawer behaviour.
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('adminSidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const isOpen = sidebar.classList.toggle('mobile-open');
+  backdrop.classList.toggle('hidden', !isOpen);
+}
+
+// Restore the saved collapse state on load — called once at the
+// end of the boot sequence, after the dashboard is revealed.
+function restoreSidebarState() {
+  try {
+    const saved = localStorage.getItem('adminSidebarCollapsed');
+    if (saved === '1') {
+      document.getElementById('adminSidebar').classList.add('collapsed');
+    }
+  } catch (e) {}
+}
+
 async function initAdminDashboard() {
   setAdminGreeting();
 
@@ -269,6 +306,10 @@ function setAdminSection(section, btn) {
   if (btn) btn.classList.add('active');
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
   document.getElementById('adminSection' + section.charAt(0).toUpperCase() + section.slice(1)).classList.add('active');
+  // Auto-close the mobile drawer when the user taps a nav item —
+  // the content is now visible, the drawer is no longer needed.
+  const sidebar = document.getElementById('adminSidebar');
+  if (sidebar.classList.contains('mobile-open')) toggleMobileSidebar();
 }
 
 function renderAdminUserList() {

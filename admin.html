@@ -9,51 +9,86 @@
 </head>
 <body>
 
-<div class="admin-topbar">
-  <div class="admin-topbar-brand"><span class="accent">Grow</span>Sense Admin</div>
+<!-- TOPBAR — always visible, contains brand + hamburger (mobile) +
+     collapse toggle (desktop) + right-side account info -->
+<div class="admin-topbar" id="adminTopbar">
+  <div class="admin-topbar-left">
+    <!-- Mobile: hamburger opens the sidebar drawer overlay -->
+    <button class="topbar-icon-btn" id="adminHamburger" onclick="toggleMobileSidebar()" aria-label="Menu">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <div class="admin-topbar-brand"><span class="accent">Grow</span>Sense</div>
+  </div>
   <div class="admin-topbar-right">
     <span id="adminTopbarEmail" class="hidden"></span>
     <button class="btn-ghost hidden" id="adminSignOutBtn" onclick="handleAdminSignOut()">Sign out</button>
   </div>
 </div>
 
-<!-- GATE 1: no session at all — this page never shows its own sign-in
-     form. GrowSense accounts are created and authenticated through the
-     main app; this page only checks for an existing session, the same
-     way the main app's enterApp() does. -->
+<!-- GATE 1: no session -->
 <div class="admin-gate" id="adminGateNoSession">
   <h2>Sign in required</h2>
-  <p>Open the main GrowSense app and sign in there first, then come back to this page — your session will carry over automatically.</p>
+  <p>Open the main GrowSense app and sign in there first, then come back here — your session carries over automatically.</p>
   <a href="./" class="btn-primary" style="display:inline-block; text-decoration:none;">Go to GrowSense</a>
 </div>
 
-<!-- GATE 2: signed in, but not a system_admin account. -->
+<!-- GATE 2: wrong role -->
 <div class="admin-gate hidden" id="adminGateNotAuthorized">
   <h2>Not authorized</h2>
   <p id="adminGateNotAuthorizedMsg">This account doesn't have admin access.</p>
   <button class="btn-secondary" onclick="handleAdminSignOut()">Sign out</button>
 </div>
 
-<!-- THE ACTUAL DASHBOARD — structurally the same five sections as the
-     version that originally lived inside the parent app's screenAdmin,
-     now standalone. -->
-<div class="admin-page hidden" id="adminDashboardRoot">
-  <div class="section-hd">
-    <h2 id="adminGreeting">Admin dashboard</h2>
-    <p>Accounts, tiers, and the trail of every admin action</p>
-  </div>
+<!-- DASHBOARD ROOT — shown only for confirmed system_admin -->
+<div class="admin-layout hidden" id="adminDashboardRoot">
 
-  <div class="admin-shell">
+  <!-- SIDEBAR — desktop: sticky left rail; mobile: drawer overlay -->
+  <aside class="admin-sidebar" id="adminSidebar">
+    <!-- Desktop collapse toggle -->
+    <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" onclick="toggleSidebarCollapse()" aria-label="Collapse sidebar">
+      <svg class="collapse-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+
     <nav class="admin-nav">
-      <button class="admin-nav-item active" data-section="overview" onclick="setAdminSection('overview', this)">Overview</button>
-      <button class="admin-nav-item" data-section="users" onclick="setAdminSection('users', this)">Users</button>
-      <button class="admin-nav-item" data-section="archive" onclick="setAdminSection('archive', this)">Archived data</button>
-      <button class="admin-nav-item" data-section="audit" onclick="setAdminSection('audit', this)">Audit log</button>
-      <button class="admin-nav-item" data-section="settings" onclick="setAdminSection('settings', this)">Settings</button>
-      <button class="admin-nav-item disabled" disabled>Billing <span class="admin-nav-soon">Soon</span></button>
+      <button class="admin-nav-item active" data-section="overview" data-tooltip="Overview" onclick="setAdminSection('overview', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span class="nav-label">Overview</span>
+      </button>
+      <button class="admin-nav-item" data-section="users" data-tooltip="Users" onclick="setAdminSection('users', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2"/><path d="M19 8l2 2 4-4" stroke-width="2"/></svg>
+        <span class="nav-label">Users</span>
+      </button>
+      <button class="admin-nav-item" data-section="archive" data-tooltip="Archived" onclick="setAdminSection('archive', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+        <span class="nav-label">Archived</span>
+      </button>
+      <button class="admin-nav-item" data-section="audit" data-tooltip="Audit log" onclick="setAdminSection('audit', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <span class="nav-label">Audit log</span>
+      </button>
+      <button class="admin-nav-item" data-section="settings" data-tooltip="Settings" onclick="setAdminSection('settings', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span class="nav-label">Settings</span>
+      </button>
+      <button class="admin-nav-item disabled" disabled>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <span class="nav-label">Billing</span>
+        <span class="admin-nav-soon">Soon</span>
+      </button>
     </nav>
+  </aside>
 
-    <div class="admin-content">
+  <!-- Mobile sidebar overlay backdrop -->
+  <div class="sidebar-backdrop hidden" id="sidebarBackdrop" onclick="toggleMobileSidebar()"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="admin-main">
+    <div class="admin-content-inner">
+
+      <div class="section-hd">
+        <h2 id="adminGreeting">Admin dashboard</h2>
+        <p>Accounts, tiers, and the trail of every admin action</p>
+      </div>
 
       <!-- OVERVIEW -->
       <div class="admin-section active" id="adminSectionOverview">
@@ -89,7 +124,7 @@
         <div class="card">
           <div class="card-header"><span class="card-title">Archived data (pending permanent deletion)</span></div>
           <div class="card-body">
-            <div class="setup-note" style="margin-bottom:10px;">Restoring sets status back to active. Nothing below is permanently deleted until its countdown reaches zero — the daily automated sweep only removes entries whose grace period has fully elapsed.</div>
+            <div class="setup-note" style="margin-bottom:10px;">Restoring sets status back to active. Nothing below is permanently deleted until its countdown reaches zero.</div>
             <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived children</div>
             <div id="archivedChildrenList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
             <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived accounts</div>
@@ -103,7 +138,7 @@
         <div class="card">
           <div class="card-header"><span class="card-title">Recent admin actions</span></div>
           <div class="card-body">
-            <div class="setup-note" style="margin-bottom:10px;">Every tier change, role change, and restore action is recorded here permanently — this is the accountability trail for admin activity.</div>
+            <div class="setup-note" style="margin-bottom:10px;">Every tier change, role change, and restore action is recorded here permanently.</div>
             <div id="adminAuditLogList" style="display:flex; flex-direction:column; gap:8px;"></div>
           </div>
         </div>
@@ -118,13 +153,13 @@
               <button class="seg-btn active" data-mode="template" onclick="setAICoachModeAdmin('template', this)">Template (free)</button>
               <button class="seg-btn" data-mode="live_ai" onclick="setAICoachModeAdmin('live_ai', this)">Live AI (uses API credits)</button>
             </div>
-            <div class="setup-note" id="aiModeDescription">Template mode answers from a pre-written library matched to the question — no Anthropic API calls, no cost. Switch to Live AI for more complex, free-form answers, which calls the Anthropic API and incurs real cost per question.</div>
+            <div class="setup-note" id="aiModeDescription">Template mode answers from a pre-written library — no API cost. Live AI calls the Anthropic API and incurs real cost per question.</div>
           </div>
         </div>
       </div>
 
     </div>
-  </div>
+  </main>
 </div>
 
 <!-- TOAST -->
