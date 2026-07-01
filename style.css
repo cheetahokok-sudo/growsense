@@ -319,6 +319,66 @@ canvas { display: block; width: 100%; height: 100%; }
 
 /* ─── MEDICAL SCREEN ─── */
 .warning-card { background: var(--estimated-light); border: 1px solid rgba(156,122,61,0.25); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 12px; }
+
+/* ── Bone age X-ray upload zone ──────────────────────────────────── */
+.xray-upload-zone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 20px; width: 100%;
+  border: 1.5px dashed var(--border2); border-radius: 12px;
+  background: var(--surface2); cursor: pointer;
+  font-size: 12.5px; font-weight: 600; color: var(--text2);
+  transition: background 0.15s, border-color 0.15s;
+}
+.xray-upload-zone:hover { background: var(--measured-light); border-color: var(--measured); }
+.xray-upload-zone.has-file { border-color: var(--measured); background: var(--measured-light); color: var(--measured-dark); }
+
+/* ── Bone age result card (rendered in the history list) ──────────── */
+.bone-age-result-card {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 14px; overflow: hidden; margin-bottom: 10px;
+}
+.bone-age-result-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; background: var(--surface2);
+}
+.bone-age-result-body { padding: 12px 14px; }
+.bone-age-delta-strip { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.bone-age-stat { flex: 1; min-width: 80px; background: var(--surface2); border-radius: 10px; padding: 10px 12px; }
+.bone-age-stat-val { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--text); line-height: 1; }
+.bone-age-stat-lbl { font-size: 10px; color: var(--text2); margin-top: 4px; font-weight: 600; }
+.bone-age-stat.delayed .bone-age-stat-val { color: var(--flag); }
+.bone-age-stat.advanced .bone-age-stat-val { color: var(--measured); }
+.bone-age-stat.normal .bone-age-stat-val { color: var(--clinical); }
+
+/* Significance badge — mirrors the dq-badge pattern */
+.sig-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 5px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+.sig-badge.significant { background: var(--flag-light); color: var(--flag-dark); }
+.sig-badge.not-significant { background: var(--accent-light); color: var(--accent-dark); }
+.sig-badge.no-sd { background: var(--surface2); color: var(--text3); }
+
+/* X-ray thumbnail in the result card */
+.xray-thumb { width: 100%; max-height: 180px; object-fit: contain; border-radius: 8px; background: #000; margin-top: 8px; cursor: pointer; }
+
+/* ── Bone age AI second opinion panel ──────────────────────────────── */
+.bone-age-ai-result { background: var(--surface2); border-radius: 12px; padding: 12px; margin-top: 2px; border: 1px solid var(--border2); }
+.bone-age-ai-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.bone-age-ai-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text2); margin: 10px 0 6px; }
+.bone-age-ai-carpal-row { display: flex; align-items: flex-start; gap: 10px; background: var(--surface); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; }
+.bone-age-ai-comparison { background: var(--surface); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+.comparison-title { font-size: 10px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+.comparison-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+.comparison-row:last-of-type { border-bottom: none; }
+.comparison-lbl { color: var(--text2); }
+.comparison-val { font-weight: 700; color: var(--text); }
+.bone-age-ai-loading { font-size: 11px; color: var(--text2); padding: 12px; display: flex; align-items: center; gap: 8px; background: var(--surface2); border-radius: 10px; }
+.bone-age-ai-error { font-size: 11px; color: var(--flag); padding: 10px; background: var(--flag-light); border-radius: 8px; }
+.bone-age-ai-caveat { font-size: 9.5px; color: var(--text3); background: var(--surface); border-radius: 8px; padding: 7px 9px; margin-bottom: 6px; line-height: 1.4; }
+.bone-age-ai-dicom-note { font-size: 10px; color: var(--measured-dark); background: var(--measured-light); border-radius: 8px; padding: 7px 9px; margin-bottom: 6px; line-height: 1.4; }
+.bone-age-ai-disclaimer { font-size: 9px; color: var(--text3); font-style: italic; line-height: 1.4; }
+.stage-lbl { font-size: 10px; font-weight: 600; color: var(--measured-dark); background: var(--measured-light); padding: 1px 6px; border-radius: 4px; }
+.spinner-sm { width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .warning-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--estimated-dark); margin-bottom: 10px; }
 
 /* ─── AI ASSISTANT ─── */

@@ -36,6 +36,7 @@ const APP = {
   illnessEvents: [], // illness_events rows for the active child, loaded when the Medical tab opens
   foodFavorites: [], // food_favorites rows for the active child — determines which cards show on the Nutrition grid
   customFoods: [], // custom_foods rows for the active child — parent-defined foods with manually-entered values
+  boneAgeAssessments: [], // bone_age_assessments rows for the active child
   familyHeightRecords: [], // family_height_records rows - reference only by default; see targetHeightFormula
   targetHeightFormula: 'parents', // 'parents' (validated, default) or 'extended' (exploratory) — see setTargetHeightFormula()
   aiChatHistory: [], // [{role:'user'|'assistant', content:'...'}] for the active child's AI coach conversation — reset on child switch, see askClaude()
@@ -3274,6 +3275,525 @@ async function deletePubertyEvent(id) {
 }
 
 // ══════════════════════════════════════════
+// BONE AGE ASSESSMENTS
+// X-ray upload + radiologist result entry + statistical interpretation.
+//
+// The statistical analysis follows the one-sample t-test framework from
+// the Greulich-Pyle reference literature — the same methodology used by
+// the Samitivej radiologists in Peem's Jan 2023 bone age report:
+//
+//   t = (bone_age_months - chrono_age_months) / sd_months
+//
+// Where sd_months is the population standard deviation for that
+// specific method/age cohort (taken directly from the radiologist's
+// report — we don't have to compute it, the report gives it to us).
+//
+// A |t| > 1.645 corresponds roughly to p < 0.10 (one-SD threshold);
+// |t| > 2 corresponds to p < 0.05. The GP literature commonly uses
+// ±1 SD as the "within normal limits" boundary and ±2 SD as clinically
+// significant advanced/delayed maturation.
+// ══════════════════════════════════════════
+
+let _xrayFileSelected = null; // holds the File object before upload
+
+function handleXrayFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _xrayFileSelected = file;
+
+  const zone = document.getElementById('xrayUploadZone');
+  zone.classList.add('has-file');
+  document.getElementById('xrayUploadLabel').textContent = file.name;
+
+  // Show image preview for image files (not PDFs)
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('xrayPreviewImg').src = e.target.result;
+      document.getElementById('xrayPreviewContainer').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function clearXraySelection() {
+  _xrayFileSelected = null;
+  document.getElementById('xrayFileInput').value = '';
+  document.getElementById('xrayUploadZone').classList.remove('has-file');
+  document.getElementById('xrayUploadLabel').textContent = 'Tap to upload X-ray image';
+  document.getElementById('xrayPreviewContainer').classList.add('hidden');
+}
+
+async function saveBoneAgeAssessment() {
+  const childId = activeChildId();
+  if (!childId) { showToast('⚠️', 'No active child selected'); return; }
+
+  const studyDate = document.getElementById('boneAgeStudyDate').value;
+  const boneAgeYears = parseInt(document.getElementById('boneAgeYears').value) || 0;
+  const boneAgeMonthsExtra = parseInt(document.getElementById('boneAgeMonths').value) || 0;
+  const sdMonths = parseFloat(document.getElementById('boneAgeSd').value) || null;
+  const method = document.getElementById('boneAgeMethod').value;
+  const doctor = document.getElementById('boneAgeDoctor').value.trim();
+  const notes = document.getElementById('boneAgeNotes').value.trim();
+
+  if (!studyDate) { showToast('⚠️', 'Study date is required'); return; }
+  if (boneAgeYears === 0 && boneAgeMonthsExtra === 0) { showToast('⚠️', 'Enter a bone age result'); return; }
+
+  const boneAgeMonthsTotal = boneAgeYears * 12 + boneAgeMonthsExtra;
+
+  // Compute chronological age at study date from the child's DOB
+  const child = APP.children[APP.activeChild];
+  let chronoAgeMonths = null;
+  if (child && child.date_of_birth) {
+    const dob = new Date(child.date_of_birth);
+    const study = new Date(studyDate);
+    chronoAgeMonths = parseFloat(((study - dob) / (1000 * 60 * 60 * 24 * 30.4375)).toFixed(1));
+  }
+
+  const saveBtn = document.getElementById('saveBoneAgeBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+
+  try {
+    // Upload X-ray to Supabase Storage if one was selected
+    let xrayStoragePath = null;
+    if (_xrayFileSelected) {
+      const ext = _xrayFileSelected.name.split('.').pop().toLowerCase();
+      const fileName = `${childId}/${Date.now()}.${ext}`;
+      const { data: uploadData, error: uploadError } = await sb.storage
+        .from('bone-xrays')
+        .upload(fileName, _xrayFileSelected, { contentType: _xrayFileSelected.type, upsert: false });
+
+      if (uploadError) {
+        showToast('⚠️', 'Image upload failed: ' + uploadError.message);
+        // Don't abort — save the record without the image
+      } else {
+        xrayStoragePath = uploadData.path;
+      }
+    }
+
+    const { data: record, error } = await sb.from('bone_age_assessments').insert({
+      child_id: childId,
+      study_date: studyDate,
+      bone_age_months: boneAgeMonthsTotal,
+      sd_months: sdMonths,
+      method,
+      chronological_age_months: chronoAgeMonths,
+      report_doctor: doctor || null,
+      notes: notes || null,
+      xray_storage_path: xrayStoragePath,
+      created_by: APP.session ? APP.session.user.id : null
+    }).select().single();
+
+    if (error) throw error;
+
+    APP.boneAgeAssessments = [record, ...(APP.boneAgeAssessments || [])];
+    await renderBoneAgeList();
+
+    // Clear the form
+    document.getElementById('boneAgeStudyDate').value = '';
+    document.getElementById('boneAgeYears').value = '';
+    document.getElementById('boneAgeMonths').value = '';
+    document.getElementById('boneAgeSd').value = '';
+    document.getElementById('boneAgeDoctor').value = '';
+    document.getElementById('boneAgeNotes').value = '';
+    clearXraySelection();
+    showToast('✅', 'Bone age record saved');
+  } catch (e) {
+    showToast('⚠️', 'Could not save: ' + e.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save bone age record';
+  }
+}
+
+async function loadBoneAgeAssessments() {
+  const childId = activeChildId();
+  if (!childId) return;
+  const { data, error } = await sb.from('bone_age_assessments')
+    .select('*').eq('child_id', childId).order('study_date', { ascending: false });
+  APP.boneAgeAssessments = (!error && data) ? data : [];
+  await renderBoneAgeList();
+}
+
+async function renderBoneAgeList() {
+  const el = document.getElementById('boneAgeList');
+  if (!el) return;
+  const records = APP.boneAgeAssessments || [];
+
+  if (records.length === 0) {
+    el.innerHTML = '<div class="log-list-empty" style="padding:14px 0;">No bone age assessments recorded yet.</div>';
+    return;
+  }
+
+  // Build all cards — need signed URLs for any X-ray images
+  const cardsHtml = await Promise.all(records.map(r => buildBoneAgeCard(r)));
+  el.innerHTML = cardsHtml.join('');
+}
+
+async function buildBoneAgeCard(r) {
+  const boneAgeYr = Math.floor(r.bone_age_months / 12);
+  const boneAgeMo = Math.round(r.bone_age_months % 12);
+  const boneAgeStr = `${boneAgeYr}y ${boneAgeMo}m`;
+
+  // Compute delta and statistical interpretation
+  let deltaHtml = '';
+  let sigBadge = '';
+  if (r.chronological_age_months) {
+    const delta = r.bone_age_months - r.chronological_age_months;
+    const deltaSign = delta >= 0 ? '+' : '';
+    const deltaClass = Math.abs(delta) <= 6 ? 'normal' : (delta < 0 ? 'delayed' : 'advanced');
+    const deltaLabel = Math.abs(delta) <= 6 ? 'Within normal range' : (delta < 0 ? 'Delayed' : 'Advanced');
+
+    const chronoYr = Math.floor(r.chronological_age_months / 12);
+    const chronoMo = Math.round(r.chronological_age_months % 12);
+
+    // t-score: how many SDs the delta represents
+    // Uses the SD from the report (which is the population SD for that age/method)
+    let tScore = null;
+    let sdLine = '';
+    if (r.sd_months) {
+      tScore = delta / r.sd_months;
+      const absT = Math.abs(tScore);
+      const significant = absT >= 2.0; // |t| >= 2 ≈ p < 0.05 with large n
+      sigBadge = `<span class="sig-badge ${significant ? 'significant' : 'not-significant'}">${significant ? '⚠ Significant' : '✓ Within 2 SD'}</span>`;
+      sdLine = `<div style="font-size:11px; color:var(--text2); margin-top:6px;">t-score: ${tScore.toFixed(2)} · SD from report: ${r.sd_months} months · ${Math.abs(delta).toFixed(1)} months ${delta < 0 ? 'behind' : 'ahead'}</div>`;
+    } else {
+      sigBadge = `<span class="sig-badge no-sd">No SD in report</span>`;
+    }
+
+    deltaHtml = `
+      <div class="bone-age-delta-strip">
+        <div class="bone-age-stat ${deltaClass}">
+          <div class="bone-age-stat-val">${deltaSign}${delta.toFixed(1)}mo</div>
+          <div class="bone-age-stat-lbl">Bone age delta</div>
+        </div>
+        <div class="bone-age-stat">
+          <div class="bone-age-stat-val">${boneAgeStr}</div>
+          <div class="bone-age-stat-lbl">Bone age</div>
+        </div>
+        <div class="bone-age-stat">
+          <div class="bone-age-stat-val">${chronoYr}y ${chronoMo}m</div>
+          <div class="bone-age-stat-lbl">Chronological age</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        ${sigBadge}
+        <span style="font-size:11px; color:var(--text2);">${deltaLabel} · ${r.method} method</span>
+      </div>
+      ${sdLine}`;
+  }
+
+  // X-ray image — get a signed URL (valid 60 min)
+  let xrayImgHtml = '';
+  if (r.xray_storage_path) {
+    try {
+      const { data: signed } = await sb.storage.from('bone-xrays').createSignedUrl(r.xray_storage_path, 3600);
+      if (signed && signed.signedUrl) {
+        xrayImgHtml = `<img class="xray-thumb" src="${signed.signedUrl}" alt="Bone age X-ray" onclick="window.open(this.src,'_blank')">`;
+      }
+    } catch (e) { /* signed URL failure is non-fatal */ }
+  }
+
+  const displayDate = new Date(r.study_date).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+
+  // AI analysis button and panel
+  const hasImage = !!r.xray_storage_path;
+  const hasAIResult = !!r.ai_analysis_result;
+
+  const aiButtonHtml = hasImage
+    ? `<button class="btn-secondary" id="aiBtn-${r.assessment_id}" style="font-size:11px; padding:7px 12px; margin-top:10px;" onclick="runBoneAgeAIAnalysis('${r.assessment_id}')">
+        🤖 ${hasAIResult ? 'Re-run AI Second Opinion' : 'Get AI Second Opinion'}
+       </button>`
+    : `<div style="font-size:10px; color:var(--text3); margin-top:8px;">Upload an X-ray image to enable AI second opinion</div>`;
+
+  const aiPanelInitialContent = hasAIResult
+    ? renderBoneAgeAIPanel(r.ai_analysis_result, r.bone_age_months, r.chronological_age_months, r.ai_analysis_date)
+    : '';
+
+  return `
+    <div class="bone-age-result-card">
+      <div class="bone-age-result-header">
+        <div>
+          <div style="font-size:13px; font-weight:700; color:var(--text);">Bone age: ${boneAgeStr}</div>
+          <div style="font-size:11px; color:var(--text2);">${displayDate}${r.report_doctor ? ' · ' + r.report_doctor : ''} · ${r.method || 'GP'}</div>
+        </div>
+        <button class="btn-link" style="font-size:11px; color:var(--flag);" onclick="deleteBoneAgeAssessment('${r.assessment_id}')">Remove</button>
+      </div>
+      <div class="bone-age-result-body">
+        ${deltaHtml}
+        ${r.notes ? `<div style="font-size:11px; color:var(--text2); margin-top:8px;">${r.notes}</div>` : ''}
+        ${xrayImgHtml}
+        ${aiButtonHtml}
+        <div id="aiPanel-${r.assessment_id}" class="${hasAIResult ? '' : 'hidden'}" style="margin-top:10px;">
+          ${aiPanelInitialContent}
+        </div>
+      </div>
+    </div>`;
+}
+
+async function deleteBoneAgeAssessment(id) {
+  if (!confirm('Remove this bone age record? The uploaded X-ray image will also be deleted. This cannot be undone.')) return;
+
+  const record = (APP.boneAgeAssessments || []).find(r => r.assessment_id === id);
+
+  if (record && record.xray_storage_path) {
+    await sb.storage.from('bone-xrays').remove([record.xray_storage_path]);
+  }
+
+  const { error } = await sb.from('bone_age_assessments').delete().eq('assessment_id', id);
+  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+
+  APP.boneAgeAssessments = (APP.boneAgeAssessments || []).filter(r => r.assessment_id !== id);
+  await renderBoneAgeList();
+  showToast('✅', 'Bone age record removed');
+}
+
+// ══════════════════════════════════════════
+// BONE AGE AI ANALYSIS — second opinion via Claude Vision
+//
+// Algorithm v2 corrections (from real case study validation — Peem Mar 2019
+// where v1 overestimated by 6 months and reversed the clinical conclusion):
+//
+//   v1 error 1: Counted a shadow as "triquetrum" → carpal overcounting
+//               → bone age overestimated → "normal" when it was "delayed"
+//   v1 error 2: Used TW3 pixel ratio calculations → systematic upward bias
+//               from JPEG compression vs DICOM
+//   v1 error 3: Reported single number (24.0mo) with false precision
+//
+//   v2 corrections in the Edge Function prompt:
+//   - Carpal count is PRIMARY anchor at age <48 months; uncertain → count fewer
+//   - GP holistic plate matching only, no pixel ratio measurements
+//   - Always output a range (≥6 month minimum uncertainty)
+//   - When uncertain between two readings → bias toward YOUNGER
+// ══════════════════════════════════════════
+
+async function runBoneAgeAIAnalysis(assessmentId) {
+  const record = (APP.boneAgeAssessments || []).find(r => r.assessment_id === assessmentId);
+  if (!record) { showToast('⚠️', 'Record not found'); return; }
+  if (!record.xray_storage_path) { showToast('⚠️', 'No X-ray image attached to this record'); return; }
+
+  // Update UI to loading state
+  const btn = document.getElementById(`aiBtn-${assessmentId}`);
+  const panel = document.getElementById(`aiPanel-${assessmentId}`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Analysing…'; }
+  if (panel) {
+    panel.classList.remove('hidden');
+    panel.innerHTML = `<div class="bone-age-ai-loading"><div class="spinner-sm"></div>Claude Vision is examining the X-ray using the GP framework…</div>`;
+  }
+
+  try {
+    // Step 1: Get a signed URL and fetch the image
+    const { data: signed } = await sb.storage.from('bone-xrays').createSignedUrl(record.xray_storage_path, 300);
+    if (!signed?.signedUrl) throw new Error('Could not access X-ray image');
+
+    const imgRes = await fetch(signed.signedUrl);
+    if (!imgRes.ok) throw new Error('Could not fetch X-ray image');
+
+    const blob = await imgRes.blob();
+    const mediaType = blob.type || 'image/jpeg';
+
+    // Step 2: Convert to base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    // Step 3: Send to Edge Function
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/bone-age-analysis`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${APP.session ? APP.session.access_token : ''}`
+      },
+      body: JSON.stringify({
+        image_base64: base64,
+        media_type: mediaType,
+        chronological_age_months: record.chronological_age_months,
+        sex: APP.children[APP.activeChild]?.sex || 'male',
+        assessment_id: assessmentId
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Analysis failed');
+
+    // Step 4: Update in-memory record + re-render
+    const idx = (APP.boneAgeAssessments || []).findIndex(r => r.assessment_id === assessmentId);
+    if (idx >= 0) {
+      APP.boneAgeAssessments[idx].ai_analysis_result = data.result;
+      APP.boneAgeAssessments[idx].ai_analysis_date = new Date().toISOString();
+    }
+
+    if (panel) {
+      panel.innerHTML = renderBoneAgeAIPanel(
+        data.result,
+        record.bone_age_months,
+        record.chronological_age_months,
+        record.ai_analysis_date
+      );
+    }
+
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 Re-analyse'; }
+    showToast('✅', 'AI second opinion complete');
+
+  } catch (e) {
+    console.error('[Bone Age AI]', e);
+    if (panel) panel.innerHTML = `<div class="bone-age-ai-error">⚠️ Analysis failed: ${e.message}. Please try again.</div>`;
+    if (btn) { btn.disabled = false; btn.textContent = '🤖 Get AI Second Opinion'; }
+    showToast('⚠️', 'AI analysis failed: ' + e.message);
+  }
+}
+
+function renderBoneAgeAIPanel(result, doctorBoneAgeMonths, chronologicalAgeMonths, analysisDate) {
+  if (!result) return '';
+
+  const est = result.bone_age_estimate || {};
+  const stats = result.statistical_analysis || {};
+  const carpals = result.carpal_analysis || {};
+  const epiObs = result.epiphyseal_observations || [];
+
+  // Format bone age range
+  const rangeLow = Math.floor((est.range_low_months || 0) / 12);
+  const rangeLowMo = Math.round((est.range_low_months || 0) % 12);
+  const rangeHigh = Math.floor((est.range_high_months || 0) / 12);
+  const rangeHighMo = Math.round((est.range_high_months || 0) % 12);
+  const bestYr = Math.floor((est.best_estimate_months || 0) / 12);
+  const bestMo = Math.round((est.best_estimate_months || 0) % 12);
+  const rangeStr = `${rangeLow}y${rangeLowMo > 0 ? rangeLowMo + 'm' : ''} – ${rangeHigh}y${rangeHighMo > 0 ? rangeHighMo + 'm' : ''}`;
+  const bestStr = `${bestYr}y ${bestMo}m`;
+
+  // Confidence badge
+  const confMap = { high: { cls: 'sig-badge not-significant', label: '✓ High confidence' }, medium: { cls: 'sig-badge no-sd', label: '~ Medium confidence' }, low: { cls: 'sig-badge significant', label: '⚠ Low confidence' } };
+  const confBadge = confMap[est.confidence] || confMap.low;
+
+  // Clinical significance badge
+  const sigMap = { normal: 'not-significant', borderline: 'no-sd', significant: 'significant' };
+  const sigCls = sigMap[stats.clinical_significance] || 'no-sd';
+  const sigLabel = stats.clinical_significance === 'normal' ? '✓ Within normal range' : stats.clinical_significance === 'borderline' ? '~ Borderline' : '⚠ Significant delay';
+
+  // Doctor vs AI comparison
+  let comparisonHtml = '';
+  if (doctorBoneAgeMonths && est.best_estimate_months) {
+    const diff = Math.abs(est.best_estimate_months - doctorBoneAgeMonths);
+    const diffSign = est.best_estimate_months >= doctorBoneAgeMonths ? '+' : '−';
+    const diffCls = diff <= 6 ? 'normal' : diff <= 12 ? '' : 'delayed';
+    const docYr = Math.floor(doctorBoneAgeMonths / 12);
+    const docMo = Math.round(doctorBoneAgeMonths % 12);
+    comparisonHtml = `
+      <div class="bone-age-ai-comparison">
+        <div class="comparison-title">AI vs Radiologist comparison</div>
+        <div class="comparison-row">
+          <span class="comparison-lbl">Radiologist (GP)</span>
+          <span class="comparison-val">${docYr}y ${docMo}m</span>
+        </div>
+        <div class="comparison-row">
+          <span class="comparison-lbl">AI best estimate</span>
+          <span class="comparison-val">${bestStr}</span>
+        </div>
+        <div class="comparison-row">
+          <span class="comparison-lbl">Difference</span>
+          <span class="comparison-val bone-age-stat-val ${diffCls}">${diffSign}${diff} months</span>
+        </div>
+        <div style="font-size:10px; color:var(--text2); margin-top:4px;">
+          ${diff <= 6 ? '✓ Within expected inter-rater variability (±6 months at this age)' : diff <= 12 ? '~ Outside typical variability — review carpal count and epiphyseal staging' : '⚠ Large discrepancy — AI may have miscounted carpals or misread JPEG artifacts'}
+        </div>
+      </div>`;
+  }
+
+  // Epiphyseal observations table
+  const appearanceLabel = { absent: '—', barely_visible: 'Barely visible', small_clear: 'Small, clear', well_formed: 'Well formed', wide_capping: 'Wide / capping' };
+  const obsRows = epiObs.map(o => `
+    <tr>
+      <td style="color:var(--text2);">${(o.bone_group || '').replace(/_/g, ' ')}</td>
+      <td><span class="stage-lbl" style="font-size:10px;">${appearanceLabel[o.appearance] || o.appearance}</span></td>
+      <td style="color:var(--text2); font-size:10px;">${o.observation || ''}</td>
+    </tr>`).join('');
+
+  const dateLabel = analysisDate ? new Date(analysisDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+  return `
+    <div class="bone-age-ai-result">
+      <div class="bone-age-ai-header">
+        <div style="font-size:11px; font-weight:700; color:var(--text);">🤖 AI Second Opinion</div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <span class="sig-badge ${confBadge.cls}">${confBadge.label}</span>
+          ${dateLabel ? `<span style="font-size:10px; color:var(--text3);">Run ${dateLabel}</span>` : ''}
+        </div>
+      </div>
+
+      <!-- Bone age estimate -->
+      <div class="bone-age-delta-strip">
+        <div class="bone-age-stat">
+          <div class="bone-age-stat-val" style="font-size:14px;">${bestStr}</div>
+          <div class="bone-age-stat-lbl">AI best estimate</div>
+        </div>
+        <div class="bone-age-stat">
+          <div class="bone-age-stat-val" style="font-size:12px; color:var(--text2);">${rangeStr}</div>
+          <div class="bone-age-stat-lbl">Range (≥6mo uncertainty)</div>
+        </div>
+        <div class="bone-age-stat">
+          <div class="bone-age-stat-val ${sigCls === 'not-significant' ? 'normal' : sigCls === 'significant' ? 'delayed' : ''}" style="font-size:12px;">${stats.sds_score != null ? (stats.sds_score >= 0 ? '+' : '') + stats.sds_score.toFixed(2) : '—'} SDS</div>
+          <div class="bone-age-stat-lbl">Bone age SDS</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+        <span class="sig-badge ${sigCls}">${sigLabel}</span>
+        ${stats.p_value_approx != null ? `<span style="font-size:10px; color:var(--text2);">p ≈ ${stats.p_value_approx.toFixed(3)} · SD ref: ${stats.population_sd_months}mo</span>` : ''}
+      </div>
+
+      <!-- Carpal count findings -->
+      <div class="bone-age-ai-section-title">Carpal bone count (primary anchor)</div>
+      <div class="bone-age-ai-carpal-row">
+        <div class="bone-age-stat" style="flex:0 0 auto; min-width:70px;">
+          <div class="bone-age-stat-val" style="font-size:20px;">${carpals.count_visible ?? '?'}/8</div>
+          <div class="bone-age-stat-lbl">Visible</div>
+        </div>
+        <div style="flex:1; font-size:10.5px; color:var(--text2); line-height:1.5;">
+          <div style="color:var(--text); font-weight:600; margin-bottom:2px;">Identified: ${(carpals.bones_identified || []).join(', ') || '—'}</div>
+          <div>${carpals.count_note || ''}</div>
+          <div style="margin-top:3px; color:var(--text3);">Confidence: ${carpals.count_confidence || '—'} · Age constraint from count: ${(carpals.age_range_constraint_months || []).join('–')} months</div>
+        </div>
+      </div>
+
+      <!-- Epiphyseal observations -->
+      ${obsRows ? `
+      <div class="bone-age-ai-section-title">Epiphyseal appearance (qualitative, GP method)</div>
+      <table style="width:100%; border-collapse:collapse; font-size:10px; margin-bottom:10px;">
+        <thead><tr style="background:var(--surface2);">
+          <th style="padding:4px 6px; text-align:left; color:var(--text2); font-weight:700;">Bone group</th>
+          <th style="padding:4px 6px; text-align:left; color:var(--text2); font-weight:700;">Appearance</th>
+          <th style="padding:4px 6px; text-align:left; color:var(--text2); font-weight:700;">Observation</th>
+        </tr></thead>
+        <tbody>${obsRows}</tbody>
+      </table>` : ''}
+
+      <!-- GP plate match -->
+      ${result.gp_plate_match ? `<div style="font-size:10.5px; color:var(--text2); margin-bottom:10px; padding:8px; background:var(--surface2); border-radius:8px;"><span style="color:var(--text); font-weight:600;">GP plate match: </span>${result.gp_plate_match}</div>` : ''}
+
+      <!-- AI vs Doctor comparison -->
+      ${comparisonHtml}
+
+      <!-- Reasoning -->
+      ${est.reasoning ? `<div style="font-size:10.5px; color:var(--text2); margin-bottom:8px; line-height:1.5;"><span style="color:var(--text); font-weight:600;">Reasoning: </span>${est.reasoning}</div>` : ''}
+
+      <!-- Image quality note -->
+      <div class="bone-age-ai-caveat">${result.image_quality_assessment || ''}</div>
+
+      <!-- DICOM note -->
+      <div class="bone-age-ai-dicom-note">
+        📡 <strong>DICOM support coming in next phase</strong> — uploading the original .dcm file will provide calibrated mm/pixel measurements, improving carpal boundary detection and epiphysis measurement precision by ~15–20%.
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="bone-age-ai-disclaimer">${result.clinical_caveat || 'Educational AI reference only. Not a clinical diagnosis.'}</div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
 // ILLNESS EVENTS (illness_events table) — replaces the old single
 // "illness days this month" number that was actually saved per
 // log_date despite the monthly label, a real UX mismatch a user
@@ -4012,7 +4532,12 @@ Guidelines:
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}` // Supabase Edge Functions expect this even for public/anon calls
+        // Send the real session JWT, not the publishable/anon key —
+        // the Edge Function uses this to verify the caller's identity
+        // and look up their monthly cap. Without a real session token,
+        // the function can't know who's calling, so server-side cap
+        // enforcement would be impossible.
+        'Authorization': `Bearer ${APP.session ? APP.session.access_token : ''}`
       },
       body: JSON.stringify({
         max_tokens: 1000,
@@ -4024,12 +4549,20 @@ Guidelines:
     hideThinking();
 
     if (data.error) {
-      // The API responded but with an error object (rate limit, bad
-      // request, etc.) rather than a network failure — previously this
-      // fell through to the generic "trouble responding" text with no
-      // way to tell the two cases apart while debugging.
-      console.error('[AI coach] API error:', data.error);
-      addBotMsg('⚠️ The AI service returned an error. Please try again in a moment.');
+      console.error('[AI coach] Proxy error:', data.error);
+      // Different error codes from the Edge Function get different
+      // user-facing messages — the server's message is already
+      // written for a parent to read, so we can surface it directly.
+      const code = data.error.code;
+      if (code === 'LIVE_AI_NOT_IN_PLAN') {
+        addBotMsg('Live AI isn\'t included in your current plan. Template mode is still available above — or upgrade to Premium or Pro to unlock live responses.');
+      } else if (code === 'MONTHLY_CAP_EXCEEDED') {
+        addBotMsg(`You've reached your monthly live AI limit (${data.error.cap} calls on your plan). It resets on the 1st of next month. Template mode is still available.`);
+      } else if (res.status === 401) {
+        addBotMsg('Your session has expired — please sign out and sign back in, then try again.');
+      } else {
+        addBotMsg('⚠️ The AI service returned an error. Please try again in a moment.');
+      }
       return;
     }
 
@@ -4083,6 +4616,7 @@ async function goTab(name) {
     await loadLabResults();
     await loadPubertyEvents();
     await loadIllnessEvents();
+    await loadBoneAgeAssessments();
   }
   if (name === 'AI') {
     if (!APP.aiCoachQuestions) {
