@@ -278,3 +278,16 @@ body {
 @media (min-width: 769px) {
   #adminHamburger { display: none; }
 }
+
+/* ── Metrics charts ──────────────────────────────────────────────── */
+.metrics-chart-wrap { width: 100%; overflow-x: auto; }
+.metrics-bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding: 0 4px 24px; position: relative; }
+.metrics-bar-col { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; min-width: 28px; position: relative; }
+.metrics-bar { width: 100%; border-radius: 4px 4px 0 0; background: var(--accent); transition: height 0.35s cubic-bezier(0.34,1.56,0.64,1); min-height: 2px; }
+.metrics-bar.ai-bar { background: var(--measured); }
+.metrics-bar.tier-free { background: var(--text3); }
+.metrics-bar.tier-premium { background: var(--measured); }
+.metrics-bar.tier-pro { background: var(--estimated); }
+.metrics-bar-lbl { font-size: 8px; font-family: var(--mono); color: var(--text3); text-align: center; white-space: nowrap; position: absolute; bottom: 0; }
+.metrics-bar-val { font-size: 9px; font-family: var(--mono); font-weight: 700; color: var(--text2); }
+.metrics-empty { font-size: 12px; color: var(--text3); padding: 24px 0; text-align: center; }

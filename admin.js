@@ -306,10 +306,140 @@ function setAdminSection(section, btn) {
   if (btn) btn.classList.add('active');
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
   document.getElementById('adminSection' + section.charAt(0).toUpperCase() + section.slice(1)).classList.add('active');
-  // Auto-close the mobile drawer when the user taps a nav item —
-  // the content is now visible, the drawer is no longer needed.
+  // Auto-close the mobile drawer when the user taps a nav item
   const sidebar = document.getElementById('adminSidebar');
   if (sidebar.classList.contains('mobile-open')) toggleMobileSidebar();
+  // Lazy-load metrics on first visit
+  if (section === 'metrics') loadMetrics();
+}
+
+// ══════════════════════════════════════════
+// METRICS — signup trends, AI usage, tier distribution
+// All queries run client-side against Supabase directly (data is
+// already loaded for users; AI usage is a new query). Charts are
+// pure HTML/CSS bar charts — no external charting library needed.
+// ══════════════════════════════════════════
+
+let _metricsLoaded = false;
+
+async function loadMetrics() {
+  if (_metricsLoaded) return;
+  _metricsLoaded = true;
+
+  // Run all three in parallel
+  const [signupRes, aiRes] = await Promise.all([
+    sb.from('user_accounts')
+      .select('created_at, subscription_tier')
+      .order('created_at', { ascending: false })
+      .limit(500),
+    sb.from('live_ai_usage_monthly')
+      .select('year_month, call_count')
+      .order('year_month', { ascending: false })
+      .limit(100)
+  ]);
+
+  renderSignupChart(signupRes.data || []);
+  renderAIUsageChart(aiRes.data || []);
+  renderTierChart(ADMIN.adminUsers || []);
+}
+
+function renderSignupChart(users) {
+  const el = document.getElementById('metricsSignupChart');
+  if (!el) return;
+
+  // Group signups by ISO week (Mon–Sun) for last 8 weeks
+  const now = new Date();
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i * 7);
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+    weekStart.setHours(0,0,0,0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    const label = weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const count = users.filter(u => {
+      const t = new Date(u.created_at);
+      return t >= weekStart && t < weekEnd;
+    }).length;
+    weeks.push({ label, count });
+  }
+
+  const max = Math.max(...weeks.map(w => w.count), 1);
+  const bars = weeks.map(w => {
+    const pct = Math.round((w.count / max) * 96);
+    return `<div class="metrics-bar-col">
+      <span class="metrics-bar-val">${w.count || ''}</span>
+      <div class="metrics-bar" style="height:${pct}px;"></div>
+      <span class="metrics-bar-lbl">${w.label}</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = users.length === 0
+    ? '<div class="metrics-empty">No signup data yet.</div>'
+    : `<div class="metrics-bar-chart">${bars}</div>`;
+}
+
+function renderAIUsageChart(rows) {
+  const el = document.getElementById('metricsAIChart');
+  if (!el) return;
+
+  if (rows.length === 0) {
+    el.innerHTML = '<div class="metrics-empty">No live AI usage recorded yet.</div>';
+    return;
+  }
+
+  // Aggregate by month
+  const byMonth = {};
+  rows.forEach(r => {
+    byMonth[r.year_month] = (byMonth[r.year_month] || 0) + r.call_count;
+  });
+
+  // Last 6 months
+  const months = Object.entries(byMonth)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-6);
+
+  const max = Math.max(...months.map(m => m[1]), 1);
+  const bars = months.map(([ym, count]) => {
+    const [y, m] = ym.split('-');
+    const label = new Date(+y, +m - 1, 1).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+    const pct = Math.round((count / max) * 96);
+    return `<div class="metrics-bar-col">
+      <span class="metrics-bar-val">${count}</span>
+      <div class="metrics-bar ai-bar" style="height:${pct}px;"></div>
+      <span class="metrics-bar-lbl">${label}</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="metrics-bar-chart">${bars}</div>`;
+}
+
+function renderTierChart(users) {
+  const el = document.getElementById('metricsTierChart');
+  if (!el) return;
+
+  const tiers = ['free', 'premium', 'pro'];
+  const counts = { free: 0, premium: 0, pro: 0 };
+  (users || []).forEach(u => { if (counts[u.subscription_tier] !== undefined) counts[u.subscription_tier]++; });
+
+  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+  const max = Math.max(...Object.values(counts), 1);
+
+  const bars = tiers.map(t => {
+    const pct = Math.round((counts[t] / max) * 96);
+    const share = Math.round((counts[t] / total) * 100);
+    return `<div class="metrics-bar-col">
+      <span class="metrics-bar-val">${counts[t]}</span>
+      <div class="metrics-bar tier-${t}" style="height:${pct}px;" title="${share}%"></div>
+      <span class="metrics-bar-lbl">${t} (${share}%)</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = total === 0
+    ? '<div class="metrics-empty">No user data.</div>'
+    : `<div class="metrics-bar-chart" style="max-width:240px;">${bars}</div>`;
 }
 
 function renderAdminUserList() {

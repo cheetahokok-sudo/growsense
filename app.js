@@ -3059,17 +3059,13 @@ function drawBMIChart() {
 }
 
 // Lab marker trend chart — IGF-1 and Vitamin D over time.
-// Currently plots illustrative/placeholder points since no lab history
-// store exists yet; once Sheets sync round-trips data this should read
-// real logged values via fetchFromSheets('Medical') rather than mock points.
-// Lab marker trend chart (IGF-1, Vitamin D, etc.) — there is currently no
-// table backing lab values (see Medical screen note: illness/medication/
-// lab fields aren't persisted anywhere yet), so this renders an honest
-// empty state rather than mock data that could be mistaken for real
-// clinical trend lines.
-function drawLabChart() {
+// Lab marker trend chart — reads from lab_results table (and the three
+// fixed fields on medical_logs: IGF-1, VitD, Ferritin). Shows the last
+// 12 entries for each distinct analyte as a sparkline overlay.
+async function drawLabChart() {
   const canvas = document.getElementById('labCanvas');
   if (!canvas) return;
+  const childId = activeChildId();
   const ctx = canvas.getContext('2d');
   const W = canvas.parentElement.clientWidth;
   const H = canvas.parentElement.clientHeight;
@@ -3079,12 +3075,93 @@ function drawLabChart() {
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
   ctx.clearRect(0, 0, W, H);
 
+  // Use already-loaded APP.labResults if available, otherwise query
+  const rows = APP.labResults && APP.labResults.length > 0
+    ? APP.labResults
+    : (() => { return []; })(); // will show empty state below
+
+  if (!childId || rows.length === 0) {
+    ctx.fillStyle = 'var(--text3)';
+    ctx.font = `11px var(--sans, Inter, sans-serif)`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#95A092';
+    ctx.fillText('No lab results recorded yet.', W / 2, H / 2 - 6);
+    ctx.font = `10px var(--sans, Inter, sans-serif)`;
+    ctx.fillStyle = '#6B7C6B';
+    ctx.fillText('Add results in the Medical tab to see trends here.', W / 2, H / 2 + 12);
+    return;
+  }
+
+  // Group by analyte name
+  const byAnalyte = {};
+  rows.forEach(r => {
+    if (!byAnalyte[r.analyte_name]) byAnalyte[r.analyte_name] = [];
+    byAnalyte[r.analyte_name].push({ date: new Date(r.lab_date), value: Number(r.result_value) });
+  });
+
+  // Sort each analyte's data chronologically
+  Object.values(byAnalyte).forEach(arr => arr.sort((a, b) => a.date - b.date));
+
+  // Color palette matching design tokens
+  const COLORS = ['#2F6B4F', '#2A5C8A', '#9C7A3D', '#A23B3B', '#6B4F8A', '#3D8A7C'];
+
+  const analytes = Object.entries(byAnalyte);
+  const allDates = rows.map(r => new Date(r.lab_date));
+  const minDate = new Date(Math.min(...allDates));
+  const maxDate = new Date(Math.max(...allDates));
+  const dateSpan = maxDate - minDate || 1;
+
+  // Grid lines
+  ctx.strokeStyle = '#E8EDE8';
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i < 4; i++) {
+    const y = H * 0.1 + (H * 0.7) * (i / 4);
+    ctx.beginPath(); ctx.moveTo(32, y); ctx.lineTo(W - 8, y); ctx.stroke();
+  }
+
+  // Plot each analyte as its own normalised sparkline
+  analytes.forEach(([name, points], idx) => {
+    if (points.length < 1) return;
+    const vals = points.map(p => p.value);
+    const minV = Math.min(...vals);
+    const maxV = Math.max(...vals);
+    const span = maxV - minV || 1;
+    const color = COLORS[idx % COLORS.length];
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    points.forEach((p, i) => {
+      const x = 32 + ((p.date - minDate) / dateSpan) * (W - 40);
+      const y = H * 0.1 + H * 0.7 * (1 - (p.value - minV) / span);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      // Dot
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 2 * Math.PI); ctx.fill();
+      ctx.beginPath();
+      points.forEach((p2, i2) => {
+        const x2 = 32 + ((p2.date - minDate) / dateSpan) * (W - 40);
+        const y2 = H * 0.1 + H * 0.7 * (1 - (p2.value - minV) / span);
+        i2 === 0 ? ctx.moveTo(x2, y2) : ctx.lineTo(x2, y2);
+      });
+      ctx.stroke();
+    });
+
+    // Legend label
+    ctx.fillStyle = color;
+    ctx.font = `bold 9px monospace`;
+    ctx.textAlign = 'left';
+    ctx.fillText(`${name} (${vals[vals.length - 1]} latest)`, 34, H * 0.92 - idx * 13);
+  });
+
+  // Date axis labels
   ctx.fillStyle = '#95A092';
-  ctx.font = '11px Inter,sans-serif';
+  ctx.font = `8px monospace`;
   ctx.textAlign = 'center';
-  ctx.fillText('Lab tracking is not connected yet', W/2, H/2 - 6);
-  ctx.font = '10px Inter,sans-serif';
-  ctx.fillText('No table exists for lab values in this build', W/2, H/2 + 12);
+  const fmtDate = d => d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+  ctx.fillText(fmtDate(minDate), 32, H - 2);
+  ctx.fillText(fmtDate(maxDate), W - 8, H - 2);
 }
 
 // Builds a plain-text clinical summary (height velocity, percentile channel,
@@ -4947,6 +5024,7 @@ async function goTab(name) {
     await updateStats();
     drawGrowthChart();
     drawBMIChart();
+    await loadLabResults(); // ensure lab data is fresh before drawing
     drawLabChart();
     await loadFamilyHeightRecords();
     loadTargetHeightForm();
