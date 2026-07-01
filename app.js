@@ -3486,11 +3486,13 @@ async function buildBoneAgeCard(r) {
 
   // X-ray image — get a signed URL (valid 60 min)
   let xrayImgHtml = '';
+  let xraySignedUrl = null;
   if (r.xray_storage_path) {
     try {
       const { data: signed } = await sb.storage.from('bone-xrays').createSignedUrl(r.xray_storage_path, 3600);
       if (signed && signed.signedUrl) {
         xrayImgHtml = `<img class="xray-thumb" src="${signed.signedUrl}" alt="Bone age X-ray" onclick="window.open(this.src,'_blank')">`;
+        xraySignedUrl = signed.signedUrl; // also used for the AI annotation overlay
       }
     } catch (e) { /* signed URL failure is non-fatal */ }
   }
@@ -3508,7 +3510,7 @@ async function buildBoneAgeCard(r) {
     : `<div style="font-size:10px; color:var(--text3); margin-top:8px;">Upload an X-ray image to enable AI second opinion</div>`;
 
   const aiPanelInitialContent = hasAIResult
-    ? renderBoneAgeAIPanel(r.ai_analysis_result, r.bone_age_months, r.chronological_age_months, r.ai_analysis_date)
+    ? renderBoneAgeAIPanel(r.ai_analysis_result, r.bone_age_months, r.chronological_age_months, r.ai_analysis_date, xraySignedUrl)
     : '';
 
   return `
@@ -3660,7 +3662,8 @@ async function runBoneAgeAIAnalysis(assessmentId) {
         data.result,
         record.bone_age_months,
         record.chronological_age_months,
-        record.ai_analysis_date
+        record.ai_analysis_date,
+        signed.signedUrl
       );
     }
 
@@ -3675,7 +3678,134 @@ async function runBoneAgeAIAnalysis(assessmentId) {
   }
 }
 
-function renderBoneAgeAIPanel(result, doctorBoneAgeMonths, chronologicalAgeMonths, analysisDate) {
+function buildAnnotationOverlaySVG(aiResult) {
+  if (!aiResult) return '';
+  const carpals = aiResult.carpal_analysis || {};
+  const epiObs = aiResult.epiphyseal_observations || [];
+
+  // Color map keyed to the qualitative appearance descriptors Claude returns
+  const C = {
+    absent:        '#555',
+    barely_visible:'#00bcd4',
+    small_clear:   '#4caf50',
+    well_formed:   '#ff9800',
+    wide_capping:  '#f44336'
+  };
+
+  const getColor = (boneGroup) => {
+    const obs = epiObs.find(o => o.bone_group === boneGroup);
+    return C[obs?.appearance] || '#888';
+  };
+  const getLabel = (boneGroup) => {
+    const obs = epiObs.find(o => o.bone_group === boneGroup);
+    return (obs?.appearance || '').replace(/_/g, ' ');
+  };
+
+  // Which individual carpal bones were identified
+  const ids = (carpals.bones_identified || []).map(b => b.toLowerCase());
+  const hasCap  = ids.some(b => b.includes('capitate'));
+  const hasHam  = ids.some(b => b.includes('hamate'));
+  const hasTrq  = ids.some(b => b.includes('triquetrum'));
+  const hasLun  = ids.some(b => b.includes('lunate'));
+  const hasScap = ids.some(b => b.includes('scaphoid'));
+
+  const rC  = getColor('distal_radius');
+  const mC  = getColor('metacarpals');
+  const ppC = getColor('proximal_phalanges');
+  const mpC = getColor('middle_phalanges');
+  const dpC = getColor('distal_phalanges');
+
+  // All coordinates are in a 0-100 viewBox matching the X-ray's
+  // standard orientation (left hand PA: wrist at bottom, thumb right).
+  // Positions are approximate anatomical percentages — accurate enough
+  // to visually guide the user to the right region even though they're
+  // not pixel-calibrated from DICOM.
+  return `
+<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"
+  style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
+
+  <!-- Distal radius band -->
+  <rect x="33" y="79" width="23" height="5" rx="1"
+    fill="${rC}18" stroke="${rC}" stroke-width="0.6" stroke-dasharray="2,1.5"/>
+  <text x="32" y="81" fill="${rC}" font-size="3.2" font-family="monospace"
+    text-anchor="end" font-weight="bold">Radius</text>
+  <text x="32" y="84.5" fill="${rC}" font-size="2.5" font-family="monospace"
+    text-anchor="end" opacity="0.85">${getLabel('distal_radius')}</text>
+  <line x1="32.5" y1="81.5" x2="33" y2="81.5" stroke="${rC}" stroke-width="0.4"/>
+
+  <!-- Carpal region ellipse -->
+  <ellipse cx="46" cy="73" rx="16" ry="7.5"
+    fill="#FFD70010" stroke="#FFD700" stroke-width="0.7" stroke-dasharray="2.5,2"/>
+  <text x="64" y="70" fill="#FFD700" font-size="3.2" font-family="monospace"
+    font-weight="bold">Carpals</text>
+  <text x="64" y="73.5" fill="#FFD700" font-size="2.5" font-family="monospace"
+    opacity="0.85">${carpals.count_visible || 0}/8 found</text>
+  <line x1="62" y1="72" x2="63.5" y2="71.5" stroke="#FFD700" stroke-width="0.4"/>
+
+  <!-- Individual carpal circles -->
+  ${hasCap  ? `<circle cx="51" cy="72" r="2.8" fill="#FFD70028" stroke="#FFD700" stroke-width="0.8"/>
+    <text x="51" y="77.5" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Cap</text>` : ''}
+  ${hasHam  ? `<circle cx="43" cy="74.5" r="2.3" fill="#FFD70028" stroke="#FFD700" stroke-width="0.8"/>
+    <text x="43" y="79.5" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Ham</text>` : ''}
+  ${hasTrq  ? `<circle cx="36" cy="76.5" r="2" fill="#FFD70028" stroke="#FFD700" stroke-width="0.7" stroke-dasharray="1.5,1"/>
+    <text x="36" y="81" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Triq</text>` : ''}
+  ${hasLun  ? `<circle cx="58" cy="71" r="2" fill="#FFD70028" stroke="#FFD700" stroke-width="0.7"/>
+    <text x="58" y="75.5" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Lun</text>` : ''}
+  ${hasScap ? `<circle cx="55" cy="68" r="2" fill="#FFD70028" stroke="#FFD700" stroke-width="0.7"/>
+    <text x="55" y="72.5" fill="#FFD700" font-size="2.3" text-anchor="middle" font-family="monospace">Scap</text>` : ''}
+
+  <!-- Metacarpal distal epiphyses -->
+  <ellipse cx="44" cy="57" rx="20" ry="5.5"
+    fill="${mC}18" stroke="${mC}" stroke-width="0.6" stroke-dasharray="2,1.5"/>
+  <text x="66" y="54.5" fill="${mC}" font-size="3.2" font-family="monospace"
+    font-weight="bold">Metacarpals</text>
+  <text x="66" y="58.5" fill="${mC}" font-size="2.5" font-family="monospace"
+    opacity="0.85">${getLabel('metacarpals')}</text>
+  <line x1="64" y1="57" x2="65.5" y2="56.5" stroke="${mC}" stroke-width="0.4"/>
+
+  <!-- Proximal phalangeal epiphyses -->
+  <ellipse cx="43" cy="43" rx="19" ry="5"
+    fill="${ppC}18" stroke="${ppC}" stroke-width="0.6" stroke-dasharray="2,1.5"/>
+  <text x="64" y="40.5" fill="${ppC}" font-size="3.2" font-family="monospace"
+    font-weight="bold">Prox. phalan.</text>
+  <text x="64" y="44.5" fill="${ppC}" font-size="2.5" font-family="monospace"
+    opacity="0.85">${getLabel('proximal_phalanges')}</text>
+  <line x1="62" y1="43" x2="63.5" y2="42.5" stroke="${ppC}" stroke-width="0.4"/>
+
+  <!-- Middle phalangeal epiphyses -->
+  <ellipse cx="43" cy="31" rx="17" ry="4.5"
+    fill="${mpC}18" stroke="${mpC}" stroke-width="0.6" stroke-dasharray="2,1.5"/>
+  <text x="62" y="28.5" fill="${mpC}" font-size="3.2" font-family="monospace"
+    font-weight="bold">Mid. phalan.</text>
+  <text x="62" y="32.5" fill="${mpC}" font-size="2.5" font-family="monospace"
+    opacity="0.85">${getLabel('middle_phalanges')}</text>
+  <line x1="60" y1="31" x2="61.5" y2="30.5" stroke="${mpC}" stroke-width="0.4"/>
+
+  <!-- Distal phalangeal epiphyses -->
+  <ellipse cx="43" cy="18" rx="14" ry="4"
+    fill="${dpC}18" stroke="${dpC}" stroke-width="0.6" stroke-dasharray="2,1.5"/>
+  <text x="59" y="15.5" fill="${dpC}" font-size="3.2" font-family="monospace"
+    font-weight="bold">Dist. phalan.</text>
+  <text x="59" y="19.5" fill="${dpC}" font-size="2.5" font-family="monospace"
+    opacity="0.85">${getLabel('distal_phalanges')}</text>
+  <line x1="57" y1="18" x2="58.5" y2="17.5" stroke="${dpC}" stroke-width="0.4"/>
+
+  <!-- Legend panel bottom-left -->
+  <rect x="1" y="88" width="40" height="11" rx="1.5" fill="#000000aa"/>
+  <text x="2.5" y="91.5" fill="#aaa" font-size="2.4" font-family="monospace"
+    font-weight="bold">APPEARANCE SCALE</text>
+  <circle cx="4" cy="94.5" r="1.2" fill="#00bcd4"/>
+  <text x="6.5" y="95.5" fill="#ccc" font-size="2.2" font-family="monospace">barely visible</text>
+  <circle cx="21" cy="94.5" r="1.2" fill="#4caf50"/>
+  <text x="23.5" y="95.5" fill="#ccc" font-size="2.2" font-family="monospace">small, clear</text>
+  <circle cx="4" cy="98" r="1.2" fill="#ff9800"/>
+  <text x="6.5" y="99" fill="#ccc" font-size="2.2" font-family="monospace">well formed</text>
+  <circle cx="21" cy="98" r="1.2" fill="#f44336"/>
+  <text x="23.5" y="99" fill="#ccc" font-size="2.2" font-family="monospace">wide/capping</text>
+</svg>`;
+}
+
+function renderBoneAgeAIPanel(result, doctorBoneAgeMonths, chronologicalAgeMonths, analysisDate, xraySignedUrl) {
   if (!result) return '';
 
   const est = result.bone_age_estimate || {};
@@ -3751,6 +3881,14 @@ function renderBoneAgeAIPanel(result, doctorBoneAgeMonths, chronologicalAgeMonth
           ${dateLabel ? `<span style="font-size:10px; color:var(--text3);">Run ${dateLabel}</span>` : ''}
         </div>
       </div>
+
+      <!-- Annotated X-ray overlay (if image available) -->
+      ${xraySignedUrl ? `
+      <div class="xray-annotated-container">
+        <img src="${xraySignedUrl}" class="xray-annotated-img" alt="Bone age X-ray with AI annotations">
+        ${buildAnnotationOverlaySVG(result)}
+        <div class="xray-annotated-label">AI annotation overlay · Regions are approximate anatomical positions</div>
+      </div>` : ''}
 
       <!-- Bone age estimate -->
       <div class="bone-age-delta-strip">
