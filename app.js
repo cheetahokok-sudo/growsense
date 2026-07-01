@@ -731,6 +731,126 @@ function ageFromDOB(dobStr) {
   return age;
 }
 
+// ══════════════════════════════════════════
+// PROTEIN TARGET — dynamic, evidence-based
+//
+// Source: Institute of Medicine (2005) Dietary Reference Intakes —
+// Energy, Carbohydrate, Fiber, Fat, Fatty Acids, Protein, and Amino
+// Acids. National Academies Press. Table 10-21 (RDA for protein).
+//
+// Source: WHO/FAO/UNU (2007) Protein and Amino Acid Requirements in
+// Human Nutrition. Technical Report Series 935. Table 9 (safe levels
+// of protein intake, children).
+//
+// Source: Pediatric Society of Thailand / Thai Department of Health
+// (กรมอนามัย) — follows WHO DRI framework; no separate Thai-specific
+// per-kg rates published; weight-based calculation from DRI is used
+// as the standard for Thai pediatric practice.
+//
+// METHOD: RDA = per-kg rate × body weight, floored by age group
+// minimum. When body weight is unavailable, the age-group minimum is
+// used as the best available estimate rather than returning nothing.
+//
+// WHY NOT A FIXED VALUE:
+// A 5-year-old at 18kg needs ~17g/day (0.95 × 18).
+// A 9-year-old at 29kg needs ~34g/day (max of 0.95×29=28g and the
+// 9-13yo minimum of 34g).
+// The same 44g figure that was hardcoded before is accurate only for
+// a ~46kg child in the 9-13yo group — wrong for younger or lighter
+// children, which is the majority of GrowSense users.
+// ══════════════════════════════════════════
+function calcProteinTargetG(dobStr, weightKg, biologicalSex) {
+  // Age in months from DOB
+  const ageMonths = dobStr
+    ? (new Date() - new Date(dobStr)) / (1000 * 60 * 60 * 24 * 30.4375)
+    : null;
+  const ageYears = ageMonths ? ageMonths / 12 : null;
+  const isMale = (biologicalSex || 'male').toLowerCase() !== 'female';
+
+  // DRI per-kg rates and age-group minimum floors (IOM 2005, Table 10-21)
+  let perKgRate, minimumG;
+
+  if (ageYears === null || ageYears < 1) {
+    perKgRate = 1.52; minimumG = 11;                // 7-12 months
+  } else if (ageYears < 4) {
+    perKgRate = 1.05; minimumG = 13;                // 1-3 years
+  } else if (ageYears < 9) {
+    perKgRate = 0.95; minimumG = 19;                // 4-8 years
+  } else if (ageYears < 14) {
+    perKgRate = 0.95; minimumG = 34;                // 9-13 years
+  } else if (isMale) {
+    perKgRate = 0.85; minimumG = 52;                // 14-18 years, male
+  } else {
+    perKgRate = 0.85; minimumG = 46;                // 14-18 years, female
+  }
+
+  const weightBased = weightKg ? Math.round(weightKg * perKgRate) : null;
+  return weightBased !== null ? Math.max(weightBased, minimumG) : minimumG;
+}
+
+// Growth-optimized protein target — ~1.26× standard RDA.
+// Evidence basis:
+//   · IAAO stable isotope method (Hudson et al., Nutrients 2021, PMID 34063030)
+//     suggests the true requirement for children 6-10yr is ~1.55 g/kg/day —
+//     60% above the DRI nitrogen-balance estimate. 1.2 g/kg is conservative
+//     and practical.
+//   · Hoppe et al. (EJCN 2004, PMID 15220943): protein 20-30% above RDA
+//     significantly elevated serum IGF-1 in prepubertal boys. IGF-1 correlates
+//     with height velocity in prepubertal children (Michaelsen et al. 2012).
+//   · Review: increases of 70-150% above PRI showed positive trend with IGF-1
+//     in 8-15yr children (Nutrients 2023;15(7):1683, PMID 37049522).
+//   · Safety ceiling: Pediatric sports nutrition guidelines place 2.5 g/kg as
+//     the kidney-safety upper limit for healthy children; 1.2-1.5 g/kg is
+//     routinely consumed by active children in observational data with no
+//     adverse effects noted. ACSM/DC recommend 1.2-2.0 g/kg for physically
+//     active individuals including adolescents.
+function calcProteinBoostTargetG(dobStr, weightKg, biologicalSex) {
+  const standard = calcProteinTargetG(dobStr, weightKg, biologicalSex);
+  const ageMonths = dobStr
+    ? (new Date() - new Date(dobStr)) / (1000 * 60 * 60 * 24 * 30.4375)
+    : null;
+  const ageYears = ageMonths ? ageMonths / 12 : null;
+
+  // Safe upper ceiling per age (kidney solute load consideration for young
+  // children; relaxed toward standard athletic guidance for older)
+  let boostPerKg, safeMaxPerKg;
+  if (ageYears === null || ageYears < 4) {
+    boostPerKg = 1.2; safeMaxPerKg = 1.3;  // conservative for under-4
+  } else if (ageYears < 14) {
+    boostPerKg = 1.2; safeMaxPerKg = 1.5;  // 4-13yr: IAAO-informed, well within safe range
+  } else {
+    boostPerKg = 1.2; safeMaxPerKg = 1.6;  // 14-18yr: approaching athletic guidance
+  }
+
+  const boostWeightBased = weightKg ? Math.round(weightKg * boostPerKg) : null;
+  const safeMax = weightKg ? Math.round(weightKg * safeMaxPerKg) : null;
+  // Floor: boost must be at least the standard target
+  const boost = boostWeightBased !== null
+    ? Math.max(boostWeightBased, standard)
+    : Math.round(standard * 1.26);
+  return safeMax !== null ? Math.min(boost, safeMax) : boost;
+}
+
+// Helper: get the active child's protein targets using their profile.
+// Returns { standard, boost } in grams — both displayed in the UI.
+function activeChildProteinTargets() {
+  const c = APP.children[APP.activeChild];
+  if (!c) return { standard: 34, boost: 42 }; // 9-13yr fallback
+  // Latest weight from the already-loaded measurements array (loaded by
+  // refreshActiveChildHistory on tab switch — no extra query needed)
+  const latestWeight = (APP.activeChildMeasurements || [])[0]?.mass_weight_kg || null;
+  const std  = calcProteinTargetG(c.date_of_birth, latestWeight, c.biological_sex);
+  const boost = calcProteinBoostTargetG(c.date_of_birth, latestWeight, c.biological_sex);
+  return { standard: std, boost };
+}
+
+// Legacy single-value helper — returns the boost target as the "working
+// target" used by the readiness ring (so 100% = growth-optimized intake).
+function activeChildProteinTarget() {
+  return activeChildProteinTargets().boost;
+}
+
+
 function renderChildSwitcher() {
   const sw = document.getElementById('childSwitcher');
   sw.innerHTML = '';
@@ -1918,16 +2038,46 @@ function renderSleepTimeline() {
 // ══════════════════════════════════════════
 function updateHUD() {
   const s = currentState();
-  const pR = Math.min(s.protein/44, 1);
-  const cR = Math.min(s.calcium/1300, 1);
-  const wR = Math.min(s.water/8, 1);
-  const nutPct = pR*0.4 + cR*0.4 + wR*0.2;
+  const { standard: proteinStd, boost: proteinBoost } = activeChildProteinTargets();
 
-  const hR = Math.min(s.hanging/30, 1);
-  const jR = Math.min(s.jumps/40, 1);
-  const yR = Math.min(s.yogaMin/20, 1);
-  const actPct = hR*0.4 + jR*0.4 + yR*0.2;
+  // Update the protein label to show both values
+  const lbl = document.getElementById('proteinTargetLabel');
+  if (lbl) lbl.innerHTML = `Standard (WHO/DRI): <b>${proteinStd}g</b> &nbsp;·&nbsp; Growth target: <b>${proteinBoost}g</b>`;
 
+  // ── Growth-velocity optimized readiness scoring ───────────────────
+  // Protein ring uses the growth target (boost) as 100% reference,
+  // so the ring shows real progress toward the growth-optimized intake.
+  const pR = Math.min(s.protein / proteinBoost, 1);
+
+  // Calcium weight raised (50% of nutrition subscore) — rate-limiting
+  // substrate for bone mineralization. Bonjour et al. (1991) established
+  // calcium as the primary limiting nutrient for prepubertal bone accrual.
+  const cR = Math.min(s.calcium / 1300, 1);
+  const wR = Math.min(s.water / 8, 1);
+
+  // Nutrition subscore: Calcium 50%, Protein 30%, Water 20%
+  // (was 40/40/20 — calcium raised relative to protein because calcium
+  // is the direct mineral substrate for hydroxyapatite crystal formation
+  // in the growth plate, while protein acts via the IGF-1 axis which
+  // has a ceiling effect above ~1.2 g/kg)
+  const nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
+
+  // Impact loading (box jumps) raised to 55% of activity subscore —
+  // vertical impact is the most potent mechano-transductive stimulus for
+  // periosteal bone apposition and growth plate loading.
+  // (Forwood 1996, Bone; Bass et al. 1998, JBMR)
+  const hR = Math.min(s.hanging / 30, 1);
+  const jR = Math.min(s.jumps / 40, 1);
+  const yR = Math.min(s.yogaMin / 20, 1);
+  // Activity subscore: Jumps 55%, Hanging 25%, Yoga 20%
+  const actPct = hR * 0.25 + jR * 0.55 + yR * 0.20;
+
+  // Overall: Sleep 40%, Nutrition 30%, Activity 30%
+  // Sleep raised to 40% (was 30%) — 70-80% of GH secretion occurs
+  // during sleep (Van Cauter & Copinschi 2000, Sleep Med Rev).
+  // GH drives IGF-1, which directly stimulates chondrocyte proliferation
+  // in the growth plate — making sleep the single highest-leverage
+  // variable for height velocity in prepubertal children.
   const bed = document.getElementById('sleepBed').value.split(':').map(Number);
   const wake = document.getElementById('sleepWake').value.split(':').map(Number);
   let bedM = bed[0]*60+bed[1], wakeM = wake[0]*60+wake[1];
@@ -1939,7 +2089,10 @@ function updateHUD() {
   const wakeR = Math.max(0, 1 - s.nightWakes * 0.25);
   const slpPct = durR*0.35 + onTimeR*0.4 + wakeR*0.25;
 
-  const grs = Math.round(nutPct*35 + actPct*35 + slpPct*30);
+  // Growth-velocity optimized overall weights:
+  // Sleep 40% · Activity 30% · Nutrition 30%
+  // (previous: 35/35/30 — sleep raised, activity/nutrition reduced)
+  const grs = Math.round(nutPct*30 + actPct*30 + slpPct*40);
 
   // Rings (r=47→circumference=295, r=36→226, r=25→157)
   document.getElementById('ring1').style.strokeDashoffset = 295*(1-nutPct);
@@ -2199,21 +2352,28 @@ async function updateStats() {
     // meant to be a durable clinical value anyway).
     const dailyScores = allDates.map(date => {
       const n = nutByDate[date], sl = sleepByDate[date], a = actByDate[date];
-      const pR = n ? Math.min((n.total_protein_g||0)/44, 1) : 0;
+      const child = APP.children[APP.activeChild];
+      const analyticProteinTarget = child
+        ? calcProteinTargetG(child.date_of_birth, n?.mass_weight_kg || null, child.biological_sex)
+        : 34;
+      const pR = n ? Math.min((n.total_protein_g||0) / analyticProteinTarget, 1) : 0;
       const cR = n ? Math.min((n.calcium_mg||0)/1300, 1) : 0;
       const wR = n ? Math.min((n.fluids_ml||0)/2000, 1) : 0;
-      const nutPct = pR*0.4 + cR*0.4 + wR*0.2;
+      // Growth-velocity weights: Calcium 50%, Protein 30%, Water 20%
+      const nutPct = pR*0.30 + cR*0.50 + wR*0.20;
 
       const hR = a ? Math.min((a.hanging_decompression_sec||0)/30, 1) : 0;
       const jR = a ? Math.min((a.box_jumps_reps||0)/40, 1) : 0;
       const yR = a ? Math.min((a.stretching_yoga_duration_min||0)/20, 1) : 0;
-      const actPct = hR*0.4 + jR*0.4 + yR*0.2;
+      // Growth-velocity activity weights: Jumps 55%, Hanging 25%, Yoga 20%
+      const actPct = hR*0.25 + jR*0.55 + yR*0.20;
 
       const durR = sl ? Math.min((sl.total_sleep_min||0)/(9.5*60), 1) : 0;
       const effR = sl ? (sl.sleep_efficiency_score||0)/100 : 0;
       const slpPct = durR*0.6 + effR*0.4;
 
-      return nutPct*35 + actPct*35 + slpPct*30;
+      // Growth-velocity overall weights: Sleep 40%, Activity 30%, Nutrition 30%
+      return nutPct*30 + actPct*30 + slpPct*40;
     });
     const avgScore = dailyScores.reduce((a,b)=>a+b,0) / dailyScores.length;
     document.getElementById('avgGRS').textContent = Math.round(avgScore);
@@ -3085,9 +3245,13 @@ async function loadLabResults() {
     .select('*')
     .eq('child_id', childId)
     .order('lab_date', { ascending: false })
-    .limit(20); // most-recent-first, capped so the Medical screen doesn't grow unbounded for a child with years of history
+    .limit(20);
 
-  if (error) { listEl.innerHTML = ''; return; }
+  if (error) {
+    console.error('[Lab Results] Load failed:', error);
+    listEl.innerHTML = `<div class="log-list-empty" style="color:var(--flag);">Could not load lab results: ${error.message}</div>`;
+    return;
+  }
   APP.labResults = data || [];
   renderLabResultsList();
 }
@@ -4671,7 +4835,7 @@ ${growthLines.join('\n')}
 Today's readiness reading: ${grs}/100 (a same-day input score, not a diagnostic measure — single days carry little signal on their own)
 
 Today's logged inputs:
-- Protein: ${s.protein}g (target ~44g) | Calcium: ${s.calcium}mg (target ~1300mg) | Water: ${s.water}/8 glasses
+- Protein: ${s.protein}g | Standard (WHO/DRI): ~${activeChildProteinTargets().standard}g · Growth-optimized: ~${activeChildProteinTargets().boost}g (1.2 g/kg, IAAO-method evidence: Hudson et al. Nutrients 2021) | Calcium: ${s.calcium}mg (target ~1300mg) | Water: ${s.water}/8 glasses
 - Bar hanging: ${s.hanging}s | Box jumps: ${s.jumps} reps | Yoga/stretching: ${s.yogaMin} min
 - Bedtime: ${s.bed} | Wake: ${s.wake} | Total sleep: ${totalSleep} | Night wake-ups: ${s.nightWakes}
 - Corticosteroid use level: ${s.steroid} (0=none, 1=inhaled, 2=oral)
