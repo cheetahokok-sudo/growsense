@@ -491,41 +491,48 @@
         </div>
       </div>
 
-      <!-- SGA catch-up growth tracking — only shown for children flagged
-           is_sga, and only meaningful under age 5 (catch-up growth is
-           specifically a 0-5y phenomenon per the clinical guideline this
-           is built from — see FORMULAS.md). Hidden entirely otherwise. -->
+      <!-- SGA catch-up — only shown when is_sga is true -->
       <div class="velocity-card hidden" id="sgaCatchupCard" style="border-left: 3px solid var(--flag);">
         <div class="velocity-top">
           <div><span class="velocity-val" id="sgaVelocitySDS" style="font-size:22px;">—</span><span class="velocity-unit">SDS vs. age/sex median</span></div>
           <span class="velocity-trend flat" id="sgaCatchupBadge">—</span>
         </div>
-        <div class="velocity-sub" id="sgaSub">Catch-up growth tracking for SGA birth history — height velocity is considered "catching up" at &gt;0 SDS (faster than the population median for this age/sex).</div>
+        <div class="velocity-sub" id="sgaSub">Catch-up growth tracking for SGA birth history.</div>
         <div class="setup-note" style="margin-top:8px; font-size:10.5px;" id="sgaMonitoringNote"></div>
       </div>
 
-      <!-- Height velocity, the primary clinical metric -->
+      <!-- Height velocity -->
       <div class="velocity-card">
         <div class="velocity-top">
-          <div><span class="velocity-val" id="velocityVal">5.8</span><span class="velocity-unit">cm / year</span></div>
-          <span class="velocity-trend flat" id="velocityTrend">stable</span>
+          <div><span class="velocity-val" id="velocityVal">—</span><span class="velocity-unit">cm / year</span></div>
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span class="velocity-trend flat" id="velocityTrend">—</span>
+            <button class="info-toggle-btn" onclick="toggleInfo('velocityInfo')" aria-label="More info">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="velocity-sub">Height velocity, calculated from the last two logged measurements. Reference range for this age: 4.2–6.0 cm/yr.</div>
+        <div class="velocity-info hidden" id="velocityInfo">Height velocity calculated from the last two logged measurements. Reference range for this age: 4.2–6.0 cm/yr.</div>
         <div class="velocity-channel">
           <span class="channel-lbl">3rd</span>
           <div class="channel-bar"><div class="channel-marker" id="channelMarker" style="left:32%;"></div></div>
           <span class="channel-lbl">97th</span>
         </div>
-        <div class="velocity-sub" style="margin-top:4px;">Currently tracking near the <strong id="channelPctLbl">15th percentile</strong> for height-for-age.</div>
+        <div class="velocity-sub" style="margin-top:4px;">Currently <strong id="channelPctLbl">—</strong> for height-for-age.</div>
       </div>
 
-      <!-- BMI-for-age analysis — WHO 2007 Reference, real LMS percentile -->
+      <!-- BMI-for-age -->
       <div class="velocity-card">
         <div class="velocity-top">
           <div><span class="velocity-val" id="bmiVal">—</span><span class="velocity-unit">kg/m²</span></div>
-          <span class="velocity-trend flat" id="bmiClassBadge">—</span>
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span class="velocity-trend flat" id="bmiClassBadge">—</span>
+            <button class="info-toggle-btn" onclick="toggleInfo('bmiInfo')" aria-label="More info">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="velocity-sub" id="bmiSub">BMI-for-age, from the most recent measurement, using the WHO 2007 Reference (5–19 years).</div>
+        <div class="velocity-info hidden" id="bmiInfo">BMI-for-age, from the most recent measurement, using the WHO 2007 Reference (5–19 years). Amber mark = overweight cutoff (+1SD), red mark = obesity cutoff (+2SD). A screening signal, not a diagnosis — BMI can't distinguish muscle from fat.</div>
         <div class="velocity-channel">
           <span class="channel-lbl">3rd</span>
           <div class="channel-bar">
@@ -535,8 +542,7 @@
           </div>
           <span class="channel-lbl">97th</span>
         </div>
-        <div class="velocity-sub" style="margin-top:4px;">Currently tracking near the <strong id="bmiPctLbl">50th percentile</strong> for BMI-for-age.</div>
-        <div class="setup-note" style="margin-top:8px; font-size:10.5px;">Thresholds shown: amber mark = WHO overweight cutoff (&gt;+1SD), red mark = obesity cutoff (&gt;+2SD). BMI-for-age is a screening signal, not a diagnosis — body composition (muscle vs. fat) isn't distinguished by BMI alone.</div>
+        <div class="velocity-sub" style="margin-top:4px;">Currently <strong id="bmiPctLbl">—</strong> for BMI-for-age.</div>
       </div>
 
       <!-- Stats grid -->
@@ -563,19 +569,100 @@
         </div>
       </div>
 
-      <!-- Growth chart — title is set dynamically by drawGrowthChart()
-           since it switches between the WHO 2007 Reference (5-19y) and
-           the WHO Child Growth Standards (0-5y) depending on the
-           active child's current age. The WHO/Thai toggle only appears
-           for children 2y+ (the Thai approximate data's covered range)
-           — see thai-reference-data-approx.js for why this is labeled
-           "approximate," not "reference," in the UI itself. -->
+      <!-- Target height — moved here, above the growth chart where it reads naturally as context for the trajectory -->
+      <div class="card">
+        <div class="card-header" style="cursor:pointer;" onclick="toggleCardCollapse('targetHeightCardBody', this)">
+          <span class="card-title text-measured">Target height (mid-parental)</span>
+          <span class="collapse-chevron" id="targetHeightCardBody-chevron">▾</span>
+        </div>
+        <div class="card-body hidden" id="targetHeightCardBody">
+          <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Estimates your child's likely adult height range from both parents' heights, using corrections shown in peer-reviewed research to improve on the traditional method (Zeevi et al., <i>Children</i> 2024). Enter each parent's height as measured now — the calculator adjusts for age-related height loss itself, you don't need to estimate their "peak" height.</div>
+          <div class="seg" id="targetHeightFormulaToggle" style="margin-bottom:12px;">
+            <button class="seg-btn active" data-formula="parents" onclick="setTargetHeightFormula('parents', this)">Parents only</button>
+            <button class="seg-btn" data-formula="extended" onclick="setTargetHeightFormula('extended', this)">+ Extended family</button>
+          </div>
+          <div id="extendedFormulaNote" class="setup-note hidden" style="font-size:10.5px; margin-bottom:10px; background:var(--estimated-light); color:var(--estimated-dark);"></div>
+          <div class="form-row">
+            <div class="form-lbl">Mother's height (cm)</div>
+            <input type="number" id="thMotherHeight" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Mother's current age (optional)</div>
+            <input type="number" id="thMotherAge" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Father's height (cm)</div>
+            <input type="number" id="thFatherHeight" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Father's current age (optional)</div>
+            <input type="number" id="thFatherAge" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <button class="btn-secondary" onclick="calculateAndShowTargetHeight()">Calculate target height</button>
+          <div id="targetHeightResult" class="hidden" style="margin-top:14px; display:flex; flex-direction:column; gap:10px;">
+            <div class="velocity-card" style="margin:0;">
+              <div class="velocity-top">
+                <div><span class="velocity-val" id="thResultValue" style="font-size:22px;">—</span><span class="velocity-unit">cm, predicted adult height</span></div>
+                <span class="dq-badge measured" style="font-size:10px;">Validated</span>
+              </div>
+              <div class="velocity-sub" id="thResultRange"></div>
+              <div class="setup-note" style="margin-top:8px; font-size:10.5px;" id="thResultDetail"></div>
+            </div>
+            <div class="velocity-card hidden" id="thExploratoryCard" style="margin:0; border-left: 3px solid var(--estimated);">
+              <div class="velocity-top">
+                <div><span class="velocity-val" id="thExploratoryValue" style="font-size:22px;">—</span><span class="velocity-unit">cm, with extended family</span></div>
+                <span class="dq-badge estimated" style="font-size:10px;">Exploratory</span>
+              </div>
+              <div class="velocity-sub" id="thExploratoryRange"></div>
+              <div class="setup-note" style="margin-top:8px; font-size:10.5px;" id="thExploratoryDetail"></div>
+            </div>
+          </div>
+          <div class="card-divider" style="margin: 16px -16px;"></div>
+          <div class="form-lbl" style="margin-bottom:4px;">Extended family heights (optional)</div>
+          <div class="setup-note" style="font-size:10.5px; margin-bottom:10px;">For context only — not used in the calculation above.</div>
+          <div class="form-row">
+            <div class="form-lbl">Relation</div>
+            <select id="newFamilyRelation" class="num-input" style="width:180px; text-align:left; padding-left:10px;">
+              <option value="maternal_grandmother">Maternal grandmother</option>
+              <option value="maternal_grandfather">Maternal grandfather</option>
+              <option value="paternal_grandmother">Paternal grandmother</option>
+              <option value="paternal_grandfather">Paternal grandfather</option>
+              <option value="maternal_aunt">Maternal aunt</option>
+              <option value="maternal_uncle">Maternal uncle</option>
+              <option value="paternal_aunt">Paternal aunt</option>
+              <option value="paternal_uncle">Paternal uncle</option>
+              <option value="sibling">Sibling</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Height (cm)</div>
+            <input type="number" id="newFamilyHeight" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row">
+            <div class="form-lbl">Age when measured (optional)</div>
+            <input type="number" id="newFamilyAge" class="num-input" placeholder="—" style="width:80px;">
+          </div>
+          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <div class="form-lbl">Notes (optional)</div>
+            <input type="text" id="newFamilyNotes" class="text-input" placeholder="e.g. not totally sure of exact height">
+          </div>
+          <button class="btn-secondary" onclick="addFamilyHeightRecord()">Add to family record</button>
+          <div id="familyHeightList" class="nutrition-log-list" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Growth chart -->
       <div class="card">
         <div class="card-header">
           <span class="card-title text-measured" id="growthChartTitle">Height-for-age</span>
-          <div class="seg hidden" id="referenceToggle" style="width:auto; min-width:140px;">
-            <button class="seg-btn active" data-ref="who" onclick="setReferenceStandard('who', this)">WHO</button>
-            <button class="seg-btn" data-ref="thai" onclick="setReferenceStandard('thai', this)">Thai (approx.)</button>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="seg hidden" id="referenceToggle" style="width:auto; min-width:140px;">
+              <button class="seg-btn active" data-ref="who" onclick="setReferenceStandard('who', this)">WHO</button>
+              <button class="seg-btn" data-ref="thai" onclick="setReferenceStandard('thai', this)">Thai (approx.)</button>
+            </div>
+            <button class="info-toggle-btn" onclick="toggleInfo('growthChartNote')" aria-label="More info">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </button>
           </div>
         </div>
         <div class="card-body" style="padding-top:0;">
@@ -593,16 +680,20 @@
             <span><span style="color:var(--measured);">──</span> measured</span>
             <span style="border-top: 2px dashed var(--estimated); display:inline-block; width:14px; vertical-align:middle;"></span><span> projected</span>
           </div>
-          <div class="setup-note" style="margin-top:10px; font-size:11px;" id="growthChartNote">
+          <div class="setup-note hidden" style="margin-top:10px; font-size:11px;" id="growthChartNote">
             Shaded bands are the official WHO 2007 Growth Reference for school-age children and adolescents (5–19 years), transcribed directly from who.int. This is a population reference, not a diagnosis — bring this chart to your pediatrician for clinical interpretation, especially near the band edges.
           </div>
         </div>
       </div>
 
-
-      <!-- BMI / obesity chart -->
+      <!-- BMI chart -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured">BMI-for-age</span></div>
+        <div class="card-header">
+          <span class="card-title text-measured">BMI-for-age</span>
+          <button class="info-toggle-btn" onclick="toggleInfo('bmiChartNote')" aria-label="More info">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
         <div class="card-body" style="padding-top:8px;">
           <div class="canvas-wrap">
             <canvas id="bmiChartCanvas"></canvas>
@@ -613,7 +704,7 @@
             <span><span style="color:var(--flag);">┄</span> +2SD obesity cutoff</span>
             <span><span style="color:var(--measured);">──</span> measured</span>
           </div>
-          <div class="setup-note" style="margin-top:10px; font-size:11px;" id="bmiChartNote">
+          <div class="setup-note hidden" style="margin-top:10px; font-size:11px;" id="bmiChartNote">
             BMI-for-age, using WHO's official reference for this child's current age. A screening signal, not a diagnosis — BMI can't distinguish muscle from fat, which matters most for very active children.
           </div>
         </div>

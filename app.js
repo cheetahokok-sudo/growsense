@@ -1250,6 +1250,14 @@ function setChartZoom(zoom, btn) {
 // ══════════════════════════════════════════
 // Generic collapsible-card-header toggle, used by the Target Height
 // card (and reusable for any future card that wants this pattern).
+// Toggle a hidden explanatory paragraph — used by the (ⓘ) buttons
+// on Analytics stat cards and chart notes. The element starts hidden
+// in the HTML; tapping (ⓘ) flips the class each time.
+function toggleInfo(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('hidden');
+}
+
 function toggleCardCollapse(bodyId, headerEl) {
   const body = document.getElementById(bodyId);
   const chevron = document.getElementById(bodyId + '-chevron');
