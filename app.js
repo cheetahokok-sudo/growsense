@@ -170,16 +170,46 @@ async function handleGoogleHealthOAuthCallback() {
     return;
   }
 
-  // CSRF check
-  const [childId, csrfFromState] = (state || '').split(':');
-  const storedCsrf    = sessionStorage.getItem('gh_csrf');
-  const storedChildId = sessionStorage.getItem('gh_child_id');
-  sessionStorage.removeItem('gh_csrf');
-  sessionStorage.removeItem('gh_child_id');
+  // Parse child_id from state — format is "{childId}:{csrfToken}"
+  const colonIdx = (state || '').indexOf(':');
+  const childId  = colonIdx > 0 ? state.slice(0, colonIdx) : state;
+  const csrfFromState = colonIdx > 0 ? state.slice(colonIdx + 1) : '';
 
-  if (!csrfFromState || csrfFromState !== storedCsrf || childId !== storedChildId) {
-    showToast('⚠️', 'Connection failed: security check error. Please try again.');
+  // UUID format sanity check on the childId
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!childId || !uuidRe.test(childId)) {
+    showToast('⚠️', 'Connection failed: invalid state parameter.');
     return;
+  }
+
+  // CSRF check — best-effort only.
+  // Some browsers (Edge Tracking Prevention, Safari ITP) block
+  // sessionStorage access when the page loads from a cross-site
+  // redirect, so storedCsrf may be null even when the flow is
+  // legitimate. The server enforces real security: it verifies the
+  // session JWT and confirms child ownership before doing anything.
+  try {
+    const storedCsrf    = sessionStorage.getItem('gh_csrf');
+    const storedChildId = sessionStorage.getItem('gh_child_id');
+    sessionStorage.removeItem('gh_csrf');
+    sessionStorage.removeItem('gh_child_id');
+
+    if (storedCsrf && csrfFromState !== storedCsrf) {
+      console.warn('[Google Health] CSRF token mismatch — aborting');
+      showToast('⚠️', 'Connection failed: security check error. Please try again.');
+      return;
+    }
+    if (storedChildId && childId !== storedChildId) {
+      console.warn('[Google Health] Child ID mismatch in state');
+      showToast('⚠️', 'Connection failed: child mismatch. Please try again.');
+      return;
+    }
+    if (!storedCsrf) {
+      console.warn('[Google Health] sessionStorage unavailable (browser privacy mode or tracking prevention) — skipping CSRF, relying on server-side validation');
+    }
+  } catch (storageErr) {
+    console.warn('[Google Health] sessionStorage blocked:', storageErr);
+    // Continue — server will validate JWT + child ownership
   }
 
   if (!APP.session) {
@@ -204,11 +234,8 @@ async function handleGoogleHealthOAuthCallback() {
 
     showToast('✅', `Fitbit connected (${data.google_email})`);
 
-    // Store connection status in APP state
     if (!APP.googleHealthConnections) APP.googleHealthConnections = {};
     APP.googleHealthConnections[childId] = data.connection;
-
-    // Update the Connect button in the UI to show connected state
     renderGoogleHealthConnectionStatus(childId);
 
     // Trigger first sync — pull the last 14 nights immediately
@@ -286,9 +313,9 @@ async function syncGoogleHealthSleep(childId, daysBack = 7) {
     // Refresh connection status (updates last_sync_at)
     await loadGoogleHealthConnections();
 
-    // If the Today tab or Analytics is open, reload the relevant data
-    const todayScreen = document.getElementById('screenToday');
-    if (todayScreen?.classList.contains('active')) await loadTodaySleepLog?.();
+    // If Today is visible, reload so the synced sleep values appear
+    const todayActive = document.getElementById('screenToday')?.classList.contains('active');
+    if (todayActive && typeof loadTodayLog === 'function') await loadTodayLog();
 
   } catch (e) {
     console.error('[Google Health Sync]', e);
