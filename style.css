@@ -738,3 +738,53 @@ canvas { display: block; width: 100%; height: 100%; }
   border-top: 1px solid var(--border);
   margin-top: 6px;
 }
+
+/* ── Child profile collapsible cards (Account screen) ───────────── */
+.child-profile-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.child-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.child-profile-header:active { background: var(--surface2); }
+.child-profile-info { display: flex; align-items: center; gap: 10px; }
+.child-profile-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.child-profile-age  { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.child-profile-chevron {
+  color: var(--text3);
+  font-size: 20px;
+  font-weight: 300;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+  line-height: 1;
+}
+.child-profile-chevron.open { transform: rotate(90deg); }
+.child-profile-body {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.child-profile-body.hidden { display: none; }
+.child-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.wearable-email-note {
+  font-size: 10.5px;
+  color: var(--text3);
+  margin-top: -4px;
+  line-height: 1.4;
+}

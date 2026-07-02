@@ -232,6 +232,30 @@ async function handleGoogleHealthOAuthCallback() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Connection failed');
 
+    // ── Wearable email mismatch check ────────────────────────────
+    // If the parent pre-declared a wearable email for this child
+    // and the connected account doesn't match, warn them.
+    // Only fires on mismatch — no notice shown when matched or blank.
+    const child = APP.children.find(c => c.child_id === childId);
+    const expected  = (child?.wearable_account_email || '').toLowerCase().trim();
+    const connected = (data.google_email || '').toLowerCase().trim();
+
+    if (expected && connected && expected !== connected) {
+      const proceed = confirm(
+        `⚠️  Fitbit account mismatch for ${child?.name || 'this child'}\n\n` +
+        `Expected:  ${child.wearable_account_email}\n` +
+        `Connected: ${data.google_email}\n\n` +
+        `This might be the wrong Fitbit device.\n` +
+        `Connect anyway?`
+      );
+      if (!proceed) {
+        // Remove the just-created connection so the DB stays clean
+        await sb.from('google_health_connections').delete().eq('child_id', childId);
+        showToast('⚠️', 'Connection cancelled. Check the Fitbit account and try again.');
+        return;
+      }
+    };
+
     showToast('✅', `Fitbit connected (${data.google_email})`);
 
     if (!APP.googleHealthConnections) APP.googleHealthConnections = {};
@@ -1198,22 +1222,117 @@ function toggleFoodNote(btn) {
 
 function renderChildList() {
   const el = document.getElementById('childList');
+  if (!el) return;
   if (APP.children.length === 0) {
-    el.innerHTML = `<div class="empty-state" style="padding:16px;"><p>No children added yet.</p></div>`;
+    el.innerHTML = '';
     return;
   }
-  el.innerHTML = APP.children.map((c,i) => `
-    <div style="display:flex; align-items:center; justify-content:space-between; background:var(--surface2); border-radius:10px; padding:10px 12px;">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span class="child-chip-avatar" style="width:26px;height:26px;font-size:12px;">${(c.avatar || c.name.charAt(0)).toUpperCase()}</span>
+  el.innerHTML = APP.children.map(c => {
+    const age = ageFromDOB(c.date_of_birth) ?? '—';
+    const avatar = (c.avatar || c.name.charAt(0)).toUpperCase();
+    const wearableVal = c.wearable_account_email || '';
+    return `
+    <div class="child-profile-row" id="cpr-${c.child_id}">
+      <div class="child-profile-header" onclick="toggleChildProfile('${c.child_id}')">
+        <div class="child-profile-info">
+          <span class="child-chip-avatar" style="width:30px;height:30px;font-size:13px;">${avatar}</span>
+          <div>
+            <div class="child-profile-name">${c.name}</div>
+            <div class="child-profile-age">Age ${age} · ${c.biological_sex || ''}</div>
+          </div>
+        </div>
+        <span class="child-profile-chevron" id="cpchev-${c.child_id}">›</span>
+      </div>
+      <div class="child-profile-body hidden" id="cpbody-${c.child_id}">
+        <div class="form-row" style="margin-top:4px;">
+          <div class="form-lbl">Name</div>
+          <input type="text" id="cedit-name-${c.child_id}" class="text-input" value="${c.name}" style="max-width:160px;">
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">Date of birth</div>
+          <input type="date" id="cedit-dob-${c.child_id}" class="date-input" value="${c.date_of_birth || ''}" style="max-width:160px;">
+        </div>
         <div>
-          <div style="font-size:13px; font-weight:600;">${c.name}</div>
-          <div style="font-size:11px; color:var(--text2);">Age ${ageFromDOB(c.date_of_birth) ?? '—'} · born ${c.date_of_birth}</div>
+          <div class="form-row" style="margin-bottom:2px;">
+            <div class="form-lbl">Fitbit / wearable account email</div>
+            <input type="email" id="cedit-wearable-${c.child_id}" class="text-input"
+              value="${wearableVal}" placeholder="Optional"
+              style="max-width:200px;">
+          </div>
+          <div class="wearable-email-note">Email the child's Fitbit is registered to. Used to warn you if the wrong account is connected.</div>
+        </div>
+        <div class="child-profile-actions">
+          <button class="btn-secondary" onclick="saveChildSettings('${c.child_id}')">Save</button>
+          <button class="btn-link" style="color:var(--flag); font-size:12px;" onclick="deleteChildProfile('${c.child_id}')">Remove profile</button>
         </div>
       </div>
-      <button onclick="deleteChildProfile('${c.child_id}')" style="background:none; border:none; color:var(--flag); font-size:18px; cursor:pointer; padding:4px; min-width:32px; min-height:32px;">×</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+function toggleChildProfile(childId) {
+  const body   = document.getElementById(`cpbody-${childId}`);
+  const chevron = document.getElementById(`cpchev-${childId}`);
+  if (!body) return;
+  const opening = body.classList.contains('hidden');
+
+  // Close all other open profiles
+  document.querySelectorAll('.child-profile-body').forEach(b => b.classList.add('hidden'));
+  document.querySelectorAll('.child-profile-chevron').forEach(c => c.classList.remove('open'));
+  // Close add-child form
+  document.getElementById('addChildBody')?.classList.add('hidden');
+  document.getElementById('addChildChevron')?.classList.remove('open');
+
+  if (opening) {
+    body.classList.remove('hidden');
+    chevron?.classList.add('open');
+  }
+}
+
+function toggleAddChildForm() {
+  const body    = document.getElementById('addChildBody');
+  const chevron = document.getElementById('addChildChevron');
+  if (!body) return;
+  const opening = body.classList.contains('hidden');
+
+  // Close all child profile cards
+  document.querySelectorAll('.child-profile-body').forEach(b => b.classList.add('hidden'));
+  document.querySelectorAll('.child-profile-chevron').forEach(c => c.classList.remove('open'));
+
+  if (opening) {
+    body.classList.remove('hidden');
+    chevron?.classList.add('open');
+  } else {
+    body.classList.add('hidden');
+    chevron?.classList.remove('open');
+  }
+}
+
+async function saveChildSettings(childId) {
+  const name          = document.getElementById(`cedit-name-${childId}`)?.value?.trim();
+  const dob           = document.getElementById(`cedit-dob-${childId}`)?.value?.trim();
+  const wearableEmail = document.getElementById(`cedit-wearable-${childId}`)?.value?.trim() || null;
+
+  if (!name) { showToast('⚠️', 'Name cannot be empty'); return; }
+
+  const { error } = await sb.from('children').update({
+    name,
+    date_of_birth: dob || undefined,
+    wearable_account_email: wearableEmail,
+  }).eq('child_id', childId);
+
+  if (error) { showToast('⚠️', 'Save failed: ' + error.message); return; }
+
+  const child = APP.children.find(c => c.child_id === childId);
+  if (child) {
+    child.name = name;
+    if (dob) child.date_of_birth = dob;
+    child.wearable_account_email = wearableEmail;
+  }
+
+  renderChildSwitcher();
+  renderChildList();
+  showToast('✅', `${name}'s profile saved`);
 }
 
 // Named deleteChildProfile, NOT removeChild — every DOM Node has a
