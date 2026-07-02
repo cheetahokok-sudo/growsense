@@ -363,6 +363,352 @@ async function disconnectGoogleHealth(childId) {
 // end Google Health integration
 // ══════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════
+// CLINIC PDF EXPORT
+// Opens a print-ready HTML page in a new window then triggers the
+// browser print dialog. User selects "Save as PDF" (all platforms)
+// or "Save to Files" on iPhone. No server, no library — charts are
+// captured from the existing canvas elements via toDataURL().
+// ══════════════════════════════════════════════════════════════════
+
+async function generateClinicPDF() {
+  const child = APP.children[APP.activeChild];
+  if (!child) { showToast('⚠️', 'No child selected'); return; }
+
+  showToast('🔄', 'Building clinic report…');
+
+  // ── Capture chart images ───────────────────────────────────────
+  // Charts are rendered when Analytics tab is open.
+  // If not yet rendered (zero width), trigger them first.
+  const growthCanvas = document.getElementById('growthCanvas');
+  const bmiCanvas    = document.getElementById('bmiChartCanvas');
+  if (growthCanvas && !growthCanvas.width) {
+    drawGrowthChart();
+    drawBMIChart();
+    await new Promise(r => setTimeout(r, 350));
+  }
+  const growthImg = growthCanvas?.toDataURL?.('image/png') || '';
+  const bmiImg    = bmiCanvas?.toDataURL?.('image/png') || '';
+
+  // ── Measurements (newest first) ───────────────────────────────
+  const meas = (APP.activeChildMeasurements || [])
+    .slice().sort((a,b) => new Date(b.recorded_date) - new Date(a.recorded_date));
+  const latest = meas[0] || null;
+
+  // ── Height velocity ────────────────────────────────────────────
+  let velocityCmYr = null;
+  const measAsc = [...meas].reverse();
+  if (measAsc.length >= 2) {
+    const n = measAsc[measAsc.length-1], o = measAsc[0];
+    const days = (new Date(n.recorded_date) - new Date(o.recorded_date)) / 86400000;
+    if (days > 0) velocityCmYr = ((Number(n.stature_height_cm) - Number(o.stature_height_cm)) / days * 365.25).toFixed(1);
+  }
+
+  // ── 30-day averages (require Analytics tab to have been opened) ─
+  const nut30 = filterByPeriod(APP.nutritionHistory || [], 'M');
+  const slp30 = filterByPeriod(APP.sleepHistory     || [], 'M');
+
+  const avg = (arr, key) => arr.length ? Math.round(arr.reduce((a,r)=>a+(r[key]||0),0)/arr.length) : null;
+
+  const avgProtein  = avg(nut30, 'total_protein_g');
+  const avgCalcium  = avg(nut30, 'calcium_mg');
+  const avgSleepMin = avg(slp30, 'total_sleep_min');
+  const slpDeep     = slp30.filter(r => r.deep_sleep_min != null);
+  const avgDeepMin  = slpDeep.length ? Math.round(slpDeep.reduce((a,r)=>a+(r.deep_sleep_min||0),0)/slpDeep.length) : null;
+  const fitbitNights = slp30.filter(r => r.data_source === 'google_health_fitbit').length;
+
+  const onTimeNights = slp30.filter(r => {
+    if (!r.bedtime) return false;
+    const [h,m] = r.bedtime.split(':').map(Number);
+    return h < 21 || (h === 21 && m <= 30);
+  }).length;
+
+  // Average bedtime
+  const avgBedtime = (() => {
+    const beds = slp30.map(r=>r.bedtime).filter(Boolean).map(t => {
+      const [h,m] = t.split(':').map(Number);
+      return h < 12 ? h*60+m+1440 : h*60+m;
+    });
+    if (!beds.length) return null;
+    const a = Math.round(beds.reduce((s,b)=>s+b,0)/beds.length) % 1440;
+    return `${String(Math.floor(a/60)).padStart(2,'0')}:${String(a%60).padStart(2,'0')}`;
+  })();
+
+  // ── Bone age (most recent) ─────────────────────────────────────
+  const { data: boneAgeData } = await sb
+    .from('bone_age_assessments')
+    .select('*')
+    .eq('child_id', child.child_id)
+    .order('study_date', { ascending: false })
+    .limit(1);
+  const boneAge = boneAgeData?.[0] || null;
+
+  // ── Protein targets ────────────────────────────────────────────
+  const { standard: proteinStd, boost: proteinBoost } = activeChildProteinTargets();
+
+  // ── Build and open ─────────────────────────────────────────────
+  const html = buildClinicReportHTML({
+    child, meas, latest, velocityCmYr,
+    avgProtein, avgCalcium, proteinStd, proteinBoost,
+    avgSleepMin, avgDeepMin, avgBedtime, onTimeNights,
+    nut30Days: nut30.length, slp30Days: slp30.length, fitbitNights,
+    boneAge,
+    labResults: (APP.labResults || []).slice(0, 15),
+    growthImg, bmiImg,
+    exportDate: new Date().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'}),
+  });
+
+  const win = window.open('', '_blank');
+  if (!win) { showToast('⚠️', 'Pop-up blocked — allow pop-ups for this site and try again'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { try { win.print(); } catch(e) {} }, 700);
+}
+
+function buildClinicReportHTML(d) {
+  const {
+    child, meas, latest, velocityCmYr,
+    avgProtein, avgCalcium, proteinStd, proteinBoost,
+    avgSleepMin, avgDeepMin, avgBedtime, onTimeNights,
+    nut30Days, slp30Days, fitbitNights,
+    boneAge, labResults, growthImg, bmiImg, exportDate,
+  } = d;
+
+  // Design token hex values (same as the app's CSS custom properties)
+  const G = '#2F6B4F', B = '#2A5C8A', A = '#9C7A3D', R = '#A23B3B';
+  const T = '#1F2B22', T2 = '#4A5E4D', T3 = '#95A092';
+  const BDR = '#D5DDD6', BG2 = '#F4F7F4';
+
+  const fmtDate = s => s
+    ? new Date(s+'T00:00:00').toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})
+    : '—';
+  const fmtMin  = m => m ? `${Math.floor(m/60)}h ${m%60}m` : '—';
+  const fmtBA   = mo => {
+    if (mo == null) return '—';
+    const y = Math.floor(mo/12), rem = Math.round(mo%12);
+    return rem > 0 ? `${y}y ${rem}m` : `${y}y`;
+  };
+
+  const ageYears  = child.date_of_birth ? Math.floor((Date.now()-new Date(child.date_of_birth))/(365.25*86400000)) : null;
+  const ageMos    = child.date_of_birth ? Math.floor((Date.now()-new Date(child.date_of_birth))/(30.4375*86400000))%12 : null;
+  const ageStr    = ageYears != null ? `${ageYears} years ${ageMos} months` : '—';
+
+  // Measurement history rows
+  const measRows = meas.slice(0,8).map(m => `<tr>
+    <td style="padding:5px 8px;border:1px solid ${BDR};">${fmtDate(m.recorded_date)}</td>
+    <td style="padding:5px 8px;border:1px solid ${BDR};font-weight:600;">${Number(m.stature_height_cm).toFixed(1)}</td>
+    <td style="padding:5px 8px;border:1px solid ${BDR};">${Number(m.mass_weight_kg).toFixed(1)}</td>
+    <td style="padding:5px 8px;border:1px solid ${BDR};">${m.calculated_bmi!=null?Number(m.calculated_bmi).toFixed(1):'—'}</td>
+  </tr>`).join('');
+
+  // Lab result rows
+  const labRows = labResults.length
+    ? labResults.map(r => `<tr>
+        <td style="padding:5px 8px;border:1px solid ${BDR};">${fmtDate(r.lab_date)}</td>
+        <td style="padding:5px 8px;border:1px solid ${BDR};">${r.analyte_name}</td>
+        <td style="padding:5px 8px;border:1px solid ${BDR};font-weight:600;">${r.result_value} ${r.unit}</td>
+        <td style="padding:5px 8px;border:1px solid ${BDR};color:${T3};">${r.reference_low!=null&&r.reference_high!=null?`${r.reference_low}–${r.reference_high} ${r.unit}`:'—'}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="4" style="padding:12px;text-align:center;color:${T3};border:1px solid ${BDR};">No lab results recorded</td></tr>`;
+
+  // Bone age section
+  const boneAgeHTML = !boneAge ? '' : (() => {
+    const delta = boneAge.bone_age_months!=null && boneAge.chronological_age_months!=null
+      ? (boneAge.bone_age_months - boneAge.chronological_age_months).toFixed(1) : null;
+    const dColor = delta && Math.abs(Number(delta)) > 12 ? R : A;
+    const aiEst  = boneAge.ai_analysis_result?.bone_age_estimate?.best_estimate_months;
+    return `
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11pt;font-weight:700;color:${A};border-left:3px solid ${A};padding-left:10px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">Bone Age Assessment</div>
+      <table style="font-size:9pt;">
+        <thead><tr style="background:${BG2};">
+          <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Study date</th>
+          <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Bone age</th>
+          <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Chronological age</th>
+          <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Delta</th>
+          <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Method / Radiologist</th>
+          ${aiEst ? `<th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">AI second opinion</th>` : ''}
+        </tr></thead>
+        <tbody><tr>
+          <td style="padding:6px 8px;border:1px solid ${BDR};">${fmtDate(boneAge.study_date)}</td>
+          <td style="padding:6px 8px;border:1px solid ${BDR};font-weight:700;">${fmtBA(boneAge.bone_age_months)}</td>
+          <td style="padding:6px 8px;border:1px solid ${BDR};">${fmtBA(boneAge.chronological_age_months)}</td>
+          <td style="padding:6px 8px;border:1px solid ${BDR};font-weight:700;color:${dColor};">${delta!=null?(Number(delta)>=0?'+':'')+delta+' mo':'—'}</td>
+          <td style="padding:6px 8px;border:1px solid ${BDR};">${boneAge.method||'—'}${boneAge.report_doctor?' · '+boneAge.report_doctor:''}</td>
+          ${aiEst ? `<td style="padding:6px 8px;border:1px solid ${BDR};color:${B};">${fmtBA(aiEst)} (AI · Claude Vision)</td>` : ''}
+        </tr></tbody>
+      </table>
+    </div>`;
+  })();
+
+  // Section header helper
+  const sh = (label, color) =>
+    `<div style="font-size:11pt;font-weight:700;color:${color};border-left:3px solid ${color};padding-left:10px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">${label}</div>`;
+
+  // Stat box helper
+  const sb2 = (label, value, sub) =>
+    `<div style="background:${BG2};border-radius:6px;padding:10px;">
+      <div style="font-size:9pt;color:${T3};margin-bottom:2px;">${label}</div>
+      <div style="font-size:16pt;font-weight:700;color:${T};">${value}</div>
+      ${sub ? `<div style="font-size:9pt;color:${T3};margin-top:2px;">${sub}</div>` : ''}
+    </div>`;
+
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<title>GrowSense Clinic Report — ${child.name} — ${exportDate}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;font-size:10pt;color:${T};background:#fff;padding:28px 36px;max-width:820px;margin:0 auto;line-height:1.4;}
+table{border-collapse:collapse;width:100%;}
+th,td{text-align:left;vertical-align:top;}
+img{max-width:100%;display:block;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}
+.section{margin-bottom:22px;}
+@media print{
+  body{padding:0;max-width:100%;}
+  .no-print{display:none!important;}
+  .pg-break{page-break-before:always;}
+  @page{margin:16mm 14mm;}
+}
+</style>
+</head><body>
+
+<div class="no-print" style="margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+  <button onclick="window.print()" style="background:${G};color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:12pt;cursor:pointer;font-weight:700;">↓ Save as PDF</button>
+  <span style="font-size:10pt;color:${T3};">File → Print → Save as PDF &nbsp;(or Share → Print on iPhone)</span>
+</div>
+
+<!-- HEADER -->
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:2.5px solid ${G};">
+  <div>
+    <div style="font-size:20pt;font-weight:800;color:${G};letter-spacing:-.5px;">GrowSense</div>
+    <div style="font-size:9pt;color:${T3};margin-top:2px;">Pediatric Growth Intelligence Report</div>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:9pt;color:${T3};">Generated</div>
+    <div style="font-size:10pt;font-weight:600;">${exportDate}</div>
+    <div style="font-size:8pt;color:${T3};margin-top:6px;max-width:190px;line-height:1.4;">Educational reference only.<br>Not a clinical diagnosis.</div>
+  </div>
+</div>
+
+<!-- PATIENT -->
+<div style="background:${BG2};border-radius:8px;padding:14px;margin-bottom:22px;" class="grid3">
+  <div>
+    <div style="font-size:9pt;color:${T3};margin-bottom:2px;">Patient</div>
+    <div style="font-size:16pt;font-weight:800;">${child.name}</div>
+  </div>
+  <div>
+    <div style="font-size:9pt;color:${T3};margin-bottom:2px;">Age</div>
+    <div style="font-size:13pt;font-weight:700;">${ageStr}</div>
+    <div style="font-size:9pt;color:${T2};">Born ${fmtDate(child.date_of_birth)}</div>
+  </div>
+  <div>
+    <div style="font-size:9pt;color:${T3};margin-bottom:2px;">Sex</div>
+    <div style="font-size:13pt;font-weight:700;">${child.biological_sex==='male'?'Male':child.biological_sex==='female'?'Female':'—'}</div>
+  </div>
+</div>
+
+<!-- MEASUREMENTS -->
+<div class="section">
+  ${sh('Current Measurements', G)}
+  ${latest ? `
+  <div class="grid4">
+    ${sb2('Height', Number(latest.stature_height_cm).toFixed(1)+' cm', fmtDate(latest.recorded_date))}
+    ${sb2('Weight', Number(latest.mass_weight_kg).toFixed(1)+' kg', '')}
+    ${sb2('BMI', latest.calculated_bmi!=null?Number(latest.calculated_bmi).toFixed(1)+' kg/m²':'—', 'WHO 2007 reference')}
+    ${sb2('Height velocity', (velocityCmYr||'—')+' cm/yr', 'annualised from measurements')}
+  </div>` : `<div style="color:${T3};padding:10px;">No measurements recorded yet.</div>`}
+  ${meas.length ? `
+  <table style="font-size:9pt;">
+    <thead><tr style="background:${BG2};">
+      <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Date</th>
+      <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Height (cm)</th>
+      <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Weight (kg)</th>
+      <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">BMI</th>
+    </tr></thead>
+    <tbody>${measRows}</tbody>
+  </table>` : ''}
+</div>
+
+<!-- CHARTS -->
+${growthImg ? `
+<div class="section">
+  ${sh('Height-for-Age (WHO 2007 Reference)', B)}
+  <img src="${growthImg}" style="border:1px solid ${BDR};border-radius:6px;width:100%;">
+  <div style="font-size:8pt;color:${T3};margin-top:4px;">Shaded bands: WHO 2007 percentile channels (3rd–97th, 15th–85th). Blue line: measured. Dashed: projected trajectory.</div>
+</div>` : ''}
+
+${bmiImg ? `
+<div class="section pg-break">
+  ${sh('BMI-for-Age (WHO 2007 Reference)', B)}
+  <img src="${bmiImg}" style="border:1px solid ${BDR};border-radius:6px;width:100%;">
+  <div style="font-size:8pt;color:${T3};margin-top:4px;">Amber dashed: +1SD overweight cutoff. Red dashed: +2SD obesity cutoff. Screening signal only — not a diagnosis.</div>
+</div>` : ''}
+
+<!-- BONE AGE -->
+${boneAgeHTML}
+
+<!-- SLEEP -->
+${slp30Days > 0 ? `
+<div class="section">
+  ${sh(`Sleep — ${slp30Days}-day summary${fitbitNights>0?` (${fitbitNights} nights Fitbit Charge 6)`:', manual'}`, B)}
+  <div class="grid3">
+    ${sb2('Avg duration', fmtMin(avgSleepMin), 'Goal: 9h 30m')}
+    ${sb2('Avg deep sleep', avgDeepMin!=null?avgDeepMin+' min':'—', 'GH secretion proxy')}
+    ${sb2('GH window (≤21:30)', `${onTimeNights} / ${slp30Days} nights`, 'Avg bedtime: '+(avgBedtime||'—'))}
+  </div>
+</div>` : ''}
+
+<!-- NUTRITION -->
+${nut30Days > 0 ? `
+<div class="section">
+  ${sh(`Nutrition — ${nut30Days}-day average`, G)}
+  <div class="grid2">
+    ${sb2('Protein avg', (avgProtein!=null?avgProtein+'g':'—')+' / day',
+      `Standard (WHO/DRI): ${proteinStd}g &nbsp;·&nbsp; Growth target: ${proteinBoost}g`)}
+    ${sb2('Calcium avg', (avgCalcium!=null?avgCalcium+'mg':'—')+' / day', 'Target: 1,300mg')}
+  </div>
+</div>` : ''}
+
+<!-- LAB RESULTS -->
+<div class="section">
+  ${sh('Laboratory Results', A)}
+  <table style="font-size:9pt;">
+    <thead><tr style="background:${BG2};">
+      <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Date</th>
+      <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Analyte</th>
+      <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Result</th>
+      <th style="padding:6px 8px;border:1px solid ${BDR};color:${T3};font-weight:600;">Reference range</th>
+    </tr></thead>
+    <tbody>${labRows}</tbody>
+  </table>
+</div>
+
+<!-- DISCLAIMER -->
+<div style="background:#FFFBF0;border:1px solid ${A};border-radius:8px;padding:12px;margin-top:20px;">
+  <div style="font-size:9pt;font-weight:700;color:${A};margin-bottom:5px;">⚕️ Clinical disclaimer</div>
+  <div style="font-size:8.5pt;color:${T2};line-height:1.5;">
+    This report is generated by GrowSense for informational and educational purposes only. It is not a medical record, clinical diagnosis, or substitute for professional medical advice. Growth charts use the WHO 2007 Growth Reference (5–19 years) and WHO Child Growth Standards (0–5 years). Protein targets reference IOM 2005 DRI (Table 10-21) with growth-optimized adjustment based on IAAO methodology (Hudson et al., <em>Nutrients</em> 2021, PMID 34063030). Sleep staging from Fitbit Charge 6 via Google Health API where indicated. All clinical decisions must be made by a qualified pediatrician or pediatric endocrinologist.
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="margin-top:14px;padding-top:10px;border-top:1px solid ${BDR};display:flex;justify-content:space-between;font-size:8pt;color:${T3};">
+  <span>GrowSense · cheetahokok-sudo.github.io/growsense</span>
+  <span>Generated ${exportDate}</span>
+</div>
+
+</body></html>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// end clinic PDF export
+// ══════════════════════════════════════════════════════════════════
+
 function showAuthScreen() {
   document.getElementById('authScreen').classList.remove('hidden');
   document.getElementById('appRoot').classList.add('hidden');

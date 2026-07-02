@@ -338,7 +338,14 @@
 
     <!-- ══════════════ SCREEN: ANALYTICS ══════════════ -->
     <div class="screen" id="screenAnalytics">
-      <div class="section-hd"><h2>Analytics</h2><p>Trend view — built to bring to a clinic visit</p></div>
+      <div class="section-hd" style="display:flex; align-items:flex-start; justify-content:space-between;">
+        <div><h2>Analytics</h2><p>Trend view — built to bring to a clinic visit</p></div>
+        <button class="btn-secondary" onclick="generateClinicPDF()"
+          style="font-size:11px; padding:6px 11px; white-space:nowrap; flex-shrink:0; margin-top:4px;"
+          title="Export PDF clinic summary">
+          ↓ Export PDF
+        </button>
+      </div>
 
       <!-- ── INSIGHT CARDS ── tap any card to see the trend detail -->
       <div class="insight-cards-section">
