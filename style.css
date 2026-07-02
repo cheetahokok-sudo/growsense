@@ -485,3 +485,227 @@ canvas { display: block; width: 100%; height: 100%; }
 .sync-dot.disconnected { background: var(--flag); }
 .sync-dot.pending { background: var(--estimated); animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+/* ══════════════════════════════════════════════════════════
+   INSIGHT CARDS — Analytics tab summary row
+   ══════════════════════════════════════════════════════════ */
+.insight-cards-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.insight-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 13px 14px;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.insight-card:active { transform: scale(0.98); box-shadow: none; }
+.insight-card-icon {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.insight-card-body { flex: 1; min-width: 0; }
+.insight-card-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text3);
+  margin-bottom: 3px;
+}
+.insight-card-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.15;
+}
+.insight-card-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.insight-card-chevron {
+  color: var(--text3);
+  font-size: 22px;
+  font-weight: 300;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ══════════════════════════════════════════════════════════
+   INSIGHT DETAIL SHEET
+   ══════════════════════════════════════════════════════════ */
+.insight-modal-sheet {
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.insight-sheet-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 14px;
+}
+.insight-sheet-hdr span {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.modal-close-btn {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: none;
+  color: var(--text2);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Period tabs: W / M / 3M */
+.insight-period-row {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 16px;
+  flex-shrink: 0;
+}
+.period-btn {
+  padding: 5px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--mono);
+  border: 1.5px solid var(--border2);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.period-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+/* Scrollable content area */
+.insight-sheet-body {
+  padding: 0 20px 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+}
+
+/* Big summary stat */
+.insight-big-num {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+.insight-big-unit {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text3);
+  margin-left: 4px;
+}
+.insight-big-sub {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 5px;
+  margin-bottom: 18px;
+}
+
+/* Sub-metric tabs (Protein / Calcium / Water) */
+.insight-sub-tabs {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.insight-sub-tabs::-webkit-scrollbar { display: none; }
+.insight-sub-tab {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+.insight-sub-tab.active {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  border-color: var(--accent);
+}
+
+/* SVG chart */
+.insight-chart-wrap { margin-bottom: 8px; }
+.insight-chart-svg { width: 100%; height: 160px; display: block; overflow: visible; }
+.insight-chart-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--text3);
+  font-family: var(--mono);
+  margin-top: 7px;
+  flex-wrap: wrap;
+}
+.ileg-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+
+/* Per-day rows */
+.insight-day-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  gap: 8px;
+}
+.insight-day-row:last-child { border-bottom: none; }
+.insight-day-label { color: var(--text3); font-family: var(--mono); font-size: 11px; }
+.insight-day-value { color: var(--text); font-weight: 600; }
+.insight-day-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.insight-day-badge.met    { background: var(--accent-light);    color: var(--accent-dark); }
+.insight-day-badge.missed { background: var(--estimated-light); color: var(--estimated-dark); }
+
+.insight-empty {
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+  padding: 40px 0;
+  line-height: 1.5;
+}

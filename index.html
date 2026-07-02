@@ -326,6 +326,67 @@
     <div class="screen" id="screenAnalytics">
       <div class="section-hd"><h2>Analytics</h2><p>Trend view — built to bring to a clinic visit</p></div>
 
+      <!-- ── INSIGHT CARDS ── tap any card to see the trend detail -->
+      <div class="insight-cards-section">
+
+        <div class="insight-card" onclick="openInsightSheet('nutrition')">
+          <div class="insight-card-icon" style="background:var(--accent-light);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-dark)" stroke-width="2" stroke-linecap="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+            </svg>
+          </div>
+          <div class="insight-card-body">
+            <div class="insight-card-title">Nutrition</div>
+            <div class="insight-card-value" id="icNutValue">—</div>
+            <div class="insight-card-sub" id="icNutSub">Loading…</div>
+          </div>
+          <div class="insight-card-chevron">›</div>
+        </div>
+
+        <div class="insight-card" onclick="openInsightSheet('sleep')">
+          <div class="insight-card-icon" style="background:var(--measured-light);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--measured-dark)" stroke-width="2" stroke-linecap="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </div>
+          <div class="insight-card-body">
+            <div class="insight-card-title">Sleep</div>
+            <div class="insight-card-value" id="icSlpValue">—</div>
+            <div class="insight-card-sub" id="icSlpSub">Loading…</div>
+          </div>
+          <div class="insight-card-chevron">›</div>
+        </div>
+
+        <div class="insight-card" onclick="openInsightSheet('activity')">
+          <div class="insight-card-icon" style="background:var(--accent-light);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-dark)" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="5" r="2"/><path d="M6 20l2.5-7H9l1.5-4 3 2 2-4"/><path d="M17 20l-1.5-5"/>
+            </svg>
+          </div>
+          <div class="insight-card-body">
+            <div class="insight-card-title">Activity</div>
+            <div class="insight-card-value" id="icActValue">—</div>
+            <div class="insight-card-sub" id="icActSub">Loading…</div>
+          </div>
+          <div class="insight-card-chevron">›</div>
+        </div>
+
+        <div class="insight-card" onclick="openInsightSheet('height')">
+          <div class="insight-card-icon" style="background:var(--estimated-light);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--estimated-dark)" stroke-width="2" stroke-linecap="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+            </svg>
+          </div>
+          <div class="insight-card-body">
+            <div class="insight-card-title">Height velocity</div>
+            <div class="insight-card-value" id="icHtValue">—</div>
+            <div class="insight-card-sub" id="icHtSub">Loading…</div>
+          </div>
+          <div class="insight-card-chevron">›</div>
+        </div>
+
+      </div>
+
       <!-- Target (mid-parental) height card — implements the real,
            peer-reviewed corrections from Zeevi et al. 2024 (Children
            11(8):916) instead of the 50-year-old Tanner method's flat
@@ -1056,6 +1117,28 @@
     </div>
 
     <button class="btn-ghost" style="width:100%; margin-top:14px;" onclick="closeFoodLibraryModal()">Close</button>
+  </div>
+</div>
+
+<!-- INSIGHT DETAIL SHEET — slides up when a card is tapped -->
+<div class="modal-overlay hidden" id="insightSheetModal" onclick="insightBackdropClick(event)">
+  <div class="modal-sheet insight-modal-sheet">
+    <div class="modal-handle"></div>
+
+    <div class="insight-sheet-hdr">
+      <span id="insightSheetTitle">Nutrition</span>
+      <button class="modal-close-btn" onclick="closeInsightSheet()">✕</button>
+    </div>
+
+    <div class="insight-period-row">
+      <button class="period-btn active" id="iperiod-W"  onclick="switchInsightPeriod('W')">W</button>
+      <button class="period-btn"        id="iperiod-M"  onclick="switchInsightPeriod('M')">M</button>
+      <button class="period-btn"        id="iperiod-3M" onclick="switchInsightPeriod('3M')">3M</button>
+    </div>
+
+    <div class="insight-sheet-body" id="insightSheetBody">
+      <!-- Populated dynamically -->
+    </div>
   </div>
 </div>
 

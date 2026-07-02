@@ -3062,6 +3062,382 @@ function drawBMIChart() {
 // Lab marker trend chart — reads from lab_results table (and the three
 // fixed fields on medical_logs: IGF-1, VitD, Ferritin). Shows the last
 // 12 entries for each distinct analyte as a sparkline overlay.
+// ══════════════════════════════════════════════════════════════════
+// ANALYTICS INSIGHT CARDS + DETAIL SHEETS
+// Google Health–style: cards surface a 7-day headline, tap → bottom
+// sheet with period tabs (W/M/3M), SVG line chart, goal zone band,
+// colour-coded dots, per-day log rows.
+// All data is stored in APP.nutritionHistory / sleepHistory /
+// activityHistory (90-day window, loaded once per Analytics visit).
+// ══════════════════════════════════════════════════════════════════
+
+// ── State ─────────────────────────────────────────────────────────
+// (added to APP object dynamically — no schema change needed)
+// APP.nutritionHistory, APP.sleepHistory, APP.activityHistory
+// APP._insightType, APP._insightPeriod, APP._insightSubTab
+
+// ── Helpers ───────────────────────────────────────────────────────
+function filterByPeriod(rows, period) {
+  const days = period === 'W' ? 7 : period === 'M' ? 30 : 90;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+  return (rows || []).filter(r => (r.log_date || r.recorded_date || '') >= cutoffStr);
+}
+
+// ── Load 90 days of daily logs ────────────────────────────────────
+async function loadAnalyticsTrends() {
+  const childId = activeChildId();
+  if (!childId) return;
+  const since = new Date();
+  since.setDate(since.getDate() - 90);
+  const sinceISO = since.toISOString().split('T')[0];
+
+  const [nutRes, slpRes, actRes] = await Promise.all([
+    sb.from('daily_nutrition')
+      .select('log_date,total_protein_g,calcium_mg,fluids_ml')
+      .eq('child_id', childId).gte('log_date', sinceISO).order('log_date'),
+    sb.from('daily_sleep')
+      .select('log_date,total_sleep_min,bedtime')
+      .eq('child_id', childId).gte('log_date', sinceISO).order('log_date'),
+    sb.from('daily_activity')
+      .select('log_date,hanging_decompression_sec,box_jumps_reps,stretching_yoga_duration_min')
+      .eq('child_id', childId).gte('log_date', sinceISO).order('log_date'),
+  ]);
+
+  APP.nutritionHistory = nutRes.data || [];
+  APP.sleepHistory     = slpRes.data || [];
+  APP.activityHistory  = actRes.data || [];
+
+  updateInsightCards();
+}
+
+// ── Update the 4 collapsed card surfaces ─────────────────────────
+function updateInsightCards() {
+  const nut7 = filterByPeriod(APP.nutritionHistory, 'W');
+  const slp7 = filterByPeriod(APP.sleepHistory,     'W');
+  const act7 = filterByPeriod(APP.activityHistory,  'W');
+  const { boost } = activeChildProteinTargets();
+
+  // Nutrition
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  if (nut7.length) {
+    const avgP = Math.round(nut7.reduce((a,r)=>a+(r.total_protein_g||0),0)/nut7.length);
+    const pct  = Math.round(avgP/boost*100);
+    const metC = nut7.filter(r=>(r.calcium_mg||0)>=1300).length;
+    set('icNutValue', `${avgP}g protein avg / day`);
+    set('icNutSub',   `${pct}% of growth target · Ca goal ${metC}/${nut7.length} days`);
+  } else { set('icNutValue','—'); set('icNutSub','No data logged this week'); }
+
+  // Sleep
+  if (slp7.length) {
+    const avgM = slp7.reduce((a,r)=>a+(r.total_sleep_min||0),0)/slp7.length;
+    const met  = slp7.filter(r=>(r.total_sleep_min||0)>=570).length;
+    set('icSlpValue', `${Math.floor(avgM/60)}h ${Math.round(avgM%60)}m avg / night`);
+    set('icSlpSub',   `9.5h goal met ${met} of ${slp7.length} nights`);
+  } else { set('icSlpValue','—'); set('icSlpSub','No sleep data this week'); }
+
+  // Activity
+  const active = act7.filter(r=>(r.box_jumps_reps||0)+(r.hanging_decompression_sec||0)+(r.stretching_yoga_duration_min||0)>0).length;
+  set('icActValue', act7.length ? `${active} of ${act7.length} days active` : '—');
+  set('icActSub',   'Box jumps · Hanging · Yoga');
+
+  // Height velocity
+  const meas = (APP.activeChildMeasurements||[]).slice().sort((a,b)=>new Date(a.recorded_date)-new Date(b.recorded_date));
+  if (meas.length >= 2) {
+    const newest = meas[meas.length-1], oldest = meas[0];
+    const days = (new Date(newest.recorded_date)-new Date(oldest.recorded_date))/(86400000);
+    const vel  = days > 0 ? ((Number(newest.stature_height_cm)-Number(oldest.stature_height_cm))/days*365.25).toFixed(1) : '—';
+    set('icHtValue', `${vel} cm / year`);
+    set('icHtSub',   `${Number(newest.stature_height_cm).toFixed(1)} cm latest · ${meas.length} measurements`);
+  } else { set('icHtValue','—'); set('icHtSub','Add 2+ measurements to see velocity'); }
+}
+
+// ── SVG chart generator ───────────────────────────────────────────
+// Draws a responsive line chart with optional goal zone band.
+// All colours are hardcoded hex equivalents of the design tokens so
+// they work inside an SVG template literal (CSS vars don't apply to SVG
+// fill/stroke attributes when set via HTML string injection).
+function buildInsightSVG(rows, cfg) {
+  // cfg: { valueKey, goalValue|null, lineColor, goalColor, unit }
+  if (!rows || !rows.length) return '<div class="insight-empty">No data for this period.</div>';
+
+  const VW = 320, VH = 150, PL = 4, PR = 4, PT = 10, PB = 26;
+  const cW = VW-PL-PR, cH = VH-PT-PB;
+
+  const vals  = rows.map(r => Number(r[cfg.valueKey]||0));
+  const maxV  = Math.max(...vals, cfg.goalValue||0) * 1.05 || 1;
+  const minV  = 0;
+  const range = maxV - minV;
+
+  const toX = i  => PL + (i/(Math.max(rows.length-1,1)))*cW;
+  const toY = v  => PT + cH - ((v-minV)/range)*cH;
+
+  // Goal zone band
+  const goalY = cfg.goalValue != null ? toY(cfg.goalValue) : null;
+  const goalZone = goalY != null ? `
+    <rect x="${PL}" y="${PT}" width="${cW}" height="${Math.max(0,goalY-PT)}"
+      fill="${cfg.goalColor}1A" rx="3"/>
+    <line x1="${PL}" y1="${goalY.toFixed(1)}" x2="${VW-PR}" y2="${goalY.toFixed(1)}"
+      stroke="${cfg.goalColor}" stroke-width="1.2" stroke-dasharray="4,3" opacity="0.6"/>
+  ` : '';
+
+  // Grid lines (3 horizontals)
+  const grid = [0.25,0.5,0.75].map(f =>
+    `<line x1="${PL}" y1="${(PT+cH*f).toFixed(1)}" x2="${VW-PR}" y2="${(PT+cH*f).toFixed(1)}"
+      stroke="#E8EDE8" stroke-width="0.6"/>`).join('');
+
+  // Data polyline
+  const pts = rows.map((r,i)=>`${toX(i).toFixed(1)},${toY(Number(r[cfg.valueKey]||0)).toFixed(1)}`).join(' ');
+
+  // Dots — green = met goal or no goal, amber = missed
+  const dots = rows.map((r,i) => {
+    const v   = Number(r[cfg.valueKey]||0);
+    const met = cfg.goalValue == null || v >= cfg.goalValue;
+    const cx  = toX(i).toFixed(1), cy = toY(v).toFixed(1);
+    return `<circle cx="${cx}" cy="${cy}" r="4.5" fill="${met?'#2F6B4F':'#9C7A3D'}" stroke="#fff" stroke-width="1.5"/>`;
+  }).join('');
+
+  // X-axis date labels — first, mid, last only
+  const fmtD = s => new Date(s+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const xLbls = [];
+  if (rows.length>0) xLbls.push({i:0,           align:'start', lbl:fmtD(rows[0].log_date||rows[0].recorded_date)});
+  if (rows.length>2) xLbls.push({i:Math.floor(rows.length/2), align:'middle', lbl:fmtD(rows[Math.floor(rows.length/2)].log_date||rows[Math.floor(rows.length/2)].recorded_date)});
+  if (rows.length>1) xLbls.push({i:rows.length-1, align:'end',   lbl:fmtD(rows[rows.length-1].log_date||rows[rows.length-1].recorded_date)});
+  const xlabels = xLbls.map(({i,align,lbl})=>
+    `<text x="${toX(i).toFixed(1)}" y="${VH-4}" text-anchor="${align}"
+      fill="#95A092" font-size="9" font-family="monospace">${lbl}</text>`).join('');
+
+  return `<svg viewBox="0 0 ${VW} ${VH}" class="insight-chart-svg" preserveAspectRatio="none">
+    ${grid}${goalZone}
+    <polyline points="${pts}" fill="none" stroke="${cfg.lineColor}" stroke-width="2.2"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+    ${xlabels}
+  </svg>`;
+}
+
+// ── Per-type sheet content builders ──────────────────────────────
+function buildNutritionSheet(period) {
+  const { standard: ps, boost: pb } = activeChildProteinTargets();
+  const rows = filterByPeriod(APP.nutritionHistory, period);
+  const sub  = APP._insightSubTab || 'protein';
+
+  const cfg = {
+    protein: { key:'total_protein_g', goal:pb,   color:'#2F6B4F', unit:'g',      goalLabel:`${pb}g growth target` },
+    calcium: { key:'calcium_mg',      goal:1300,  color:'#2A5C8A', unit:'mg',     goalLabel:'1300mg goal' },
+    water:   { key:'fluids_ml',       goal:2000,  color:'#2A5C8A', unit:'ml',     goalLabel:'2000ml (8 glasses)' },
+  }[sub];
+
+  const subTabs = `<div class="insight-sub-tabs">
+    ${['protein','calcium','water'].map(t=>`<button class="insight-sub-tab ${sub===t?'active':''}"
+      onclick="setInsightSubTab('${t}')">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('')}
+  </div>`;
+
+  if (!rows.length) return subTabs + '<div class="insight-empty">No data for this period.<br>Start logging on the Today tab.</div>';
+
+  const avg  = rows.reduce((a,r)=>a+(r[cfg.key]||0),0)/rows.length;
+  const metC = rows.filter(r=>(r[cfg.key]||0)>=cfg.goal).length;
+  const bigNum = sub==='water' ? (avg/250).toFixed(1) : Math.round(avg);
+  const bigUnit= sub==='water' ? 'glasses avg/day' : `${cfg.unit} avg/day`;
+
+  const chart = buildInsightSVG(rows, {valueKey:cfg.key, goalValue:cfg.goal, lineColor:cfg.color, goalColor:cfg.color});
+  const legend = `<div class="insight-chart-legend">
+    <span><span class="ileg-dot" style="background:#2F6B4F;"></span>Goal met</span>
+    <span><span class="ileg-dot" style="background:#9C7A3D;"></span>Missed</span>
+    <span style="opacity:.6">· ${cfg.goalLabel}</span>
+  </div>`;
+
+  const dayRows = [...rows].reverse().slice(0,14).map(r => {
+    const v   = r[cfg.key]||0;
+    const met = v >= cfg.goal;
+    const disp = sub==='water' ? `${(v/250).toFixed(1)} gl` : `${Math.round(v)} ${cfg.unit}`;
+    const date = new Date(r.log_date+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    return `<div class="insight-day-row">
+      <span class="insight-day-label">${date}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="insight-day-value">${disp}</span>
+        <span class="insight-day-badge ${met?'met':'missed'}">${met?'✓':'·'}</span>
+      </div></div>`;
+  }).join('');
+
+  return `${subTabs}
+    <div><span class="insight-big-num">${bigNum}</span><span class="insight-big-unit">${bigUnit}</span></div>
+    <div class="insight-big-sub">Goal met ${metC} of ${rows.length} days</div>
+    <div class="insight-chart-wrap">${chart}${legend}</div>
+    <div style="margin-top:6px;">${dayRows}</div>`;
+}
+
+function buildSleepSheet(period) {
+  const rows = filterByPeriod(APP.sleepHistory, period);
+  if (!rows.length) return '<div class="insight-empty">No sleep data for this period.<br>Start logging on the Today tab.</div>';
+
+  const GOAL = 570; // 9.5h in minutes
+  const avg  = rows.reduce((a,r)=>a+(r.total_sleep_min||0),0)/rows.length;
+  const met  = rows.filter(r=>(r.total_sleep_min||0)>=GOAL).length;
+  const h = Math.floor(avg/60), m = Math.round(avg%60);
+
+  const chart = buildInsightSVG(rows, {valueKey:'total_sleep_min', goalValue:GOAL, lineColor:'#2A5C8A', goalColor:'#2A5C8A'});
+  const legend = `<div class="insight-chart-legend">
+    <span><span class="ileg-dot" style="background:#2F6B4F;"></span>Goal met</span>
+    <span><span class="ileg-dot" style="background:#9C7A3D;"></span>Missed</span>
+    <span style="opacity:.6">· 9.5h goal zone</span>
+  </div>`;
+
+  const dayRows = [...rows].reverse().slice(0,14).map(r => {
+    const totalMin = r.total_sleep_min||0;
+    const isMet = totalMin >= GOAL;
+    const disp  = totalMin ? `${Math.floor(totalMin/60)}h ${totalMin%60}m` : '—';
+    const date  = new Date(r.log_date+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    return `<div class="insight-day-row">
+      <span class="insight-day-label">${date}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="insight-day-value">${disp}</span>
+        <span class="insight-day-badge ${isMet?'met':'missed'}">${isMet?'✓':'·'}</span>
+      </div></div>`;
+  }).join('');
+
+  return `
+    <div><span class="insight-big-num">${h}h ${m}m</span><span class="insight-big-unit">avg / night</span></div>
+    <div class="insight-big-sub">9.5h goal met ${met} of ${rows.length} nights</div>
+    <div class="insight-chart-wrap">${chart}${legend}</div>
+    <div style="margin-top:6px;">${dayRows}</div>`;
+}
+
+function buildActivitySheet(period) {
+  const rows = filterByPeriod(APP.activityHistory, period);
+  const sub  = APP._insightSubTab || 'jumps';
+
+  const cfg = {
+    jumps:   { key:'box_jumps_reps',                goal:40,  unit:'reps', label:'Box jumps',  goalLabel:'40 reps goal' },
+    hanging: { key:'hanging_decompression_sec',      goal:30,  unit:'s',   label:'Hanging',    goalLabel:'30s goal'     },
+    yoga:    { key:'stretching_yoga_duration_min',   goal:20,  unit:'min', label:'Yoga',       goalLabel:'20 min goal'  },
+  }[sub];
+
+  const subTabs = `<div class="insight-sub-tabs">
+    ${[['jumps','Box jumps'],['hanging','Hanging'],['yoga','Yoga']].map(([t,l])=>
+      `<button class="insight-sub-tab ${sub===t?'active':''}" onclick="setInsightSubTab('${t}')">${l}</button>`).join('')}
+  </div>`;
+
+  if (!rows.length) return subTabs+'<div class="insight-empty">No activity data for this period.</div>';
+
+  const activeDays = rows.filter(r=>(r.box_jumps_reps||0)+(r.hanging_decompression_sec||0)+(r.stretching_yoga_duration_min||0)>0).length;
+  const avg    = rows.reduce((a,r)=>a+(r[cfg.key]||0),0)/rows.length;
+  const metC   = rows.filter(r=>(r[cfg.key]||0)>=cfg.goal).length;
+
+  const chart = buildInsightSVG(rows, {valueKey:cfg.key, goalValue:cfg.goal, lineColor:'#2F6B4F', goalColor:'#2F6B4F'});
+  const legend = `<div class="insight-chart-legend">
+    <span><span class="ileg-dot" style="background:#2F6B4F;"></span>Goal met</span>
+    <span><span class="ileg-dot" style="background:#9C7A3D;"></span>Missed</span>
+    <span style="opacity:.6">· ${cfg.goalLabel}</span>
+  </div>`;
+
+  const dayRows = [...rows].reverse().slice(0,14).map(r => {
+    const v    = r[cfg.key]||0;
+    const isMet = v >= cfg.goal;
+    const date = new Date(r.log_date+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    return `<div class="insight-day-row">
+      <span class="insight-day-label">${date}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="insight-day-value">${v} ${cfg.unit}</span>
+        <span class="insight-day-badge ${isMet?'met':'missed'}">${isMet?'✓':'·'}</span>
+      </div></div>`;
+  }).join('');
+
+  return `${subTabs}
+    <div><span class="insight-big-num">${activeDays}</span><span class="insight-big-unit"> of ${rows.length} days active</span></div>
+    <div class="insight-big-sub">${cfg.label} goal met ${metC}/${rows.length} days · avg ${Math.round(avg)} ${cfg.unit}</div>
+    <div class="insight-chart-wrap">${chart}${legend}</div>
+    <div style="margin-top:6px;">${dayRows}</div>`;
+}
+
+function buildHeightSheet() {
+  const meas = (APP.activeChildMeasurements||[])
+    .slice().sort((a,b)=>new Date(a.recorded_date)-new Date(b.recorded_date));
+  if (meas.length < 2) return '<div class="insight-empty">Add at least 2 height measurements<br>to see velocity here.</div>';
+
+  const newest = meas[meas.length-1], oldest = meas[0];
+  const days   = (new Date(newest.recorded_date)-new Date(oldest.recorded_date))/86400000;
+  const cmGain = Number(newest.stature_height_cm)-Number(oldest.stature_height_cm);
+  const vel    = days > 0 ? (cmGain/days*365.25) : 0;
+
+  const child = APP.children[APP.activeChild];
+  const ageY  = child?.date_of_birth ? (Date.now()-new Date(child.date_of_birth))/(365.25*86400000) : null;
+  let expLo = 4, expHi = 7;
+  if (ageY < 4) { expLo=7; expHi=13; } else if (ageY < 7) { expLo=5; expHi=8; } else if (ageY < 10) { expLo=4; expHi=7; } else if (ageY < 13) { expLo=4; expHi=8; } else { expLo=3; expHi=10; }
+  const status = vel < expLo ? 'missed' : vel > expHi ? 'met' : 'met';
+  const statusText = vel < expLo ? `⚠ Below expected (${expLo}–${expHi} cm/yr)` : vel > expHi ? `↑ Above expected (${expLo}–${expHi} cm/yr)` : `✓ Within expected (${expLo}–${expHi} cm/yr)`;
+
+  // Use measurements as time-series for the chart
+  const measRows = meas.map(m=>({log_date:m.recorded_date, height_cm:Number(m.stature_height_cm)}));
+  const chart = buildInsightSVG(measRows, {valueKey:'height_cm', goalValue:null, lineColor:'#9C7A3D', goalColor:'#9C7A3D'});
+
+  const histRows = meas.slice().reverse().slice(0,10).map(m => {
+    const date = new Date(m.recorded_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
+    return `<div class="insight-day-row">
+      <span class="insight-day-label">${date}</span>
+      <span class="insight-day-value">${Number(m.stature_height_cm).toFixed(1)} cm</span>
+    </div>`;
+  }).join('');
+
+  return `
+    <div><span class="insight-big-num">${vel.toFixed(1)}</span><span class="insight-big-unit"> cm / year</span></div>
+    <div class="insight-big-sub"><span class="insight-day-badge ${status}" style="font-size:12px;">${statusText}</span></div>
+    <div style="font-size:11px; color:#95A092; margin:10px 0 16px;">Over ${Math.round(days)} days · ${meas.length} measurements</div>
+    <div class="insight-chart-wrap">${chart}</div>
+    <div style="margin-top:8px;">${histRows}</div>`;
+}
+
+// ── Sheet open / close / switch ───────────────────────────────────
+function openInsightSheet(type) {
+  APP._insightType   = type;
+  APP._insightPeriod = 'W';
+  APP._insightSubTab = type==='nutrition' ? 'protein' : type==='activity' ? 'jumps' : null;
+  const titles = {nutrition:'Nutrition', sleep:'Sleep', activity:'Activity', height:'Height velocity'};
+  document.getElementById('insightSheetTitle').textContent = titles[type]||type;
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  const wb = document.getElementById('iperiod-W');
+  if (wb) wb.classList.add('active');
+  // Height doesn't use a period (all measurements shown)
+  document.querySelector('.insight-period-row').style.display = type==='height' ? 'none' : '';
+  refreshInsightSheet();
+  document.getElementById('insightSheetModal').classList.remove('hidden');
+}
+
+function closeInsightSheet() {
+  document.getElementById('insightSheetModal').classList.add('hidden');
+  APP._insightType = null;
+}
+
+function insightBackdropClick(e) {
+  if (e.target === document.getElementById('insightSheetModal')) closeInsightSheet();
+}
+
+function switchInsightPeriod(period) {
+  APP._insightPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById(`iperiod-${period}`);
+  if (btn) btn.classList.add('active');
+  refreshInsightSheet();
+}
+
+function setInsightSubTab(tab) {
+  APP._insightSubTab = tab;
+  refreshInsightSheet();
+}
+
+function refreshInsightSheet() {
+  const body = document.getElementById('insightSheetBody');
+  if (!body) return;
+  const t = APP._insightType, p = APP._insightPeriod;
+  if      (t==='nutrition') body.innerHTML = buildNutritionSheet(p);
+  else if (t==='sleep')     body.innerHTML = buildSleepSheet(p);
+  else if (t==='activity')  body.innerHTML = buildActivitySheet(p);
+  else if (t==='height')    body.innerHTML = buildHeightSheet();
+}
+
+// ── end insight engine ────────────────────────────────────────────
+
 async function drawLabChart() {
   const canvas = document.getElementById('labCanvas');
   if (!canvas) return;
@@ -4900,6 +5276,32 @@ async function askClaude(userMsg) {
     if (ctx.isSGA) growthLines.push(`- Born SGA (small for gestational age). Current catch-up growth velocity: ${ctx.sgaCatchupSDSPerYear} SDS/year (>0 SDS/year = catching up; this is the real clinical definition, not raw cm/year)`);
     if (ctx.recentLabs) growthLines.push(`- Recent lab results: ${ctx.recentLabs.join('; ')}`);
     if (ctx.recentPubertyEvents) growthLines.push(`- Recent puberty milestones: ${ctx.recentPubertyEvents.join('; ')}`);
+
+    // 7-day trend summaries — pulled from in-memory history arrays loaded
+    // when the Analytics tab is open. If arrays are empty the lines are
+    // omitted rather than showing misleading zeros.
+    const nut7 = filterByPeriod(APP.nutritionHistory || [], 'W');
+    if (nut7.length >= 3) {
+      const { standard: ps, boost: pb } = activeChildProteinTargets();
+      const avgProt = Math.round(nut7.reduce((a,r) => a+(r.total_protein_g||0),0) / nut7.length);
+      const avgCalc = Math.round(nut7.reduce((a,r) => a+(r.calcium_mg||0),0) / nut7.length);
+      const protDays = nut7.filter(r=>(r.total_protein_g||0)>=pb).length;
+      const calcDays = nut7.filter(r=>(r.calcium_mg||0)>=1300).length;
+      growthLines.push(`- 7-day nutrition trend: protein avg ${avgProt}g/day (standard RDA ${ps}g, growth target ${pb}g, target met ${protDays}/${nut7.length} days); calcium avg ${avgCalc}mg/day (goal 1300mg, met ${calcDays}/${nut7.length} days)`);
+    }
+    const slp7 = filterByPeriod(APP.sleepHistory || [], 'W');
+    if (slp7.length >= 3) {
+      const avgMin = Math.round(slp7.reduce((a,r) => a+(r.total_sleep_min||0),0) / slp7.length);
+      const goalMet = slp7.filter(r=>(r.total_sleep_min||0)>=570).length;
+      growthLines.push(`- 7-day sleep trend: avg ${Math.floor(avgMin/60)}h ${avgMin%60}m/night, 9.5h goal met ${goalMet}/${slp7.length} nights`);
+    }
+    const act7 = filterByPeriod(APP.activityHistory || [], 'W');
+    if (act7.length >= 3) {
+      const activeDays = act7.filter(r=>(r.box_jumps_reps||0)+(r.hanging_decompression_sec||0)+(r.stretching_yoga_duration_min||0)>0).length;
+      const avgJumps = Math.round(act7.reduce((a,r)=>a+(r.box_jumps_reps||0),0)/act7.length);
+      const avgHang  = Math.round(act7.reduce((a,r)=>a+(r.hanging_decompression_sec||0),0)/act7.length);
+      growthLines.push(`- 7-day activity trend: active ${activeDays}/${act7.length} days, avg ${avgJumps} box jumps/day, avg ${avgHang}s bar hanging/day`);
+    }
   } else {
     growthLines.push('- No child profile is currently selected.');
   }
@@ -5024,10 +5426,11 @@ async function goTab(name) {
     await updateStats();
     drawGrowthChart();
     drawBMIChart();
-    await loadLabResults(); // ensure lab data is fresh before drawing
+    await loadLabResults();
     drawLabChart();
     await loadFamilyHeightRecords();
     loadTargetHeightForm();
+    await loadAnalyticsTrends(); // insight cards + detail sheet data
   }
   if (name === 'Medical') {
     await loadMedicalLogForDate();
