@@ -98,12 +98,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const { data } = await sb.auth.getSession();
   if (data.session) {
     await enterApp(data.session);
+    // Check for Google Health OAuth callback (?code=...) — Google
+    // redirects back here after the user approves Fitbit access.
+    // Must run after enterApp() so APP.session is populated.
+    await handleGoogleHealthOAuthCallback();
   } else {
     showAuthScreen();
   }
 
-  // Keep the app in sync if the session changes elsewhere (e.g. token
-  // refresh, or sign-out triggered from another tab).
   sb.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT') {
       showAuthScreen();
@@ -113,6 +115,202 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logDate').valueAsDate = new Date();
   document.getElementById('newPubertyDate').valueAsDate = new Date();
 });
+
+// ══════════════════════════════════════════════════════════════════
+// GOOGLE HEALTH API (FITBIT) INTEGRATION
+// OAuth 2.0 flow + sleep sync via google-health-auth and
+// google-health-sync Edge Functions.
+// ══════════════════════════════════════════════════════════════════
+
+const GOOGLE_HEALTH_CLIENT_ID = '703084084864-g9vctf4sfaufjdqklmq4a11qsi3epk48.apps.googleusercontent.com';
+const GOOGLE_HEALTH_REDIRECT_URI = 'https://cheetahokok-sudo.github.io/growsense/';
+const GOOGLE_HEALTH_SCOPES = [
+  'openid',
+  'email',
+  'https://www.googleapis.com/auth/googlehealth.sleep.readonly'
+].join(' ');
+
+// ── Start the OAuth flow ─────────────────────────────────────────
+// Called when the user taps "Connect Fitbit" in child settings.
+// Saves child_id + CSRF token to sessionStorage, then redirects to
+// Google's consent screen.
+function initiateGoogleHealthOAuth(childId) {
+  const csrf = crypto.randomUUID();
+  sessionStorage.setItem('gh_csrf', csrf);
+  sessionStorage.setItem('gh_child_id', childId);
+
+  const params = new URLSearchParams({
+    client_id: GOOGLE_HEALTH_CLIENT_ID,
+    redirect_uri: GOOGLE_HEALTH_REDIRECT_URI,
+    response_type: 'code',
+    scope: GOOGLE_HEALTH_SCOPES,
+    access_type: 'offline',   // required for refresh_token
+    prompt: 'consent',        // always get a fresh refresh_token
+    state: `${childId}:${csrf}`
+  });
+
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+}
+
+// ── Handle the OAuth callback ────────────────────────────────────
+// Runs on every page load. Does nothing unless ?code= is in the URL.
+async function handleGoogleHealthOAuthCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get('code');
+  const state  = params.get('state');
+  const error  = params.get('error');
+
+  if (!code && !error) return; // not an OAuth callback
+
+  // Clean up URL immediately so a page refresh doesn't replay the code
+  window.history.replaceState({}, document.title, window.location.pathname);
+
+  if (error) {
+    showToast('⚠️', `Fitbit connection cancelled: ${error}`);
+    return;
+  }
+
+  // CSRF check
+  const [childId, csrfFromState] = (state || '').split(':');
+  const storedCsrf    = sessionStorage.getItem('gh_csrf');
+  const storedChildId = sessionStorage.getItem('gh_child_id');
+  sessionStorage.removeItem('gh_csrf');
+  sessionStorage.removeItem('gh_child_id');
+
+  if (!csrfFromState || csrfFromState !== storedCsrf || childId !== storedChildId) {
+    showToast('⚠️', 'Connection failed: security check error. Please try again.');
+    return;
+  }
+
+  if (!APP.session) {
+    showToast('⚠️', 'Please sign in before connecting Fitbit.');
+    return;
+  }
+
+  showToast('🔄', 'Connecting Fitbit…');
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/google-health-auth`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${APP.session.access_token}`
+      },
+      body: JSON.stringify({ code, child_id: childId })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Connection failed');
+
+    showToast('✅', `Fitbit connected (${data.google_email})`);
+
+    // Store connection status in APP state
+    if (!APP.googleHealthConnections) APP.googleHealthConnections = {};
+    APP.googleHealthConnections[childId] = data.connection;
+
+    // Update the Connect button in the UI to show connected state
+    renderGoogleHealthConnectionStatus(childId);
+
+    // Trigger first sync — pull the last 14 nights immediately
+    await syncGoogleHealthSleep(childId, 14);
+
+  } catch (e) {
+    console.error('[Google Health Auth]', e);
+    showToast('⚠️', 'Fitbit connection failed: ' + e.message);
+  }
+}
+
+// ── Load connection status from DB ───────────────────────────────
+async function loadGoogleHealthConnections() {
+  if (!APP.session || !activeChildId()) return;
+  const childId = activeChildId();
+
+  const { data } = await sb
+    .from('google_health_connection_status')  // safe view (no tokens)
+    .select('*')
+    .eq('child_id', childId)
+    .maybeSingle();
+
+  if (!APP.googleHealthConnections) APP.googleHealthConnections = {};
+  APP.googleHealthConnections[childId] = data || null;
+  renderGoogleHealthConnectionStatus(childId);
+}
+
+// ── Render the Connect/Sync button in the UI ─────────────────────
+function renderGoogleHealthConnectionStatus(childId) {
+  const btn = document.getElementById('fitbitConnectBtn');
+  if (!btn) return;
+
+  const conn = APP.googleHealthConnections?.[childId];
+
+  if (!conn) {
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.8a19.79 19.79 0 01-3.07-8.6A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14z"/></svg> Connect Fitbit`;
+    btn.className = 'btn-secondary';
+    btn.onclick = () => initiateGoogleHealthOAuth(childId);
+    return;
+  }
+
+  // Connected — show sync button with last sync time
+  const lastSync = conn.last_sync_at
+    ? new Date(conn.last_sync_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    : 'never';
+  const statusColor = conn.last_sync_status === 'error' ? 'var(--flag)' : 'var(--accent)';
+
+  btn.innerHTML = `<span style="color:${statusColor};">●</span> Fitbit synced ${lastSync} &nbsp;·&nbsp; Sync now`;
+  btn.className = 'btn-secondary';
+  btn.onclick = () => syncGoogleHealthSleep(childId, 7);
+}
+
+// ── Sync sleep data ───────────────────────────────────────────────
+async function syncGoogleHealthSleep(childId, daysBack = 7) {
+  if (!APP.session) return;
+
+  const btn = document.getElementById('fitbitConnectBtn');
+  if (btn) { btn.textContent = '⏳ Syncing…'; btn.disabled = true; }
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/google-health-sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${APP.session.access_token}`
+      },
+      body: JSON.stringify({ child_id: childId, days_back: daysBack })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Sync failed');
+
+    showToast('✅', `${data.nights_synced} nights synced from Fitbit`);
+
+    // Refresh connection status (updates last_sync_at)
+    await loadGoogleHealthConnections();
+
+    // If the Today tab or Analytics is open, reload the relevant data
+    const todayScreen = document.getElementById('screenToday');
+    if (todayScreen?.classList.contains('active')) await loadTodaySleepLog?.();
+
+  } catch (e) {
+    console.error('[Google Health Sync]', e);
+    showToast('⚠️', 'Sync failed: ' + e.message);
+    if (btn) { btn.disabled = false; renderGoogleHealthConnectionStatus(childId); }
+  }
+}
+
+// ── Disconnect ────────────────────────────────────────────────────
+async function disconnectGoogleHealth(childId) {
+  if (!confirm('Disconnect Fitbit? Sleep data already synced will remain.')) return;
+
+  await sb.from('google_health_connections').delete().eq('child_id', childId);
+
+  if (APP.googleHealthConnections) APP.googleHealthConnections[childId] = null;
+  renderGoogleHealthConnectionStatus(childId);
+  showToast('✅', 'Fitbit disconnected');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// end Google Health integration
+// ══════════════════════════════════════════════════════════════════
 
 function showAuthScreen() {
   document.getElementById('authScreen').classList.remove('hidden');
@@ -5439,6 +5637,9 @@ async function goTab(name) {
     await loadFamilyHeightRecords();
     loadTargetHeightForm();
     await loadAnalyticsTrends(); // insight cards + detail sheet data
+  }
+  if (name === 'Today') {
+    await loadGoogleHealthConnections(); // refresh Fitbit sync button
   }
   if (name === 'Medical') {
     await loadMedicalLogForDate();
