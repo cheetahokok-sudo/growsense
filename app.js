@@ -4242,7 +4242,12 @@ async function drawLabChart() {
 // recent lab values, logging consistency) sized for a doctor visit, and
 // triggers a share/copy flow. No file-system writes — this is a client-side
 // text blob handed to the OS share sheet or clipboard.
+// exportClinicalSummary — alias kept so old onclick attributes still work.
 async function exportClinicalSummary() {
+  return generateClinicPDF();
+}
+
+async function _exportClinicalSummaryOLD_UNUSED() {
   const child = APP.children[APP.activeChild];
   if (!child) { showToast('⚠️', 'Add a child profile first'); return; }
   const streakArr = currentStreak();
