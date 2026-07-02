@@ -284,7 +284,12 @@
 
       <!-- 3. Sleep — built around the GH secretion window -->
       <div class="card" style="border-top: 3px solid var(--estimated);">
-        <div class="card-header"><span class="card-title text-estimated">Sleep & the overnight GH window</span></div>
+        <div class="card-header">
+          <span class="card-title text-estimated">Sleep & the overnight GH window</span>
+          <button id="fitbitConnectBtn" class="btn-secondary" style="font-size:11px; padding:5px 10px;" onclick="initiateGoogleHealthOAuth(activeChildId())">
+            Connect Fitbit
+          </button>
+        </div>
         <div class="card-body">
           <div class="form-row">
             <div><div class="form-lbl">Bedtime</div><div class="form-lbl-sub">Target: before 21:30</div></div>
