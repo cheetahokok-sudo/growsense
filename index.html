@@ -126,7 +126,12 @@
       <div class="card" style="margin-top:8px; border-top: 3px solid var(--accent);">
         <div class="card-header">
           <span class="card-title text-accent">Readiness reading</span>
-          <span id="todayDateBadge" class="badge badge-measured" style="font-size:10px;"></span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="todayDateBadge" class="badge badge-measured" style="font-size:10px;"></span>
+            <button class="info-toggle-btn" onclick="toggleInfo('hudNote')" aria-label="About this score">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
         </div>
         <div class="grs-hud">
           <div class="grs-top">
@@ -168,7 +173,7 @@
               <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barSlp" style="width:0%; background:var(--estimated)"></div></div><div class="grs-bar-lbl">Sleep</div></div>
             </div>
           </div>
-          <div class="setup-note" style="margin-top:14px; font-size:11px;">
+          <div class="setup-note hidden" id="hudNote" style="margin-top:14px; font-size:11px;">
             This reading reflects today's logged inputs only. A single day carries little signal on its own — what matters clinically is the 30-day trend, visible on the Analytics tab.
           </div>
         </div>
@@ -176,16 +181,24 @@
 
       <!-- Logging consistency -->
       <div class="card">
-        <div class="card-header"><span class="card-title">Logging consistency, this week</span><span id="streakCount" class="badge badge-accent">0 / 7 days</span></div>
+        <div class="card-header">
+          <span class="card-title">Logging consistency, this week</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="streakCount" class="badge badge-accent">0 / 7 days</span>
+            <button class="info-toggle-btn" onclick="toggleInfo('consistNote')" aria-label="About logging consistency">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </div>
         <div class="card-body">
           <div class="consist-row" id="streakRow"></div>
-          <div class="setup-note" style="margin-top:10px; font-size:11px;">Consistent daily logs make the trend lines on Analytics meaningful. Gaps get marked on the chart rather than guessed at.</div>
+          <div class="setup-note hidden" id="consistNote" style="margin-top:10px; font-size:11px;">Consistent daily logs make the trend lines on Analytics meaningful. Gaps get marked on the chart rather than guessed at.</div>
         </div>
       </div>
 
       <!-- 1. Nutrition -->
       <div class="card" style="border-top: 3px solid var(--accent);">
-        <div class="card-header"><span class="card-title text-accent">Nutrition</span><span style="display:flex; align-items:center; gap:6px;"><span class="dq-badge measured"><span class="dq-dot measured"></span>USDA sourced</span><button class="info-icon-btn" onclick="toggleFoodNote(this)" aria-label="About these values">i</button></span></div>
+        <div class="card-header"><span class="card-title text-accent">Nutrition</span><span style="display:flex; align-items:center; gap:6px;"><span class="dq-badge measured"><span class="dq-dot measured"></span>USDA sourced</span><button class="info-toggle-btn" onclick="toggleFoodNote(this)" aria-label="About these values"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button></span></div>
         <div class="card-body">
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none; padding-bottom:8px;">
             <div class="form-lbl" style="font-size:12px; color:var(--text2);">Logging for</div>
@@ -1140,6 +1153,38 @@
     </div>
 
     <button class="btn-ghost" style="width:100%; margin-top:14px;" onclick="closeFoodLibraryModal()">Close</button>
+  </div>
+</div>
+
+<!-- MEASUREMENT EDIT SHEET -->
+<div class="modal-overlay hidden" id="measurementEditModal" onclick="closeMeasurementEditSheet(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="insight-sheet-hdr">
+      <span>Edit measurement</span>
+      <button class="modal-close-btn" onclick="document.getElementById('measurementEditModal').classList.add('hidden')">✕</button>
+    </div>
+    <div style="padding:0 20px 36px; display:flex; flex-direction:column; gap:10px;">
+      <input type="hidden" id="editMeasId">
+      <div class="form-row">
+        <div class="form-lbl">Date</div>
+        <input type="date" id="editMeasDate" class="date-input" style="max-width:160px;">
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">Height (cm)</div>
+        <input type="number" id="editMeasHeight" class="num-input" step="0.1" placeholder="125.0" style="max-width:100px;">
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">Weight (kg)</div>
+        <input type="number" id="editMeasWeight" class="num-input" step="0.01" placeholder="29.0" style="max-width:100px;">
+      </div>
+      <div class="setup-note" style="font-size:11px; margin-top:-4px;">BMI recalculates automatically on save.</div>
+      <button class="btn-primary" onclick="saveMeasurementEdit()" style="margin-top:6px;">Save changes</button>
+      <button class="btn-link" onclick="deleteMeasurement()"
+        style="color:var(--flag); font-size:12px; text-align:center; margin-top:4px;">
+        Delete this entry
+      </button>
+    </div>
   </div>
 </div>
 
