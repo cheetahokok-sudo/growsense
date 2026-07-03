@@ -18,6 +18,111 @@ const DEFAULT_DAY_STATE = {
 // ══════════════════════════════════════════
 const sb = createGrowSenseClient();
 
+// ══════════════════════════════════════════════════════════════════
+// INTERNATIONALISATION (i18n) — Phase 1
+//
+// Architecture:
+//   · Locale strings live in /locales/{lang}.json
+//   · t(key, fallback) looks up the active language, never throws
+//   · data-i18n="key" on HTML elements updated by applyI18n()
+//   · Preference saved to localStorage — survives page refresh
+//   · Default: English. User chooses in Account screen.
+//
+// Flutter / React Native migration path:
+//   · /locales/*.json are the source files, format is portable
+//   · Key format: "screen.component.element" in snake_case
+//   · Interpolation: {value} — compatible with flutter_localizations
+//     ARB and i18next
+//
+// Safety: t() has 4 fallback layers and never throws.
+// data-i18n is additive — hardcoded text is the ultimate fallback.
+// ══════════════════════════════════════════════════════════════════
+
+const SUPPORTED_LANGUAGES = [
+  { code: 'en', label: 'EN', name: 'English',       flag: '🇬🇧' },
+  { code: 'th', label: 'TH', name: 'ภาษาไทย',     flag: '🇹🇭' },
+  { code: 'zh', label: 'ZH', name: '中文（简体）',  flag: '🇨🇳' },
+];
+const LOCALES = {}; // populated by loadLocales() at boot
+
+async function loadLocales() {
+  await Promise.all(SUPPORTED_LANGUAGES.map(async ({ code }) => {
+    try {
+      const res = await fetch(`locales/${code}.json`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { _meta, ...strings } = await res.json();
+      LOCALES[code] = strings;
+    } catch (e) {
+      console.warn(`[i18n] Could not load ${code}.json:`, e.message);
+      LOCALES[code] = {};
+    }
+  }));
+}
+
+// 4-layer fallback — NEVER throws, NEVER returns undefined.
+function t(key, fallback) {
+  try {
+    const lang = (typeof APP !== 'undefined' && APP.language) || 'en';
+    return LOCALES[lang]?.[key]
+      || LOCALES['en']?.[key]
+      || fallback
+      || key;
+  } catch (e) {
+    return fallback || key;
+  }
+}
+
+function restoreLanguagePreference() {
+  try {
+    const saved = localStorage.getItem('growsense_language');
+    if (saved && SUPPORTED_LANGUAGES.find(l => l.code === saved)) {
+      APP.language = saved;
+    } else {
+      APP.language = 'en';
+    }
+  } catch (e) {
+    APP.language = 'en';
+  }
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (!el.hasAttribute('data-i18n-fallback')) {
+      el.setAttribute('data-i18n-fallback', el.textContent.trim());
+    }
+    const fallback = el.getAttribute('data-i18n-fallback');
+    el.textContent = t(key, fallback);
+  });
+  // Also translate placeholder attributes
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    const fallback = el.getAttribute('placeholder') || '';
+    el.placeholder = t(key, fallback);
+  });
+}
+
+async function switchLanguage(lang) {
+  if (!SUPPORTED_LANGUAGES.find(l => l.code === lang)) return;
+  APP.language = lang;
+  try { localStorage.setItem('growsense_language', lang); } catch (e) {}
+  applyI18n();
+  renderLanguageSelector();
+}
+
+function renderLanguageSelector() {
+  const el = document.getElementById('languageSelector');
+  if (!el) return;
+  el.innerHTML = SUPPORTED_LANGUAGES.map(l => `
+    <button class="lang-pill${APP.language === l.code ? ' active' : ''}"
+      onclick="switchLanguage('${l.code}')"
+      aria-label="Switch to ${l.name}">
+      ${l.flag} ${l.label}
+    </button>`).join('');
+}
+
+// ── end i18n ──────────────────────────────────────────────────────
+
 const APP = {
   session: null,        // Supabase auth session
   account: null,         // row from user_accounts: { user_id, email, account_role, ... }
@@ -32,6 +137,7 @@ const APP = {
   referenceStandard: 'who', // 'who' or 'thai' — which growth chart reference is displayed; see setReferenceStandard()
   chartZoom: 'auto', // 'auto' (zoomed to current age, existing behavior) or 'full' (always shows 0-19y) — see setChartZoom()
   labResults: [],    // lab_results rows for the active child, loaded when the Medical tab opens
+  language: 'en',    // active UI language — 'en' | 'th' | 'zh', saved to localStorage
   pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
   illnessEvents: [], // illness_events rows for the active child, loaded when the Medical tab opens
   foodFavorites: [], // food_favorites rows for the active child — determines which cards show on the Nutrition grid
@@ -95,12 +201,16 @@ function isSystemAdmin() {
 // BOOT — gated on auth session
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
+  // Load locale files and restore language preference FIRST,
+  // before any UI renders, so the correct language is applied
+  // from the very first paint.
+  await loadLocales();
+  restoreLanguagePreference();
+
   const { data } = await sb.auth.getSession();
   if (data.session) {
     await enterApp(data.session);
-    // Check for Google Health OAuth callback (?code=...) — Google
-    // redirects back here after the user approves Fitbit access.
-    // Must run after enterApp() so APP.session is populated.
+    applyI18n(); // update all data-i18n elements to active language
     await handleGoogleHealthOAuthCallback();
   } else {
     showAuthScreen();
@@ -217,7 +327,7 @@ async function handleGoogleHealthOAuthCallback() {
     return;
   }
 
-  showToast('🔄', 'Connecting Fitbit…');
+  showToast('🔄', t('toast.connecting_fitbit','Connecting Fitbit…'));
 
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/google-health-auth`, {
@@ -256,7 +366,7 @@ async function handleGoogleHealthOAuthCallback() {
       }
     };
 
-    showToast('✅', `Fitbit connected (${data.google_email})`);
+    showToast('✅', `${t('toast.fitbit_connected','Fitbit connected')} (${data.google_email})`);
 
     if (!APP.googleHealthConnections) APP.googleHealthConnections = {};
     APP.googleHealthConnections[childId] = data.connection;
@@ -267,7 +377,7 @@ async function handleGoogleHealthOAuthCallback() {
 
   } catch (e) {
     console.error('[Google Health Auth]', e);
-    showToast('⚠️', 'Fitbit connection failed: ' + e.message);
+    showToast('⚠️', t('toast.error.fitbit_failed','Fitbit connection failed') + ': ' + e.message);
   }
 }
 
@@ -332,7 +442,7 @@ async function syncGoogleHealthSleep(childId, daysBack = 7) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Sync failed');
 
-    showToast('✅', `${data.nights_synced} nights synced from Fitbit`);
+    showToast('✅', `${data.nights_synced} ${t('toast.nights_synced','nights synced from Fitbit')}`);
 
     // Refresh connection status (updates last_sync_at)
     await loadGoogleHealthConnections();
@@ -343,20 +453,20 @@ async function syncGoogleHealthSleep(childId, daysBack = 7) {
 
   } catch (e) {
     console.error('[Google Health Sync]', e);
-    showToast('⚠️', 'Sync failed: ' + e.message);
+    showToast('⚠️', t('toast.error.sync_failed','Sync failed') + ': ' + e.message);
     if (btn) { btn.disabled = false; renderGoogleHealthConnectionStatus(childId); }
   }
 }
 
 // ── Disconnect ────────────────────────────────────────────────────
 async function disconnectGoogleHealth(childId) {
-  if (!confirm('Disconnect Fitbit? Sleep data already synced will remain.')) return;
+  if (!confirm(t('confirm.disconnect_fitbit','Disconnect Fitbit? Sleep data already synced will remain.'))) return;
 
   await sb.from('google_health_connections').delete().eq('child_id', childId);
 
   if (APP.googleHealthConnections) APP.googleHealthConnections[childId] = null;
   renderGoogleHealthConnectionStatus(childId);
-  showToast('✅', 'Fitbit disconnected');
+  showToast('✅', t('toast.fitbit_disconnected','Fitbit disconnected'));
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -373,9 +483,9 @@ async function disconnectGoogleHealth(childId) {
 
 async function generateClinicPDF() {
   const child = APP.children[APP.activeChild];
-  if (!child) { showToast('⚠️', 'No child selected'); return; }
+  if (!child) { showToast('⚠️', t('toast.error.no_child','No child selected')); return; }
 
-  showToast('🔄', 'Building clinic report…');
+  showToast('🔄', t('toast.building_report','Building clinic report…'));
 
   // ── Capture chart images ───────────────────────────────────────
   // Charts are rendered when Analytics tab is open.
@@ -459,7 +569,7 @@ async function generateClinicPDF() {
   });
 
   const win = window.open('', '_blank');
-  if (!win) { showToast('⚠️', 'Pop-up blocked — allow pop-ups for this site and try again'); return; }
+  if (!win) { showToast('⚠️', t('toast.error.popup_blocked','Pop-up blocked — allow pop-ups for this site and try again')); return; }
   win.document.write(html);
   win.document.close();
   win.focus();
@@ -756,6 +866,7 @@ async function enterApp(session) {
 
   document.getElementById('clinicianPanel').classList.toggle('hidden', !isClinicianRole());
   document.getElementById('parentPanel').classList.toggle('hidden', isClinicianRole());
+  renderLanguageSelector(); // populate language pills in account screen
 
   initDateSelector();
   await loadChildren();
@@ -947,7 +1058,7 @@ async function saveMeasurementEdit() {
   const weight = parseFloat(document.getElementById('editMeasWeight').value);
 
   if (!date || isNaN(height) || isNaN(weight) || height <= 0 || weight <= 0) {
-    showToast('⚠️', 'Please enter valid height and weight'); return;
+    showToast('⚠️', t('toast.error.invalid_height_weight','Please enter valid height and weight')); return;
   }
 
   const bmi = parseFloat((weight / Math.pow(height / 100, 2)).toFixed(1));
@@ -959,10 +1070,10 @@ async function saveMeasurementEdit() {
     calculated_bmi: bmi,
   }).eq('measurement_id', id);
 
-  if (error) { showToast('⚠️', 'Save failed: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.save_failed','Save failed') + ': ' + error.message); return; }
 
   document.getElementById('measurementEditModal').classList.add('hidden');
-  showToast('✅', 'Measurement updated');
+  showToast('✅', t('toast.measurement_updated','Measurement updated'));
   await refreshActiveChildHistory();
   drawGrowthChart();
   drawBMIChart();
@@ -970,15 +1081,15 @@ async function saveMeasurementEdit() {
 }
 
 async function deleteMeasurement() {
-  if (!confirm('Delete this measurement? This cannot be undone.')) return;
+  if (!confirm(t('confirm.delete_measurement','Delete this measurement? This cannot be undone.'))) return;
 
   const id = document.getElementById('editMeasId').value;
   const { error } = await sb.from('measurements').delete().eq('measurement_id', id);
 
-  if (error) { showToast('⚠️', 'Delete failed: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.delete_failed','Delete failed') + ': ' + error.message); return; }
 
   document.getElementById('measurementEditModal').classList.add('hidden');
-  showToast('✅', 'Measurement deleted');
+  showToast('✅', t('toast.measurement_deleted','Measurement deleted'));
   await refreshActiveChildHistory();
   drawGrowthChart();
   drawBMIChart();
@@ -1105,7 +1216,7 @@ async function deleteNutritionLogItem(itemId) {
   if (!item) return;
 
   const { error } = await sb.from('nutrition_log_items').delete().eq('item_id', itemId);
-  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.remove_failed','Could not remove') + ': ' + error.message); return; }
 
   APP.nutritionLogItems = APP.nutritionLogItems.filter(i => i.item_id !== itemId);
   renderNutritionLogList();
@@ -1124,7 +1235,7 @@ async function deleteNutritionLogItem(itemId) {
 // deleteNutritionLogItem(), which also adjusts totals).
 async function removeLoggedItemRowOnly(itemId) {
   const { error } = await sb.from('nutrition_log_items').delete().eq('item_id', itemId);
-  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.remove_failed','Could not remove') + ': ' + error.message); return; }
   APP.nutritionLogItems = APP.nutritionLogItems.filter(i => i.item_id !== itemId);
   renderNutritionLogList();
 }
@@ -1311,7 +1422,7 @@ async function requestAccountDeletion() {
   }).eq('user_id', userId);
   if (accountError) { showToast('⚠️', 'Could not archive account: ' + accountError.message); return; }
 
-  showToast('✅', 'Account archived. Signing out…');
+  showToast('✅', t('toast.account_archived','Account archived. Signing out…'));
   setTimeout(() => handleSignOut(), 1200); // brief pause so the toast is actually visible before the auth screen replaces everything
 }
 
@@ -1548,8 +1659,8 @@ async function addChild() {
   const name = document.getElementById('newChildName').value.trim();
   const dob = document.getElementById('newChildDOB').value;
   const sex = document.getElementById('newChildSex').value;
-  if (!name) { showToast('⚠️', 'Enter a name'); return; }
-  if (!dob) { showToast('⚠️', 'Enter a date of birth'); return; }
+  if (!name) { showToast('⚠️', t('toast.error.enter_name','Enter a name')); return; }
+  if (!dob) { showToast('⚠️', t('toast.error.enter_dob','Enter a date of birth')); return; }
 
   // ── Tier enforcement: max_children ───────────────────────────────
   // Check the limit before inserting — a client-side-only check is
@@ -1605,7 +1716,7 @@ async function addChild() {
   renderChildSwitcher();
   renderChildList();
   populateShareChildSelect();
-  showToast('✅', `${name} added`);
+  showToast('✅', `${name} ${t('toast.child_added','added')}`);
 }
 
 // Shows/hides the optional birth-details fields on the child creation
@@ -1729,7 +1840,7 @@ async function saveChildSettings(childId) {
     wearable_account_email: wearableEmail,
   }).eq('child_id', childId);
 
-  if (error) { showToast('⚠️', 'Save failed: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.save_failed','Save failed') + ': ' + error.message); return; }
 
   const child = APP.children.find(c => c.child_id === childId);
   if (child) {
@@ -1740,7 +1851,7 @@ async function saveChildSettings(childId) {
 
   renderChildSwitcher();
   renderChildList();
-  showToast('✅', `${name}'s profile saved`);
+  showToast('✅', `${name} — ${t('toast.profile_saved','profile saved')}`);
 }
 
 // Named deleteChildProfile, NOT removeChild — every DOM Node has a
@@ -1768,7 +1879,7 @@ async function deleteChildProfile(childId) {
     showToast('⚠️', 'At least one active child profile is required');
     return;
   }
-  if (!confirm('Remove this child profile? It will be archived (not permanently deleted) for 1 year, during which it can still be recovered if needed. After that, it cannot be restored.')) return;
+  if (!confirm(t('confirm.archive_child','Remove this child profile? It will be archived for 1 year and can be recovered during that time.'))) return;
 
   const retentionDays = await getAccountArchiveRetentionDays();
   const archivedAt = new Date();
@@ -1796,7 +1907,7 @@ async function deleteChildProfile(childId) {
   loadChildIntoForm();
   await refreshActiveChildHistory();
   await loadWeekStreak();
-  showToast('✅', 'Child profile archived — recoverable for ' + retentionDays + ' days');
+  showToast('✅', t('toast.child_archived','Child profile archived') + ' — ' + retentionDays + ' ' + t('toast.days_recoverable','days recoverable'));
 }
 
 // Looks up this account's actual archive retention window from
@@ -1822,8 +1933,8 @@ function populateShareChildSelect() {
 async function shareChildWithDoctor() {
   const childId = document.getElementById('shareChildSelect').value;
   const email = document.getElementById('shareDoctorEmail').value.trim();
-  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
-  if (!email) { showToast('⚠️', "Enter the doctor or researcher's email"); return; }
+  if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
+  if (!email) { showToast('⚠️', t('toast.error.enter_doctor_email',"Enter the doctor or researcher's email")); return; }
 
   // find_clinician_by_email is a SECURITY DEFINER Postgres function
   // (see migration_find_clinician_function.sql) — it's the correct fix
@@ -1848,7 +1959,7 @@ async function shareChildWithDoctor() {
   const target = matches && matches.length > 0 ? matches[0] : null;
 
   if (!target) {
-    showToast('⚠️', 'No Doctor or Researcher account found with that email');
+    showToast('⚠️', t('toast.error.no_clinician_account','No Doctor or Researcher account found with that email'));
     return;
   }
 
@@ -1861,7 +1972,7 @@ async function shareChildWithDoctor() {
     return;
   }
   document.getElementById('shareDoctorEmail').value = '';
-  showToast('✅', 'Access granted');
+  showToast('✅', t('toast.access_granted','Access granted'));
   await renderCurrentShares(childId);
 }
 
@@ -1886,7 +1997,7 @@ async function renderCurrentShares(childId) {
 async function revokeShare(assignmentId, childId) {
   const { error } = await sb.from('doctor_patient_assignments').update({ is_active: false }).eq('assignment_id', assignmentId);
   if (error) { showToast('⚠️', 'Could not revoke: ' + error.message); return; }
-  showToast('✅', 'Access revoked');
+  showToast('✅', t('toast.access_revoked','Access revoked'));
   await renderCurrentShares(childId);
 }
 
@@ -2078,7 +2189,7 @@ function loadTargetHeightForm() {
 
 async function calculateAndShowTargetHeight() {
   const child = APP.children[APP.activeChild];
-  if (!child) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!child) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
 
   const motherHeight = parseFloat(document.getElementById('thMotherHeight').value);
   const fatherHeight = parseFloat(document.getElementById('thFatherHeight').value);
@@ -2086,7 +2197,7 @@ async function calculateAndShowTargetHeight() {
   const fatherAgeRaw = document.getElementById('thFatherAge').value;
 
   if (!motherHeight || !fatherHeight) {
-    showToast('⚠️', "Enter both parents' heights");
+    showToast('⚠️', t('toast.error.enter_parent_heights',"Enter both parents' heights"));
     return;
   }
 
@@ -2227,14 +2338,14 @@ function renderFamilyHeightList() {
 
 async function addFamilyHeightRecord() {
   const childId = activeChildId();
-  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
 
   const relation = document.getElementById('newFamilyRelation').value;
   const height = document.getElementById('newFamilyHeight').value;
   const age = document.getElementById('newFamilyAge').value;
   const notes = document.getElementById('newFamilyNotes').value.trim();
 
-  if (!height) { showToast('⚠️', 'Enter a height'); return; }
+  if (!height) { showToast('⚠️', t('toast.error.enter_height','Enter a height')); return; }
 
   const { data, error } = await sb.from('family_height_records').insert({
     child_id: childId,
@@ -2245,7 +2356,7 @@ async function addFamilyHeightRecord() {
     created_by: APP.session ? APP.session.user.id : null
   }).select().single();
 
-  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.save_failed','Could not save') + ': ' + error.message); return; }
 
   APP.familyHeightRecords = APP.familyHeightRecords || [];
   APP.familyHeightRecords.unshift(data);
@@ -2254,13 +2365,13 @@ async function addFamilyHeightRecord() {
   document.getElementById('newFamilyHeight').value = '';
   document.getElementById('newFamilyAge').value = '';
   document.getElementById('newFamilyNotes').value = '';
-  showToast('✅', 'Added to family record');
+  showToast('✅', t('toast.family_record_added','Added to family record'));
 }
 
 async function deleteFamilyHeightRecord(id) {
-  if (!confirm('Remove this family height record? This cannot be undone.')) return;
+  if (!confirm(t('confirm.remove_family_record','Remove this family height record? This cannot be undone.'))) return;
   const { error } = await sb.from('family_height_records').delete().eq('record_id', id);
-  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.remove_failed','Could not remove') + ': ' + error.message); return; }
   APP.familyHeightRecords = (APP.familyHeightRecords || []).filter(r => r.record_id !== id);
   renderFamilyHeightList();
 }
@@ -2411,7 +2522,7 @@ async function loadFoodFavoritesAndCustomFoods() {
 }
 
 function openFoodLibraryModal() {
-  if (!activeChildId()) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!activeChildId()) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
   renderFoodLibraryBrowseList();
   renderFoodLibraryMineList();
   document.getElementById('foodLibraryModal').classList.remove('hidden');
@@ -2527,9 +2638,9 @@ async function addCustomFood() {
   const zincRaw = document.getElementById('newCustomFoodZinc').value;
   const calciumRaw = document.getElementById('newCustomFoodCalcium').value;
 
-  if (!name) { showToast('⚠️', 'Enter a food name'); return; }
-  if (!grams || grams <= 0) { showToast('⚠️', 'Enter a valid serving size'); return; }
-  if (!protein || protein < 0) { showToast('⚠️', 'Enter the protein amount for this serving'); return; }
+  if (!name) { showToast('⚠️', t('toast.error.enter_food_name','Enter a food name')); return; }
+  if (!grams || grams <= 0) { showToast('⚠️', t('toast.error.enter_serving_size','Enter a valid serving size')); return; }
+  if (!protein || protein < 0) { showToast('⚠️', t('toast.error.enter_protein','Enter the protein amount for this serving')); return; }
 
   const { data, error } = await sb.from('custom_foods').insert({
     child_id: childId,
@@ -2542,7 +2653,7 @@ async function addCustomFood() {
     created_by: APP.session ? APP.session.user.id : null
   }).select().single();
 
-  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.save_failed','Could not save') + ': ' + error.message); return; }
 
   // Reassigns rather than mutating APP.customFoods in place — safer
   // regardless of whether the data layer happens to return a fresh
@@ -2561,11 +2672,11 @@ async function addCustomFood() {
 
   renderFoodLibraryMineList();
   renderFoodLibraryBrowseList();
-  showToast('✅', 'Custom food added — star it in "Browse all" to show it on the grid');
+  showToast('✅', t('toast.custom_food_added','Custom food added — star it in "Browse all" to show it on the grid'));
 }
 
 async function deleteCustomFood(id) {
-  if (!confirm('Remove this custom food? You\'ll need to re-enter its protein/zinc/calcium values if you add it again. This cannot be undone.')) return;
+  if (!confirm(t('confirm.remove_custom_food','Remove this custom food? This cannot be undone.'))) return;
 
   // Also remove any favorite pointing at this custom food, so a
   // deleted food can't leave a dangling, unresolvable favorite that
@@ -2577,7 +2688,7 @@ async function deleteCustomFood(id) {
   }
 
   const { error } = await sb.from('custom_foods').delete().eq('custom_food_id', id);
-  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.remove_failed','Could not remove') + ': ' + error.message); return; }
 
   APP.customFoods = (APP.customFoods || []).filter(c => c.custom_food_id !== id);
   renderFoodLibraryMineList();
@@ -2900,7 +3011,7 @@ function renderStreakRow() {
 async function saveDay() {
   const s = currentState();
   const childId = activeChildId();
-  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
   const saveDate = APP.logDate; // the date selected in the date selector — defaults to today, but may be backdated
 
   const btn = document.getElementById('saveBtn');
@@ -3008,7 +3119,7 @@ async function saveDay() {
     renderStreakRow();
   }
   s.savedToday = true;
-  showToast('✅', 'Saved');
+  showToast('✅', t('toast.saved','Saved'));
   btn.textContent = saveButtonLabel(true);
 }
 
@@ -3369,12 +3480,12 @@ async function updateStats() {
 
 async function addMeasurement() {
   const childId = activeChildId();
-  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
   const date = document.getElementById('logDate').value;
   const h = parseFloat(document.getElementById('logHeight').value);
   const w = parseFloat(document.getElementById('logWeight').value);
-  if (!date) { showToast('⚠️', 'Select a date'); return; }
-  if (isNaN(h) || isNaN(w) || h <= 0 || w <= 0) { showToast('⚠️', 'Enter a valid height and weight'); return; }
+  if (!date) { showToast('⚠️', t('toast.error.select_date','Select a date')); return; }
+  if (isNaN(h) || isNaN(w) || h <= 0 || w <= 0) { showToast('⚠️', t('toast.error.invalid_height_weight','Enter a valid height and weight')); return; }
 
   // calculated_bmi is a generated column in Postgres (computed from
   // stature_height_cm/mass_weight_kg automatically) — don't send it.
@@ -3386,9 +3497,9 @@ async function addMeasurement() {
     data_source: 'manual'
   }, { onConflict: 'child_id,recorded_date' });
 
-  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.save_failed','Could not save') + ': ' + error.message); return; }
 
-  showToast('✅', 'Measurement logged');
+  showToast('✅', t('toast.measurement_logged','Measurement logged'));
   await refreshActiveChildHistory();
   updateStats();
   drawGrowthChart();
@@ -4317,7 +4428,7 @@ async function exportClinicalSummary() {
 
 async function _exportClinicalSummaryOLD_UNUSED() {
   const child = APP.children[APP.activeChild];
-  if (!child) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!child) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
   const streakArr = currentStreak();
   const loggedDays = streakArr.reduce((a,b)=>a+b,0);
 
@@ -4376,7 +4487,7 @@ function drawLine(ctx, pts, color, w) {
 // fields for the current session only and are lost on reload.
 async function saveMedical() {
   const childId = activeChildId();
-  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
 
   const btn = document.querySelector('#screenMedical .btn-secondary');
   const originalLabel = btn ? btn.textContent : '';
@@ -4401,10 +4512,10 @@ async function saveMedical() {
   if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
 
   if (error) {
-    showToast('⚠️', 'Could not save: ' + error.message);
+    showToast('⚠️', t('toast.error.save_failed','Could not save') + ': ' + error.message);
     return;
   }
-  showToast('✅', 'Clinical record saved for ' + APP.logDate);
+  showToast('✅', t('toast.clinical_saved','Clinical record saved') + ' — ' + APP.logDate);
 }
 
 // Loads this child's medical_logs row for the currently-selected
@@ -4511,7 +4622,7 @@ function renderLabResultsList() {
 
 async function addLabResult() {
   const childId = activeChildId();
-  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
 
   const analyte = document.getElementById('newLabAnalyte').value.trim();
   const value = document.getElementById('newLabValue').value;
@@ -4519,9 +4630,9 @@ async function addLabResult() {
   const refLow = document.getElementById('newLabRefLow').value;
   const refHigh = document.getElementById('newLabRefHigh').value;
 
-  if (!analyte) { showToast('⚠️', 'Enter the analyte name'); return; }
-  if (!value) { showToast('⚠️', 'Enter the result value'); return; }
-  if (!unit) { showToast('⚠️', 'Enter the unit'); return; }
+  if (!analyte) { showToast('⚠️', t('toast.error.enter_analyte','Enter the analyte name')); return; }
+  if (!value) { showToast('⚠️', t('toast.error.enter_result','Enter the result value')); return; }
+  if (!unit) { showToast('⚠️', t('toast.error.enter_unit','Enter the unit')); return; }
 
   const { data, error } = await sb.from('lab_results').insert({
     child_id: childId,
@@ -4534,7 +4645,7 @@ async function addLabResult() {
     created_by: APP.session ? APP.session.user.id : null
   }).select().single();
 
-  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.save_failed','Could not save') + ': ' + error.message); return; }
 
   APP.labResults = APP.labResults || [];
   APP.labResults.unshift(data);
@@ -4545,13 +4656,13 @@ async function addLabResult() {
   document.getElementById('newLabUnit').value = '';
   document.getElementById('newLabRefLow').value = '';
   document.getElementById('newLabRefHigh').value = '';
-  showToast('✅', 'Lab result added');
+  showToast('✅', t('toast.lab_result_added','Lab result added'));
 }
 
 async function deleteLabResult(id) {
-  if (!confirm('Remove this lab result? This cannot be undone.')) return;
+  if (!confirm(t('confirm.remove_lab','Remove this lab result? This cannot be undone.'))) return;
   const { error } = await sb.from('lab_results').delete().eq('lab_result_id', id);
-  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.remove_failed','Could not remove') + ': ' + error.message); return; }
   APP.labResults = (APP.labResults || []).filter(r => r.lab_result_id !== id);
   renderLabResultsList();
 }
@@ -4629,11 +4740,11 @@ function renderPubertyEventsList() {
 
 async function addPubertyEvent() {
   const childId = activeChildId();
-  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
 
   const type = document.getElementById('newPubertyType').value;
   const dateVal = document.getElementById('newPubertyDate').value;
-  if (!dateVal) { showToast('⚠️', 'Enter the date observed'); return; }
+  if (!dateVal) { showToast('⚠️', t('toast.error.enter_date_observed','Enter the date observed')); return; }
 
   const needsStage = !PUBERTY_TYPES_WITHOUT_STAGE.includes(type);
   const stage = needsStage ? parseInt(document.getElementById('newPubertyStage').value) : null;
@@ -4646,18 +4757,18 @@ async function addPubertyEvent() {
     created_by: APP.session ? APP.session.user.id : null
   }).select().single();
 
-  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.save_failed','Could not save') + ': ' + error.message); return; }
 
   APP.pubertyEvents = APP.pubertyEvents || [];
   APP.pubertyEvents.unshift(data);
   renderPubertyEventsList();
-  showToast('✅', 'Milestone added');
+  showToast('✅', t('toast.milestone_added','Milestone added'));
 }
 
 async function deletePubertyEvent(id) {
-  if (!confirm('Remove this puberty milestone? This cannot be undone.')) return;
+  if (!confirm(t('confirm.remove_puberty','Remove this puberty milestone? This cannot be undone.'))) return;
   const { error } = await sb.from('puberty_events').delete().eq('event_id', id);
-  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.remove_failed','Could not remove') + ': ' + error.message); return; }
   APP.pubertyEvents = (APP.pubertyEvents || []).filter(ev => ev.event_id !== id);
   renderPubertyEventsList();
 }
@@ -4724,8 +4835,8 @@ async function saveBoneAgeAssessment() {
   const doctor = document.getElementById('boneAgeDoctor').value.trim();
   const notes = document.getElementById('boneAgeNotes').value.trim();
 
-  if (!studyDate) { showToast('⚠️', 'Study date is required'); return; }
-  if (boneAgeYears === 0 && boneAgeMonthsExtra === 0) { showToast('⚠️', 'Enter a bone age result'); return; }
+  if (!studyDate) { showToast('⚠️', t('toast.error.study_date_required','Study date is required')); return; }
+  if (boneAgeYears === 0 && boneAgeMonthsExtra === 0) { showToast('⚠️', t('toast.error.enter_bone_age','Enter a bone age result')); return; }
 
   const boneAgeMonthsTotal = boneAgeYears * 12 + boneAgeMonthsExtra;
 
@@ -4786,7 +4897,7 @@ async function saveBoneAgeAssessment() {
     document.getElementById('boneAgeDoctor').value = '';
     document.getElementById('boneAgeNotes').value = '';
     clearXraySelection();
-    showToast('✅', 'Bone age record saved');
+    showToast('✅', t('toast.bone_age_saved','Bone age record saved'));
   } catch (e) {
     showToast('⚠️', 'Could not save: ' + e.message);
   } finally {
@@ -4923,7 +5034,7 @@ async function buildBoneAgeCard(r) {
 }
 
 async function deleteBoneAgeAssessment(id) {
-  if (!confirm('Remove this bone age record? The uploaded X-ray image will also be deleted. This cannot be undone.')) return;
+  if (!confirm(t('confirm.remove_bone_age','Remove this bone age record? The uploaded X-ray image will also be deleted. This cannot be undone.'))) return;
 
   const record = (APP.boneAgeAssessments || []).find(r => r.assessment_id === id);
 
@@ -4932,11 +5043,11 @@ async function deleteBoneAgeAssessment(id) {
   }
 
   const { error } = await sb.from('bone_age_assessments').delete().eq('assessment_id', id);
-  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.remove_failed','Could not remove') + ': ' + error.message); return; }
 
   APP.boneAgeAssessments = (APP.boneAgeAssessments || []).filter(r => r.assessment_id !== id);
   await renderBoneAgeList();
-  showToast('✅', 'Bone age record removed');
+  showToast('✅', t('toast.bone_age_removed','Bone age record removed'));
 }
 
 // ══════════════════════════════════════════
@@ -4960,8 +5071,8 @@ async function deleteBoneAgeAssessment(id) {
 
 async function runBoneAgeAIAnalysis(assessmentId) {
   const record = (APP.boneAgeAssessments || []).find(r => r.assessment_id === assessmentId);
-  if (!record) { showToast('⚠️', 'Record not found'); return; }
-  if (!record.xray_storage_path) { showToast('⚠️', 'No X-ray image attached to this record'); return; }
+  if (!record) { showToast('⚠️', t('toast.error.record_not_found','Record not found')); return; }
+  if (!record.xray_storage_path) { showToast('⚠️', t('toast.error.no_xray','No X-ray image attached to this record')); return; }
 
   // Update UI to loading state
   const btn = document.getElementById(`aiBtn-${assessmentId}`);
@@ -5056,13 +5167,13 @@ async function runBoneAgeAIAnalysis(assessmentId) {
     }
 
     if (btn) { btn.disabled = false; btn.textContent = '🔄 Re-analyse'; }
-    showToast('✅', 'AI second opinion complete');
+    showToast('✅', t('toast.ai_complete','AI second opinion complete'));
 
   } catch (e) {
     console.error('[Bone Age AI]', e);
     if (panel) panel.innerHTML = `<div class="bone-age-ai-error">⚠️ Analysis failed: ${e.message}. Please try again.</div>`;
     if (btn) { btn.disabled = false; btn.textContent = '🤖 Get AI Second Opinion'; }
-    showToast('⚠️', 'AI analysis failed: ' + e.message);
+    showToast('⚠️', t('toast.error.ai_failed','AI analysis failed') + ': ' + e.message);
   }
 }
 
@@ -5427,15 +5538,15 @@ function renderIllnessEventsList() {
 
 async function addIllnessEvent() {
   const childId = activeChildId();
-  if (!childId) { showToast('⚠️', 'Add a child profile first'); return; }
+  if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
 
   const startDate = document.getElementById('newIllnessStart').value;
   const endDate = document.getElementById('newIllnessEnd').value;
   const type = document.getElementById('newIllnessType').value;
   const notes = document.getElementById('newIllnessNotes').value.trim();
 
-  if (!startDate) { showToast('⚠️', 'Enter the start date'); return; }
-  if (endDate && endDate < startDate) { showToast('⚠️', 'End date is before start date'); return; }
+  if (!startDate) { showToast('⚠️', t('toast.error.enter_start_date','Enter the start date')); return; }
+  if (endDate && endDate < startDate) { showToast('⚠️', t('toast.error.end_before_start','End date is before start date')); return; }
 
   const { data, error } = await sb.from('illness_events').insert({
     child_id: childId,
@@ -5446,7 +5557,7 @@ async function addIllnessEvent() {
     created_by: APP.session ? APP.session.user.id : null
   }).select().single();
 
-  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.save_failed','Could not save') + ': ' + error.message); return; }
 
   APP.illnessEvents = APP.illnessEvents || [];
   APP.illnessEvents.unshift(data);
@@ -5455,13 +5566,13 @@ async function addIllnessEvent() {
   document.getElementById('newIllnessStart').value = '';
   document.getElementById('newIllnessEnd').value = '';
   document.getElementById('newIllnessNotes').value = '';
-  showToast('✅', 'Illness episode added');
+  showToast('✅', t('toast.illness_added','Illness episode added'));
 }
 
 async function deleteIllnessEvent(id) {
-  if (!confirm('Remove this illness episode? This cannot be undone.')) return;
+  if (!confirm(t('confirm.remove_illness','Remove this illness episode? This cannot be undone.'))) return;
   const { error } = await sb.from('illness_events').delete().eq('event_id', id);
-  if (error) { showToast('⚠️', 'Could not remove: ' + error.message); return; }
+  if (error) { showToast('⚠️', t('toast.error.remove_failed','Could not remove') + ': ' + error.message); return; }
   APP.illnessEvents = (APP.illnessEvents || []).filter(ev => ev.event_id !== id);
   renderIllnessEventsList();
 }

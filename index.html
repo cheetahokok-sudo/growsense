@@ -53,44 +53,44 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.2" fill="white" stroke="none"/></svg>
       </div>
       <div class="auth-title">GrowSense</div>
-      <div class="auth-sub">Pediatric growth intelligence, shared with the people you trust</div>
+      <div class="auth-sub" data-i18n="auth.subtitle">Pediatric growth intelligence, shared with the people you trust</div>
     </div>
 
     <div id="authError" class="auth-error hidden"></div>
 
     <div id="authSignInForm">
       <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px; border-bottom:none; padding:10px 0;">
-        <div class="form-lbl">Email</div>
+        <div class="form-lbl" data-i18n="common.email">Email</div>
         <input type="email" id="authEmail" class="text-input" placeholder="you@example.com" autocomplete="username">
       </div>
       <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px; border-bottom:none; padding:10px 0;">
-        <div class="form-lbl">Password</div>
+        <div class="form-lbl" data-i18n="common.password">Password</div>
         <input type="password" id="authPassword" class="text-input" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <button class="btn-primary" onclick="handleSignIn()" id="signInBtn">Sign in</button>
-      <button class="btn-ghost" style="width:100%; margin-top:10px;" onclick="showSignUpForm()">Create an account instead</button>
+      <button class="btn-primary" onclick="handleSignIn()" id="signInBtn" data-i18n="auth.sign_in_btn">Sign in</button>
+      <button class="btn-ghost" style="width:100%; margin-top:10px;" onclick="showSignUpForm()" data-i18n="auth.create_account_link">Create an account instead</button>
     </div>
 
     <div id="authSignUpForm" class="hidden">
       <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px; border-bottom:none; padding:10px 0;">
-        <div class="form-lbl">Email</div>
+        <div class="form-lbl" data-i18n="common.email">Email</div>
         <input type="email" id="suEmail" class="text-input" placeholder="you@example.com" autocomplete="username">
       </div>
       <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px; border-bottom:none; padding:10px 0;">
-        <div class="form-lbl">Password</div>
+        <div class="form-lbl" data-i18n="common.password">Password</div>
         <input type="password" id="suPassword" class="text-input" placeholder="At least 8 characters" autocomplete="new-password">
       </div>
       <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none; padding:10px 0;">
-        <div class="form-lbl">I am a…</div>
+        <div class="form-lbl" data-i18n="auth.i_am_a">I am a…</div>
         <div class="seg" style="width:100%;">
-          <button class="seg-btn active" id="roleParent" onclick="setSignupRole('parent_subscriber', this)">Parent</button>
-          <button class="seg-btn" id="roleDoctor" onclick="setSignupRole('doctor', this)">Doctor</button>
-          <button class="seg-btn" id="roleScientist" onclick="setSignupRole('scientist', this)">Researcher</button>
+          <button class="seg-btn active" id="roleParent" onclick="setSignupRole('parent_subscriber', this)" data-i18n="auth.role.parent">Parent</button>
+          <button class="seg-btn" id="roleDoctor" onclick="setSignupRole('doctor', this)" data-i18n="auth.role.doctor">Doctor</button>
+          <button class="seg-btn" id="roleScientist" onclick="setSignupRole('scientist', this)" data-i18n="auth.role.researcher">Researcher</button>
         </div>
         <div class="setup-note" style="font-size:11px;">Doctor and researcher accounts can be linked to view a child's data only once a parent or admin grants access — creating this account doesn't give access to anyone's data by itself.</div>
       </div>
-      <button class="btn-primary" onclick="handleSignUp()" id="signUpBtn">Create account</button>
-      <button class="btn-ghost" style="width:100%; margin-top:10px;" onclick="showSignInForm()">I already have an account</button>
+      <button class="btn-primary" onclick="handleSignUp()" id="signUpBtn" data-i18n="auth.create_account_btn">Create account</button>
+      <button class="btn-ghost" style="width:100%; margin-top:10px;" onclick="showSignInForm()" data-i18n="auth.have_account_link">I already have an account</button>
     </div>
 
     <div class="setup-note" style="margin-top:16px; font-size:11px;">
@@ -125,13 +125,13 @@
       <!-- Growth Readiness HUD -->
       <div class="card" style="margin-top:8px; border-top: 3px solid var(--accent);">
         <div class="card-header">
-          <span class="card-title text-accent">Readiness reading</span>
+          <span class="card-title text-accent" data-i18n="today.hud.title">Readiness reading</span>
           <div style="display:flex; align-items:center; gap:8px;">
             <span id="todayDateBadge" class="badge badge-measured" style="font-size:10px;"></span>
             <button class="info-icon-btn" onclick="toggleInfo('hudNote')" aria-label="About this score">i</button>
           </div>
         </div>
-        <div class="setup-note hidden" id="hudNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
+        <div class="setup-note hidden" id="hudNote" data-i18n="today.hud.note" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
           This reading reflects today's logged inputs only. A single day carries little signal on its own — what matters clinically is the 30-day trend, visible on the Analytics tab.
         </div>
         <div class="grs-hud">
@@ -147,31 +147,31 @@
               </svg>
               <div class="grs-center">
                 <div class="grs-score" id="grsScore">—</div>
-                <div class="grs-label">of 100</div>
+                <div class="grs-label" data-i18n="today.hud.score_suffix">of 100</div>
               </div>
             </div>
             <div class="grs-metrics">
               <div class="grs-metric">
-                <div class="grs-metric-left"><div class="grs-dot" style="background:var(--accent)"></div><span class="grs-metric-name">Nutrition</span></div>
+                <div class="grs-metric-left"><div class="grs-dot" style="background:var(--accent)"></div><span class="grs-metric-name" data-i18n="common.nutrition">Nutrition</span></div>
                 <span class="grs-metric-val" id="metNut">—</span>
               </div>
               <div class="grs-metric">
-                <div class="grs-metric-left"><div class="grs-dot" style="background:var(--measured)"></div><span class="grs-metric-name">Activity</span></div>
+                <div class="grs-metric-left"><div class="grs-dot" style="background:var(--measured)"></div><span class="grs-metric-name" data-i18n="common.activity">Activity</span></div>
                 <span class="grs-metric-val" id="metAct">—</span>
               </div>
               <div class="grs-metric">
-                <div class="grs-metric-left"><div class="grs-dot" style="background:var(--estimated)"></div><span class="grs-metric-name">Sleep</span></div>
+                <div class="grs-metric-left"><div class="grs-dot" style="background:var(--estimated)"></div><span class="grs-metric-name" data-i18n="common.sleep">Sleep</span></div>
                 <span class="grs-metric-val" id="metSlp">—</span>
               </div>
             </div>
           </div>
           <div class="grs-bar-row">
             <div class="grs-bars">
-              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barNut" style="width:0%; background:var(--accent)"></div></div><div class="grs-bar-lbl">Protein</div></div>
-              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barCal" style="width:0%; background:var(--accent)"></div></div><div class="grs-bar-lbl">Calcium</div></div>
-              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barWat" style="width:0%; background:var(--measured)"></div></div><div class="grs-bar-lbl">Water</div></div>
-              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barEx" style="width:0%; background:var(--measured)"></div></div><div class="grs-bar-lbl">Exercise</div></div>
-              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barSlp" style="width:0%; background:var(--estimated)"></div></div><div class="grs-bar-lbl">Sleep</div></div>
+              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barNut" style="width:0%; background:var(--accent)"></div></div><div class="grs-bar-lbl" data-i18n="common.protein">Protein</div></div>
+              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barCal" style="width:0%; background:var(--accent)"></div></div><div class="grs-bar-lbl" data-i18n="common.calcium">Calcium</div></div>
+              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barWat" style="width:0%; background:var(--measured)"></div></div><div class="grs-bar-lbl" data-i18n="common.water">Water</div></div>
+              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barEx" style="width:0%; background:var(--measured)"></div></div><div class="grs-bar-lbl" data-i18n="common.exercise">Exercise</div></div>
+              <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barSlp" style="width:0%; background:var(--estimated)"></div></div><div class="grs-bar-lbl" data-i18n="common.sleep">Sleep</div></div>
             </div>
           </div>
         </div>
@@ -180,13 +180,13 @@
       <!-- Logging consistency -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Logging consistency, this week</span>
+          <span class="card-title" data-i18n="today.streak.title">Logging consistency, this week</span>
           <div style="display:flex; align-items:center; gap:8px;">
             <span id="streakCount" class="badge badge-accent">0 / 7 days</span>
             <button class="info-icon-btn" onclick="toggleInfo('consistNote')" aria-label="About logging consistency">i</button>
           </div>
         </div>
-        <div class="setup-note hidden" id="consistNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">Consistent daily logs make the trend lines on Analytics meaningful. Gaps get marked on the chart rather than guessed at.</div>
+        <div class="setup-note hidden" id="consistNote" data-i18n="today.streak.note" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">Consistent daily logs make the trend lines on Analytics meaningful. Gaps get marked on the chart rather than guessed at.</div>
         <div class="card-body">
           <div class="consist-row" id="streakRow"></div>
         </div>
@@ -194,25 +194,25 @@
 
       <!-- 1. Nutrition -->
       <div class="card" style="border-top: 3px solid var(--accent);">
-        <div class="card-header"><span class="card-title text-accent">Nutrition</span><span style="display:flex; align-items:center; gap:6px;"><span class="dq-badge measured"><span class="dq-dot measured"></span>USDA sourced</span><button class="info-icon-btn" onclick="toggleFoodNote(this)" aria-label="About these values">i</button></span></div>
-        <div class="setup-note hidden" id="foodNotePanel" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
+        <div class="card-header"><span class="card-title text-accent" data-i18n="common.nutrition">Nutrition</span><span style="display:flex; align-items:center; gap:6px;"><span class="dq-badge measured"><span class="dq-dot measured"></span><span data-i18n="today.nutrition.source_badge">USDA sourced</span></span><button class="info-icon-btn" onclick="toggleFoodNote(this)" aria-label="About these values">i</button></span></div>
+        <div class="setup-note hidden" id="foodNotePanel" data-i18n="today.nutrition.note" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
           Preset food values are per-100g USDA FoodData Central figures, scaled to a typical portion — real servings vary. Tap a card to add its protein/zinc to today's total; long-press (or right-click) to subtract a misclick. Tap "Browse more foods" to choose which cards show here, or add your own food with your own estimated values.
         </div>
         <div class="card-body">
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none; padding-bottom:8px;">
-            <div class="form-lbl" style="font-size:12px; color:var(--text2);">Logging for</div>
+            <div class="form-lbl" style="font-size:12px; color:var(--text2);" data-i18n="today.nutrition.logging_for">Logging for</div>
             <div class="seg" id="mealSlotSeg" style="width:100%;">
-              <button class="seg-btn active" data-meal="breakfast" onclick="setMealSlot('breakfast', this)">Breakfast</button>
-              <button class="seg-btn" data-meal="lunch" onclick="setMealSlot('lunch', this)">Lunch</button>
-              <button class="seg-btn" data-meal="dinner" onclick="setMealSlot('dinner', this)">Dinner</button>
-              <button class="seg-btn" data-meal="snack" onclick="setMealSlot('snack', this)">Snack</button>
+              <button class="seg-btn active" data-meal="breakfast" onclick="setMealSlot('breakfast', this)" data-i18n="common.breakfast">Breakfast</button>
+              <button class="seg-btn" data-meal="lunch" onclick="setMealSlot('lunch', this)" data-i18n="common.lunch">Lunch</button>
+              <button class="seg-btn" data-meal="dinner" onclick="setMealSlot('dinner', this)" data-i18n="common.dinner">Dinner</button>
+              <button class="seg-btn" data-meal="snack" onclick="setMealSlot('snack', this)" data-i18n="common.snack">Snack</button>
             </div>
           </div>
           <div class="form-row" style="border-bottom:none; padding-bottom:6px;">
-            <div class="form-lbl" style="font-size:12px; color:var(--text2);">Tap a food to add it</div>
+            <div class="form-lbl" style="font-size:12px; color:var(--text2);" data-i18n="today.nutrition.tap_hint">Tap a food to add it</div>
           </div>
           <div class="food-card-grid" id="foodCardGrid"></div>
-          <button class="btn-secondary" onclick="openFoodLibraryModal()" style="margin-top:10px;">+ Browse more foods / add your own</button>
+          <button class="btn-secondary" onclick="openFoodLibraryModal()" style="margin-top:10px;" data-i18n="today.nutrition.browse_btn">+ Browse more foods / add your own</button>
 
           <!-- Logged-items list: every tap creates a row here, so a parent
                can review exactly what was logged (not just the running
@@ -220,16 +220,16 @@
                which stepper number to undo. -->
           <div class="card-divider" style="margin: 14px -16px;"></div>
           <div class="form-row" style="border-bottom:none; padding-bottom:6px;">
-            <div class="form-lbl" style="font-size:12px; color:var(--text2);">Logged today</div>
+            <div class="form-lbl" style="font-size:12px; color:var(--text2);" data-i18n="today.nutrition.logged_today">Logged today</div>
             <span class="badge badge-accent" id="logItemCount" style="font-size:10px;">0 items</span>
           </div>
           <div id="nutritionLogList" class="nutrition-log-list">
-            <div class="log-list-empty" id="logListEmpty">Nothing logged yet for this date.</div>
+            <div class="log-list-empty" id="logListEmpty" data-i18n="today.nutrition.empty">Nothing logged yet for this date.</div>
           </div>
 
           <div class="card-divider" style="margin: 14px -16px;"></div>
           <div class="form-row">
-            <div><div class="form-lbl">Protein total</div><div class="form-lbl-sub" id="proteinTargetLabel">Target: — g / day</div></div>
+            <div><div class="form-lbl" data-i18n="today.nutrition.protein_total">Protein total</div><div class="form-lbl-sub" id="proteinTargetLabel">Target: — g / day</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('protein',-1)">−</button>
               <div class="step-val" id="valProtein">0 g</div>
@@ -237,7 +237,7 @@
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl">Calcium total</div><div class="form-lbl-sub">Target: 1300mg / day</div></div>
+            <div><div class="form-lbl" data-i18n="today.nutrition.calcium_total">Calcium total</div><div class="form-lbl-sub" data-i18n="today.nutrition.calcium_target">Target: 1300mg / day</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('calcium',-100)">−</button>
               <div class="step-val" id="valCalcium">0 mg</div>
@@ -245,7 +245,7 @@
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl">Zinc total</div><div class="form-lbl-sub">Growth plate co-factor · target 8mg/day</div></div>
+            <div><div class="form-lbl" data-i18n="today.nutrition.zinc_total">Zinc total</div><div class="form-lbl-sub" data-i18n="today.nutrition.zinc_sub">Growth plate co-factor · target 8mg/day</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('zinc',-1)">−</button>
               <div class="step-val" id="valZinc">0 mg</div>
@@ -253,7 +253,7 @@
             </div>
           </div>
           <div class="form-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-            <div><div class="form-lbl">Hydration <span id="waterLbl" style="font-weight:500; color:var(--text2); font-size:11px;">(5/8 glasses)</span></div></div>
+            <div><div class="form-lbl"><span data-i18n="today.nutrition.hydration">Hydration</span> <span id="waterLbl" style="font-weight:500; color:var(--text2); font-size:11px;">(5/8 glasses)</span></div></div>
             <div class="water-grid" id="waterGrid"></div>
           </div>
         </div>
@@ -261,10 +261,10 @@
 
       <!-- 2. Activity -->
       <div class="card" style="border-top: 3px solid var(--measured);">
-        <div class="card-header"><span class="card-title text-measured">Activity & mechanical load</span></div>
+        <div class="card-header"><span class="card-title text-measured" data-i18n="today.activity.title">Activity & mechanical load</span></div>
         <div class="card-body">
           <div class="form-row">
-            <div><div class="form-lbl">Bar hanging</div><div class="form-lbl-sub">Spinal decompression · target 30s</div></div>
+            <div><div class="form-lbl" data-i18n="today.activity.hanging">Bar hanging</div><div class="form-lbl-sub" data-i18n="today.activity.hanging_sub">Spinal decompression · target 30s</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('hanging',-5)">−</button>
               <div class="step-val" id="valHanging">15 sec</div>
@@ -272,7 +272,7 @@
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl">Box jumps</div><div class="form-lbl-sub">Mechanotransduction · target 40 reps</div></div>
+            <div><div class="form-lbl" data-i18n="today.activity.jumps">Box jumps</div><div class="form-lbl-sub" data-i18n="today.activity.jumps_sub">Mechanotransduction · target 40 reps</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('jumps',-5)">−</button>
               <div class="step-val" id="valJumps">20 reps</div>
@@ -280,12 +280,12 @@
             </div>
           </div>
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px;">
-            <div class="form-lbl">Yoga / stretching</div>
+            <div class="form-lbl" data-i18n="today.activity.yoga">Yoga / stretching</div>
             <div class="seg" id="yogaSeg">
-              <button class="seg-btn active" onclick="setYoga(0,this)">None</button>
-              <button class="seg-btn" onclick="setYoga(10,this)">10 min</button>
-              <button class="seg-btn" onclick="setYoga(20,this)">20 min</button>
-              <button class="seg-btn" onclick="setYoga(30,this)">30 min</button>
+              <button class="seg-btn active" onclick="setYoga(0,this)" data-i18n="common.none">None</button>
+              <button class="seg-btn" onclick="setYoga(10,this)" data-i18n="common.10_min">10 min</button>
+              <button class="seg-btn" onclick="setYoga(20,this)" data-i18n="common.20_min">20 min</button>
+              <button class="seg-btn" onclick="setYoga(30,this)" data-i18n="common.30_min">30 min</button>
             </div>
           </div>
         </div>
@@ -294,22 +294,22 @@
       <!-- 3. Sleep — built around the GH secretion window -->
       <div class="card" style="border-top: 3px solid var(--estimated);">
         <div class="card-header">
-          <span class="card-title text-estimated">Sleep & the overnight GH window</span>
+          <span class="card-title text-estimated" data-i18n="today.sleep.title">Sleep & the overnight GH window</span>
           <button id="fitbitConnectBtn" class="btn-secondary" style="font-size:11px; padding:5px 10px;" onclick="initiateGoogleHealthOAuth(activeChildId())">
             Connect Fitbit
           </button>
         </div>
         <div class="card-body">
           <div class="form-row">
-            <div><div class="form-lbl">Bedtime</div><div class="form-lbl-sub">Target: before 21:30</div></div>
+            <div><div class="form-lbl" data-i18n="today.sleep.bedtime">Bedtime</div><div class="form-lbl-sub" data-i18n="today.sleep.bedtime_sub">Target: before 21:30</div></div>
             <input type="time" id="sleepBed" class="time-input" value="21:15" oninput="calcSleep()">
           </div>
           <div class="form-row">
-            <div><div class="form-lbl">Wake time</div><div class="form-lbl-sub">Morning arousal</div></div>
+            <div><div class="form-lbl" data-i18n="today.sleep.wake_time">Wake time</div><div class="form-lbl-sub" data-i18n="today.sleep.wake_sub">Morning arousal</div></div>
             <input type="time" id="sleepWake" class="time-input" value="06:30" oninput="calcSleep()">
           </div>
           <div class="form-row">
-            <div><div class="form-lbl">Wake-ups before midnight</div><div class="form-lbl-sub">Disruptions to the first sleep cycle</div></div>
+            <div><div class="form-lbl" data-i18n="today.sleep.wakeups">Wake-ups before midnight</div><div class="form-lbl-sub" data-i18n="today.sleep.wakeups_sub">Disruptions to the first sleep cycle</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('nightWakes',-1)">−</button>
               <div class="step-val" id="valNightWakes">0</div>
@@ -321,16 +321,16 @@
             <div class="sleep-track" id="sleepTrack"></div>
             <div class="sleep-marker-lbl">
               <span id="sleepLblBed">21:15</span>
-              <span style="color:var(--accent-dark);">GH pulse window</span>
+              <span style="color:var(--accent-dark);" data-i18n="today.sleep.gh_window">GH pulse window</span>
               <span id="sleepLblWake">06:30</span>
             </div>
-            <div class="gh-window-note" id="ghWindowNote">
+            <div class="gh-window-note" id="ghWindowNote" data-i18n="today.sleep.gh_note">
               Most of a child's daily growth hormone release happens in the first deep-sleep cycle, roughly 60–90 minutes after sleep onset. Going to bed on time matters more than total hours.
             </div>
           </div>
 
           <div class="form-row" style="border-bottom:none; margin-top:4px;">
-            <div class="form-lbl" style="color:var(--text2)">Total sleep duration</div>
+            <div class="form-lbl" style="color:var(--text2)" data-i18n="today.sleep.total_duration">Total sleep duration</div>
             <strong id="totalSleepLbl" style="color:var(--text); font-size:14px; font-weight:600; font-family:var(--mono);">9.25 hrs</strong>
           </div>
           <div class="setup-note" style="font-size:11px;">
@@ -340,14 +340,14 @@
       </div>
 
       <button class="btn-primary" id="saveBtn" onclick="saveDay()">
-        Save Today's Data
+        <span data-i18n="today.save_btn">Save Today's Data</span>
       </button>
       <div style="height:4px;"></div>
     </div>
 
     <!-- ══════════════ SCREEN: ANALYTICS ══════════════ -->
     <div class="screen" id="screenAnalytics">
-      <div class="section-hd"><h2>Analytics</h2><p>Trend view — built to bring to a clinic visit</p></div>
+      <div class="section-hd"><h2 data-i18n="analytics.title">Analytics</h2><p data-i18n="analytics.subtitle">Trend view — built to bring to a clinic visit</p></div>
 
       <!-- ── INSIGHT CARDS ── tap any card to see the trend detail -->
       <div class="insight-cards-section">
@@ -359,7 +359,7 @@
             </svg>
           </div>
           <div class="insight-card-body">
-            <div class="insight-card-title">Nutrition</div>
+            <div class="insight-card-title" data-i18n="common.nutrition">Nutrition</div>
             <div class="insight-card-value" id="icNutValue">—</div>
             <div class="insight-card-sub" id="icNutSub">Loading…</div>
           </div>
@@ -373,7 +373,7 @@
             </svg>
           </div>
           <div class="insight-card-body">
-            <div class="insight-card-title">Sleep</div>
+            <div class="insight-card-title" data-i18n="common.sleep">Sleep</div>
             <div class="insight-card-value" id="icSlpValue">—</div>
             <div class="insight-card-sub" id="icSlpSub">Loading…</div>
           </div>
@@ -387,7 +387,7 @@
             </svg>
           </div>
           <div class="insight-card-body">
-            <div class="insight-card-title">Activity</div>
+            <div class="insight-card-title" data-i18n="common.activity">Activity</div>
             <div class="insight-card-value" id="icActValue">—</div>
             <div class="insight-card-sub" id="icActSub">Loading…</div>
           </div>
@@ -401,7 +401,7 @@
             </svg>
           </div>
           <div class="insight-card-body">
-            <div class="insight-card-title">Height velocity</div>
+            <div class="insight-card-title" data-i18n="analytics.insight.height_velocity">Height velocity</div>
             <div class="insight-card-value" id="icHtValue">—</div>
             <div class="insight-card-sub" id="icHtSub">Loading…</div>
           </div>
@@ -423,7 +423,7 @@
       <!-- Height velocity -->
       <div class="velocity-card">
         <div class="velocity-top">
-          <div><span class="velocity-val" id="velocityVal">—</span><span class="velocity-unit">cm / year</span></div>
+          <div><span class="velocity-val" id="velocityVal">—</span><span class="velocity-unit" data-i18n="analytics.velocity.unit">cm / year</span></div>
           <div style="display:flex; align-items:center; gap:7px;">
             <span class="velocity-trend flat" id="velocityTrend">—</span>
             <button class="info-toggle-btn" onclick="toggleInfo('velocityInfo')" aria-label="More info">
@@ -431,13 +431,13 @@
             </button>
           </div>
         </div>
-        <div class="velocity-info hidden" id="velocityInfo">Height velocity calculated from the last two logged measurements. Reference range for this age: 4.2–6.0 cm/yr.</div>
+        <div class="velocity-info hidden" id="velocityInfo" data-i18n="analytics.velocity.info">Height velocity calculated from the last two logged measurements. Reference range for this age: 4.2–6.0 cm/yr.</div>
         <div class="velocity-channel">
           <span class="channel-lbl">3rd</span>
           <div class="channel-bar"><div class="channel-marker" id="channelMarker" style="left:32%;"></div></div>
           <span class="channel-lbl">97th</span>
         </div>
-        <div class="velocity-sub" style="margin-top:4px;">Currently <strong id="channelPctLbl">—</strong> for height-for-age.</div>
+        <div class="velocity-sub" style="margin-top:4px;"><span data-i18n="analytics.velocity.currently">Currently</span> <strong id="channelPctLbl">—</strong> <span data-i18n="analytics.velocity.for_height_age">for height-for-age.</span></div>
       </div>
 
       <!-- BMI-for-age -->
@@ -451,7 +451,7 @@
             </button>
           </div>
         </div>
-        <div class="velocity-info hidden" id="bmiInfo">BMI-for-age, from the most recent measurement, using the WHO 2007 Reference (5–19 years). Amber mark = overweight cutoff (+1SD), red mark = obesity cutoff (+2SD). A screening signal, not a diagnosis — BMI can't distinguish muscle from fat.</div>
+        <div class="velocity-info hidden" id="bmiInfo" data-i18n="analytics.bmi.info">BMI-for-age, from the most recent measurement, using the WHO 2007 Reference (5–19 years). Amber mark = overweight cutoff (+1SD), red mark = obesity cutoff (+2SD). A screening signal, not a diagnosis — BMI can't distinguish muscle from fat.</div>
         <div class="velocity-channel">
           <span class="channel-lbl">3rd</span>
           <div class="channel-bar">
@@ -461,86 +461,86 @@
           </div>
           <span class="channel-lbl">97th</span>
         </div>
-        <div class="velocity-sub" style="margin-top:4px;">Currently <strong id="bmiPctLbl">—</strong> for BMI-for-age.</div>
+        <div class="velocity-sub" style="margin-top:4px;"><span data-i18n="analytics.velocity.currently">Currently</span> <strong id="bmiPctLbl">—</strong> <span data-i18n="analytics.bmi.for_bmi_age">for BMI-for-age.</span></div>
       </div>
 
       <!-- Stats grid -->
       <div class="stat-grid">
         <div class="stat-card">
-          <div class="stat-lbl">Avg readiness</div>
+          <div class="stat-lbl" data-i18n="analytics.stats.avg_readiness">Avg readiness</div>
           <div class="stat-val text-accent" id="avgGRS">—</div>
-          <div class="stat-sub">Last 7 days</div>
+          <div class="stat-sub" data-i18n="analytics.stats.last_7_days">Last 7 days</div>
         </div>
         <div class="stat-card">
-          <div class="stat-lbl">Height gain</div>
+          <div class="stat-lbl" data-i18n="analytics.stats.height_gain">Height gain</div>
           <div class="stat-val text-measured" id="heightGain">—</div>
-          <div class="stat-sub">Last 30 days</div>
+          <div class="stat-sub" data-i18n="analytics.stats.last_30_days">Last 30 days</div>
         </div>
         <div class="stat-card">
-          <div class="stat-lbl">Avg sleep</div>
+          <div class="stat-lbl" data-i18n="analytics.stats.avg_sleep">Avg sleep</div>
           <div class="stat-val text-estimated" id="avgSleep">—</div>
-          <div class="stat-sub">Hours / night</div>
+          <div class="stat-sub" data-i18n="analytics.stats.hours_night">Hours / night</div>
         </div>
         <div class="stat-card">
-          <div class="stat-lbl">Logged days</div>
+          <div class="stat-lbl" data-i18n="analytics.stats.logged_days">Logged days</div>
           <div class="stat-val" id="streakStat">—</div>
-          <div class="stat-sub">Out of last 7</div>
+          <div class="stat-sub" data-i18n="analytics.stats.out_of_7">Out of last 7</div>
         </div>
       </div>
 
       <!-- Target height — moved here, above the growth chart where it reads naturally as context for the trajectory -->
       <div class="card">
         <div class="card-header" style="cursor:pointer;" onclick="toggleCardCollapse('targetHeightCardBody', this)">
-          <span class="card-title text-measured">Target height (mid-parental)</span>
+          <span class="card-title text-measured" data-i18n="analytics.target_height.title">Target height (mid-parental)</span>
           <span class="collapse-chevron" id="targetHeightCardBody-chevron">▾</span>
         </div>
         <div class="card-body hidden" id="targetHeightCardBody">
           <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Estimates your child's likely adult height range from both parents' heights, using corrections shown in peer-reviewed research to improve on the traditional method (Zeevi et al., <i>Children</i> 2024). Enter each parent's height as measured now — the calculator adjusts for age-related height loss itself, you don't need to estimate their "peak" height.</div>
           <div class="seg" id="targetHeightFormulaToggle" style="margin-bottom:12px;">
-            <button class="seg-btn active" data-formula="parents" onclick="setTargetHeightFormula('parents', this)">Parents only</button>
-            <button class="seg-btn" data-formula="extended" onclick="setTargetHeightFormula('extended', this)">+ Extended family</button>
+            <button class="seg-btn active" data-formula="parents" onclick="setTargetHeightFormula('parents', this)" data-i18n="analytics.target_height.parents_only">Parents only</button>
+            <button class="seg-btn" data-formula="extended" onclick="setTargetHeightFormula('extended', this)" data-i18n="analytics.target_height.extended_family">+ Extended family</button>
           </div>
           <div id="extendedFormulaNote" class="setup-note hidden" style="font-size:10.5px; margin-bottom:10px; background:var(--estimated-light); color:var(--estimated-dark);"></div>
           <div class="form-row">
-            <div class="form-lbl">Mother's height (cm)</div>
+            <div class="form-lbl" data-i18n="analytics.target_height.mother_height">Mother's height (cm)</div>
             <input type="number" id="thMotherHeight" class="num-input" placeholder="—" style="width:80px;">
           </div>
           <div class="form-row">
-            <div class="form-lbl">Mother's current age (optional)</div>
+            <div class="form-lbl" data-i18n="analytics.target_height.mother_age">Mother's current age (optional)</div>
             <input type="number" id="thMotherAge" class="num-input" placeholder="—" style="width:80px;">
           </div>
           <div class="form-row">
-            <div class="form-lbl">Father's height (cm)</div>
+            <div class="form-lbl" data-i18n="analytics.target_height.father_height">Father's height (cm)</div>
             <input type="number" id="thFatherHeight" class="num-input" placeholder="—" style="width:80px;">
           </div>
           <div class="form-row">
-            <div class="form-lbl">Father's current age (optional)</div>
+            <div class="form-lbl" data-i18n="analytics.target_height.father_age">Father's current age (optional)</div>
             <input type="number" id="thFatherAge" class="num-input" placeholder="—" style="width:80px;">
           </div>
-          <button class="btn-secondary" onclick="calculateAndShowTargetHeight()">Calculate target height</button>
+          <button class="btn-secondary" onclick="calculateAndShowTargetHeight()" data-i18n="analytics.target_height.calculate_btn">Calculate target height</button>
           <div id="targetHeightResult" class="hidden" style="margin-top:14px; display:flex; flex-direction:column; gap:10px;">
             <div class="velocity-card" style="margin:0;">
               <div class="velocity-top">
-                <div><span class="velocity-val" id="thResultValue" style="font-size:22px;">—</span><span class="velocity-unit">cm, predicted adult height</span></div>
-                <span class="dq-badge measured" style="font-size:10px;">Validated</span>
+                <div><span class="velocity-val" id="thResultValue" style="font-size:22px;">—</span><span class="velocity-unit" data-i18n="analytics.target_height.predicted_unit">cm, predicted adult height</span></div>
+                <span class="dq-badge measured" style="font-size:10px;" data-i18n="analytics.target_height.validated_badge">Validated</span>
               </div>
               <div class="velocity-sub" id="thResultRange"></div>
               <div class="setup-note" style="margin-top:8px; font-size:10.5px;" id="thResultDetail"></div>
             </div>
             <div class="velocity-card hidden" id="thExploratoryCard" style="margin:0; border-left: 3px solid var(--estimated);">
               <div class="velocity-top">
-                <div><span class="velocity-val" id="thExploratoryValue" style="font-size:22px;">—</span><span class="velocity-unit">cm, with extended family</span></div>
-                <span class="dq-badge estimated" style="font-size:10px;">Exploratory</span>
+                <div><span class="velocity-val" id="thExploratoryValue" style="font-size:22px;">—</span><span class="velocity-unit" data-i18n="analytics.target_height.extended_unit">cm, with extended family</span></div>
+                <span class="dq-badge estimated" style="font-size:10px;" data-i18n="analytics.target_height.exploratory_badge">Exploratory</span>
               </div>
               <div class="velocity-sub" id="thExploratoryRange"></div>
               <div class="setup-note" style="margin-top:8px; font-size:10.5px;" id="thExploratoryDetail"></div>
             </div>
           </div>
           <div class="card-divider" style="margin: 16px -16px;"></div>
-          <div class="form-lbl" style="margin-bottom:4px;">Extended family heights (optional)</div>
+          <div class="form-lbl" style="margin-bottom:4px;" data-i18n="analytics.target_height.extended_section">Extended family heights (optional)</div>
           <div class="setup-note" style="font-size:10.5px; margin-bottom:10px;">For context only — not used in the calculation above.</div>
           <div class="form-row">
-            <div class="form-lbl">Relation</div>
+            <div class="form-lbl" data-i18n="analytics.target_height.relation">Relation</div>
             <select id="newFamilyRelation" class="num-input" style="width:180px; text-align:left; padding-left:10px;">
               <option value="maternal_grandmother">Maternal grandmother</option>
               <option value="maternal_grandfather">Maternal grandfather</option>
@@ -565,7 +565,7 @@
             <div class="form-lbl">Notes (optional)</div>
             <input type="text" id="newFamilyNotes" class="text-input" placeholder="e.g. not totally sure of exact height">
           </div>
-          <button class="btn-secondary" onclick="addFamilyHeightRecord()">Add to family record</button>
+          <button class="btn-secondary" onclick="addFamilyHeightRecord()" data-i18n="analytics.target_height.add_family_btn">Add to family record</button>
           <div id="familyHeightList" class="nutrition-log-list" style="margin-top:12px;"></div>
         </div>
       </div>
@@ -573,7 +573,7 @@
       <!-- Growth chart -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title text-measured" id="growthChartTitle">Height-for-age</span>
+          <span class="card-title text-measured" id="growthChartTitle" data-i18n="analytics.charts.height_for_age">Height-for-age</span>
           <div style="display:flex; align-items:center; gap:8px;">
             <div class="seg hidden" id="referenceToggle" style="width:auto; min-width:140px;">
               <button class="seg-btn active" data-ref="who" onclick="setReferenceStandard('who', this)">WHO</button>
@@ -585,13 +585,13 @@
           </div>
         </div>
         <!-- Note appears right below header, before canvas — user sees it immediately without scrolling -->
-        <div class="setup-note hidden" style="margin:0 16px 10px; font-size:11px;" id="growthChartNote">
+        <div class="setup-note hidden" style="margin:0 16px 10px; font-size:11px;" id="growthChartNote" data-i18n="analytics.charts.growth_note">
           Shaded bands are the official WHO 2007 Growth Reference for school-age children and adolescents (5–19 years), transcribed directly from who.int. This is a population reference, not a diagnosis — bring this chart to your pediatrician for clinical interpretation, especially near the band edges.
         </div>
         <div class="card-body" style="padding-top:0;">
           <div class="seg" id="chartZoomToggle" style="margin-bottom:8px;">
-            <button class="seg-btn active" data-zoom="auto" onclick="setChartZoom('auto', this)">Zoomed (this age)</button>
-            <button class="seg-btn" data-zoom="full" onclick="setChartZoom('full', this)">Full timeline (0–19y)</button>
+            <button class="seg-btn active" data-zoom="auto" onclick="setChartZoom('auto', this)" data-i18n="analytics.charts.zoom_auto">Zoomed (this age)</button>
+            <button class="seg-btn" data-zoom="full" onclick="setChartZoom('full', this)" data-i18n="analytics.charts.zoom_full">Full timeline (0–19y)</button>
           </div>
           <div class="canvas-wrap">
             <canvas id="growthCanvas"></canvas>
@@ -609,13 +609,13 @@
       <!-- BMI chart -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title text-measured">BMI-for-age</span>
+          <span class="card-title text-measured" data-i18n="analytics.charts.bmi_for_age">BMI-for-age</span>
           <button class="info-toggle-btn" onclick="toggleInfo('bmiChartNote')" aria-label="More info">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           </button>
         </div>
         <!-- Note appears right below header, before canvas -->
-        <div class="setup-note hidden" style="margin:0 16px 10px; font-size:11px;" id="bmiChartNote">
+        <div class="setup-note hidden" style="margin:0 16px 10px; font-size:11px;" id="bmiChartNote" data-i18n="analytics.charts.bmi_note">
           BMI-for-age, using WHO's official reference for this child's current age. A screening signal, not a diagnosis — BMI can't distinguish muscle from fat, which matters most for very active children.
         </div>
         <div class="card-body" style="padding-top:8px;">
@@ -633,7 +633,7 @@
 
       <!-- Lab trend -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured">Lab markers</span><span class="dq-badge estimated"><span class="dq-dot estimated"></span>not yet connected</span></div>
+        <div class="card-header"><span class="card-title text-measured" data-i18n="analytics.charts.lab_markers">Lab markers</span><span class="dq-badge estimated"><span class="dq-dot estimated"></span>not yet connected</span></div>
         <div class="card-body" style="padding-top:8px;">
           <div class="canvas-wrap" style="height:160px;">
             <canvas id="labCanvas"></canvas>
@@ -644,7 +644,7 @@
 
       <!-- Clinical events timeline -->
       <div class="card">
-        <div class="card-header"><span class="card-title">Clinical events</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="analytics.clinical_events.title">Clinical events</span></div>
         <div class="card-body" id="eventsList" style="padding-top:6px;">
           <div class="empty-state" style="padding:16px;"><p>Medical entries now save (see Medical tab) — this timeline view summarizing them here isn't built yet.</p></div>
         </div>
@@ -652,31 +652,31 @@
 
       <!-- Log physical measurement -->
       <div class="card">
-        <div class="card-header"><span class="card-title">Log measurement</span><span class="dq-badge measured"><span class="dq-dot measured"></span>measured</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="analytics.log_measurement.title">Log measurement</span><span class="dq-badge measured"><span class="dq-dot measured"></span>measured</span></div>
         <div class="card-body">
           <div class="form-row">
-            <div class="form-lbl">Date</div>
+            <div class="form-lbl" data-i18n="common.date">Date</div>
             <input type="date" id="logDate" class="date-input">
           </div>
           <div class="form-row">
-            <div class="form-lbl">Height (cm)</div>
+            <div class="form-lbl" data-i18n="common.height_cm">Height (cm)</div>
             <input type="number" id="logHeight" class="num-input" value="127.0" step="0.1">
           </div>
           <div class="form-row">
-            <div class="form-lbl">Weight (kg)</div>
+            <div class="form-lbl" data-i18n="common.weight_kg">Weight (kg)</div>
             <input type="number" id="logWeight" class="num-input" value="29.0" step="0.1">
           </div>
-          <button class="btn-secondary" onclick="addMeasurement()">Add to growth log</button>
+          <button class="btn-secondary" onclick="addMeasurement()" data-i18n="analytics.log_measurement.add_btn">Add to growth log</button>
         </div>
       </div>
 
       <!-- History table -->
       <div class="card">
-        <div class="card-header"><span class="card-title">Growth history</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="analytics.history.title">Growth history</span></div>
         <div class="card-body" style="padding:0; overflow-x:auto;">
           <table class="hist-table" id="histTable">
             <thead>
-              <tr><th>Date</th><th>Height</th><th>Weight</th><th>BMI</th><th>Channel</th></tr>
+              <tr><th data-i18n="common.date">Date</th><th data-i18n="common.height_cm">Height</th><th data-i18n="common.weight_kg">Weight</th><th>BMI</th><th data-i18n="analytics.history.channel">Channel</th></tr>
             </thead>
             <tbody id="histBody">
             </tbody>
@@ -684,94 +684,94 @@
         </div>
       </div>
 
-      <button class="btn-secondary" onclick="generateClinicPDF()" style="margin-top:0;">↓ Export PDF for clinic visit</button>
+      <button class="btn-secondary" onclick="generateClinicPDF()" style="margin-top:0;" data-i18n="analytics.export_pdf">↓ Export PDF for clinic visit</button>
     </div>
 
     <!-- ══════════════ SCREEN: MEDICAL ══════════════ -->
     <div class="screen" id="screenMedical">
-      <div class="section-hd"><h2>Clinical log</h2><p>Medical factors that affect growth interpretation</p></div>
-      <div class="setup-note" style="font-size:11.5px;">Saved per date — use the date selector on the Today tab to revise a past entry, then return here.</div>
+      <div class="section-hd"><h2 data-i18n="medical.title">Clinical log</h2><p data-i18n="medical.subtitle">Medical factors that affect growth interpretation</p></div>
+      <div class="setup-note" style="font-size:11.5px;" data-i18n="medical.saved_note">Saved per date — use the date selector on the Today tab to revise a past entry, then return here.</div>
 
       <div class="warning-card">
-        <div class="warning-title">Development interference log</div>
+        <div class="warning-title" data-i18n="medical.illness.title">Development interference log</div>
         <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Acute illness can suppress growth hormone pulsatility — logging real illness episodes (not a guessed monthly count) gives a clearer picture of how illness timing relates to growth changes.</div>
         <div class="form-row">
-          <div class="form-lbl">Start date</div>
+          <div class="form-lbl" data-i18n="common.start_date">Start date</div>
           <input type="date" id="newIllnessStart" class="date-input" style="width:140px;">
         </div>
         <div class="form-row">
-          <div class="form-lbl">End date (optional — leave blank if ongoing)</div>
+          <div class="form-lbl" data-i18n="medical.illness.end_date">End date (optional — leave blank if ongoing)</div>
           <input type="date" id="newIllnessEnd" class="date-input" style="width:140px;">
         </div>
         <div class="form-row">
-          <div class="form-lbl">Type</div>
+          <div class="form-lbl" data-i18n="common.type">Type</div>
           <select id="newIllnessType" class="num-input" style="width:170px; text-align:left; padding-left:10px;">
-            <option value="fever">Fever</option>
-            <option value="cold_respiratory">Cold / respiratory</option>
-            <option value="ear_infection">Ear infection</option>
-            <option value="stomach_gi">Stomach / GI</option>
-            <option value="flu">Flu</option>
-            <option value="skin_rash">Skin / rash</option>
-            <option value="injury">Injury</option>
-            <option value="hospitalization">Hospitalization</option>
-            <option value="other">Other</option>
+            <option value="fever" data-i18n="medical.illness.type.fever">Fever</option>
+            <option value="cold_respiratory" data-i18n="medical.illness.type.cold">Cold / respiratory</option>
+            <option value="ear_infection" data-i18n="medical.illness.type.ear">Ear infection</option>
+            <option value="stomach_gi" data-i18n="medical.illness.type.stomach">Stomach / GI</option>
+            <option value="flu" data-i18n="medical.illness.type.flu">Flu</option>
+            <option value="skin_rash" data-i18n="medical.illness.type.skin">Skin / rash</option>
+            <option value="injury" data-i18n="medical.illness.type.injury">Injury</option>
+            <option value="hospitalization" data-i18n="medical.illness.type.hospital">Hospitalization</option>
+            <option value="other" data-i18n="common.other">Other</option>
           </select>
         </div>
         <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
-          <div class="form-lbl">Notes (optional)</div>
+          <div class="form-lbl" data-i18n="common.notes_optional">Notes (optional)</div>
           <input type="text" id="newIllnessNotes" class="text-input" placeholder="e.g. 38.5°C for 2 days, diagnosed by pediatrician">
         </div>
-        <button class="btn-secondary" onclick="addIllnessEvent()">Add illness episode</button>
+        <button class="btn-secondary" onclick="addIllnessEvent()" data-i18n="medical.illness.add_btn">Add illness episode</button>
         <div id="illnessEventsList" class="nutrition-log-list" style="margin-top:12px;"></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-title">Medications</span><span class="dq-badge estimated"><span class="dq-dot estimated"></span>parent-reported</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="medical.medications.title">Medications</span><span class="dq-badge estimated"><span class="dq-dot estimated"></span>parent-reported</span></div>
         <div class="card-body">
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px;">
-            <div class="form-lbl">Corticosteroid use</div>
+            <div class="form-lbl" data-i18n="medical.medications.corticosteroid">Corticosteroid use</div>
             <div class="seg" style="width:100%;">
               <button class="seg-btn active" id="stNone" onclick="setSteroid(0,this)">None</button>
-              <button class="seg-btn" id="stInhaled" onclick="setSteroid(1,this)">Inhaled</button>
-              <button class="seg-btn" id="stOral" onclick="setSteroid(2,this)">Oral</button>
+              <button class="seg-btn" id="stInhaled" onclick="setSteroid(1,this)" data-i18n="medical.medications.inhaled">Inhaled</button>
+              <button class="seg-btn" id="stOral" onclick="setSteroid(2,this)" data-i18n="medical.medications.oral">Oral</button>
             </div>
           </div>
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
-            <div class="form-lbl">Current medications</div>
+            <div class="form-lbl" data-i18n="medical.medications.current">Current medications</div>
             <input type="text" id="medMeds" class="text-input" placeholder="e.g. Amoxicillin 250mg, completed">
           </div>
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
-            <div class="form-lbl">Diagnoses / notes</div>
+            <div class="form-lbl" data-i18n="medical.medications.diagnoses">Diagnoses / notes</div>
             <input type="text" id="medNotes" class="text-input" placeholder="e.g. Mild asthma, well-controlled">
           </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured">Lab values</span><span class="dq-badge measured"><span class="dq-dot measured"></span>measured</span></div>
+        <div class="card-header"><span class="card-title text-measured" data-i18n="medical.lab_values.title">Lab values</span><span class="dq-badge measured"><span class="dq-dot measured"></span>measured</span></div>
         <div class="card-body">
           <div class="form-row">
-            <div><div class="form-lbl">IGF-1</div><div class="form-lbl-sub">Growth hormone axis marker</div></div>
+            <div><div class="form-lbl">IGF-1</div><div class="form-lbl-sub" data-i18n="medical.lab_values.igf1_sub">Growth hormone axis marker</div></div>
             <div style="display:flex; align-items:center; gap:5px;">
               <input type="number" id="labIGF" class="num-input" placeholder="—" style="width:80px;">
               <span style="font-size:11px; color:var(--text2);">ng/mL</span>
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl">Vitamin D</div><div class="form-lbl-sub">Bone mineralisation</div></div>
+            <div><div class="form-lbl" data-i18n="medical.lab_values.vitamin_d">Vitamin D</div><div class="form-lbl-sub" data-i18n="medical.lab_values.vitamin_d_sub">Bone mineralisation</div></div>
             <div style="display:flex; align-items:center; gap:5px;">
               <input type="number" id="labVitD" class="num-input" placeholder="—" style="width:80px;">
               <span style="font-size:11px; color:var(--text2);">nmol/L</span>
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl">Ferritin</div><div class="form-lbl-sub">Iron stores</div></div>
+            <div><div class="form-lbl">Ferritin</div><div class="form-lbl-sub" data-i18n="medical.lab_values.ferritin_sub">Iron stores</div></div>
             <div style="display:flex; align-items:center; gap:5px;">
               <input type="number" id="labFerritin" class="num-input" placeholder="—" style="width:80px;">
               <span style="font-size:11px; color:var(--text2);">ng/mL</span>
             </div>
           </div>
-          <button class="btn-secondary" onclick="saveMedical()">Save clinical record</button>
+          <button class="btn-secondary" onclick="saveMedical()" data-i18n="medical.lab_values.save_btn">Save clinical record</button>
         </div>
       </div>
 
@@ -782,56 +782,56 @@
            table designed so adding a new analyte never needs a schema
            change. -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured">Other lab results</span></div>
+        <div class="card-header"><span class="card-title text-measured" data-i18n="medical.other_labs.title">Other lab results</span></div>
         <div class="card-body">
           <div class="setup-note" style="font-size:11px; margin-bottom:10px;">For any lab value not listed above — TSH, Free T4, LH, FSH, Testosterone, Estradiol, IGFBP3, or others your doctor orders.</div>
           <div class="form-row">
-            <div class="form-lbl">Analyte name</div>
+            <div class="form-lbl" data-i18n="medical.other_labs.analyte">Analyte name</div>
             <input type="text" id="newLabAnalyte" class="text-input" placeholder="e.g. TSH" style="width:140px;">
           </div>
           <div class="form-row">
-            <div class="form-lbl">Result value</div>
+            <div class="form-lbl" data-i18n="medical.other_labs.result">Result value</div>
             <input type="number" id="newLabValue" class="num-input" placeholder="—" style="width:90px;">
           </div>
           <div class="form-row">
-            <div class="form-lbl">Unit</div>
+            <div class="form-lbl" data-i18n="medical.other_labs.unit">Unit</div>
             <input type="text" id="newLabUnit" class="text-input" placeholder="e.g. mIU/L" style="width:90px;">
           </div>
           <div class="form-row">
-            <div class="form-lbl">Reference range (optional)</div>
+            <div class="form-lbl" data-i18n="medical.other_labs.ref_range">Reference range (optional)</div>
             <div style="display:flex; align-items:center; gap:6px;">
               <input type="number" id="newLabRefLow" class="num-input" placeholder="low" style="width:70px;">
               <span style="color:var(--text2);">–</span>
               <input type="number" id="newLabRefHigh" class="num-input" placeholder="high" style="width:70px;">
             </div>
           </div>
-          <button class="btn-secondary" onclick="addLabResult()">Add lab result</button>
+          <button class="btn-secondary" onclick="addLabResult()" data-i18n="medical.other_labs.add_btn">Add lab result</button>
           <div id="labResultsList" class="nutrition-log-list" style="margin-top:12px;"></div>
         </div>
       </div>
 
       <!-- Puberty milestones -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured">Puberty milestones</span></div>
+        <div class="card-header"><span class="card-title text-measured" data-i18n="medical.puberty.title">Puberty milestones</span></div>
         <div class="card-body">
           <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Tracking pubertal timing — one of the strongest real predictors of remaining growth window and adult height. Record what your pediatrician observes or what you notice at home.</div>
           <div class="form-row">
-            <div class="form-lbl">Milestone</div>
+            <div class="form-lbl" data-i18n="medical.puberty.milestone">Milestone</div>
             <select id="newPubertyType" class="num-input" style="width:170px; text-align:left; padding-left:10px;" onchange="togglePubertyStageVisibility()">
-              <option value="breast_development">Breast development</option>
-              <option value="genital_development">Genital development</option>
-              <option value="pubic_hair">Pubic hair</option>
-              <option value="axillary_hair">Axillary (underarm) hair</option>
-              <option value="facial_hair">Facial hair</option>
-              <option value="voice_change">Voice change</option>
-              <option value="body_odor">Body odor</option>
-              <option value="acne">Acne</option>
-              <option value="growth_spurt_feeling">Growth spurt (reported)</option>
-              <option value="menarche">Menarche</option>
+              <option value="breast_development" data-i18n="medical.puberty.type.breast">Breast development</option>
+              <option value="genital_development" data-i18n="medical.puberty.type.genital">Genital development</option>
+              <option value="pubic_hair" data-i18n="medical.puberty.type.pubic_hair">Pubic hair</option>
+              <option value="axillary_hair" data-i18n="medical.puberty.type.axillary">Axillary (underarm) hair</option>
+              <option value="facial_hair" data-i18n="medical.puberty.type.facial_hair">Facial hair</option>
+              <option value="voice_change" data-i18n="medical.puberty.type.voice">Voice change</option>
+              <option value="body_odor" data-i18n="medical.puberty.type.body_odor">Body odor</option>
+              <option value="acne" data-i18n="medical.puberty.type.acne">Acne</option>
+              <option value="growth_spurt_feeling" data-i18n="medical.puberty.type.growth_spurt">Growth spurt (reported)</option>
+              <option value="menarche" data-i18n="medical.puberty.type.menarche">Menarche</option>
             </select>
           </div>
           <div class="form-row" id="tannerStageRow">
-            <div class="form-lbl">Tanner stage</div>
+            <div class="form-lbl" data-i18n="medical.puberty.tanner_stage">Tanner stage</div>
             <select id="newPubertyStage" class="num-input" style="width:80px; text-align:left; padding-left:10px;">
               <option value="1">I</option>
               <option value="2">II</option>
@@ -841,10 +841,10 @@
             </select>
           </div>
           <div class="form-row">
-            <div class="form-lbl">Date observed</div>
+            <div class="form-lbl" data-i18n="medical.puberty.date_observed">Date observed</div>
             <input type="date" id="newPubertyDate" class="date-input" style="width:140px;">
           </div>
-          <button class="btn-secondary" onclick="addPubertyEvent()">Add milestone</button>
+          <button class="btn-secondary" onclick="addPubertyEvent()" data-i18n="medical.puberty.add_btn">Add milestone</button>
           <div id="pubertyEventsList" class="nutrition-log-list" style="margin-top:12px;"></div>
         </div>
       </div>
@@ -858,7 +858,7 @@
            Samitivej is exactly the format this section is designed for. -->
       <div class="card" id="boneAgeCard">
         <div class="card-header">
-          <span class="card-title text-measured">Bone age assessment</span>
+          <span class="card-title text-measured" data-i18n="medical.bone_age.title">Bone age assessment</span>
           <span class="dq-badge measured"><span class="dq-dot measured"></span>X-ray</span>
         </div>
         <div class="card-body">
@@ -868,28 +868,28 @@
 
           <!-- X-ray image upload -->
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
-            <div class="form-lbl">X-ray image (optional)</div>
+            <div class="form-lbl" data-i18n="medical.bone_age.xray_label">X-ray image (optional)</div>
             <label class="xray-upload-zone" id="xrayUploadZone" for="xrayFileInput">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/><path d="M12 8v1M12 15v1"/></svg>
-              <span id="xrayUploadLabel">Tap to upload X-ray image</span>
+              <span id="xrayUploadLabel" data-i18n="medical.bone_age.upload_hint">Tap to upload X-ray image</span>
               <span style="font-size:10px; color:var(--text3);">JPEG, PNG or PDF · max 10MB</span>
             </label>
             <input type="file" id="xrayFileInput" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none;" onchange="handleXrayFileSelect(this)">
             <div id="xrayPreviewContainer" class="hidden" style="margin-top:6px; position:relative;">
               <img id="xrayPreviewImg" style="width:100%; max-height:200px; object-fit:contain; border-radius:10px; background:#000;" alt="X-ray preview">
-              <button class="btn-link" style="font-size:11px; margin-top:4px; color:var(--flag);" onclick="clearXraySelection()">Remove image</button>
+              <button class="btn-link" style="font-size:11px; margin-top:4px; color:var(--flag);" onclick="clearXraySelection()" data-i18n="medical.bone_age.remove_image">Remove image</button>
             </div>
           </div>
 
           <!-- Study date -->
           <div class="form-row">
-            <div class="form-lbl">Study date</div>
+            <div class="form-lbl" data-i18n="medical.bone_age.study_date">Study date</div>
             <input type="date" id="boneAgeStudyDate" class="date-input" style="width:140px;">
           </div>
 
           <!-- Bone age result -->
           <div class="form-row">
-            <div><div class="form-lbl">Bone age (from report)</div><div class="form-lbl-sub">Enter years + months from the radiologist's report</div></div>
+            <div><div class="form-lbl" data-i18n="medical.bone_age.label">Bone age (from report)</div><div class="form-lbl-sub" data-i18n="medical.bone_age.label_sub">Enter years + months from the radiologist's report</div></div>
             <div style="display:flex; align-items:center; gap:6px;">
               <input type="number" id="boneAgeYears" class="num-input" placeholder="0" min="0" max="18" style="width:54px;"> <span style="font-size:11px; color:var(--text2);">yr</span>
               <input type="number" id="boneAgeMonths" class="num-input" placeholder="0" min="0" max="11" style="width:54px;"> <span style="font-size:11px; color:var(--text2);">mo</span>
@@ -898,7 +898,7 @@
 
           <!-- Standard deviation from report -->
           <div class="form-row">
-            <div><div class="form-lbl">Standard deviation (SD)</div><div class="form-lbl-sub">From the report — e.g. "8.79 months"</div></div>
+            <div><div class="form-lbl" data-i18n="medical.bone_age.sd_label">Standard deviation (SD)</div><div class="form-lbl-sub">From the report — e.g. "8.79 months"</div></div>
             <div style="display:flex; align-items:center; gap:5px;">
               <input type="number" id="boneAgeSd" class="num-input" placeholder="—" step="0.01" style="width:80px;">
               <span style="font-size:11px; color:var(--text2);">months</span>
@@ -907,7 +907,7 @@
 
           <!-- Assessment method -->
           <div class="form-row">
-            <div class="form-lbl">Method</div>
+            <div class="form-lbl" data-i18n="common.method">Method</div>
             <select id="boneAgeMethod" class="num-input" style="width:140px; text-align:left; padding-left:10px;">
               <option value="GP">Greulich-Pyle (GP)</option>
               <option value="TW3">Tanner-Whitehouse 3</option>
@@ -918,17 +918,17 @@
 
           <!-- Reporting doctor -->
           <div class="form-row">
-            <div class="form-lbl">Report doctor (optional)</div>
+            <div class="form-lbl" data-i18n="medical.bone_age.report_doctor">Report doctor (optional)</div>
             <input type="text" id="boneAgeDoctor" class="text-input" placeholder="e.g. Dr. Nisachon Chatangam" style="width:180px;">
           </div>
 
           <!-- Notes -->
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
-            <div class="form-lbl">Notes (optional)</div>
+            <div class="form-lbl" data-i18n="common.notes_optional">Notes (optional)</div>
             <input type="text" id="boneAgeNotes" class="text-input" placeholder="e.g. Requested by Dr. Oranan, follow-up in 1 year">
           </div>
 
-          <button class="btn-secondary" onclick="saveBoneAgeAssessment()" id="saveBoneAgeBtn">Save bone age record</button>
+          <button class="btn-secondary" onclick="saveBoneAgeAssessment()" id="saveBoneAgeBtn" data-i18n="medical.bone_age.save_btn">Save bone age record</button>
 
           <!-- Results list -->
           <div id="boneAgeList" class="nutrition-log-list" style="margin-top:14px;"></div>
@@ -940,27 +940,26 @@
     <!-- ══════════════ SCREEN: AI ASSISTANT ══════════════ -->
     <div class="screen" id="screenAI">
       <div class="section-hd" style="display:flex; align-items:flex-start; justify-content:space-between;">
-        <div><h2>AI coach</h2><p>Context from this child's logged data — not a substitute for your pediatrician</p></div>
-        <button class="btn-link" style="font-size:11.5px; white-space:nowrap; margin-top:4px;" onclick="clearAIConversation()">Clear conversation</button>
+        <div><h2 data-i18n="nav.ai_coach">AI coach</h2><p data-i18n="ai.subtitle">Context from this child's logged data — not a substitute for your pediatrician</p></div>
+        <button class="btn-link" style="font-size:11.5px; white-space:nowrap; margin-top:4px;" onclick="clearAIConversation()" data-i18n="ai.clear_btn">Clear conversation</button>
       </div>
 
       <div class="card">
         <div class="card-body">
           <div class="ai-chat" id="aiChat">
-            <div class="ai-msg bot">
+            <div class="ai-msg bot" data-i18n="ai.welcome_message">
               I can answer questions using this child's logged nutrition, sleep, activity, and clinical data. I'm not a doctor — for diagnosis or treatment decisions, bring the trend data on the Analytics tab to your pediatrician.<br><br>What would you like to know?
             </div>
           </div>
 
-          <!-- Category chips + filtered question list, pulled from the
-               ai_coach_questions table. Falls back to a small hardcoded
-               set (see populateQuickPrompts() in app.js) if the table
-               hasn't loaded yet or the migration hasn't been run. -->
           <div class="ai-category-chips" id="aiCategoryChips" style="margin-top:12px;"></div>
           <div class="quick-prompts" id="quickPrompts" style="margin-top:8px;"></div>
 
           <div class="ai-input-row">
-            <input type="text" class="ai-input" id="aiInput" placeholder="Ask about this child's growth data..." onkeydown="if(event.key==='Enter')sendAI()">
+            <input type="text" class="ai-input" id="aiInput"
+              placeholder="Ask about this child's growth data..."
+              data-i18n-placeholder="ai.input_placeholder"
+              onkeydown="if(event.key==='Enter')sendAI()">
             <button class="ai-send" onclick="sendAI()" aria-label="Send">
               <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
             </button>
@@ -974,16 +973,16 @@
   <!-- TAB BAR -->
   <div class="tabbar">
     <button class="tab active" id="tabToday" onclick="goTab('Today')">
-      <div class="tab-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></div><div class="tab-label">Today</div>
+      <div class="tab-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></div><div class="tab-label" data-i18n="nav.today">Today</div>
     </button>
     <button class="tab" id="tabAnalytics" onclick="goTab('Analytics')">
-      <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16V11M12 16V8M16 16v-5"/></svg></div><div class="tab-label">Analytics</div>
+      <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16V11M12 16V8M16 16v-5"/></svg></div><div class="tab-label" data-i18n="nav.analytics">Analytics</div>
     </button>
     <button class="tab" id="tabMedical" onclick="goTab('Medical')">
-      <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M9 3h6v4H9z"/><path d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-3"/><path d="M12 11v6M9 14h6"/></svg></div><div class="tab-label">Medical</div>
+      <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M9 3h6v4H9z"/><path d="M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-3"/><path d="M12 11v6M9 14h6"/></svg></div><div class="tab-label" data-i18n="nav.medical">Medical</div>
     </button>
     <button class="tab" id="tabAI" onclick="goTab('AI')">
-      <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 10v.01M15 10v.01M8 15c1 1 2.2 1.5 4 1.5s3-.5 4-1.5"/></svg></div><div class="tab-label">AI coach</div>
+      <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 10v.01M15 10v.01M8 15c1 1 2.2 1.5 4 1.5s3-.5 4-1.5"/></svg></div><div class="tab-label" data-i18n="nav.ai_coach">AI coach</div>
     </button>
   </div>
 </div>
@@ -992,11 +991,11 @@
 <div class="modal-overlay hidden" id="setupModal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">Account & settings</div>
+    <div class="modal-title" data-i18n="account.title">Account & settings</div>
 
     <!-- Account info -->
     <div class="sheets-config">
-      <div class="sheets-config-title">Signed in as</div>
+      <div class="sheets-config-title" data-i18n="account.signed_in_as">Signed in as</div>
       <div class="form-row" style="border-bottom:none; padding:0;">
         <div>
           <div style="font-size:13.5px; font-weight:600;" id="accountEmail">—</div>
@@ -1005,23 +1004,31 @@
             <span class="tier-badge free" id="accountTierBadge">Free</span>
           </div>
         </div>
-        <button class="btn-ghost" style="padding:8px 14px;" onclick="handleSignOut()">Sign out</button>
+        <button class="btn-ghost" style="padding:8px 14px;" onclick="handleSignOut()" data-i18n="account.sign_out_btn">Sign out</button>
       </div>
-      <a href="admin.html" class="btn-link hidden" id="adminDashboardLink" style="margin-top:10px; font-size:11.5px; display:block;">Admin dashboard →</a>
-      <button class="btn-link" style="margin-top:10px; font-size:11.5px; color:var(--flag);" onclick="requestAccountDeletion()">Delete account</button>
+      <a href="admin.html" class="btn-link hidden" id="adminDashboardLink" style="margin-top:10px; font-size:11.5px; display:block;" data-i18n="account.admin_link">Admin dashboard →</a>
+      <button class="btn-link" style="margin-top:10px; font-size:11.5px; color:var(--flag);" onclick="requestAccountDeletion()" data-i18n="account.delete_btn">Delete account</button>
     </div>
 
     <!-- Doctor/researcher: list of assigned children -->
     <div class="sheets-config hidden" id="clinicianPanel">
-      <div class="sheets-config-title">Assigned children</div>
+      <div class="sheets-config-title" data-i18n="account.assigned_children">Assigned children</div>
       <div id="assignedChildrenList" style="display:flex; flex-direction:column; gap:8px;"></div>
       <div class="setup-note" style="font-size:11px;">You can view data only for children a parent or admin has explicitly assigned to you.</div>
     </div>
 
     <!-- Parent: children profiles + sharing -->
     <div id="parentPanel">
+
+      <!-- Language selector -->
+      <div style="margin-bottom:18px;">
+        <div class="sheets-config-title" style="margin-bottom:8px;" data-i18n="account.language">Language</div>
+        <div id="languageSelector" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+        <div class="setup-note" style="font-size:10.5px; margin-top:7px;">Thai and Chinese translations are in progress — clinical terms (BMI, percentile, IGF-1) remain in English in all languages.</div>
+      </div>
+
       <div style="margin-bottom:14px;">
-        <div class="sheets-config-title" style="margin-bottom:10px;">Children profiles</div>
+        <div class="sheets-config-title" style="margin-bottom:10px;" data-i18n="account.children_profiles">Children profiles</div>
 
         <!-- Existing children — rendered by renderChildList() as collapsible cards -->
         <div id="childList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;"></div>
@@ -1031,7 +1038,7 @@
           <div class="child-profile-header" onclick="toggleAddChildForm()">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:20px; font-weight:300; color:var(--accent); line-height:1;">+</span>
-              <span style="font-size:13px; font-weight:600; color:var(--accent);">Add another child</span>
+              <span style="font-size:13px; font-weight:600; color:var(--accent);" data-i18n="account.add_child">Add another child</span>
             </div>
             <span class="child-profile-chevron" id="addChildChevron">›</span>
           </div>
@@ -1041,11 +1048,11 @@
               <div style="display:flex; gap:8px;">
                 <input type="date" id="newChildDOB" class="date-input" style="flex:1;">
                 <select id="newChildSex" class="num-input" style="width:90px; text-align:left; padding-left:10px;">
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
+                  <option value="male" data-i18n="common.male">Male</option>
+                  <option value="female" data-i18n="common.female">Female</option>
                 </select>
               </div>
-              <button class="btn-link" style="text-align:left; font-size:11.5px;" onclick="toggleBirthDetails(this)">+ Add birth details (SGA / preterm)</button>
+              <button class="btn-link" style="text-align:left; font-size:11.5px;" onclick="toggleBirthDetails(this)" data-i18n="account.add_birth_details">+ Add birth details (SGA / preterm)</button>
               <div id="birthDetailsFields" class="hidden" style="display:flex; flex-direction:column; gap:6px; padding-top:8px; border-top:1px solid var(--border2);">
                 <div class="setup-note" style="font-size:10.5px;">Optional. Only relevant if your child was born preterm or small for gestational age — unlocks catch-up growth tracking for ages 0–5. Confirm SGA status with your pediatrician.</div>
                 <input type="number" id="newChildGestWeeks" class="num-input" placeholder="Gestational age (weeks)">
@@ -1055,32 +1062,32 @@
                 </div>
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2);">
                   <input type="checkbox" id="newChildIsSGA" style="width:16px; height:16px;">
-                  Confirmed SGA by a doctor
+                  <span data-i18n="account.sga_confirmed">Confirmed SGA by a doctor</span>
                 </label>
               </div>
-              <button class="btn-secondary" onclick="addChild()">Add child profile</button>
+              <button class="btn-secondary" onclick="addChild()" data-i18n="account.add_child_btn">Add child profile</button>
             </div>
           </div>
         </div>
       </div>
 
       <div class="sheets-config">
-        <div class="sheets-config-title">Share with a doctor or researcher</div>
+        <div class="sheets-config-title" data-i18n="account.share.title">Share with a doctor or researcher</div>
         <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px; border-bottom:none; padding:0;">
-          <div class="form-lbl">Child</div>
+          <div class="form-lbl" data-i18n="common.child">Child</div>
           <select id="shareChildSelect" class="text-input"></select>
         </div>
         <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px; border-bottom:none; padding:10px 0 0;">
-          <div class="form-lbl">Their account email</div>
+          <div class="form-lbl" data-i18n="account.share.email_label">Their account email</div>
           <input type="email" id="shareDoctorEmail" class="text-input" placeholder="doctor@clinic.com">
         </div>
-        <button class="btn-secondary" onclick="shareChildWithDoctor()">Grant access</button>
+        <button class="btn-secondary" onclick="shareChildWithDoctor()" data-i18n="account.share.grant_btn">Grant access</button>
         <div id="currentSharesList" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;"></div>
         <div class="setup-note" style="font-size:11px;">The other person must already have a GrowSense account registered as Doctor or Researcher. You can revoke access at any time.</div>
       </div>
     </div>
 
-    <button class="btn-ghost" style="width:100%; margin-top:14px;" onclick="closeSetup()">Close</button>
+    <button class="btn-ghost" style="width:100%; margin-top:14px;" onclick="closeSetup()" data-i18n="common.close">Close</button>
   </div>
 </div>
 
@@ -1091,12 +1098,12 @@
 <div class="modal-overlay hidden" id="foodLibraryModal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">Food library</div>
+    <div class="modal-title" data-i18n="food_library.title">Food library</div>
 
     <div class="seg" id="foodLibraryTabs" style="margin-bottom:14px;">
-      <button class="seg-btn active" data-tab="browse" onclick="setFoodLibraryTab('browse', this)">Browse all</button>
-      <button class="seg-btn" data-tab="mine" onclick="setFoodLibraryTab('mine', this)">My foods</button>
-      <button class="seg-btn" data-tab="add" onclick="setFoodLibraryTab('add', this)">Add new</button>
+      <button class="seg-btn active" data-tab="browse" onclick="setFoodLibraryTab('browse', this)" data-i18n="food_library.browse_all">Browse all</button>
+      <button class="seg-btn" data-tab="mine" onclick="setFoodLibraryTab('mine', this)" data-i18n="food_library.my_foods">My foods</button>
+      <button class="seg-btn" data-tab="add" onclick="setFoodLibraryTab('add', this)" data-i18n="food_library.add_new">Add new</button>
     </div>
 
     <!-- Browse all: every preset + custom food, with a star toggle -->
@@ -1115,33 +1122,33 @@
     <div id="foodLibraryAddPane" class="hidden">
       <div class="setup-note" style="font-size:11px; margin-bottom:10px; background:var(--estimated-light); color:var(--estimated-dark);">These values are your own estimate — not looked up automatically yet. Use a package label, a recipe calculator, or your best guess. You can always edit or remove this later.</div>
       <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
-        <div class="form-lbl">Food name</div>
+        <div class="form-lbl" data-i18n="food_library.food_name">Food name</div>
         <input type="text" id="newCustomFoodName" class="text-input" placeholder="e.g. Grandma's fish soup">
       </div>
       <div class="form-row">
-        <div class="form-lbl">Serving size (grams)</div>
+        <div class="form-lbl" data-i18n="food_library.serving_size">Serving size (grams)</div>
         <input type="number" id="newCustomFoodGrams" class="num-input" placeholder="e.g. 200" style="width:90px;">
       </div>
       <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
-        <div class="form-lbl">Serving description (optional)</div>
+        <div class="form-lbl" data-i18n="food_library.serving_desc">Serving description (optional)</div>
         <input type="text" id="newCustomFoodDesc" class="text-input" placeholder="e.g. 1 bowl">
       </div>
       <div class="form-row">
-        <div class="form-lbl">Protein (g) for this serving</div>
+        <div class="form-lbl" data-i18n="food_library.protein_label">Protein (g) for this serving</div>
         <input type="number" id="newCustomFoodProtein" class="num-input" placeholder="e.g. 15" style="width:90px;">
       </div>
       <div class="form-row">
-        <div class="form-lbl">Zinc (mg) — optional</div>
+        <div class="form-lbl" data-i18n="food_library.zinc_label">Zinc (mg) — optional</div>
         <input type="number" id="newCustomFoodZinc" class="num-input" placeholder="—" style="width:90px;">
       </div>
       <div class="form-row">
-        <div class="form-lbl">Calcium (mg) — optional</div>
+        <div class="form-lbl" data-i18n="food_library.calcium_label">Calcium (mg) — optional</div>
         <input type="number" id="newCustomFoodCalcium" class="num-input" placeholder="—" style="width:90px;">
       </div>
-      <button class="btn-secondary" onclick="addCustomFood()">Add this food</button>
+      <button class="btn-secondary" onclick="addCustomFood()" data-i18n="food_library.add_btn">Add this food</button>
     </div>
 
-    <button class="btn-ghost" style="width:100%; margin-top:14px;" onclick="closeFoodLibraryModal()">Close</button>
+    <button class="btn-ghost" style="width:100%; margin-top:14px;" onclick="closeFoodLibraryModal()" data-i18n="common.close">Close</button>
   </div>
 </div>
 
@@ -1150,27 +1157,27 @@
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="insight-sheet-hdr">
-      <span>Edit measurement</span>
+      <span data-i18n="measurement_edit.title">Edit measurement</span>
       <button class="modal-close-btn" onclick="document.getElementById('measurementEditModal').classList.add('hidden')">✕</button>
     </div>
     <div style="padding:0 20px 36px; display:flex; flex-direction:column; gap:10px;">
       <input type="hidden" id="editMeasId">
       <div class="form-row">
-        <div class="form-lbl">Date</div>
+        <div class="form-lbl" data-i18n="common.date">Date</div>
         <input type="date" id="editMeasDate" class="date-input" style="max-width:160px;">
       </div>
       <div class="form-row">
-        <div class="form-lbl">Height (cm)</div>
+        <div class="form-lbl" data-i18n="common.height_cm">Height (cm)</div>
         <input type="number" id="editMeasHeight" class="num-input" step="0.1" placeholder="125.0" style="max-width:100px;">
       </div>
       <div class="form-row">
-        <div class="form-lbl">Weight (kg)</div>
+        <div class="form-lbl" data-i18n="common.weight_kg">Weight (kg)</div>
         <input type="number" id="editMeasWeight" class="num-input" step="0.01" placeholder="29.0" style="max-width:100px;">
       </div>
-      <div class="setup-note" style="font-size:11px; margin-top:-4px;">BMI recalculates automatically on save.</div>
-      <button class="btn-primary" onclick="saveMeasurementEdit()" style="margin-top:6px;">Save changes</button>
+      <div class="setup-note" style="font-size:11px; margin-top:-4px;" data-i18n="measurement_edit.bmi_note">BMI recalculates automatically on save.</div>
+      <button class="btn-primary" onclick="saveMeasurementEdit()" style="margin-top:6px;" data-i18n="measurement_edit.save_btn">Save changes</button>
       <button class="btn-link" onclick="deleteMeasurement()"
-        style="color:var(--flag); font-size:12px; text-align:center; margin-top:4px;">
+        style="color:var(--flag); font-size:12px; text-align:center; margin-top:4px;" data-i18n="measurement_edit.delete_btn">
         Delete this entry
       </button>
     </div>
