@@ -912,15 +912,77 @@ async function pruneStaleLogItemsIfNeeded(childId) {
   cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
   const cutoffStr = cutoffDate.toISOString().split('T')[0];
 
-  // Three tables to prune: nutrition_log_items, sleep_logs, and
-  // activity_logs — all use the same log_date column pattern.
-  // Errors are silently swallowed — this is a background maintenance
-  // job and a prune failure shouldn't surface as a user-visible error.
+  // Tables to prune: nutrition_log_items, daily_sleep, daily_activity.
+  // Errors are silently swallowed — background maintenance job.
   await Promise.all([
     sb.from('nutrition_log_items').delete().eq('child_id', childId).lt('log_date', cutoffStr),
-    sb.from('sleep_logs').delete().eq('child_id', childId).lt('log_date', cutoffStr),
-    sb.from('activity_logs').delete().eq('child_id', childId).lt('log_date', cutoffStr)
-  ]).catch(() => {}); // swallow silently — background maintenance
+    sb.from('daily_sleep').delete().eq('child_id', childId).lt('log_date', cutoffStr),
+    sb.from('daily_activity').delete().eq('child_id', childId).lt('log_date', cutoffStr)
+  ]).catch(() => {});
+}
+
+// ── Measurement row edit sheet ────────────────────────────────────
+function openMeasurementEditSheet(measurementId) {
+  const m = (APP.activeChildMeasurements || []).find(r => r.measurement_id === measurementId);
+  if (!m) return;
+
+  document.getElementById('editMeasId').value    = measurementId;
+  document.getElementById('editMeasDate').value  = m.recorded_date;
+  document.getElementById('editMeasHeight').value = Number(m.stature_height_cm).toFixed(1);
+  document.getElementById('editMeasWeight').value = Number(m.mass_weight_kg).toFixed(2);
+
+  document.getElementById('measurementEditModal').classList.remove('hidden');
+}
+
+function closeMeasurementEditSheet(e) {
+  // Close on backdrop tap only (not on sheet content tap)
+  if (e && e.target !== document.getElementById('measurementEditModal')) return;
+  document.getElementById('measurementEditModal').classList.add('hidden');
+}
+
+async function saveMeasurementEdit() {
+  const id     = document.getElementById('editMeasId').value;
+  const date   = document.getElementById('editMeasDate').value;
+  const height = parseFloat(document.getElementById('editMeasHeight').value);
+  const weight = parseFloat(document.getElementById('editMeasWeight').value);
+
+  if (!date || isNaN(height) || isNaN(weight) || height <= 0 || weight <= 0) {
+    showToast('⚠️', 'Please enter valid height and weight'); return;
+  }
+
+  const bmi = parseFloat((weight / Math.pow(height / 100, 2)).toFixed(1));
+
+  const { error } = await sb.from('measurements').update({
+    recorded_date: date,
+    stature_height_cm: height,
+    mass_weight_kg: weight,
+    calculated_bmi: bmi,
+  }).eq('measurement_id', id);
+
+  if (error) { showToast('⚠️', 'Save failed: ' + error.message); return; }
+
+  document.getElementById('measurementEditModal').classList.add('hidden');
+  showToast('✅', 'Measurement updated');
+  await refreshActiveChildHistory();
+  drawGrowthChart();
+  drawBMIChart();
+  updateInsightCards();
+}
+
+async function deleteMeasurement() {
+  if (!confirm('Delete this measurement? This cannot be undone.')) return;
+
+  const id = document.getElementById('editMeasId').value;
+  const { error } = await sb.from('measurements').delete().eq('measurement_id', id);
+
+  if (error) { showToast('⚠️', 'Delete failed: ' + error.message); return; }
+
+  document.getElementById('measurementEditModal').classList.add('hidden');
+  showToast('✅', 'Measurement deleted');
+  await refreshActiveChildHistory();
+  drawGrowthChart();
+  drawBMIChart();
+  updateInsightCards();
 }
 
 async function loadNutritionLogItems() {
@@ -2966,7 +3028,7 @@ async function refreshActiveChildHistory() {
 
   const { data, error } = await sb
     .from('measurements')
-    .select('recorded_date, stature_height_cm, mass_weight_kg, calculated_bmi')
+    .select('measurement_id, recorded_date, stature_height_cm, mass_weight_kg, calculated_bmi')
     .eq('child_id', childId)
     .order('recorded_date', { ascending: false });
 
@@ -3006,7 +3068,13 @@ async function refreshActiveChildHistory() {
       }
     }
 
-    return `<tr><td>${fmt}</td><td>${Number(m.stature_height_cm).toFixed(1)}</td><td>${Number(m.mass_weight_kg).toFixed(1)}</td><td>${m.calculated_bmi ?? '—'}</td><td>${channelCell}</td></tr>`;
+    return `<tr class="hist-row" onclick="openMeasurementEditSheet('${m.measurement_id}')">
+      <td>${fmt}</td>
+      <td>${Number(m.stature_height_cm).toFixed(1)}</td>
+      <td>${Number(m.mass_weight_kg).toFixed(1)}</td>
+      <td>${m.calculated_bmi ?? '—'}</td>
+      <td style="display:flex; align-items:center; justify-content:space-between; gap:4px;">${channelCell}<span class="hist-chevron">›</span></td>
+    </tr>`;
   }).join('');
 }
 
