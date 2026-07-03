@@ -128,10 +128,11 @@
           <span class="card-title text-accent">Readiness reading</span>
           <div style="display:flex; align-items:center; gap:8px;">
             <span id="todayDateBadge" class="badge badge-measured" style="font-size:10px;"></span>
-            <button class="info-toggle-btn" onclick="toggleInfo('hudNote')" aria-label="About this score">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-            </button>
+            <button class="info-icon-btn" onclick="toggleInfo('hudNote')" aria-label="About this score">i</button>
           </div>
+        </div>
+        <div class="setup-note hidden" id="hudNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
+          This reading reflects today's logged inputs only. A single day carries little signal on its own — what matters clinically is the 30-day trend, visible on the Analytics tab.
         </div>
         <div class="grs-hud">
           <div class="grs-top">
@@ -173,9 +174,6 @@
               <div class="grs-bar-col"><div class="grs-bar-track"><div class="grs-bar-fill" id="barSlp" style="width:0%; background:var(--estimated)"></div></div><div class="grs-bar-lbl">Sleep</div></div>
             </div>
           </div>
-          <div class="setup-note hidden" id="hudNote" style="margin-top:14px; font-size:11px;">
-            This reading reflects today's logged inputs only. A single day carries little signal on its own — what matters clinically is the 30-day trend, visible on the Analytics tab.
-          </div>
         </div>
       </div>
 
@@ -185,20 +183,18 @@
           <span class="card-title">Logging consistency, this week</span>
           <div style="display:flex; align-items:center; gap:8px;">
             <span id="streakCount" class="badge badge-accent">0 / 7 days</span>
-            <button class="info-toggle-btn" onclick="toggleInfo('consistNote')" aria-label="About logging consistency">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-            </button>
+            <button class="info-icon-btn" onclick="toggleInfo('consistNote')" aria-label="About logging consistency">i</button>
           </div>
         </div>
+        <div class="setup-note hidden" id="consistNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">Consistent daily logs make the trend lines on Analytics meaningful. Gaps get marked on the chart rather than guessed at.</div>
         <div class="card-body">
           <div class="consist-row" id="streakRow"></div>
-          <div class="setup-note hidden" id="consistNote" style="margin-top:10px; font-size:11px;">Consistent daily logs make the trend lines on Analytics meaningful. Gaps get marked on the chart rather than guessed at.</div>
         </div>
       </div>
 
       <!-- 1. Nutrition -->
       <div class="card" style="border-top: 3px solid var(--accent);">
-        <div class="card-header"><span class="card-title text-accent">Nutrition</span><span style="display:flex; align-items:center; gap:6px;"><span class="dq-badge measured"><span class="dq-dot measured"></span>USDA sourced</span><button class="info-toggle-btn" onclick="toggleFoodNote(this)" aria-label="About these values"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button></span></div>
+        <div class="card-header"><span class="card-title text-accent">Nutrition</span><span style="display:flex; align-items:center; gap:6px;"><span class="dq-badge measured"><span class="dq-dot measured"></span>USDA sourced</span><button class="info-icon-btn" onclick="toggleFoodNote(this)" aria-label="About these values">i</button></span></div>
         <div class="card-body">
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none; padding-bottom:8px;">
             <div class="form-lbl" style="font-size:12px; color:var(--text2);">Logging for</div>
@@ -351,14 +347,7 @@
 
     <!-- ══════════════ SCREEN: ANALYTICS ══════════════ -->
     <div class="screen" id="screenAnalytics">
-      <div class="section-hd" style="display:flex; align-items:flex-start; justify-content:space-between;">
-        <div><h2>Analytics</h2><p>Trend view — built to bring to a clinic visit</p></div>
-        <button class="btn-secondary" onclick="generateClinicPDF()"
-          style="font-size:11px; padding:6px 11px; white-space:nowrap; flex-shrink:0; margin-top:4px;"
-          title="Export PDF clinic summary">
-          ↓ Export PDF
-        </button>
-      </div>
+      <div class="section-hd"><h2>Analytics</h2><p>Trend view — built to bring to a clinic visit</p></div>
 
       <!-- ── INSIGHT CARDS ── tap any card to see the trend detail -->
       <div class="insight-cards-section">
