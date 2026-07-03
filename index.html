@@ -12,6 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="design-tokens.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="ar-rtl.css"><!-- RTL layout overrides — active only when dir="rtl" -->
 <script>
   // Defined inline so it's available immediately on DOM click — before
   // app.js finishes parsing. app.js defines it again at line ~1256 which
@@ -67,7 +68,7 @@
         <div class="form-lbl" data-i18n="common.password">Password</div>
         <input type="password" id="authPassword" class="text-input" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <button class="btn-primary" onclick="handleSignIn()" id="signInBtn" data-i18n="auth.sign_in_btn">Sign in</button>
+      <button class="btn-primary" onclick="handleSignIn()" id="signInBtn" data-i18n="auth.sign_in_btn" data-i18n="auth.sign_in">Sign in</button>
       <button class="btn-ghost" style="width:100%; margin-top:10px;" onclick="showSignUpForm()" data-i18n="auth.create_account_link">Create an account instead</button>
     </div>
 
@@ -89,7 +90,7 @@
         </div>
         <div class="setup-note" style="font-size:11px;">Doctor and researcher accounts can be linked to view a child's data only once a parent or admin grants access — creating this account doesn't give access to anyone's data by itself.</div>
       </div>
-      <button class="btn-primary" onclick="handleSignUp()" id="signUpBtn" data-i18n="auth.create_account_btn">Create account</button>
+      <button class="btn-primary" onclick="handleSignUp()" id="signUpBtn" data-i18n="auth.create_account_btn" data-i18n="auth.create_account">Create account</button>
       <button class="btn-ghost" style="width:100%; margin-top:10px;" onclick="showSignInForm()" data-i18n="auth.have_account_link">I already have an account</button>
     </div>
 
@@ -200,19 +201,19 @@
         </div>
         <div class="card-body">
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none; padding-bottom:8px;">
-            <div class="form-lbl" style="font-size:12px; color:var(--text2);" data-i18n="today.nutrition.logging_for">Logging for</div>
+            <div class="form-lbl" style="font-size:12px; color:var(--text2);" data-i18n="today.nutrition.logging_for" data-i18n="today.nutrition.logging_for">Logging for</div>
             <div class="seg" id="mealSlotSeg" style="width:100%;">
-              <button class="seg-btn active" data-meal="breakfast" onclick="setMealSlot('breakfast', this)" data-i18n="common.breakfast">Breakfast</button>
-              <button class="seg-btn" data-meal="lunch" onclick="setMealSlot('lunch', this)" data-i18n="common.lunch">Lunch</button>
-              <button class="seg-btn" data-meal="dinner" onclick="setMealSlot('dinner', this)" data-i18n="common.dinner">Dinner</button>
-              <button class="seg-btn" data-meal="snack" onclick="setMealSlot('snack', this)" data-i18n="common.snack">Snack</button>
+              <button class="seg-btn active" data-meal="breakfast" onclick="setMealSlot('breakfast', this)" data-i18n="common.breakfast" data-i18n="meal.breakfast">Breakfast</button>
+              <button class="seg-btn" data-meal="lunch" onclick="setMealSlot('lunch', this)" data-i18n="common.lunch" data-i18n="meal.lunch">Lunch</button>
+              <button class="seg-btn" data-meal="dinner" onclick="setMealSlot('dinner', this)" data-i18n="common.dinner" data-i18n="meal.dinner">Dinner</button>
+              <button class="seg-btn" data-meal="snack" onclick="setMealSlot('snack', this)" data-i18n="common.snack" data-i18n="meal.snack">Snack</button>
             </div>
           </div>
           <div class="form-row" style="border-bottom:none; padding-bottom:6px;">
-            <div class="form-lbl" style="font-size:12px; color:var(--text2);" data-i18n="today.nutrition.tap_hint">Tap a food to add it</div>
+            <div class="form-lbl" style="font-size:12px; color:var(--text2);" data-i18n="today.nutrition.tap_hint" data-i18n="today.nutrition.tap_to_add">Tap a food to add it</div>
           </div>
           <div class="food-card-grid" id="foodCardGrid"></div>
-          <button class="btn-secondary" onclick="openFoodLibraryModal()" style="margin-top:10px;" data-i18n="today.nutrition.browse_btn">+ Browse more foods / add your own</button>
+          <button class="btn-secondary" onclick="openFoodLibraryModal()" style="margin-top:10px;" data-i18n="today.nutrition.browse_btn" data-i18n="today.nutrition.browse_foods">+ Browse more foods / add your own</button>
 
           <!-- Logged-items list: every tap creates a row here, so a parent
                can review exactly what was logged (not just the running
@@ -220,7 +221,7 @@
                which stepper number to undo. -->
           <div class="card-divider" style="margin: 14px -16px;"></div>
           <div class="form-row" style="border-bottom:none; padding-bottom:6px;">
-            <div class="form-lbl" style="font-size:12px; color:var(--text2);" data-i18n="today.nutrition.logged_today">Logged today</div>
+            <div class="form-lbl" style="font-size:12px; color:var(--text2);" data-i18n="today.nutrition.logged_today" data-i18n="today.nutrition.logged_today">Logged today</div>
             <span class="badge badge-accent" id="logItemCount" style="font-size:10px;">0 items</span>
           </div>
           <div id="nutritionLogList" class="nutrition-log-list">
@@ -229,7 +230,7 @@
 
           <div class="card-divider" style="margin: 14px -16px;"></div>
           <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.nutrition.protein_total">Protein total</div><div class="form-lbl-sub" id="proteinTargetLabel">Target: — g / day</div></div>
+            <div><div class="form-lbl" data-i18n="today.nutrition.protein_total" data-i18n="today.nutrition.protein_label">Protein total</div><div class="form-lbl-sub" id="proteinTargetLabel">Target: — g / day</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('protein',-1)">−</button>
               <div class="step-val" id="valProtein">0 g</div>
@@ -237,7 +238,7 @@
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.nutrition.calcium_total">Calcium total</div><div class="form-lbl-sub" data-i18n="today.nutrition.calcium_target">Target: 1300mg / day</div></div>
+            <div><div class="form-lbl" data-i18n="today.nutrition.calcium_total" data-i18n="today.nutrition.calcium_label">Calcium total</div><div class="form-lbl-sub" data-i18n="today.nutrition.calcium_target">Target: 1300mg / day</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('calcium',-100)">−</button>
               <div class="step-val" id="valCalcium">0 mg</div>
@@ -245,7 +246,7 @@
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.nutrition.zinc_total">Zinc total</div><div class="form-lbl-sub" data-i18n="today.nutrition.zinc_sub">Growth plate co-factor · target 8mg/day</div></div>
+            <div><div class="form-lbl" data-i18n="today.nutrition.zinc_total" data-i18n="today.nutrition.zinc_label">Zinc total</div><div class="form-lbl-sub" data-i18n="today.nutrition.zinc_sub">Growth plate co-factor · target 8mg/day</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('zinc',-1)">−</button>
               <div class="step-val" id="valZinc">0 mg</div>
@@ -264,7 +265,7 @@
         <div class="card-header"><span class="card-title text-measured" data-i18n="today.activity.title">Activity & mechanical load</span></div>
         <div class="card-body">
           <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.activity.hanging">Bar hanging</div><div class="form-lbl-sub" data-i18n="today.activity.hanging_sub">Spinal decompression · target 30s</div></div>
+            <div><div class="form-lbl" data-i18n="today.activity.hanging" data-i18n="today.activity.hanging_label">Bar hanging</div><div class="form-lbl-sub" data-i18n="today.activity.hanging_sub">Spinal decompression · target 30s</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('hanging',-5)">−</button>
               <div class="step-val" id="valHanging">15 sec</div>
@@ -272,7 +273,7 @@
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.activity.jumps">Box jumps</div><div class="form-lbl-sub" data-i18n="today.activity.jumps_sub">Mechanotransduction · target 40 reps</div></div>
+            <div><div class="form-lbl" data-i18n="today.activity.jumps" data-i18n="today.activity.jumps_label">Box jumps</div><div class="form-lbl-sub" data-i18n="today.activity.jumps_sub">Mechanotransduction · target 40 reps</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('jumps',-5)">−</button>
               <div class="step-val" id="valJumps">20 reps</div>
@@ -280,7 +281,7 @@
             </div>
           </div>
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px;">
-            <div class="form-lbl" data-i18n="today.activity.yoga">Yoga / stretching</div>
+            <div class="form-lbl" data-i18n="today.activity.yoga" data-i18n="today.activity.yoga_label">Yoga / stretching</div>
             <div class="seg" id="yogaSeg">
               <button class="seg-btn active" onclick="setYoga(0,this)" data-i18n="common.none">None</button>
               <button class="seg-btn" onclick="setYoga(10,this)" data-i18n="common.10_min">10 min</button>
@@ -301,15 +302,15 @@
         </div>
         <div class="card-body">
           <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.sleep.bedtime">Bedtime</div><div class="form-lbl-sub" data-i18n="today.sleep.bedtime_sub">Target: before 21:30</div></div>
+            <div><div class="form-lbl" data-i18n="today.sleep.bedtime" data-i18n="today.sleep.bedtime_label">Bedtime</div><div class="form-lbl-sub" data-i18n="today.sleep.bedtime_sub">Target: before 21:30</div></div>
             <input type="time" id="sleepBed" class="time-input" value="21:15" oninput="calcSleep()">
           </div>
           <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.sleep.wake_time">Wake time</div><div class="form-lbl-sub" data-i18n="today.sleep.wake_sub">Morning arousal</div></div>
+            <div><div class="form-lbl" data-i18n="today.sleep.wake_time" data-i18n="today.sleep.wake_label">Wake time</div><div class="form-lbl-sub" data-i18n="today.sleep.wake_sub">Morning arousal</div></div>
             <input type="time" id="sleepWake" class="time-input" value="06:30" oninput="calcSleep()">
           </div>
           <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.sleep.wakeups">Wake-ups before midnight</div><div class="form-lbl-sub" data-i18n="today.sleep.wakeups_sub">Disruptions to the first sleep cycle</div></div>
+            <div><div class="form-lbl" data-i18n="today.sleep.wakeups" data-i18n="today.sleep.wakes_label">Wake-ups before midnight</div><div class="form-lbl-sub" data-i18n="today.sleep.wakeups_sub">Disruptions to the first sleep cycle</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('nightWakes',-1)">−</button>
               <div class="step-val" id="valNightWakes">0</div>
@@ -330,7 +331,7 @@
           </div>
 
           <div class="form-row" style="border-bottom:none; margin-top:4px;">
-            <div class="form-lbl" style="color:var(--text2)" data-i18n="today.sleep.total_duration">Total sleep duration</div>
+            <div class="form-lbl" style="color:var(--text2)" data-i18n="today.sleep.total_duration" data-i18n="today.sleep.duration_label">Total sleep duration</div>
             <strong id="totalSleepLbl" style="color:var(--text); font-size:14px; font-weight:600; font-family:var(--mono);">9.25 hrs</strong>
           </div>
           <div class="setup-note" style="font-size:11px;">
@@ -467,24 +468,24 @@
       <!-- Stats grid -->
       <div class="stat-grid">
         <div class="stat-card">
-          <div class="stat-lbl" data-i18n="analytics.stats.avg_readiness">Avg readiness</div>
+          <div class="stat-lbl" data-i18n="analytics.stats.avg_readiness" data-i18n="analytics.avg_readiness">Avg readiness</div>
           <div class="stat-val text-accent" id="avgGRS">—</div>
-          <div class="stat-sub" data-i18n="analytics.stats.last_7_days">Last 7 days</div>
+          <div class="stat-sub" data-i18n="analytics.stats.last_7_days" data-i18n="analytics.last_7_days">Last 7 days</div>
         </div>
         <div class="stat-card">
-          <div class="stat-lbl" data-i18n="analytics.stats.height_gain">Height gain</div>
+          <div class="stat-lbl" data-i18n="analytics.stats.height_gain" data-i18n="analytics.height_gain">Height gain</div>
           <div class="stat-val text-measured" id="heightGain">—</div>
-          <div class="stat-sub" data-i18n="analytics.stats.last_30_days">Last 30 days</div>
+          <div class="stat-sub" data-i18n="analytics.stats.last_30_days" data-i18n="analytics.last_30_days">Last 30 days</div>
         </div>
         <div class="stat-card">
-          <div class="stat-lbl" data-i18n="analytics.stats.avg_sleep">Avg sleep</div>
+          <div class="stat-lbl" data-i18n="analytics.stats.avg_sleep" data-i18n="analytics.avg_sleep">Avg sleep</div>
           <div class="stat-val text-estimated" id="avgSleep">—</div>
-          <div class="stat-sub" data-i18n="analytics.stats.hours_night">Hours / night</div>
+          <div class="stat-sub" data-i18n="analytics.stats.hours_night" data-i18n="analytics.hours_night">Hours / night</div>
         </div>
         <div class="stat-card">
-          <div class="stat-lbl" data-i18n="analytics.stats.logged_days">Logged days</div>
+          <div class="stat-lbl" data-i18n="analytics.stats.logged_days" data-i18n="analytics.logged_days">Logged days</div>
           <div class="stat-val" id="streakStat">—</div>
-          <div class="stat-sub" data-i18n="analytics.stats.out_of_7">Out of last 7</div>
+          <div class="stat-sub" data-i18n="analytics.stats.out_of_7" data-i18n="analytics.out_of_7">Out of last 7</div>
         </div>
       </div>
 
@@ -1022,13 +1023,13 @@
 
       <!-- Language selector -->
       <div style="margin-bottom:18px;">
-        <div class="sheets-config-title" style="margin-bottom:8px;" data-i18n="account.language">Language</div>
+        <div class="sheets-config-title" style="margin-bottom:8px;" data-i18n="account.language" data-i18n="account.language">Language</div>
         <div id="languageSelector" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-        <div class="setup-note" style="font-size:10.5px; margin-top:7px;">Thai and Chinese translations are in progress — clinical terms (BMI, percentile, IGF-1) remain in English in all languages.</div>
+        <div class="setup-note" style="font-size:10.5px; margin-top:7px;">Korean, Vietnamese, and Arabic translations are machine-generated and awaiting native copywriter review. Clinical terms (BMI, percentile, IGF-1) remain in English in all languages. Arabic uses right-to-left layout.</div>
       </div>
 
       <div style="margin-bottom:14px;">
-        <div class="sheets-config-title" style="margin-bottom:10px;" data-i18n="account.children_profiles">Children profiles</div>
+        <div class="sheets-config-title" style="margin-bottom:10px;" data-i18n="account.children_profiles" data-i18n="account.children.title">Children profiles</div>
 
         <!-- Existing children — rendered by renderChildList() as collapsible cards -->
         <div id="childList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;"></div>

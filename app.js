@@ -42,6 +42,9 @@ const SUPPORTED_LANGUAGES = [
   { code: 'en', label: 'EN', name: 'English',       flag: '🇬🇧' },
   { code: 'th', label: 'TH', name: 'ภาษาไทย',     flag: '🇹🇭' },
   { code: 'zh', label: 'ZH', name: '中文（简体）',  flag: '🇨🇳' },
+  { code: 'ko', label: 'KO', name: '한국어',         flag: '🇰🇷' },
+  { code: 'vi', label: 'VI', name: 'Tiếng Việt',    flag: '🇻🇳' },
+  { code: 'ar', label: 'AR', name: 'العربية',        flag: '🇦🇪' },
 ];
 const LOCALES = {}; // populated by loadLocales() at boot
 
@@ -83,6 +86,10 @@ function restoreLanguagePreference() {
   } catch (e) {
     APP.language = 'en';
   }
+  // Apply direction immediately — before any rendering
+  const lang = APP.language;
+  document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('lang', lang);
 }
 
 function applyI18n() {
@@ -106,6 +113,11 @@ async function switchLanguage(lang) {
   if (!SUPPORTED_LANGUAGES.find(l => l.code === lang)) return;
   APP.language = lang;
   try { localStorage.setItem('growsense_language', lang); } catch (e) {}
+
+  // RTL support — Arabic reads right to left
+  document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('lang', lang);
+
   applyI18n();
   renderLanguageSelector();
 }

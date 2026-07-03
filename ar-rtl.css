@@ -1,0 +1,225 @@
+/*
+ * GrowSense — Arabic RTL layout overrides (ar-rtl.css)
+ *
+ * These rules apply ONLY when [dir="rtl"] is set on the <html>
+ * element by switchLanguage('ar'). All other languages are
+ * unaffected (the file loads for all users but rules never match
+ * unless dir=rtl is active).
+ *
+ * Strategy: mirror the horizontal axis.
+ *   · text-align: left  → text-align: right
+ *   · flex-direction: row → row-reverse where needed
+ *   · margin/padding left ↔ right
+ *   · border-left ↔ border-right
+ *   · Chevrons and arrows flip: › → ‹  ← → →
+ *
+ * Arabic-specific font: Noto Sans Arabic is loaded from Google
+ * Fonts for clean Arabic rendering. The app's system font stack
+ * already includes generic sans-serif as fallback.
+ *
+ * COPYWRITER NOTE:
+ * This file handles layout. All Arabic strings live in ar.json.
+ * Send ar.json to the Arabic copywriter — this file is not for them.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+
+/* ── Base typography ─────────────────────────────────────────────── */
+[dir="rtl"] body,
+[dir="rtl"] * {
+  font-family: 'Noto Sans Arabic', -apple-system, sans-serif;
+}
+
+/* ── Text alignment ──────────────────────────────────────────────── */
+[dir="rtl"] .card-title,
+[dir="rtl"] .form-lbl,
+[dir="rtl"] .form-lbl-sub,
+[dir="rtl"] .stat-lbl,
+[dir="rtl"] .stat-val,
+[dir="rtl"] .stat-sub,
+[dir="rtl"] .setup-note,
+[dir="rtl"] .sheets-config-title,
+[dir="rtl"] .section-hd h2,
+[dir="rtl"] .section-hd p,
+[dir="rtl"] .velocity-lbl,
+[dir="rtl"] .velocity-val,
+[dir="rtl"] .velocity-sub,
+[dir="rtl"] .insight-card-title,
+[dir="rtl"] .insight-card-sub,
+[dir="rtl"] .tab-label {
+  text-align: right;
+}
+
+/* ── Card headers — reverse icon + title order ───────────────────── */
+[dir="rtl"] .card-header {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .card-title {
+  text-align: right;
+}
+
+/* ── Form rows — label on right, input on left ───────────────────── */
+[dir="rtl"] .form-row {
+  flex-direction: row-reverse;
+}
+
+/* ── Top bar — logo left, account button right in LTR → flip ──────── */
+[dir="rtl"] .topbar {
+  flex-direction: row-reverse;
+}
+
+/* ── Tab bar — tabs read right to left ──────────────────────────── */
+[dir="rtl"] .tabbar {
+  flex-direction: row-reverse;
+}
+
+/* ── Child switcher chips ────────────────────────────────────────── */
+[dir="rtl"] .child-switcher {
+  flex-direction: row-reverse;
+}
+
+/* ── Stat grid ───────────────────────────────────────────────────── */
+[dir="rtl"] .stat-grid {
+  direction: rtl;
+}
+
+/* ── Insight cards ───────────────────────────────────────────────── */
+[dir="rtl"] .insight-cards-section {
+  direction: rtl;
+}
+
+[dir="rtl"] .insight-card {
+  text-align: right;
+}
+
+/* ── GRS HUD ring legend ─────────────────────────────────────────── */
+[dir="rtl"] .grs-ledger {
+  text-align: right;
+}
+
+[dir="rtl"] .grs-ledger-row {
+  flex-direction: row-reverse;
+}
+
+/* ── Progress bar labels ─────────────────────────────────────────── */
+[dir="rtl"] .grs-bar-row {
+  flex-direction: row-reverse;
+}
+
+/* ── Food card grid ──────────────────────────────────────────────── */
+[dir="rtl"] .food-card-grid {
+  direction: rtl;
+}
+
+[dir="rtl"] .food-card {
+  text-align: right;
+}
+
+/* ── Segment controls ────────────────────────────────────────────── */
+[dir="rtl"] .seg {
+  flex-direction: row-reverse;
+}
+
+/* ── History table ───────────────────────────────────────────────── */
+[dir="rtl"] .hist-table th,
+[dir="rtl"] .hist-table td {
+  text-align: right;
+}
+
+/* ── Card borders — left accent → right accent ───────────────────── */
+[dir="rtl"] .card[style*="border-top"] {
+  /* border-top is direction-neutral, no change needed */
+}
+
+[dir="rtl"] .card[style*="border-left"] {
+  border-left: none;
+  border-right: 3px solid;
+}
+
+/* Velocity card accent borders */
+[dir="rtl"] .velocity-card {
+  border-right: 3px solid var(--accent);
+  border-left: none;
+}
+
+/* ── Language selector pills ─────────────────────────────────────── */
+[dir="rtl"] #languageSelector {
+  flex-direction: row-reverse;
+}
+
+/* ── Child profile collapsible cards ─────────────────────────────── */
+[dir="rtl"] .child-profile-header {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .child-profile-info {
+  flex-direction: row-reverse;
+}
+
+/* ── Modal / bottom sheet ────────────────────────────────────────── */
+[dir="rtl"] .insight-sheet-hdr {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .modal-sheet {
+  text-align: right;
+}
+
+/* ── Consist row (day streak dots) ──────────────────────────────── */
+[dir="rtl"] .consist-row {
+  flex-direction: row-reverse;
+}
+
+/* ── Auth screen ─────────────────────────────────────────────────── */
+[dir="rtl"] .auth-screen {
+  text-align: right;
+}
+
+[dir="rtl"] .auth-field {
+  text-align: right;
+}
+
+/* ── Badges and dq-badges ────────────────────────────────────────── */
+[dir="rtl"] .dq-badge {
+  flex-direction: row-reverse;
+}
+
+/* ── Number inputs — keep numerals LTR inside RTL context ─────────── */
+/* Western numerals are used in UAE medical practice */
+[dir="rtl"] input[type="number"],
+[dir="rtl"] input[type="time"],
+[dir="rtl"] input[type="date"],
+[dir="rtl"] .step-display {
+  direction: ltr;
+  text-align: center;
+}
+
+/* ── Chevrons — flip › to ‹ ──────────────────────────────────────── */
+[dir="rtl"] .hist-chevron::before {
+  content: '‹';
+}
+[dir="rtl"] .hist-chevron {
+  font-size: 0; /* hide the › */
+}
+
+[dir="rtl"] .child-profile-chevron {
+  transform: scaleX(-1);
+}
+
+/* ── Bone age annotation SVG — SVG internals handle their own coords */
+/* No override needed — SVG coordinate system is direction-independent */
+
+/* ── AI coach message bubbles ────────────────────────────────────── */
+[dir="rtl"] .ai-bubble-user {
+  text-align: right;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .ai-bubble-assistant {
+  text-align: right;
+}
+
+/* ── Sarabun Thai font override — keep Thai font for TH only ──────── */
+/* ar-rtl.css only applies when dir=rtl, so this won't conflict */
