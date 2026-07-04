@@ -1437,6 +1437,207 @@ async function loadActivitySectionForToday() {
 // end activity library
 // ══════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════
+// SUBSCRIPTION & FEATURE GATING
+// ══════════════════════════════════════════════════════════════════
+
+// ── Tier checks ───────────────────────────────────────────────────
+function isPremium() {
+  const acct = APP.account;
+  if (!acct) return false;
+  const tier = acct.subscription_tier;
+  if (tier === 'premium' || tier === 'pro') {
+    if (!acct.tier_expires_at) return true;          // lifetime / admin grant
+    return new Date(acct.tier_expires_at) > new Date();
+  }
+  return false;
+}
+
+function isPro() {
+  const acct = APP.account;
+  if (!acct) return false;
+  if (acct.subscription_tier === 'pro') {
+    if (!acct.tier_expires_at) return true;
+    return new Date(acct.tier_expires_at) > new Date();
+  }
+  return false;
+}
+
+// Measurements: free users capped at 5 LIFETIME (never decremented on delete)
+function canAddMeasurement() {
+  if (isPremium()) return true;
+  return (APP.account?.total_measurements_logged || 0) < 5;
+}
+
+// AI questions: free users get 3 per calendar month
+function aiQuestionsRemaining() {
+  if (isPremium()) return Infinity;
+  const resetAt   = APP.account?.ai_questions_reset_at;
+  const thisMonth = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
+  const resetMonth = resetAt ? resetAt.slice(0, 7) : '';
+  const used = resetMonth === thisMonth
+    ? (APP.account?.ai_questions_this_month || 0) : 0;
+  return Math.max(0, 3 - used);
+}
+
+// History date cutoff: free = last 30 days, premium = all time
+function historyStartDate() {
+  if (isPremium()) return '2000-01-01';
+  const d = new Date();
+  d.setDate(d.getDate() - 30);
+  return d.toISOString().split('T')[0];
+}
+
+// ── Upgrade modal ─────────────────────────────────────────────────
+const UPGRADE_MESSAGES = {
+  measurements: {
+    title: "You've logged 5 measurements",
+    body:  "Your growth data is safe and always visible. Upgrade to Premium to keep tracking and see the full velocity trend over time.",
+  },
+  history: {
+    title: "See Peem's full growth history",
+    body:  "Premium unlocks the complete timeline — every measurement, chart, and trend going back to day one.",
+  },
+  ai_coach: {
+    title: "3 AI questions used this month",
+    body:  "Premium gives you unlimited AI coach access — ask about sleep patterns, nutrition gaps, and growth data anytime.",
+  },
+  lab_values: {
+    title: "Lab value tracking is Premium",
+    body:  "Families working with a pediatric endocrinologist use IGF-1 and Vitamin D tracking to monitor treatment progress.",
+  },
+  bone_age_ai: {
+    title: "AI bone age analysis is Premium",
+    body:  "Get an AI second opinion on your radiologist's bone age report, with delta calculation and height potential estimate.",
+  },
+  fitbit: {
+    title: "Fitbit sync is Premium",
+    body:  "Connect Peem's Fitbit to automatically track deep sleep — the primary window for growth hormone release.",
+  },
+  pdf_export: {
+    title: "Clean PDF export is Premium",
+    body:  "Premium generates a clinic-ready PDF with charts, lab values, and bone age — no watermark.",
+  },
+  multiple_children: {
+    title: "Multiple children is Premium",
+    body:  "Premium supports up to 5 children — add siblings and track each independently.",
+  },
+};
+
+function showUpgradeModal(feature) {
+  const msg  = UPGRADE_MESSAGES[feature] || UPGRADE_MESSAGES.measurements;
+  const modal = document.getElementById('upgradeModal');
+  if (!modal) return;
+  document.getElementById('upgradeModalTitle').textContent = msg.title;
+  document.getElementById('upgradeModalBody').textContent  = msg.body;
+  modal.classList.remove('hidden');
+}
+
+function closeUpgradeModal() {
+  document.getElementById('upgradeModal')?.classList.add('hidden');
+}
+
+// ── Redemption ────────────────────────────────────────────────────
+async function redeemActivationCode() {
+  const input = document.getElementById('redeemCodeInput');
+  const btn   = document.getElementById('redeemCodeBtn');
+  const code  = input?.value?.trim().toUpperCase().replace(/\s+/g, '');
+  if (!code) { showToast('⚠️', 'Enter an activation code'); return; }
+
+  if (btn) { btn.textContent = 'Activating…'; btn.disabled = true; }
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/redeem-code`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${APP.session.access_token}`,
+      },
+      body: JSON.stringify({ code }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Redemption failed');
+
+    // Update local account state immediately — no need to reload page
+    if (APP.account) {
+      APP.account.subscription_tier = data.tier;
+      APP.account.tier_expires_at   = data.expires_at;
+      APP.account.billing_source    = 'code';
+    }
+
+    // Refresh tier badge
+    const tierBadge  = document.getElementById('accountTierBadge');
+    const tierLabels  = { free:'Free', premium:'⭐ Premium', pro:'👑 Pro' };
+    if (tierBadge) {
+      tierBadge.className   = 'tier-badge ' + data.tier;
+      tierBadge.textContent = tierLabels[data.tier] || data.tier;
+    }
+
+    // Show tier expiry in account screen
+    renderTierStatus();
+
+    if (input) input.value = '';
+    showToast('🎉', data.message || `${data.tier} activated!`);
+
+  } catch (e) {
+    showToast('⚠️', e.message);
+  } finally {
+    if (btn) { btn.textContent = 'Activate'; btn.disabled = false; }
+  }
+}
+
+// Render current tier + expiry in Account screen
+function renderTierStatus() {
+  const el = document.getElementById('tierStatusRow');
+  if (!el || !APP.account) return;
+
+  const tier    = APP.account.subscription_tier || 'free';
+  const expiry  = APP.account.tier_expires_at;
+  const labels  = { free:'Free', premium:'⭐ Premium', pro:'👑 Pro' };
+
+  let expiryStr = '';
+  if (expiry && isPremium()) {
+    const d = new Date(expiry);
+    expiryStr = ` · Active until ${d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}`;
+  }
+
+  el.innerHTML = `
+    <div style="font-size:12px; color:var(--text3); margin-bottom:3px;">Current plan</div>
+    <div style="font-size:15px; font-weight:700; color:var(--text);">
+      ${labels[tier] || tier}<span style="font-size:11px; font-weight:400; color:var(--text3);">${expiryStr}</span>
+    </div>
+    ${!isPremium() ? `
+      <div style="margin-top:4px; font-size:11px; color:var(--text3);">
+        Measurements logged: ${APP.account.total_measurements_logged || 0} of 5 free · AI questions: ${3 - (APP.account.ai_questions_this_month||0)} remaining this month
+      </div>` : ''}`;
+}
+
+// ── Feature gate wrappers ─────────────────────────────────────────
+// Call these before any premium action to check + show upgrade modal
+
+function requirePremium(feature) {
+  if (isPremium()) return true;
+  showUpgradeModal(feature);
+  return false;
+}
+
+function requireMeasurementQuota() {
+  if (canAddMeasurement()) return true;
+  showUpgradeModal('measurements');
+  return false;
+}
+
+function requireAIQuota() {
+  if (aiQuestionsRemaining() > 0) return true;
+  showUpgradeModal('ai_coach');
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// end subscription
+// ══════════════════════════════════════════════════════════════════
+
 function showAuthScreen() {
   document.getElementById('authScreen').classList.remove('hidden');
   document.getElementById('appRoot').classList.add('hidden');
@@ -1485,7 +1686,8 @@ async function enterApp(session) {
 
   document.getElementById('clinicianPanel').classList.toggle('hidden', !isClinicianRole());
   document.getElementById('parentPanel').classList.toggle('hidden', isClinicianRole());
-  renderLanguageSelector(); // populate language pills in account screen
+  renderLanguageSelector();
+  renderTierStatus(); // show current plan + expiry + usage counts
 
   initDateSelector();
   await loadChildren();
@@ -4154,6 +4356,7 @@ async function updateStats() {
 async function addMeasurement() {
   const childId = activeChildId();
   if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
+  if (!requireMeasurementQuota()) return; // free tier lifetime cap check
   const date = document.getElementById('logDate').value;
   const h = parseFloat(document.getElementById('logHeight').value);
   const w = parseFloat(document.getElementById('logWeight').value);
@@ -5162,39 +5365,46 @@ async function saveMedical() {
   const childId = activeChildId();
   if (!childId) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
 
-  const btn = document.querySelector('#screenMedical .btn-secondary');
-  const originalLabel = btn ? btn.textContent : '';
+  const btn = document.getElementById('saveMedicalBtn');
   if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
 
-  const igf1 = document.getElementById('labIGF').value;
-  const vitD = document.getElementById('labVitD').value;
+  const igf1     = document.getElementById('labIGF').value;
+  const vitD     = document.getElementById('labVitD').value;
   const ferritin = document.getElementById('labFerritin').value;
 
+  // Lab values (IGF-1, Vit D, Ferritin) are Premium features
+  const hasLabValues = igf1 || vitD || ferritin;
+  if (hasLabValues && !isPremium()) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save clinical record'; }
+    showUpgradeModal('lab_values');
+    return;
+  }
+
   const { error } = await sb.from('medical_logs').upsert({
-    child_id: childId,
-    log_date: APP.logDate,
-    steroid_level: currentState().steroid,
-    medications: document.getElementById('medMeds').value || null,
-    notes: document.getElementById('medNotes').value || null,
-    igf1_ng_ml: igf1 ? parseFloat(igf1) : null,
-    vitamin_d_nmol_l: vitD ? parseFloat(vitD) : null,
-    ferritin_ng_ml: ferritin ? parseFloat(ferritin) : null,
-    created_by: APP.session ? APP.session.user.id : null
+    child_id:         childId,
+    log_date:         APP.logDate,
+    steroid_level:    currentState().steroid,
+    medications:      document.getElementById('medMeds').value || null,
+    notes:            document.getElementById('medNotes').value || null,
+    igf1_ng_ml:       igf1     ? parseFloat(igf1)     : null,
+    vitamin_d_nmol_l: vitD     ? parseFloat(vitD)     : null,
+    ferritin_ng_ml:   ferritin ? parseFloat(ferritin) : null,
+    created_by:       APP.session ? APP.session.user.id : null
   }, { onConflict: 'child_id,log_date' });
 
-  if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Save clinical record'; }
 
   if (error) {
     showToast('⚠️', t('toast.error.save_failed','Could not save') + ': ' + error.message);
     return;
   }
   showToast('✅', t('toast.clinical_saved','Clinical record saved') + ' — ' + APP.logDate);
-  await loadLabValuesHistory(); // refresh the history list below the form
+  await loadLabValuesHistory();
 }
 
-// Loads and renders the last 10 medical_logs entries for the active child
-// as log-item-rows below the Lab values form. Called after save + on
-// Medical tab open so parents can see their IGF-1 history at a glance.
+// Loads recent medical_logs entries that have any lab value and renders
+// them as rows below the Save button. Simple fetch + JS filter avoids
+// Supabase OR filter syntax pitfalls.
 async function loadLabValuesHistory() {
   const childId = activeChildId();
   const listEl  = document.getElementById('labValuesList');
@@ -5204,36 +5414,33 @@ async function loadLabValuesHistory() {
     .from('medical_logs')
     .select('log_id, log_date, igf1_ng_ml, vitamin_d_nmol_l, ferritin_ng_ml')
     .eq('child_id', childId)
-    .not('igf1_ng_ml', 'is', null) // only rows that have at least IGF-1
     .order('log_date', { ascending: false })
-    .limit(10);
+    .limit(20);
 
-  // Fall back: also show rows with Vit D or Ferritin even without IGF-1
-  const { data: allData } = await sb
-    .from('medical_logs')
-    .select('log_id, log_date, igf1_ng_ml, vitamin_d_nmol_l, ferritin_ng_ml')
-    .eq('child_id', childId)
-    .or('igf1_ng_ml.not.is.null,vitamin_d_nmol_l.not.is.null,ferritin_ng_ml.not.is.null')
-    .order('log_date', { ascending: false })
-    .limit(10);
+  if (error) { console.error('[Lab history]', error); return; }
 
-  const rows = allData || data || [];
-  if (!rows.length) { listEl.innerHTML = ''; return; }
+  // Filter client-side — only show rows with at least one lab value
+  const rows = (data || []).filter(r =>
+    r.igf1_ng_ml != null || r.vitamin_d_nmol_l != null || r.ferritin_ng_ml != null
+  );
+
+  if (!rows.length) {
+    listEl.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0;">No lab values recorded yet.</div>';
+    return;
+  }
 
   listEl.innerHTML = rows.map(r => {
     const parts = [];
-    if (r.igf1_ng_ml        != null) parts.push(`IGF-1: <b>${r.igf1_ng_ml}</b> ng/mL`);
-    if (r.vitamin_d_nmol_l  != null) parts.push(`Vit D: <b>${r.vitamin_d_nmol_l}</b> nmol/L`);
-    if (r.ferritin_ng_ml    != null) parts.push(`Ferritin: <b>${r.ferritin_ng_ml}</b> ng/mL`);
+    if (r.igf1_ng_ml       != null) parts.push('IGF-1: <b>' + r.igf1_ng_ml + '</b> <span style="color:var(--text3);font-size:10px;">ng/mL</span>');
+    if (r.vitamin_d_nmol_l != null) parts.push('Vit D: <b>' + r.vitamin_d_nmol_l + '</b> <span style="color:var(--text3);font-size:10px;">nmol/L</span>');
+    if (r.ferritin_ng_ml   != null) parts.push('Ferritin: <b>' + r.ferritin_ng_ml + '</b> <span style="color:var(--text3);font-size:10px;">ng/mL</span>');
     if (!parts.length) return '';
-    const d      = new Date(r.log_date + 'T12:00:00');
-    const label  = d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
-    return `<div class="log-item-row" style="display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:var(--surface2); border-radius:10px; margin-bottom:6px;">
-      <div>
-        <div style="font-size:11px; color:var(--text3); margin-bottom:2px;">${label}</div>
-        <div style="font-size:12.5px; color:var(--text);">${parts.join(' · ')}</div>
-      </div>
-    </div>`;
+    const [y, m, d] = r.log_date.split('-').map(Number);
+    const label = new Date(y, m - 1, d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    return '<div style="padding:9px 12px;background:var(--surface2);border-radius:10px;margin-bottom:6px;">'
+      + '<div style="font-size:10.5px;color:var(--text3);margin-bottom:3px;">' + label + '</div>'
+      + '<div style="font-size:12px;color:var(--text);line-height:1.7;">' + parts.join(' &nbsp;·&nbsp; ') + '</div>'
+      + '</div>';
   }).filter(Boolean).join('');
 }
 
@@ -6508,10 +6715,11 @@ function sendAI() {
   const inp = document.getElementById('aiInput');
   const msg = inp.value.trim();
   if (!msg) return;
+  if (!requireAIQuota()) return; // free tier monthly cap check
   inp.value = '';
   document.getElementById('quickPrompts').style.display = 'none';
   addUserMsg(msg);
-  routeAICoachMessage(msg, null); // free text — needs real matching, not an exact hint
+  routeAICoachMessage(msg, null);
 }
 
 // ══════════════════════════════════════════

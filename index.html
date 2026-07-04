@@ -802,7 +802,7 @@
               <span style="font-size:11px; color:var(--text2);">ng/mL</span>
             </div>
           </div>
-          <button class="btn-secondary" onclick="saveMedical()" style="margin-top:14px;" data-i18n="medical.lab_values.save_btn">Save clinical record</button>
+          <button id="saveMedicalBtn" class="btn-secondary" onclick="saveMedical()" style="margin-top:14px;" data-i18n="medical.lab_values.save_btn">Save clinical record</button>
           <!-- Lab values history — populated by loadLabValuesHistory() after save -->
           <div id="labValuesList" class="nutrition-log-list" style="margin-top:12px;"></div>
         </div>
@@ -1068,6 +1068,25 @@
     <!-- Parent: children profiles + sharing -->
     <div id="parentPanel">
 
+      <!-- Subscription status + redeem -->
+      <div style="margin-bottom:18px;">
+        <div class="sheets-config-title" style="margin-bottom:8px;">Subscription</div>
+        <div id="tierStatusRow" style="background:var(--surface2); border-radius:12px; padding:12px 14px; margin-bottom:10px;"></div>
+
+        <!-- Redeem activation code -->
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px;">
+          <div style="font-size:12px; font-weight:600; color:var(--text2); margin-bottom:8px;">Redeem activation code</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="redeemCodeInput" class="text-input" placeholder="GROW-XXXX-XXXX"
+              style="flex:1; text-transform:uppercase; letter-spacing:1px; font-family:monospace;"
+              aria-label="Activation code" maxlength="20"
+              oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')">
+            <button id="redeemCodeBtn" class="btn-secondary" onclick="redeemActivationCode()" style="white-space:nowrap;">Activate</button>
+          </div>
+          <div class="setup-note" style="font-size:10.5px; margin-top:7px;">Got a code from a card or partner clinic? Enter it above. Codes are case-insensitive.</div>
+        </div>
+      </div>
+
       <!-- Language selector -->
       <div style="margin-bottom:18px;">
         <div class="sheets-config-title" style="margin-bottom:8px;" data-i18n="account.language" data-i18n="account.language">Language</div>
@@ -1316,6 +1335,38 @@
           <button class="btn-secondary" onclick="saveCustomActivity()">Add activity</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL — shown when free user hits a premium feature -->
+<div class="modal-overlay hidden" id="upgradeModal" onclick="if(event.target===this)closeUpgradeModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="padding:0 20px 36px;">
+      <div style="font-size:17px; font-weight:800; color:var(--text); margin-bottom:8px; margin-top:4px;" id="upgradeModalTitle">Upgrade to Premium</div>
+      <div style="font-size:13px; color:var(--text2); line-height:1.5; margin-bottom:18px;" id="upgradeModalBody"></div>
+
+      <!-- Feature list -->
+      <div style="background:var(--surface2); border-radius:12px; padding:14px; margin-bottom:18px;">
+        <div style="font-size:11px; font-weight:700; color:var(--text3); margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px;">Premium includes</div>
+        <div style="display:flex; flex-direction:column; gap:7px; font-size:12.5px; color:var(--text);">
+          <div>✓ &nbsp;Unlimited measurements &amp; full history</div>
+          <div>✓ &nbsp;Fitbit sleep sync &amp; deep sleep tracking</div>
+          <div>✓ &nbsp;IGF-1, Vitamin D &amp; lab value log</div>
+          <div>✓ &nbsp;AI bone age second opinion</div>
+          <div>✓ &nbsp;Unlimited AI coach questions</div>
+          <div>✓ &nbsp;PDF clinic export (no watermark)</div>
+          <div>✓ &nbsp;Up to 5 children</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="closeUpgradeModal(); goTab('Account'); setTimeout(()=>document.getElementById('redeemCodeInput')?.focus(),400);">
+        Enter activation code
+      </button>
+      <button class="btn-link" onclick="closeUpgradeModal()" style="width:100%; text-align:center; margin-top:10px; font-size:13px; color:var(--text3);">
+        Maybe later
+      </button>
     </div>
   </div>
 </div>
