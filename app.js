@@ -163,9 +163,9 @@ const ACTIVITY_LIBRARY = [
     note:'Highest osteogenic evidence — 10.4× body weight impacts per session (Daly et al. 1999)' },
 
   // Jumping — direct growth plate loading
-  { id:'box_jumps',         tier:'high_impact',   category:'jumping',      emoji:'📦', displayName:'Box Jumps',
+  { id:'box_jumps',         tier:'high_impact',   category:'jumping',      emoji:'📦', displayName:'Box Jumps',        unit:'reps',
     note:'Direct growth plate stimulation. 24-week study: +4.32 cm vs +1.93 cm controls (BMC Pediatrics 2025)' },
-  { id:'vertical_jumps',    tier:'high_impact',   category:'jumping',      emoji:'⬆️', displayName:'Vertical Jumps' },
+  { id:'vertical_jumps',    tier:'high_impact',   category:'jumping',      emoji:'⬆️', displayName:'Vertical Jumps',   unit:'reps' },
   { id:'jump_rope',         tier:'high_impact',   category:'jumping',      emoji:'🪢', displayName:'Jump Rope',
     note:'Moderate growth plate pressure confirmed. Interval > continuous for GH release' },
 
@@ -194,7 +194,7 @@ const ACTIVITY_LIBRARY = [
   { id:'parkour',           tier:'high_impact',   category:'bodyweight',   emoji:'🏃', displayName:'Parkour',
     note:'Very high impact, novel multi-directional loading — excellent during growth window' },
   { id:'basketball_drills', tier:'high_impact',   category:'sports',       emoji:'🏀', displayName:'Basketball Drills' },
-  { id:'hopscotch',         tier:'high_impact',   category:'jumping',      emoji:'🎯', displayName:'Hopscotch' },
+  { id:'hopscotch',         tier:'high_impact',   category:'jumping',      emoji:'🎯', displayName:'Hopscotch', unit:'reps' },
 
   // ── TIER 2 — WEIGHT-BEARING ──────────────────────────────────
   { id:'running',           tier:'weight_bearing',category:'running',      emoji:'🏃', displayName:'Running' },
@@ -202,15 +202,16 @@ const ACTIVITY_LIBRARY = [
   { id:'tennis',            tier:'weight_bearing',category:'sports',       emoji:'🎾', displayName:'Tennis',
     note:'More favourable bone outcomes vs absence of PA (Krahenbüh systematic review)' },
   { id:'badminton',         tier:'weight_bearing',category:'sports',       emoji:'🏸', displayName:'Badminton' },
-  { id:'trampoline',        tier:'weight_bearing',category:'jumping',      emoji:'🛸', displayName:'Trampoline',
+  { id:'trampoline',        tier:'weight_bearing',category:'jumping',      emoji:'🦘', displayName:'Trampoline',
     note:'Reduces peak GRF vs floor jumping — osteogenic but lower intensity than box jumps' },
   { id:'indoor_climbing',   tier:'weight_bearing',category:'climbing',     emoji:'🧗', displayName:'Indoor Climbing' },
   { id:'playground_climbing',tier:'weight_bearing',category:'climbing',    emoji:'🛝', displayName:'Playground Climbing' },
-  { id:'monkey_bars',       tier:'weight_bearing',category:'bodyweight',   emoji:'🙈', displayName:'Monkey Bars' },
+  { id:'monkey_bars',       tier:'weight_bearing',category:'bodyweight',   emoji:'🙈', displayName:'Monkey Bars', unit:'sec',
+    note:'Dynamic grip-to-grip swinging — upper body weight-bearing. Different from bar hanging (static).' },
   { id:'obstacle_course',   tier:'weight_bearing',category:'bodyweight',   emoji:'🏁', displayName:'Obstacle Course' },
-  { id:'outdoor_play',      tier:'weight_bearing',category:'lifestyle',    emoji:'🌳', displayName:'Outdoor Play',
-    note:'If running/jumping involved — often equivalent to Tier 1' },
-  { id:'playground',        tier:'weight_bearing',category:'lifestyle',    emoji:'🛝', displayName:'Playground Activities' },
+  { id:'outdoor_play',      tier:'weight_bearing',category:'lifestyle',    emoji:'☀️', displayName:'Outdoor Play',     outdoor:true,
+    note:'If running/jumping involved — often equivalent to Tier 1. ☀️ Sunlight exposure → Vitamin D synthesis.' },
+  { id:'playground',        tier:'weight_bearing',category:'lifestyle',    emoji:'🛝', displayName:'Playground Activities', outdoor:true },
 
   // ── TIER 3 — CARDIO ──────────────────────────────────────────
   // Excellent for GH release and cardiovascular health but swimming
@@ -229,8 +230,8 @@ const ACTIVITY_LIBRARY = [
   { id:'yoga',              tier:'flexibility',   category:'flexibility',  emoji:'🧘', displayName:'Yoga',
     note:'Flexibility, injury prevention, recovery. Non-impact — not effective for bone density (AAOS)' },
   { id:'stretching',        tier:'flexibility',   category:'flexibility',  emoji:'🤸', displayName:'Stretching' },
-  { id:'bar_hanging',       tier:'flexibility',   category:'flexibility',  emoji:'🏋️', displayName:'Bar Hanging',
-    note:'Spinal decompression — benefits posture and disc health but is NOT a primary growth driver' },
+  { id:'bar_hanging',       tier:'flexibility',   category:'flexibility',  emoji:'🏋️', displayName:'Bar Hanging (Decompression)', unit:'sec',
+    note:'Static spinal decompression — benefits posture and disc health but is NOT a primary growth driver' },
   { id:'walking',           tier:'lifestyle',     category:'lifestyle',    emoji:'🚶', displayName:'Walking',
     note:'Minimal osteogenic effect at normal pace. Good daily movement baseline.' },
 ];
@@ -242,6 +243,40 @@ const ACTIVITY_TIER_CONFIG = {
   cardio:        { label:'CARDIO',        shortLabel:'CARDIO', badgeCls:'act-tier-cardio',  weight:0.35 },
   flexibility:   { label:'FLEXIBILITY',   shortLabel:'FLEX',   badgeCls:'act-tier-flex',    weight:0.15 },
   lifestyle:     { label:'LIFESTYLE',     shortLabel:'MOVE',   badgeCls:'act-tier-flex',    weight:0.15 },
+};
+
+// Personalized recommendations by activity + child age/sex.
+// Shown in the log sheet below the tier badge.
+// Based on ACSM guidelines, clinical study doses, and pediatric
+// exercise physiology consensus (Turner loading principles).
+const ACTIVITY_RECS = {
+  'box_jumps':      (age, sex) => `${age < 10 ? 20 : age < 13 ? 40 : 60} reps/day · short burst, full recovery between reps`,
+  'vertical_jumps': (age, sex) => `${age < 10 ? 20 : age < 13 ? 40 : 60} reps/day · same stimulus as box jumps`,
+  'hopscotch':      (age, sex) => '30–50 reps · great osteogenic activity for younger children',
+  'gymnastics':     (age, sex) => '45–60 min · 3× per week · highest osteogenic evidence of any sport',
+  'basketball':     (age, sex) => '30–60 min · 3–5× per week · multi-directional impact, excellent for bone',
+  'volleyball':     (age, sex) => '45–60 min · 3× per week · repeated vertical jumps are highly osteogenic',
+  'football':       (age, sex) => '45–60 min · 3–5× per week · running + impact loading',
+  'taekwondo':      (age, sex) => '45 min · 3× per week · significantly better bone outcomes than non-sport',
+  'muay_thai':      (age, sex) => '45 min · 3× per week · impact + resistance combination',
+  'judo':           (age, sex) => '45 min · 3× per week · throwing mechanics — multi-axis loading',
+  'karate':         (age, sex) => '45 min · 3× per week · kata + sparring = varied osteogenic stimulus',
+  'jump_rope':      (age, sex) => `${age < 10 ? 5 : age < 13 ? 10 : 15} min/day · interval style (30s on, 30s rest) maximises GH release`,
+  'sprinting':      (age, sex) => '6–8 × 30m sprints · 3× per week · interval training > continuous for GH release',
+  'dance':          (age, sex) => '30–60 min · 3× per week · multi-directional, high-impact load',
+  'running':        (age, sex) => '20–30 min · 3–5× per week · aerobic base + weight-bearing stimulus',
+  'tennis':         (age, sex) => '45–60 min · 2–3× per week · racket sports linked to better bone outcomes',
+  'badminton':      (age, sex) => '30–45 min · 2–3× per week · good weight-bearing sport for Asian families',
+  'trampoline':     (age, sex) => '15–20 min · lower peak ground force than floor jumping but still osteogenic',
+  'indoor_climbing':(age, sex) => '30–45 min · 2–3× per week · full-body weight-bearing resistance',
+  'monkey_bars':    (age, sex) => `${age < 10 ? '20–30' : '30–60'} sec · 3–5 sets · dynamic upper body load`,
+  'swimming':       (age, sex) => '20–30 min · good GH stimulus (large muscles) but ZERO bone benefit — pair with weight-bearing',
+  'cycling':        (age, sex) => '20–30 min · cardiovascular health · no bone benefit · avoid high-volume to protect BMD',
+  'yoga':           (age, sex) => '15–20 min · injury prevention + recovery · not a bone-building activity',
+  'bar_hanging':    (age, sex) => '3 sets × 30 sec · spinal decompression · best done after impact activity',
+  'outdoor_play':   (age, sex) => '60+ min/day · if running and jumping involved, equivalent to high-impact · ☀️ Vitamin D synthesis bonus',
+  'playground':     (age, sex) => '30–60 min · mix of climbing, running, jumping = excellent stimulus for this age',
+  'walking':        (age, sex) => '30+ min/day · minimal bone stimulus but good daily movement baseline',
 };
 
 // Default card grid shown before the parent sets favourites
@@ -1024,10 +1059,16 @@ function renderActivityCards() {
   if (!grid) return;
   const fav = APP.favoriteActivities;
   const acts = allActivities();
-  const shown = fav
-    ? acts.filter(a => fav.has(a.id))
+  // Use defaults if: no favourites set (null) OR empty set
+  const useDefaults = !fav || fav.size === 0;
+  const shown = useDefaults
+    ? acts.filter(a => DEFAULT_FAVOURITE_ACTIVITIES.includes(a.id))
+    : acts.filter(a => fav.has(a.id));
+  // Safety: if filter produced nothing, fall back to defaults
+  const final = shown.length > 0
+    ? shown
     : acts.filter(a => DEFAULT_FAVOURITE_ACTIVITIES.includes(a.id));
-  grid.innerHTML = shown.map(a => {
+  grid.innerHTML = final.map(a => {
     const tc = ACTIVITY_TIER_CONFIG[a.tier] || ACTIVITY_TIER_CONFIG.lifestyle;
     return `<div class="activity-card" onclick="openActivityLogSheet('${a.id}')">
       <div class="activity-card-emoji">${a.emoji}</div>
@@ -1046,10 +1087,18 @@ function renderActivityLoggedItems() {
   section.classList.toggle('hidden', items.length === 0);
   list.innerHTML = items.map(item => {
     const tc = ACTIVITY_TIER_CONFIG[item.tier] || ACTIVITY_TIER_CONFIG.lifestyle;
+    // Display label — use stored unit if available, else fall back to minutes
+    let dLabel;
+    const unit = item.unit || 'min';
+    const val  = item.duration_value || Math.round(item.duration_min);
+    if (unit === 'reps')     dLabel = `${val} reps`;
+    else if (unit === 'sec') dLabel = val < 60 ? `${val}s` : `${Math.round(val/60)}min`;
+    else                     dLabel = `${val} min`;
+    const outdoorIcon = item.is_outdoor ? ' ☀️' : '';
     return `<div class="activity-log-item">
       <div class="activity-log-info">
         <span>${item.display_name}</span>
-        <span class="act-tier-badge ${tc.badgeCls}">${item.duration_min} min</span>
+        <span class="act-tier-badge ${tc.badgeCls}">${dLabel}${outdoorIcon}</span>
       </div>
       <button class="activity-log-remove" onclick="removeActivityItem('${item.item_id}')" aria-label="Remove">×</button>
     </div>`;
@@ -1059,13 +1108,32 @@ function renderActivityLoggedItems() {
 // ── Open log sheet ────────────────────────────────────────────────
 let _pendingActivityId = null;
 let _pendingActivityDuration = 30;
-const DURATION_PRESETS = [5, 10, 15, 20, 30, 45, 60, 90];
+let _pendingActivityUnit = 'min';
+let _pendingActivityOutdoor = false;
+
+// Duration presets per unit type
+const DURATION_PRESETS_MIN  = [5, 10, 15, 20, 30, 45, 60, 90];
+const DURATION_PRESETS_REPS = [10, 20, 30, 40, 50, 60, 80, 100];
+const DURATION_PRESETS_SEC  = [
+  // Row 1: short seconds
+  { value: 20, label: '20s' }, { value: 30, label: '30s' },
+  { value: 60, label: '60s' }, { value: 90, label: '90s' },
+  // Row 2: longer (stored as sec, displayed as min)
+  { value: 180, label: '3min' }, { value: 300, label: '5min' },
+  { value: 600, label: '10min' }, { value: 900, label: '15min' },
+];
 
 function openActivityLogSheet(activityId) {
   const act = allActivities().find(a => a.id === activityId);
   if (!act) return;
+
+  const unit = act.unit || 'min';
   _pendingActivityId = activityId;
-  _pendingActivityDuration = 30;
+  _pendingActivityUnit = unit;
+  _pendingActivityOutdoor = act.outdoor || false;
+
+  // Default duration by unit
+  _pendingActivityDuration = unit === 'reps' ? 40 : unit === 'sec' ? 30 : 30;
 
   document.getElementById('actLogEmoji').textContent = act.emoji;
   document.getElementById('actLogName').textContent = act.displayName;
@@ -1074,22 +1142,59 @@ function openActivityLogSheet(activityId) {
   badge.textContent = tc.label;
   badge.className = `act-tier-badge ${tc.badgeCls}`;
 
-  // Note about this activity's science
+  // Personalized recommendation based on active child age + sex
+  const child = APP.children[APP.activeChild];
+  const ageYears = child?.date_of_birth
+    ? Math.floor((Date.now() - new Date(child.date_of_birth)) / (365.25 * 86400000))
+    : 9;
+  const sex = child?.biological_sex || 'male';
+  const recFn = ACTIVITY_RECS[activityId];
+  const recText = recFn ? recFn(ageYears, sex) : (act.note || '');
+
   const noteEl = document.getElementById('actLogNote');
   if (noteEl) {
-    noteEl.textContent = act.note || '';
-    noteEl.style.display = act.note ? 'block' : 'none';
+    if (recText) {
+      noteEl.innerHTML = `<b>Recommended (age ${ageYears}):</b> ${recText}`;
+      noteEl.style.display = 'block';
+    } else {
+      noteEl.style.display = 'none';
+    }
   }
 
-  // Duration grid
+  // Duration grid — adapt to unit
   const dGrid = document.getElementById('actLogDurationGrid');
-  dGrid.innerHTML = DURATION_PRESETS.map(d =>
-    `<button class="duration-btn${d === 30 ? ' active' : ''}" onclick="selectActivityDuration(${d}, this)">
-      ${d}<span class="duration-btn-unit">min</span>
-    </button>`
-  ).join('');
+  const unitLabel = unit === 'reps' ? 'reps' : unit === 'sec' ? '' : 'min';
+
+  if (unit === 'sec') {
+    dGrid.innerHTML = DURATION_PRESETS_SEC.map(d =>
+      `<button class="duration-btn${d.value === 30 ? ' active' : ''}"
+        onclick="selectActivityDuration(${d.value}, this)">
+        ${d.label}
+      </button>`
+    ).join('');
+  } else {
+    const presets = unit === 'reps' ? DURATION_PRESETS_REPS : DURATION_PRESETS_MIN;
+    const defaultVal = unit === 'reps' ? 40 : 30;
+    dGrid.innerHTML = presets.map(d =>
+      `<button class="duration-btn${d === defaultVal ? ' active' : ''}"
+        onclick="selectActivityDuration(${d}, this)">
+        ${d}<span class="duration-btn-unit">${unitLabel}</span>
+      </button>`
+    ).join('');
+  }
+
+  // Outdoor toggle — pre-check if activity is naturally outdoor
+  const outdoorToggle = document.getElementById('actLogOutdoorToggle');
+  if (outdoorToggle) outdoorToggle.checked = _pendingActivityOutdoor;
+
+  // Update confirm button label
+  const defVal = unit === 'reps' ? 40 : 30;
+  const defLabel = unit === 'sec'
+    ? (defVal < 60 ? `${defVal}s` : `${defVal/60}min`)
+    : `${defVal} ${unitLabel}`;
+  document.getElementById('actLogConfirmBtn').textContent = `Log ${defLabel}`;
+
   document.getElementById('actLogCustomMin').value = '';
-  document.getElementById('actLogConfirmBtn').textContent = 'Log 30 min';
   document.getElementById('activityLogModal').classList.remove('hidden');
 }
 
@@ -1103,19 +1208,30 @@ function closeActivityLogModal(e) {
   document.getElementById('activityLogModal').classList.add('hidden');
 }
 
-function selectActivityDuration(min, btn) {
-  _pendingActivityDuration = min;
+function selectActivityDuration(val, btn) {
+  _pendingActivityDuration = val;
   document.querySelectorAll('#actLogDurationGrid .duration-btn').forEach(b => b.classList.remove('active'));
   btn?.classList.add('active');
-  document.getElementById('actLogConfirmBtn').textContent = `Log ${min} min`;
+  const unit = _pendingActivityUnit;
+  let label;
+  if (unit === 'sec') {
+    label = val < 60 ? `${val}s` : `${Math.round(val/60)}min`;
+  } else if (unit === 'reps') {
+    label = `${val} reps`;
+  } else {
+    label = `${val} min`;
+  }
+  document.getElementById('actLogConfirmBtn').textContent = `Log ${label}`;
 }
 
 function selectCustomDuration(val) {
-  const min = Math.max(1, Math.min(300, parseInt(val) || 0));
-  if (min > 0) {
-    _pendingActivityDuration = min;
+  const num = Math.max(1, Math.min(999, parseInt(val) || 0));
+  if (num > 0) {
+    _pendingActivityDuration = num;
     document.querySelectorAll('#actLogDurationGrid .duration-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('actLogConfirmBtn').textContent = `Log ${min} min`;
+    const unit = _pendingActivityUnit;
+    const label = unit === 'reps' ? `${num} reps` : unit === 'sec' ? `${num}s` : `${num} min`;
+    document.getElementById('actLogConfirmBtn').textContent = `Log ${label}`;
   }
 }
 
@@ -1123,22 +1239,43 @@ function selectCustomDuration(val) {
 async function confirmLogActivity() {
   const act = allActivities().find(a => a.id === _pendingActivityId);
   if (!act || !activeChildId()) return;
-  const duration = _pendingActivityDuration || 30;
+  const rawValue  = _pendingActivityDuration || 30;
+  const unit      = _pendingActivityUnit || 'min';
+  const isOutdoor = document.getElementById('actLogOutdoorToggle')?.checked || _pendingActivityOutdoor || false;
+
+  // Normalize to minutes for readiness score
+  // reps: 40 box jumps ≈ 10 min equivalent high-impact; use 0.25 min/rep
+  // sec: direct conversion
+  // min: no conversion
+  let durationMin;
+  if (unit === 'reps')     durationMin = rawValue * 0.25;
+  else if (unit === 'sec') durationMin = rawValue / 60;
+  else                     durationMin = rawValue;
+
   document.getElementById('activityLogModal').classList.add('hidden');
 
   const { error } = await sb.from('daily_activity_items').insert({
-    child_id: activeChildId(),
-    log_date: APP.logDate,
-    activity_id: act.id,
-    display_name: act.displayName,
-    category: act.category,
-    tier: act.tier,
-    duration_min: duration,
-    is_custom: act.isCustom || false,
+    child_id:       activeChildId(),
+    log_date:       APP.logDate,
+    activity_id:    act.id,
+    display_name:   act.displayName,
+    category:       act.category,
+    tier:           act.tier,
+    duration_min:   durationMin,
+    duration_value: rawValue,
+    unit,
+    is_outdoor:     isOutdoor,
+    is_custom:      act.isCustom || false,
   });
 
   if (error) { showToast('⚠️', 'Could not save activity'); return; }
-  showToast('✅', `${act.displayName} · ${duration} min logged`);
+
+  // Display label
+  let label;
+  if (unit === 'reps')     label = `${rawValue} reps`;
+  else if (unit === 'sec') label = rawValue < 60 ? `${rawValue}s` : `${Math.round(rawValue/60)}min`;
+  else                     label = `${rawValue} min`;
+  showToast('✅', `${act.emoji} ${act.displayName} · ${label}${isOutdoor ? ' ☀️' : ''}`);
   await loadTodayActivityItems();
 }
 
@@ -1895,6 +2032,9 @@ async function loadChildren() {
     loadChildIntoForm();
     await refreshActiveChildHistory();
     await loadWeekStreak();
+    // Render activity cards immediately with defaults (favourites load async after)
+    renderActivityCards();
+    loadActivitySectionForToday(); // fire-and-forget — updates cards once DB responds
   }
 }
 
@@ -2085,6 +2225,9 @@ function renderChildSwitcher() {
       await loadFamilyHeightRecords();
       loadTargetHeightForm();
       resetAIChatForChildSwitch();
+      // Reload activity section for newly selected child
+      renderActivityCards(); // show defaults immediately
+      loadActivitySectionForToday(); // then update with this child's favourites + logged items
     };
     sw.appendChild(chip);
   });
