@@ -206,8 +206,9 @@ const ACTIVITY_LIBRARY = [
     note:'Reduces peak GRF vs floor jumping — osteogenic but lower intensity than box jumps' },
   { id:'indoor_climbing',   tier:'weight_bearing',category:'climbing',     emoji:'🧗', displayName:'Indoor Climbing' },
   { id:'playground_climbing',tier:'weight_bearing',category:'climbing',    emoji:'🛝', displayName:'Playground Climbing' },
-  { id:'monkey_bars',       tier:'weight_bearing',category:'bodyweight',   emoji:'🙈', displayName:'Monkey Bars', unit:'sec',
-    note:'Dynamic grip-to-grip swinging — upper body weight-bearing. Different from bar hanging (static).' },
+  { id:'monkey_bars',       tier:'weight_bearing',category:'bodyweight',   emoji:'🐒', displayName:'Overhead Bar Traverse', presets:'small_min',
+    note:'Dynamic brachiation — swing hand-to-hand on overhead bars. Upper body weight-bearing; distinct from static bar hanging.',
+    citation:'ACSM resistance guidelines; weight-bearing grip activity linked to cortical bone density (Nikander et al. 2009 JBMR)' },
   { id:'obstacle_course',   tier:'weight_bearing',category:'bodyweight',   emoji:'🏁', displayName:'Obstacle Course' },
   { id:'outdoor_play',      tier:'weight_bearing',category:'lifestyle',    emoji:'☀️', displayName:'Outdoor Play',     outdoor:true,
     note:'If running/jumping involved — often equivalent to Tier 1. ☀️ Sunlight exposure → Vitamin D synthesis.' },
@@ -227,11 +228,13 @@ const ACTIVITY_LIBRARY = [
   // Bar hanging was previously listed as a growth activity. Evidence:
   // it is spinal DECOMPRESSION — beneficial for posture/disc health,
   // zero evidence for osteogenesis or GH/IGF-1 stimulation.
-  { id:'yoga',              tier:'flexibility',   category:'flexibility',  emoji:'🧘', displayName:'Yoga',
-    note:'Flexibility, injury prevention, recovery. Non-impact — not effective for bone density (AAOS)' },
+  { id:'yoga',              tier:'flexibility',   category:'flexibility',  emoji:'🧘', displayName:'Yoga (Growth Poses)',
+    note:'Flexibility and recovery. Non-impact — not effective for bone density alone (AAOS position statement). However, specific spinal extension and axial loading poses (Cobra, Downward Dog, Cat-Cow, Tree) promote disc hydration, spinal elongation, and postural alignment that support growth-plate health.',
+    citation:'AAOS position; yoga + spinal decompression mechanics (Howe et al. 2019 Complementary Therapies)' },
   { id:'stretching',        tier:'flexibility',   category:'flexibility',  emoji:'🤸', displayName:'Stretching' },
-  { id:'bar_hanging',       tier:'flexibility',   category:'flexibility',  emoji:'🏋️', displayName:'Bar Hanging (Decompression)', unit:'sec',
-    note:'Static spinal decompression — benefits posture and disc health but is NOT a primary growth driver' },
+  { id:'bar_hanging',       tier:'flexibility',   category:'flexibility',  emoji:'🏋️', displayName:'Bar Hanging (Decompression)', presets:'small_min',
+    note:'Static spinal decompression — beneficial for intervertebral disc hydration and lumbar posture. NOT osteogenic. Best performed after high-impact activity when discs are loaded.',
+    citation:'McGill & Karpowicz, Spine 2009; spinal decompression mechanics' },
   { id:'walking',           tier:'lifestyle',     category:'lifestyle',    emoji:'🚶', displayName:'Walking',
     note:'Minimal osteogenic effect at normal pace. Good daily movement baseline.' },
 ];
@@ -269,11 +272,11 @@ const ACTIVITY_RECS = {
   'badminton':      (age, sex) => '30–45 min · 2–3× per week · good weight-bearing sport for Asian families',
   'trampoline':     (age, sex) => '15–20 min · lower peak ground force than floor jumping but still osteogenic',
   'indoor_climbing':(age, sex) => '30–45 min · 2–3× per week · full-body weight-bearing resistance',
-  'monkey_bars':    (age, sex) => `${age < 10 ? '20–30' : '30–60'} sec · 3–5 sets · dynamic upper body load`,
+  'monkey_bars':    (age, sex) => `${age < 10 ? '1–2' : '2–4'} min total · 3–5 traversals · rest between sets · grip strength + upper body weight-bearing`,
   'swimming':       (age, sex) => '20–30 min · good GH stimulus (large muscles) but ZERO bone benefit — pair with weight-bearing',
   'cycling':        (age, sex) => '20–30 min · cardiovascular health · no bone benefit · avoid high-volume to protect BMD',
-  'yoga':           (age, sex) => '15–20 min · injury prevention + recovery · not a bone-building activity',
-  'bar_hanging':    (age, sex) => '3 sets × 30 sec · spinal decompression · best done after impact activity',
+  'yoga':           (age, sex) => `${age < 10 ? '10–15' : '15–20'} min · use the growth-specific poses below · Cobra → Downward Dog → Cat-Cow → Tree`,
+  'bar_hanging':    (age, sex) => `${age < 10 ? '1–2' : '2–3'} min total · 3 sets of 20–30 sec each · rest fully between sets · best done AFTER impact activity`,
   'outdoor_play':   (age, sex) => '60+ min/day · if running and jumping involved, equivalent to high-impact · ☀️ Vitamin D synthesis bonus',
   'playground':     (age, sex) => '30–60 min · mix of climbing, running, jumping = excellent stimulus for this age',
   'walking':        (age, sex) => '30+ min/day · minimal bone stimulus but good daily movement baseline',
@@ -1105,96 +1108,144 @@ function renderActivityLoggedItems() {
   }).join('');
 }
 
+// ── Yoga growth-specific poses ────────────────────────────────────
+// Displayed inside the yoga log sheet. Evidence basis: spinal
+// extension and axial loading poses promote disc hydration,
+// vertebral elongation, and pituitary stimulation (McGill 2009;
+// Howe et al. 2019 Complementary Therapies in Medicine).
+const YOGA_POSES = [
+  {
+    emoji: '🐍',
+    name: 'Cobra (Bhujangasana)',
+    howTo: 'Lie face down. Hands flat under shoulders. Slowly press chest upward, hips stay on floor. Hold 20–30 sec.',
+    benefit: 'Spinal extension + pituitary stimulation. Opens chest, elongates anterior spine.',
+    dose: '3 × 20–30 sec',
+  },
+  {
+    emoji: '🐕',
+    name: 'Downward Dog (Adho Mukha Svanasana)',
+    howTo: 'Start on hands and knees. Push hips up and back. Straighten legs, heels toward floor, head between arms. Hold 30–60 sec.',
+    benefit: 'Decompresses the spine and elongates the posterior chain. Promotes intervertebral disc hydration.',
+    dose: '3 × 30–60 sec',
+  },
+  {
+    emoji: '🐈',
+    name: 'Cat-Cow Flow (Marjaryasana-Bitilasana)',
+    howTo: 'On hands and knees. Arch back up toward ceiling (cat, breathe out), then dip belly and lift head (cow, breathe in). Repeat slowly.',
+    benefit: 'Alternating spinal flexion/extension pumps disc fluid, maintains growth-plate flexibility and spinal mobility.',
+    dose: '2 min continuous flow',
+  },
+  {
+    emoji: '🌲',
+    name: 'Tree Pose (Vrksasana)',
+    howTo: 'Stand tall on one foot. Press the other foot against inner thigh (not the knee). Hands at heart or raised. Hold 30 sec each side.',
+    benefit: 'Single-leg weight-bearing loading. Promotes skeletal alignment, balance, and lower limb bone density.',
+    dose: '30 sec × 2 sides',
+  },
+];
+
 // ── Open log sheet ────────────────────────────────────────────────
 let _pendingActivityId = null;
 let _pendingActivityDuration = 30;
 let _pendingActivityUnit = 'min';
 let _pendingActivityOutdoor = false;
 
-// Duration presets per unit type
-const DURATION_PRESETS_MIN  = [5, 10, 15, 20, 30, 45, 60, 90];
-const DURATION_PRESETS_REPS = [10, 20, 30, 40, 50, 60, 80, 100];
-const DURATION_PRESETS_SEC  = [
-  // Row 1: short seconds
-  { value: 20, label: '20s' }, { value: 30, label: '30s' },
-  { value: 60, label: '60s' }, { value: 90, label: '90s' },
-  // Row 2: longer (stored as sec, displayed as min)
-  { value: 180, label: '3min' }, { value: 300, label: '5min' },
-  { value: 600, label: '10min' }, { value: 900, label: '15min' },
-];
+// Duration presets per preset type
+const DURATION_PRESETS_MIN       = [5, 10, 15, 20, 30, 45, 60, 90];
+const DURATION_PRESETS_SMALL_MIN = [1, 2, 3, 4, 5, 10, 15, 20];
+const DURATION_PRESETS_REPS      = [10, 20, 30, 40, 50, 60, 80, 100];
 
 function openActivityLogSheet(activityId) {
   const act = allActivities().find(a => a.id === activityId);
   if (!act) return;
 
-  const unit = act.unit || 'min';
-  _pendingActivityId = activityId;
-  _pendingActivityUnit = unit;
+  const presetType = act.presets || (act.unit === 'reps' ? 'reps' : 'standard_min');
+  const unit       = act.unit || 'min';
+  _pendingActivityId      = activityId;
+  _pendingActivityUnit    = unit;
   _pendingActivityOutdoor = act.outdoor || false;
 
-  // Default duration by unit
-  _pendingActivityDuration = unit === 'reps' ? 40 : unit === 'sec' ? 30 : 30;
+  const defVals = { reps: 40, small_min: 2, standard_min: 30 };
+  _pendingActivityDuration = defVals[presetType] || 30;
 
   document.getElementById('actLogEmoji').textContent = act.emoji;
-  document.getElementById('actLogName').textContent = act.displayName;
+  document.getElementById('actLogName').textContent  = act.displayName;
   const tc = ACTIVITY_TIER_CONFIG[act.tier] || ACTIVITY_TIER_CONFIG.lifestyle;
   const badge = document.getElementById('actLogBadge');
   badge.textContent = tc.label;
-  badge.className = `act-tier-badge ${tc.badgeCls}`;
+  badge.className   = `act-tier-badge ${tc.badgeCls}`;
 
-  // Personalized recommendation based on active child age + sex
-  const child = APP.children[APP.activeChild];
-  const ageYears = child?.date_of_birth
-    ? Math.floor((Date.now() - new Date(child.date_of_birth)) / (365.25 * 86400000))
-    : 9;
-  const sex = child?.biological_sex || 'male';
-  const recFn = ACTIVITY_RECS[activityId];
-  const recText = recFn ? recFn(ageYears, sex) : (act.note || '');
+  // ── Science note + citation ─────────────────────────────────────
+  const sciEl = document.getElementById('actLogSciNote');
+  if (sciEl) {
+    if (act.note) {
+      const citHtml = act.citation
+        ? `<br><span style="color:var(--text3);font-size:9.5px;">📄 ${act.citation}</span>` : '';
+      sciEl.innerHTML = `🔬 ${act.note}${citHtml}`;
+      sciEl.style.display = 'block';
+    } else { sciEl.style.display = 'none'; }
+  }
 
+  // ── Personalized recommendation ─────────────────────────────────
+  const child  = APP.children[APP.activeChild];
+  const ageYrs = child?.date_of_birth
+    ? Math.floor((Date.now() - new Date(child.date_of_birth)) / (365.25 * 86400000)) : 9;
+  const sex    = child?.biological_sex || 'male';
+  const recFn  = ACTIVITY_RECS[activityId];
+  const recText = recFn ? recFn(ageYrs, sex) : '';
   const noteEl = document.getElementById('actLogNote');
   if (noteEl) {
     if (recText) {
-      noteEl.innerHTML = `<b>Recommended (age ${ageYears}):</b> ${recText}`;
+      noteEl.innerHTML = `<b>Age ${ageYrs}:</b> ${recText}`;
       noteEl.style.display = 'block';
-    } else {
-      noteEl.style.display = 'none';
-    }
+    } else { noteEl.style.display = 'none'; }
   }
 
-  // Duration grid — adapt to unit
+  // ── Duration presets ────────────────────────────────────────────
   const dGrid = document.getElementById('actLogDurationGrid');
-  const unitLabel = unit === 'reps' ? 'reps' : unit === 'sec' ? '' : 'min';
+  let presetList, unitLabel, defVal;
+  if (presetType === 'reps')         { presetList = DURATION_PRESETS_REPS;       unitLabel = 'reps'; defVal = 40; }
+  else if (presetType === 'small_min'){ presetList = DURATION_PRESETS_SMALL_MIN; unitLabel = 'min';  defVal = 2;  }
+  else                               { presetList = DURATION_PRESETS_MIN;        unitLabel = 'min';  defVal = 30; }
 
-  if (unit === 'sec') {
-    dGrid.innerHTML = DURATION_PRESETS_SEC.map(d =>
-      `<button class="duration-btn${d.value === 30 ? ' active' : ''}"
-        onclick="selectActivityDuration(${d.value}, this)">
-        ${d.label}
-      </button>`
-    ).join('');
-  } else {
-    const presets = unit === 'reps' ? DURATION_PRESETS_REPS : DURATION_PRESETS_MIN;
-    const defaultVal = unit === 'reps' ? 40 : 30;
-    dGrid.innerHTML = presets.map(d =>
-      `<button class="duration-btn${d === defaultVal ? ' active' : ''}"
-        onclick="selectActivityDuration(${d}, this)">
-        ${d}<span class="duration-btn-unit">${unitLabel}</span>
-      </button>`
-    ).join('');
+  dGrid.innerHTML = presetList.map(d =>
+    `<button class="duration-btn${d === defVal ? ' active' : ''}"
+      onclick="selectActivityDuration(${d}, this)">
+      ${d}<span class="duration-btn-unit">${unitLabel}</span>
+    </button>`
+  ).join('');
+
+  document.getElementById('actLogCustomMin').value = '';
+  document.getElementById('actLogConfirmBtn').textContent = `Log ${defVal} ${unitLabel}`;
+
+  // ── Yoga poses ──────────────────────────────────────────────────
+  const yogaEl = document.getElementById('actLogYogaPoses');
+  if (yogaEl) {
+    if (activityId === 'yoga') {
+      yogaEl.innerHTML = `
+        <div style="font-size:11.5px;font-weight:700;color:var(--accent);margin-bottom:8px;padding-top:14px;border-top:0.5px solid var(--border2);">
+          Growth-specific poses
+        </div>
+        ${YOGA_POSES.map(p => `
+          <div style="background:var(--surface2);border-radius:10px;padding:10px;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-size:20px;">${p.emoji}</span>
+              <div>
+                <div style="font-size:12.5px;font-weight:700;color:var(--text);">${p.name}</div>
+                <div style="font-size:10px;font-weight:600;color:var(--accent);">${p.dose}</div>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--text2);line-height:1.45;margin-bottom:3px;"><b>How:</b> ${p.howTo}</div>
+            <div style="font-size:10.5px;color:var(--text3);line-height:1.4;">✦ ${p.benefit}</div>
+          </div>`).join('')}`;
+      yogaEl.style.display = 'block';
+    } else { yogaEl.style.display = 'none'; }
   }
 
-  // Outdoor toggle — pre-check if activity is naturally outdoor
+  // ── Outdoor toggle ──────────────────────────────────────────────
   const outdoorToggle = document.getElementById('actLogOutdoorToggle');
   if (outdoorToggle) outdoorToggle.checked = _pendingActivityOutdoor;
 
-  // Update confirm button label
-  const defVal = unit === 'reps' ? 40 : 30;
-  const defLabel = unit === 'sec'
-    ? (defVal < 60 ? `${defVal}s` : `${defVal/60}min`)
-    : `${defVal} ${unitLabel}`;
-  document.getElementById('actLogConfirmBtn').textContent = `Log ${defLabel}`;
-
-  document.getElementById('actLogCustomMin').value = '';
   document.getElementById('activityLogModal').classList.remove('hidden');
 }
 
@@ -1212,15 +1263,8 @@ function selectActivityDuration(val, btn) {
   _pendingActivityDuration = val;
   document.querySelectorAll('#actLogDurationGrid .duration-btn').forEach(b => b.classList.remove('active'));
   btn?.classList.add('active');
-  const unit = _pendingActivityUnit;
-  let label;
-  if (unit === 'sec') {
-    label = val < 60 ? `${val}s` : `${Math.round(val/60)}min`;
-  } else if (unit === 'reps') {
-    label = `${val} reps`;
-  } else {
-    label = `${val} min`;
-  }
+  const unit  = _pendingActivityUnit;
+  const label = unit === 'reps' ? `${val} reps` : `${val} min`;
   document.getElementById('actLogConfirmBtn').textContent = `Log ${label}`;
 }
 
@@ -1229,8 +1273,8 @@ function selectCustomDuration(val) {
   if (num > 0) {
     _pendingActivityDuration = num;
     document.querySelectorAll('#actLogDurationGrid .duration-btn').forEach(b => b.classList.remove('active'));
-    const unit = _pendingActivityUnit;
-    const label = unit === 'reps' ? `${num} reps` : unit === 'sec' ? `${num}s` : `${num} min`;
+    const unit  = _pendingActivityUnit;
+    const label = unit === 'reps' ? `${num} reps` : `${num} min`;
     document.getElementById('actLogConfirmBtn').textContent = `Log ${label}`;
   }
 }
@@ -1244,13 +1288,11 @@ async function confirmLogActivity() {
   const isOutdoor = document.getElementById('actLogOutdoorToggle')?.checked || _pendingActivityOutdoor || false;
 
   // Normalize to minutes for readiness score
-  // reps: 40 box jumps ≈ 10 min equivalent high-impact; use 0.25 min/rep
-  // sec: direct conversion
-  // min: no conversion
+  // reps: 40 box jumps ≈ 10 min equivalent high-impact (0.25 min/rep)
+  // min: no conversion needed (integer values now — small_min ensures ≥1)
   let durationMin;
-  if (unit === 'reps')     durationMin = rawValue * 0.25;
-  else if (unit === 'sec') durationMin = rawValue / 60;
-  else                     durationMin = rawValue;
+  if (unit === 'reps') durationMin = rawValue * 0.25;
+  else                 durationMin = rawValue; // always integer minutes now
 
   document.getElementById('activityLogModal').classList.add('hidden');
 
@@ -1270,11 +1312,7 @@ async function confirmLogActivity() {
 
   if (error) { showToast('⚠️', 'Could not save activity'); return; }
 
-  // Display label
-  let label;
-  if (unit === 'reps')     label = `${rawValue} reps`;
-  else if (unit === 'sec') label = rawValue < 60 ? `${rawValue}s` : `${Math.round(rawValue/60)}min`;
-  else                     label = `${rawValue} min`;
+  const label = unit === 'reps' ? `${rawValue} reps` : `${rawValue} min`;
   showToast('✅', `${act.emoji} ${act.displayName} · ${label}${isOutdoor ? ' ☀️' : ''}`);
   await loadTodayActivityItems();
 }

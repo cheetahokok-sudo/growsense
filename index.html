@@ -1198,8 +1198,10 @@
           <span id="actLogBadge" class="act-tier-badge act-tier-high">HIGH IMPACT</span>
         </div>
       </div>
-      <!-- Science note -->
-      <div id="actLogNote" class="setup-note" style="font-size:10.5px; margin-bottom:14px; display:none;"></div>
+      <!-- Science note + citation -->
+      <div id="actLogSciNote" class="setup-note" style="font-size:10.5px; margin-bottom:10px; display:none;"></div>
+      <!-- Personalized recommendation -->
+      <div id="actLogNote" class="setup-note" style="font-size:11px; margin-bottom:14px; display:none;"></div>
       <!-- Duration presets -->
       <div style="font-size:12px; font-weight:600; color:var(--text2); margin-bottom:8px;">Duration</div>
       <div class="duration-grid" id="actLogDurationGrid"></div>
@@ -1210,6 +1212,8 @@
           style="width:70px;" oninput="selectCustomDuration(this.value)">
         <span id="actLogCustomUnit" style="font-size:12px; color:var(--text3);">min</span>
       </div>
+      <!-- Yoga growth poses — shown only when yoga is selected -->
+      <div id="actLogYogaPoses" style="display:none; overflow-y:auto; max-height:280px; margin-bottom:12px;"></div>
       <!-- Outdoor toggle — for Vitamin D / sun tracking -->
       <label style="display:flex; align-items:center; gap:8px; margin-bottom:16px; cursor:pointer;">
         <input type="checkbox" id="actLogOutdoorToggle" style="width:18px; height:18px; accent-color:var(--accent);">
