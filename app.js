@@ -123,14 +123,17 @@ async function switchLanguage(lang) {
 }
 
 function renderLanguageSelector() {
-  const el = document.getElementById('languageSelector');
-  if (!el) return;
-  el.innerHTML = SUPPORTED_LANGUAGES.map(l => `
+  const pillsHTML = SUPPORTED_LANGUAGES.map(l => `
     <button class="lang-pill${APP.language === l.code ? ' active' : ''}"
       onclick="switchLanguage('${l.code}')"
       aria-label="Switch to ${l.name}">
       ${l.flag} ${l.label}
     </button>`).join('');
+  // Render in Account screen and also in Auth screen (pre-login)
+  const acctEl = document.getElementById('languageSelector');
+  if (acctEl) acctEl.innerHTML = pillsHTML;
+  const authEl = document.getElementById('authLanguageSelector');
+  if (authEl) authEl.innerHTML = pillsHTML;
 }
 
 // ── end i18n ──────────────────────────────────────────────────────
@@ -1438,6 +1441,7 @@ function showAuthScreen() {
   document.getElementById('authScreen').classList.remove('hidden');
   document.getElementById('appRoot').classList.add('hidden');
   setSyncStatus('disconnected', 'Not signed in');
+  renderLanguageSelector(); // populate language pills on auth screen
 }
 
 // Runs once after a successful sign-in or an existing session is found on
@@ -1501,24 +1505,36 @@ async function enterApp(session) {
 function initDateSelector() {
   const input = document.getElementById('logEntryDate');
   input.value = APP.logDate;
-  input.max = todayISO(); // backdating is the point; future-dating isn't meaningful here
+  input.max   = todayISO();
   updateDateSelectorUI();
+  updateSaveBtnLabel();
 }
 
 function updateDateSelectorUI() {
   const bar = document.querySelector('.date-selector-bar');
   const todayBtn = document.getElementById('jumpToTodayBtn');
   const isToday = APP.logDate === todayISO();
-  bar.classList.toggle('backdated', !isToday);
-  todayBtn.classList.toggle('is-today', isToday);
-  document.getElementById('logEntryDate').value = APP.logDate;
+  if (bar) bar.classList.toggle('backdated', !isToday);
+  if (todayBtn) todayBtn.classList.toggle('is-today', isToday);
+  const input = document.getElementById('logEntryDate');
+  if (input) input.value = APP.logDate;
+  // Backdating banner
+  const banner = document.getElementById('backdatingBanner');
+  if (banner) banner.classList.toggle('hidden', isToday);
 }
 
 function shiftLogDate(deltaDays) {
-  const d = new Date(APP.logDate + 'T00:00:00');
-  d.setDate(d.getDate() + deltaDays);
-  const newDate = d.toISOString().split('T')[0];
-  if (newDate > todayISO()) return; // no future dates
+  // Parse APP.logDate as local date components to avoid UTC/timezone boundary bugs.
+  // Using new Date('YYYY-MM-DDT00:00:00') in UTC+7 Bangkok converts midnight to
+  // the previous UTC day, causing toISOString() to return the wrong date.
+  const [y, m, d] = APP.logDate.split('-').map(Number);
+  const shifted    = new Date(y, m - 1, d + deltaDays); // local-time constructor
+  const newDate    = [
+    shifted.getFullYear(),
+    String(shifted.getMonth() + 1).padStart(2, '0'),
+    String(shifted.getDate()).padStart(2, '0'),
+  ].join('-');
+  if (newDate > todayISO()) return; // no future logging
   setLogDate(newDate);
 }
 
@@ -1531,14 +1547,39 @@ function onLogDateChanged() {
   if (val) setLogDate(val);
 }
 
-// Switching dates means the whole Today form now represents a different
-// day — reload that day's logged food items and daily totals, rather
-// than carrying over whatever was on screen for the previous date.
 async function setLogDate(newDate) {
   APP.logDate = newDate;
   updateDateSelectorUI();
+  updateSaveBtnLabel();           // reflect date on save button
   await loadDayIntoState();
   loadChildIntoForm();
+  await loadTodayActivityItems(); // reload activity items for new date
+}
+
+// Update the Save button to show WHICH date is being logged.
+// When backdating, the parent must be clearly aware they're saving
+// historical data — not accidentally overwriting today.
+function updateSaveBtnLabel() {
+  const btn = document.getElementById('saveBtn');
+  if (!btn) return;
+  const today = todayISO();
+  if (APP.logDate === today) {
+    btn.textContent = t('today.save_btn', "Save Today's Data");
+    btn.style.background = '';       // default green
+    return;
+  }
+  const [y, m, d] = APP.logDate.split('-').map(Number);
+  const dateObj    = new Date(y, m - 1, d);
+  const readableDate = dateObj.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+  const yesterday  = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = APP.logDate === [
+    yesterday.getFullYear(),
+    String(yesterday.getMonth() + 1).padStart(2, '0'),
+    String(yesterday.getDate()).padStart(2, '0'),
+  ].join('-');
+  const dayLabel = isYesterday ? 'Yesterday' : readableDate;
+  btn.textContent = `↺ Save for ${dayLabel}`;
+  btn.style.background = 'linear-gradient(135deg, var(--estimated) 0%, #8a6a1f 100%)'; // amber — visual caution
 }
 
 // Pulls this child's daily_nutrition/sleep/activity rows AND
