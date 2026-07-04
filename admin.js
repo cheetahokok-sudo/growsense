@@ -306,11 +306,10 @@ function setAdminSection(section, btn) {
   if (btn) btn.classList.add('active');
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
   document.getElementById('adminSection' + section.charAt(0).toUpperCase() + section.slice(1)).classList.add('active');
-  // Auto-close the mobile drawer when the user taps a nav item
   const sidebar = document.getElementById('adminSidebar');
   if (sidebar.classList.contains('mobile-open')) toggleMobileSidebar();
-  // Lazy-load metrics on first visit
   if (section === 'metrics') loadMetrics();
+  if (section === 'codes')   loadCodesSection();
 }
 
 // ══════════════════════════════════════════
@@ -532,4 +531,301 @@ function renderAdminAuditLog(rows, targetElId) {
       </div>
     `;
   }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CODES — Activation code management
+// ══════════════════════════════════════════════════════════════════
+
+let _allCodes      = [];   // full list fetched from DB
+let _codesLoaded   = false;
+let _appConfig     = {};   // app_config key→value map
+
+// ── Load everything needed for the Codes section ──────────────────
+async function loadCodesSection() {
+  if (_codesLoaded) { renderCodesTable(); return; }
+  await Promise.all([loadAllCodes(), loadAppConfig()]);
+  _codesLoaded = true;
+}
+
+async function loadAllCodes() {
+  const { data, error } = await sb
+    .from('activation_codes')
+    .select('*, redeemer:redeemed_by(email)')
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('[Codes]', error); return; }
+  _allCodes = data || [];
+  updateCodeStats();
+  populateBatchFilter();
+  renderCodesTable();
+}
+
+async function loadAppConfig() {
+  const { data } = await sb.from('app_config').select('key, value');
+  _appConfig = {};
+  (data || []).forEach(r => { _appConfig[r.key] = r.value; });
+
+  // Redemption enabled toggle
+  const enabled = _appConfig['redemption_enabled'] === 'true';
+  const seg = document.getElementById('redemptionEnabledSeg');
+  if (seg) {
+    seg.querySelectorAll('.seg-btn').forEach((b, i) => {
+      b.classList.toggle('active', i === (enabled ? 0 : 1));
+    });
+  }
+
+  // Free measurement limit
+  const limitEl = document.getElementById('freeMeasurementLimit');
+  if (limitEl) limitEl.value = _appConfig['free_measurement_limit'] || '5';
+}
+
+// ── Stats strip ───────────────────────────────────────────────────
+function updateCodeStats() {
+  const total     = _allCodes.length;
+  const redeemed  = _allCodes.filter(c => c.redeemed_by).length;
+  const available = _allCodes.filter(c => !c.redeemed_by && codeStatus(c) === 'available').length;
+  const batches   = new Set(_allCodes.map(c => c.batch_name).filter(Boolean)).size;
+
+  document.getElementById('codeStatTotal').textContent     = total;
+  document.getElementById('codeStatAvailable').textContent = available;
+  document.getElementById('codeStatRedeemed').textContent  = redeemed;
+  document.getElementById('codeStatBatches').textContent   = batches;
+}
+
+function codeStatus(c) {
+  if (c.redeemed_by) return 'redeemed';
+  if (c.code_expires_at && new Date(c.code_expires_at) < new Date()) return 'expired';
+  return 'available';
+}
+
+// ── Batch filter dropdown ─────────────────────────────────────────
+function populateBatchFilter() {
+  const sel = document.getElementById('codeFilterBatch');
+  if (!sel) return;
+  const batches = [...new Set(_allCodes.map(c => c.batch_name).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All batches</option>' +
+    batches.map(b => `<option value="${b}">${b}</option>`).join('');
+}
+
+// ── Render table ──────────────────────────────────────────────────
+function renderCodesTable() {
+  const search      = (document.getElementById('codeSearch')?.value || '').toLowerCase();
+  const batchFilter = document.getElementById('codeFilterBatch')?.value || '';
+  const statFilter  = document.getElementById('codeFilterStatus')?.value || '';
+
+  let filtered = _allCodes.filter(c => {
+    const st = codeStatus(c);
+    if (batchFilter && c.batch_name !== batchFilter) return false;
+    if (statFilter  && st !== statFilter)            return false;
+    if (search) {
+      const hay = (c.code + ' ' + (c.batch_name||'') + ' ' + (c.redeemer?.email||'')).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const tbody = document.getElementById('codesTableBody');
+  if (!tbody) return;
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text3); padding:20px;">No codes match the current filter.</td></tr>';
+    document.getElementById('codesTableMeta').textContent = '';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => {
+    const st     = codeStatus(c);
+    const stPill = `<span class="status-pill status-${st}">${st}</span>`;
+    const redAt  = c.redeemed_at
+      ? new Date(c.redeemed_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+      : '—';
+    const redBy  = c.redeemer?.email
+      ? `<span style="font-size:11px;">${c.redeemer.email}</span>` : '—';
+    const tierBadge = c.tier === 'pro'
+      ? '👑 Pro' : '⭐ Premium';
+    const actions = st === 'available'
+      ? `<button class="code-action-btn danger" onclick="revokeCode('${c.code_id}')">Revoke</button>`
+      : st === 'redeemed'
+      ? `<button class="code-action-btn" onclick="viewCodeDetail('${c.code_id}')">Detail</button>`
+      : '—';
+
+    return `<tr>
+      <td><span class="code-badge" onclick="copyCode('${c.code}')" title="Click to copy">${c.code}</span></td>
+      <td style="font-size:11px; color:var(--text3);">${c.batch_name || '—'}</td>
+      <td style="font-size:12px;">${tierBadge}</td>
+      <td style="font-size:12px;">${c.duration_days}d</td>
+      <td>${stPill}</td>
+      <td>${redBy}</td>
+      <td style="font-size:11px; color:var(--text3);">${redAt}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('codesTableMeta').textContent =
+    `Showing ${filtered.length} of ${_allCodes.length} codes`;
+}
+
+// ── Copy code to clipboard ────────────────────────────────────────
+function copyCode(code) {
+  navigator.clipboard.writeText(code).then(() => {
+    showAdminToast('✓', `${code} copied`);
+  });
+}
+
+// ── Revoke an available code ──────────────────────────────────────
+async function revokeCode(codeId) {
+  if (!confirm('Revoke this code? It will no longer be redeemable.')) return;
+  // Set code_expires_at to now — the Edge Function will reject it as expired
+  const { error } = await sb
+    .from('activation_codes')
+    .update({ code_expires_at: new Date().toISOString() })
+    .eq('code_id', codeId);
+  if (error) { showAdminToast('⚠️', 'Revoke failed: ' + error.message); return; }
+  showAdminToast('✓', 'Code revoked');
+  _codesLoaded = false;
+  await loadAllCodes();
+}
+
+// ── View detail of a redeemed code ───────────────────────────────
+function viewCodeDetail(codeId) {
+  const c = _allCodes.find(x => x.code_id === codeId);
+  if (!c) return;
+  const redAt = c.redeemed_at
+    ? new Date(c.redeemed_at).toLocaleString('en-GB') : 'unknown';
+  alert(
+    `Code: ${c.code}\n` +
+    `Batch: ${c.batch_name || '—'}\n` +
+    `Tier: ${c.tier} · ${c.duration_days} days\n` +
+    `Redeemed by: ${c.redeemer?.email || 'unknown'}\n` +
+    `Redeemed at: ${redAt}\n` +
+    `IP: ${c.redeemed_ip || 'not logged'}`
+  );
+}
+
+// ── Generate new batch ────────────────────────────────────────────
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function genCode() {
+  let p1 = '', p2 = '';
+  for (let i = 0; i < 4; i++) p1 += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+  for (let i = 0; i < 4; i++) p2 += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+  return `GROW-${p1}-${p2}`;
+}
+
+async function generateCodeBatch() {
+  const name     = (document.getElementById('newBatchName')?.value || '').trim();
+  const tier     = document.getElementById('newBatchTier')?.value || 'premium';
+  const duration = parseInt(document.getElementById('newBatchDuration')?.value || '365');
+  const count    = parseInt(document.getElementById('newBatchCount')?.value || '50');
+  const btn      = document.getElementById('generateBatchBtn');
+  const result   = document.getElementById('generateBatchResult');
+
+  if (!name) { showAdminToast('⚠️', 'Enter a batch name'); return; }
+  if (count < 1 || count > 1000) { showAdminToast('⚠️', 'Count must be 1–1000'); return; }
+
+  btn.textContent = 'Generating…'; btn.disabled = true;
+  result.textContent = '';
+
+  // Generate unique codes (check against existing)
+  const existingCodes = new Set(_allCodes.map(c => c.code));
+  const newCodes = [];
+  let attempts = 0;
+  while (newCodes.length < count && attempts < count * 10) {
+    const code = genCode();
+    if (!existingCodes.has(code)) { newCodes.push(code); existingCodes.add(code); }
+    attempts++;
+  }
+
+  if (newCodes.length < count) {
+    showAdminToast('⚠️', 'Could not generate enough unique codes — try a smaller count');
+    btn.textContent = 'Generate codes'; btn.disabled = false;
+    return;
+  }
+
+  // Insert in batches of 100
+  const rows = newCodes.map(code => ({ code, tier, duration_days: duration, batch_name: name }));
+  let inserted = 0;
+  for (let i = 0; i < rows.length; i += 100) {
+    const { error } = await sb.from('activation_codes').insert(rows.slice(i, i + 100));
+    if (error) { showAdminToast('⚠️', 'Insert error: ' + error.message); break; }
+    inserted += Math.min(100, rows.length - i);
+  }
+
+  btn.textContent = 'Generate codes'; btn.disabled = false;
+  result.textContent = `✓ ${inserted} codes generated for batch "${name}"`;
+  showAdminToast('✅', `${inserted} ${tier} codes generated`);
+
+  // Refresh list
+  _codesLoaded = false;
+  await loadAllCodes();
+  document.getElementById('newBatchName').value = '';
+}
+
+// ── App config updates ────────────────────────────────────────────
+async function updateAppConfig(key, value) {
+  const { error } = await sb
+    .from('app_config')
+    .upsert({ key, value: String(value), updated_at: new Date().toISOString() });
+  if (error) { showAdminToast('⚠️', 'Config update failed'); return; }
+  _appConfig[key] = String(value);
+  showAdminToast('✅', `${key} updated`);
+}
+
+async function setRedemptionEnabled(enabled, btn) {
+  document.querySelectorAll('#redemptionEnabledSeg .seg-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === (enabled ? 0 : 1));
+  });
+  await updateAppConfig('redemption_enabled', enabled ? 'true' : 'false');
+}
+
+// ── Export CSV ────────────────────────────────────────────────────
+function exportCodesToCSV() {
+  const search      = (document.getElementById('codeSearch')?.value || '').toLowerCase();
+  const batchFilter = document.getElementById('codeFilterBatch')?.value || '';
+  const statFilter  = document.getElementById('codeFilterStatus')?.value || '';
+
+  const filtered = _allCodes.filter(c => {
+    const st = codeStatus(c);
+    if (batchFilter && c.batch_name !== batchFilter) return false;
+    if (statFilter  && st !== statFilter)            return false;
+    if (search) {
+      const hay = (c.code + ' ' + (c.batch_name||'') + ' ' + (c.redeemer?.email||'')).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const header = ['Code', 'Batch', 'Tier', 'Duration (days)', 'Status', 'Redeemed by', 'Redeemed at', 'IP'];
+  const rows   = filtered.map(c => [
+    c.code,
+    c.batch_name || '',
+    c.tier,
+    c.duration_days,
+    codeStatus(c),
+    c.redeemer?.email || '',
+    c.redeemed_at ? new Date(c.redeemed_at).toISOString().split('T')[0] : '',
+    c.redeemed_ip || '',
+  ]);
+
+  const csv = [header, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), {
+    href: url,
+    download: `growsense_codes_${new Date().toISOString().split('T')[0]}.csv`,
+  });
+  a.click();
+  URL.revokeObjectURL(url);
+  showAdminToast('✅', `${filtered.length} codes exported`);
+}
+
+// ── Toast (admin version — uses existing toast element) ───────────
+function showAdminToast(icon, msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent  = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
 }

@@ -291,3 +291,67 @@ body {
 .metrics-bar-lbl { font-size: 8px; font-family: var(--mono); color: var(--text3); text-align: center; white-space: nowrap; position: absolute; bottom: 0; }
 .metrics-bar-val { font-size: 9px; font-family: var(--mono); font-weight: 700; color: var(--text2); }
 .metrics-empty { font-size: 12px; color: var(--text3); padding: 24px 0; text-align: center; }
+
+/* ── Codes section ──────────────────────────────────────────────── */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.admin-table th {
+  background: var(--surface2, #F1F5F9);
+  color: var(--text2, #64748B);
+  font-weight: 700;
+  text-align: left;
+  padding: 9px 12px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+}
+.admin-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border, #E2E8F0);
+  vertical-align: middle;
+  color: var(--text, #1E293B);
+}
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table tr:hover td { background: var(--surface2, #F8FAFC); }
+
+.code-badge {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  background: var(--surface2);
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+.code-badge:hover { background: var(--border); }
+
+.status-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.status-available { background: rgba(16,185,129,.12); color: #059669; }
+.status-redeemed  { background: rgba(99,102,241,.12); color: #6366F1; }
+.status-expired   { background: rgba(239,68,68,.12);  color: #DC2626; }
+
+.code-action-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text2);
+  white-space: nowrap;
+}
+.code-action-btn:hover { background: var(--surface2); }
+.code-action-btn.danger { color: var(--flag, #DC2626); border-color: var(--flag, #DC2626); }
