@@ -697,9 +697,15 @@
       <div class="section-hd"><h2 data-i18n="medical.title">Clinical log</h2><p data-i18n="medical.subtitle">Medical factors that affect growth interpretation</p></div>
       <div class="setup-note" style="font-size:11.5px;" data-i18n="medical.saved_note">Saved per date — use the date selector on the Today tab to revise a past entry, then return here.</div>
 
+      <!-- 1. Development interference log -->
       <div class="warning-card">
-        <div class="warning-title" data-i18n="medical.illness.title">Development interference log</div>
-        <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Acute illness can suppress growth hormone pulsatility — logging real illness episodes (not a guessed monthly count) gives a clearer picture of how illness timing relates to growth changes.</div>
+        <div class="card-header" style="padding:0 0 10px; border-bottom:none;">
+          <span class="warning-title" style="margin:0;" data-i18n="medical.illness.title">Development interference log</span>
+          <button class="info-icon-btn" onclick="toggleInfo('illnessNote')" aria-label="Why log illness">i</button>
+        </div>
+        <div class="setup-note hidden" id="illnessNote" style="padding:8px 0; font-size:11px; margin-bottom:10px; border-bottom:0.5px solid rgba(156,122,61,.3);">
+          Acute illness suppresses growth hormone pulsatility for days to weeks after recovery. Logging real episodes lets us overlay illness timing against growth velocity — useful for explaining a slow growth period to your pediatrician. Log the actual dates from memory if you haven't been recording.
+        </div>
         <div class="form-row">
           <div class="form-lbl" data-i18n="common.start_date">Start date</div>
           <input type="date" id="newIllnessStart" aria-label="Illness start date" class="date-input" style="width:140px;">
@@ -730,8 +736,18 @@
         <div id="illnessEventsList" class="nutrition-log-list" style="margin-top:12px;"></div>
       </div>
 
+      <!-- 2. Medications -->
       <div class="card">
-        <div class="card-header"><span class="card-title" data-i18n="medical.medications.title">Medications</span><span class="dq-badge estimated"><span class="dq-dot estimated"></span>parent-reported</span></div>
+        <div class="card-header">
+          <span class="card-title" data-i18n="medical.medications.title">Medications</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="dq-badge estimated"><span class="dq-dot estimated"></span>parent-reported</span>
+            <button class="info-icon-btn" onclick="toggleInfo('medicationsNote')" aria-label="About medications and growth">i</button>
+          </div>
+        </div>
+        <div class="setup-note hidden" id="medicationsNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
+          Corticosteroids (inhaled or oral) are the main medication class that affects growth — they can suppress the hypothalamic-pituitary axis and reduce growth velocity with prolonged use. This is NOT a reason to avoid necessary medication; it gives context for interpreting slow growth periods. Inhaled steroids for asthma at standard doses have minimal growth impact.
+        </div>
         <div class="card-body">
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px;">
             <div class="form-lbl" data-i18n="medical.medications.corticosteroid">Corticosteroid use</div>
@@ -752,8 +768,18 @@
         </div>
       </div>
 
+      <!-- 3. Lab values — IGF-1, Vitamin D, Ferritin -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured" data-i18n="medical.lab_values.title">Lab values</span><span class="dq-badge measured"><span class="dq-dot measured"></span>measured</span></div>
+        <div class="card-header">
+          <span class="card-title text-measured" data-i18n="medical.lab_values.title">Lab values</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="dq-badge measured"><span class="dq-dot measured"></span>measured</span>
+            <button class="info-icon-btn" onclick="toggleInfo('labValuesNote')" aria-label="About these lab values">i</button>
+          </div>
+        </div>
+        <div class="setup-note hidden" id="labValuesNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
+          <b>IGF-1</b> is the best single biomarker for growth hormone axis activity — low IGF-1 at normal height velocity suggests the body is growing efficiently; low IGF-1 with slow growth warrants endocrinology referral. <b>Vitamin D</b> affects bone mineralisation and growth plate maturation — deficiency is common in children with limited outdoor time. <b>Ferritin</b> (iron stores) affects energy and is routinely checked in pediatric growth assessments. Reference ranges vary by lab and age — always compare against your lab's printed range.
+        </div>
         <div class="card-body">
           <div class="form-row">
             <div><div class="form-lbl">IGF-1</div><div class="form-lbl-sub" data-i18n="medical.lab_values.igf1_sub">Growth hormone axis marker</div></div>
@@ -769,14 +795,16 @@
               <span style="font-size:11px; color:var(--text2);">nmol/L</span>
             </div>
           </div>
-          <div class="form-row">
+          <div class="form-row" style="border-bottom:none;">
             <div><div class="form-lbl">Ferritin</div><div class="form-lbl-sub" data-i18n="medical.lab_values.ferritin_sub">Iron stores</div></div>
             <div style="display:flex; align-items:center; gap:5px;">
               <input type="number" id="labFerritin" class="num-input" placeholder="—" style="width:80px;">
               <span style="font-size:11px; color:var(--text2);">ng/mL</span>
             </div>
           </div>
-          <button class="btn-secondary" onclick="saveMedical()" data-i18n="medical.lab_values.save_btn">Save clinical record</button>
+          <button class="btn-secondary" onclick="saveMedical()" style="margin-top:14px;" data-i18n="medical.lab_values.save_btn">Save clinical record</button>
+          <!-- Lab values history — populated by loadLabValuesHistory() after save -->
+          <div id="labValuesList" class="nutrition-log-list" style="margin-top:12px;"></div>
         </div>
       </div>
 
@@ -787,7 +815,13 @@
            table designed so adding a new analyte never needs a schema
            change. -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured" data-i18n="medical.other_labs.title">Other lab results</span></div>
+        <div class="card-header">
+          <span class="card-title text-measured" data-i18n="medical.other_labs.title">Other lab results</span>
+          <button class="info-icon-btn" onclick="toggleInfo('otherLabsNote')" aria-label="About other lab results">i</button>
+        </div>
+        <div class="setup-note hidden" id="otherLabsNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
+          Log any additional results your pediatrician orders — TSH, Free T4, LH, FSH, Testosterone, Estradiol, IGFBP-3, or others. These appear on the Analytics lab chart and in your clinic PDF export. Enter the value exactly as printed on the lab report, with the same unit.
+        </div>
         <div class="card-body">
           <div class="setup-note" style="font-size:11px; margin-bottom:10px;">For any lab value not listed above — TSH, Free T4, LH, FSH, Testosterone, Estradiol, IGFBP3, or others your doctor orders.</div>
           <div class="form-row">
@@ -817,7 +851,13 @@
 
       <!-- Puberty milestones -->
       <div class="card">
-        <div class="card-header"><span class="card-title text-measured" data-i18n="medical.puberty.title">Puberty milestones</span></div>
+        <div class="card-header">
+          <span class="card-title text-measured" data-i18n="medical.puberty.title">Puberty milestones</span>
+          <button class="info-icon-btn" onclick="toggleInfo('pubertyNote')" aria-label="About puberty and growth">i</button>
+        </div>
+        <div class="setup-note hidden" id="pubertyNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
+          Puberty timing significantly changes how the growth chart should be interpreted. An early growth spurt can make a child look on-track while epiphyseal plates fuse sooner than average. A delayed puberty can look like slow growth but may mean more growing time remains. Tanner staging gives the pediatrician context for all measurements. Log milestones as you observe them — even retrospectively.
+        </div>
         <div class="card-body">
           <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Tracking pubertal timing — one of the strongest real predictors of remaining growth window and adult height. Record what your pediatrician observes or what you notice at home.</div>
           <div class="form-row">
@@ -864,12 +904,15 @@
       <div class="card" id="boneAgeCard">
         <div class="card-header">
           <span class="card-title text-measured" data-i18n="medical.bone_age.title">Bone age assessment</span>
-          <span class="dq-badge measured"><span class="dq-dot measured"></span>X-ray</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="dq-badge measured"><span class="dq-dot measured"></span>X-ray</span>
+            <button class="info-icon-btn" onclick="toggleInfo('boneAgeNote')" aria-label="About bone age assessment">i</button>
+          </div>
+        </div>
+        <div class="setup-note hidden" id="boneAgeNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
+          A bone age X-ray measures the maturation of wrist growth plates against the Greulich-Pyle (GP) atlas. Bone age significantly behind chronological age ("delayed") often means more height potential remains. Bone age ahead ("advanced") may indicate early puberty or hormonal factors. The app calculates the statistical delta and SD from your radiologist's report — bring this screen to your next endocrinology visit.
         </div>
         <div class="card-body">
-          <div class="setup-note" style="font-size:11px; margin-bottom:12px;">
-            Enter results from your radiologist's bone age report. The app calculates whether bone age is significantly advanced or delayed relative to chronological age using the Greulich-Pyle reference standard deviation.
-          </div>
 
           <!-- X-ray image upload -->
           <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:6px;">

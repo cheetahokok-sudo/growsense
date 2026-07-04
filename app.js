@@ -5189,6 +5189,52 @@ async function saveMedical() {
     return;
   }
   showToast('✅', t('toast.clinical_saved','Clinical record saved') + ' — ' + APP.logDate);
+  await loadLabValuesHistory(); // refresh the history list below the form
+}
+
+// Loads and renders the last 10 medical_logs entries for the active child
+// as log-item-rows below the Lab values form. Called after save + on
+// Medical tab open so parents can see their IGF-1 history at a glance.
+async function loadLabValuesHistory() {
+  const childId = activeChildId();
+  const listEl  = document.getElementById('labValuesList');
+  if (!childId || !listEl) return;
+
+  const { data, error } = await sb
+    .from('medical_logs')
+    .select('log_id, log_date, igf1_ng_ml, vitamin_d_nmol_l, ferritin_ng_ml')
+    .eq('child_id', childId)
+    .not('igf1_ng_ml', 'is', null) // only rows that have at least IGF-1
+    .order('log_date', { ascending: false })
+    .limit(10);
+
+  // Fall back: also show rows with Vit D or Ferritin even without IGF-1
+  const { data: allData } = await sb
+    .from('medical_logs')
+    .select('log_id, log_date, igf1_ng_ml, vitamin_d_nmol_l, ferritin_ng_ml')
+    .eq('child_id', childId)
+    .or('igf1_ng_ml.not.is.null,vitamin_d_nmol_l.not.is.null,ferritin_ng_ml.not.is.null')
+    .order('log_date', { ascending: false })
+    .limit(10);
+
+  const rows = allData || data || [];
+  if (!rows.length) { listEl.innerHTML = ''; return; }
+
+  listEl.innerHTML = rows.map(r => {
+    const parts = [];
+    if (r.igf1_ng_ml        != null) parts.push(`IGF-1: <b>${r.igf1_ng_ml}</b> ng/mL`);
+    if (r.vitamin_d_nmol_l  != null) parts.push(`Vit D: <b>${r.vitamin_d_nmol_l}</b> nmol/L`);
+    if (r.ferritin_ng_ml    != null) parts.push(`Ferritin: <b>${r.ferritin_ng_ml}</b> ng/mL`);
+    if (!parts.length) return '';
+    const d      = new Date(r.log_date + 'T12:00:00');
+    const label  = d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    return `<div class="log-item-row" style="display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:var(--surface2); border-radius:10px; margin-bottom:6px;">
+      <div>
+        <div style="font-size:11px; color:var(--text3); margin-bottom:2px;">${label}</div>
+        <div style="font-size:12.5px; color:var(--text);">${parts.join(' · ')}</div>
+      </div>
+    </div>`;
+  }).filter(Boolean).join('');
 }
 
 // Loads this child's medical_logs row for the currently-selected
@@ -6997,6 +7043,7 @@ async function goTab(name) {
     await loadPubertyEvents();
     await loadIllnessEvents();
     await loadBoneAgeAssessments();
+    await loadLabValuesHistory(); // populate IGF-1 history rows
   }
   if (name === 'AI') {
     if (!APP.aiCoachQuestions) {
