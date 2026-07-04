@@ -1688,13 +1688,15 @@ function loadChildIntoForm() {
   document.getElementById('valProtein').textContent = s.protein + ' g';
   document.getElementById('valCalcium').textContent = s.calcium + ' mg';
   document.getElementById('valZinc').textContent = s.zinc + ' mg';
-  document.getElementById('valHanging').textContent = s.hanging + ' sec';
-  document.getElementById('valJumps').textContent = s.jumps + ' reps';
+  // valHanging and valJumps removed in activity library redesign — guard against null
+  const elH = document.getElementById('valHanging'); if (elH) elH.textContent = s.hanging + ' sec';
+  const elJ = document.getElementById('valJumps');   if (elJ) elJ.textContent = s.jumps + ' reps';
   document.getElementById('valNightWakes').textContent = s.nightWakes;
   document.getElementById('waterLbl').textContent = `(${s.water}/8 glasses)`;
   document.getElementById('sleepBed').value = s.bed;
   document.getElementById('sleepWake').value = s.wake;
 
+  // yogaSeg removed in activity library redesign — guard against null
   document.querySelectorAll('#yogaSeg .seg-btn').forEach((b,i) => {
     b.classList.toggle('active', [0,10,20,30][i] === s.yogaMin);
   });
