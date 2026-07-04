@@ -788,3 +788,212 @@ canvas { display: block; width: 100%; height: 100%; }
   margin-top: -4px;
   line-height: 1.4;
 }
+
+/* ── Tappable history rows ─────────────────────────────────────── */
+.hist-row { cursor: pointer; transition: background 0.12s; }
+.hist-row:active { background: var(--surface2); }
+.hist-chevron {
+  color: var(--text3);
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* ── Language selector pills (Account screen) ───────────────────── */
+.lang-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1.5px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--sans);
+}
+.lang-pill.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.lang-pill:active { opacity: 0.8; }
+
+/* ── Activity card grid (Today tab) ─────────────────────────────── */
+.activity-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.activity-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 8px 10px;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.activity-card:active { transform: scale(0.96); background: var(--surface2); }
+.activity-card-emoji  { font-size: 26px; line-height: 1.2; }
+.activity-card-name   { font-size: 11.5px; font-weight: 600; color: var(--text); line-height: 1.2; }
+
+/* ── Activity tier badges ─────────────────────────────────────────  */
+.act-tier-badge {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.act-tier-high   { background: rgba(162,59,59,.12); color: var(--flag); }
+.act-tier-medium { background: rgba(156,122,61,.12); color: var(--estimated); }
+.act-tier-cardio { background: rgba(42,92,138,.12);  color: var(--measured); }
+.act-tier-flex   { background: rgba(149,160,146,.14); color: var(--text3); }
+
+/* ── Logged today list ───────────────────────────────────────────── */
+.activity-log-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 9px 10px;
+  margin-bottom: 6px;
+}
+.activity-log-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.activity-log-remove {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.activity-log-remove:active { color: var(--flag); }
+
+/* ── Duration grid (log sheet) ───────────────────────────────────── */
+.duration-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.duration-btn {
+  padding: 10px 4px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text2);
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  -webkit-tap-highlight-color: transparent;
+}
+.duration-btn-unit { font-size: 9px; font-weight: 400; color: var(--text3); }
+.duration-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.duration-btn:active { opacity: 0.75; }
+
+/* ── Activity browser modal ──────────────────────────────────────── */
+.activity-browser-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.activity-browser-tabs::-webkit-scrollbar { display: none; }
+.activity-browser-tab {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.activity-browser-tab.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.activity-browser-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.activity-browser-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  position: relative;
+}
+.activity-browser-note {
+  font-size: 9px;
+  color: var(--text3);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+.act-star-btn {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text3);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+.act-star-active { color: var(--estimated) !important; }
+.act-log-quick-btn {
+  margin-top: 4px;
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+}
+.act-log-quick-btn:active { background: var(--surface2); }

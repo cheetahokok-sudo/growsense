@@ -135,6 +135,123 @@ function renderLanguageSelector() {
 
 // ── end i18n ──────────────────────────────────────────────────────
 
+// ══════════════════════════════════════════════════════════════════
+// ACTIVITY LIBRARY
+// Evidence-based taxonomy from mechanotransduction + GH/IGF-1
+// research. Tier drives the readiness score weight and the visual
+// badge colour on every activity card.
+//
+// Evidence basis:
+//   high_impact    1.0 — direct growth plate stimulation; gymnastics,
+//                         basketball, martial arts confirmed in RCTs;
+//                         plyometric training → GH +12%, IGF-1 +8%
+//   weight_bearing 0.65 — osteogenic via gravity + muscle tension but
+//                          lower peak GRF than Tier 1
+//   cardio         0.35 — excellent GH release via large-muscle
+//                          recruitment but ZERO osteogenic benefit
+//                          (swimming inferior to controls for BMD;
+//                          high-volume cycling associated with low BMD)
+//   flexibility    0.15 — recovery value, injury prevention, spinal
+//                          decompression; not a primary growth driver
+// ══════════════════════════════════════════════════════════════════
+const ACTIVITY_LIBRARY = [
+  // ── TIER 1 — HIGH IMPACT ──────────────────────────────────────
+  // Gymnastics: highest osteogenic evidence — 10.4× BW impacts/session,
+  // 102–217 impacts per session (Daly et al. 1999). BMD superior to all
+  // other sports including soccer and basketball.
+  { id:'gymnastics',        tier:'high_impact',   category:'gymnastics',   emoji:'🤸', displayName:'Gymnastics',
+    note:'Highest osteogenic evidence — 10.4× body weight impacts per session (Daly et al. 1999)' },
+
+  // Jumping — direct growth plate loading
+  { id:'box_jumps',         tier:'high_impact',   category:'jumping',      emoji:'📦', displayName:'Box Jumps',
+    note:'Direct growth plate stimulation. 24-week study: +4.32 cm vs +1.93 cm controls (BMC Pediatrics 2025)' },
+  { id:'vertical_jumps',    tier:'high_impact',   category:'jumping',      emoji:'⬆️', displayName:'Vertical Jumps' },
+  { id:'jump_rope',         tier:'high_impact',   category:'jumping',      emoji:'🪢', displayName:'Jump Rope',
+    note:'Moderate growth plate pressure confirmed. Interval > continuous for GH release' },
+
+  // Ball sports
+  { id:'basketball',        tier:'high_impact',   category:'sports',       emoji:'🏀', displayName:'Basketball',
+    note:'Highest BMD among all team sports. Multi-directional impact loading (PMID 38040837)' },
+  { id:'volleyball',        tier:'high_impact',   category:'sports',       emoji:'🏐', displayName:'Volleyball',
+    note:'High-impact, repeated vertical jumps. BMD superior to swimmers and controls' },
+  { id:'football',          tier:'high_impact',   category:'sports',       emoji:'⚽', displayName:'Football / Soccer',
+    note:'Running + impact loading. ~39% of adult bone mass acquired in 5 years around PHV' },
+
+  // Martial arts — significantly better bone outcomes vs non-sport
+  { id:'taekwondo',         tier:'high_impact',   category:'martial_arts', emoji:'🥋', displayName:'Taekwondo',
+    note:'Systematic review: significantly better bone outcomes vs non-sport (Barbeta et al.)' },
+  { id:'muay_thai',         tier:'high_impact',   category:'martial_arts', emoji:'🥊', displayName:'Muay Thai' },
+  { id:'judo',              tier:'high_impact',   category:'martial_arts', emoji:'🥋', displayName:'Judo' },
+  { id:'karate',            tier:'high_impact',   category:'martial_arts', emoji:'🥋', displayName:'Karate' },
+
+  // Sprint / plyometric
+  { id:'sprinting',         tier:'high_impact',   category:'running',      emoji:'💨', displayName:'Sprint Training',
+    note:'Plyometric training: GH +12%, IGF-1 +8% vs controls in 12-week RCT (ASJSM 2024)' },
+
+  // Multi-directional high-impact
+  { id:'dance',             tier:'high_impact',   category:'dance',        emoji:'💃', displayName:'Dance',
+    note:'Multi-directional high-impact loading, underrated osteogenic activity' },
+  { id:'parkour',           tier:'high_impact',   category:'bodyweight',   emoji:'🏃', displayName:'Parkour',
+    note:'Very high impact, novel multi-directional loading — excellent during growth window' },
+  { id:'basketball_drills', tier:'high_impact',   category:'sports',       emoji:'🏀', displayName:'Basketball Drills' },
+  { id:'hopscotch',         tier:'high_impact',   category:'jumping',      emoji:'🎯', displayName:'Hopscotch' },
+
+  // ── TIER 2 — WEIGHT-BEARING ──────────────────────────────────
+  { id:'running',           tier:'weight_bearing',category:'running',      emoji:'🏃', displayName:'Running' },
+  { id:'tag_games',         tier:'weight_bearing',category:'running',      emoji:'🏷️', displayName:'Tag Games' },
+  { id:'tennis',            tier:'weight_bearing',category:'sports',       emoji:'🎾', displayName:'Tennis',
+    note:'More favourable bone outcomes vs absence of PA (Krahenbüh systematic review)' },
+  { id:'badminton',         tier:'weight_bearing',category:'sports',       emoji:'🏸', displayName:'Badminton' },
+  { id:'trampoline',        tier:'weight_bearing',category:'jumping',      emoji:'🛸', displayName:'Trampoline',
+    note:'Reduces peak GRF vs floor jumping — osteogenic but lower intensity than box jumps' },
+  { id:'indoor_climbing',   tier:'weight_bearing',category:'climbing',     emoji:'🧗', displayName:'Indoor Climbing' },
+  { id:'playground_climbing',tier:'weight_bearing',category:'climbing',    emoji:'🛝', displayName:'Playground Climbing' },
+  { id:'monkey_bars',       tier:'weight_bearing',category:'bodyweight',   emoji:'🙈', displayName:'Monkey Bars' },
+  { id:'obstacle_course',   tier:'weight_bearing',category:'bodyweight',   emoji:'🏁', displayName:'Obstacle Course' },
+  { id:'outdoor_play',      tier:'weight_bearing',category:'lifestyle',    emoji:'🌳', displayName:'Outdoor Play',
+    note:'If running/jumping involved — often equivalent to Tier 1' },
+  { id:'playground',        tier:'weight_bearing',category:'lifestyle',    emoji:'🛝', displayName:'Playground Activities' },
+
+  // ── TIER 3 — CARDIO ──────────────────────────────────────────
+  // Excellent for GH release and cardiovascular health but swimming
+  // is INFERIOR to controls for bone density (BMD). High-volume
+  // cycling is associated with low BMD. Both should COMPLEMENT
+  // weight-bearing activity, not replace it.
+  { id:'swimming',          tier:'cardio',        category:'cardio',       emoji:'🏊', displayName:'Swimming',
+    note:'Excellent cardiovascular + GH stimulus. No osteogenic benefit — combine with weight-bearing (PMID 29199168)' },
+  { id:'cycling',           tier:'cardio',        category:'cardio',       emoji:'🚲', displayName:'Cycling',
+    note:'Good cardiovascular. High-volume cycling associated with low BMD — complement with weight-bearing' },
+
+  // ── TIER 4 — FLEXIBILITY / DECOMPRESSION ─────────────────────
+  // Bar hanging was previously listed as a growth activity. Evidence:
+  // it is spinal DECOMPRESSION — beneficial for posture/disc health,
+  // zero evidence for osteogenesis or GH/IGF-1 stimulation.
+  { id:'yoga',              tier:'flexibility',   category:'flexibility',  emoji:'🧘', displayName:'Yoga',
+    note:'Flexibility, injury prevention, recovery. Non-impact — not effective for bone density (AAOS)' },
+  { id:'stretching',        tier:'flexibility',   category:'flexibility',  emoji:'🤸', displayName:'Stretching' },
+  { id:'bar_hanging',       tier:'flexibility',   category:'flexibility',  emoji:'🏋️', displayName:'Bar Hanging',
+    note:'Spinal decompression — benefits posture and disc health but is NOT a primary growth driver' },
+  { id:'walking',           tier:'lifestyle',     category:'lifestyle',    emoji:'🚶', displayName:'Walking',
+    note:'Minimal osteogenic effect at normal pace. Good daily movement baseline.' },
+];
+
+// Tier display config — used by card render and browser
+const ACTIVITY_TIER_CONFIG = {
+  high_impact:   { label:'HIGH IMPACT',   shortLabel:'HIGH',   badgeCls:'act-tier-high',   weight:1.00 },
+  weight_bearing:{ label:'WEIGHT-BEARING',shortLabel:'MEDIUM', badgeCls:'act-tier-medium', weight:0.65 },
+  cardio:        { label:'CARDIO',        shortLabel:'CARDIO', badgeCls:'act-tier-cardio',  weight:0.35 },
+  flexibility:   { label:'FLEXIBILITY',   shortLabel:'FLEX',   badgeCls:'act-tier-flex',    weight:0.15 },
+  lifestyle:     { label:'LIFESTYLE',     shortLabel:'MOVE',   badgeCls:'act-tier-flex',    weight:0.15 },
+};
+
+// Default card grid shown before the parent sets favourites
+const DEFAULT_FAVOURITE_ACTIVITIES = [
+  'basketball','box_jumps','jump_rope','football','swimming','yoga'
+];
+
+// ── end ACTIVITY_LIBRARY ──────────────────────────────────────────
+
+
 const APP = {
   session: null,        // Supabase auth session
   account: null,         // row from user_accounts: { user_id, email, account_role, ... }
@@ -150,6 +267,9 @@ const APP = {
   chartZoom: 'auto', // 'auto' (zoomed to current age, existing behavior) or 'full' (always shows 0-19y) — see setChartZoom()
   labResults: [],    // lab_results rows for the active child, loaded when the Medical tab opens
   language: 'en',    // active UI language — 'en' | 'th' | 'zh', saved to localStorage
+  todayActivityItems: [],   // daily_activity_items for today — loaded on tab switch + after logging
+  favoriteActivities: null, // Set of activity_ids starred for active child; null = use defaults
+  customActivities: [],     // custom_activities rows for this parent account
   pubertyEvents: [], // puberty_events rows for the active child, loaded when the Medical tab opens
   illnessEvents: [], // illness_events rows for the active child, loaded when the Medical tab opens
   foodFavorites: [], // food_favorites rows for the active child — determines which cards show on the Nutrition grid
@@ -829,6 +949,314 @@ ${nut30Days > 0 ? `
 
 // ══════════════════════════════════════════════════════════════════
 // end clinic PDF export
+// ══════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════
+// ACTIVITY LIBRARY — load, save, render, browser
+// ══════════════════════════════════════════════════════════════════
+
+// ── Score calculation ─────────────────────────────────────────────
+// Called by updateHUD(). Reads APP.todayActivityItems.
+// Returns 0.0–1.0 where 1.0 = 60 min of high-impact equivalent.
+function calcActivityScore() {
+  const items = APP.todayActivityItems || [];
+  if (!items.length) return 0;
+  const TARGET_MIN = 60; // 60 min high-impact = 100%
+  const weighted = items.reduce((sum, item) => {
+    const w = (ACTIVITY_TIER_CONFIG[item.tier] || ACTIVITY_TIER_CONFIG.lifestyle).weight;
+    return sum + item.duration_min * w;
+  }, 0);
+  return Math.min(weighted / TARGET_MIN, 1.0);
+}
+
+// ── Load today's activity items ───────────────────────────────────
+async function loadTodayActivityItems() {
+  if (!activeChildId() || !APP.session) return;
+  const { data, error } = await sb
+    .from('daily_activity_items')
+    .select('*')
+    .eq('child_id', activeChildId())
+    .eq('log_date', APP.logDate)
+    .order('created_at', { ascending: true });
+  if (error) { console.error('[Activity]', error); return; }
+  APP.todayActivityItems = data || [];
+  renderActivityLoggedItems();
+  updateHUD();
+}
+
+// ── Load favourite activity IDs for active child ──────────────────
+async function loadFavouriteActivities() {
+  if (!activeChildId() || !APP.session) return;
+  const { data } = await sb
+    .from('favorite_activities')
+    .select('activity_id')
+    .eq('child_id', activeChildId());
+  if (!data || data.length === 0) {
+    APP.favoriteActivities = null; // null = show defaults
+  } else {
+    APP.favoriteActivities = new Set(data.map(r => r.activity_id));
+  }
+  renderActivityCards();
+}
+
+// ── Load parent's custom activities ──────────────────────────────
+async function loadCustomActivities() {
+  if (!APP.session) return;
+  const { data } = await sb
+    .from('custom_activities')
+    .select('*')
+    .eq('parent_id', APP.session.user.id);
+  APP.customActivities = data || [];
+}
+
+// ── Helper: all activities (library + custom) ─────────────────────
+function allActivities() {
+  const custom = (APP.customActivities || []).map(c => ({
+    id: c.activity_id, tier: c.tier, category: c.category || 'custom',
+    emoji: c.emoji || '⭐', displayName: c.display_name, isCustom: true,
+  }));
+  return [...ACTIVITY_LIBRARY, ...custom];
+}
+
+// ── Render the card grid on Today tab ─────────────────────────────
+function renderActivityCards() {
+  const grid = document.getElementById('activityCardGrid');
+  if (!grid) return;
+  const fav = APP.favoriteActivities;
+  const acts = allActivities();
+  const shown = fav
+    ? acts.filter(a => fav.has(a.id))
+    : acts.filter(a => DEFAULT_FAVOURITE_ACTIVITIES.includes(a.id));
+  grid.innerHTML = shown.map(a => {
+    const tc = ACTIVITY_TIER_CONFIG[a.tier] || ACTIVITY_TIER_CONFIG.lifestyle;
+    return `<div class="activity-card" onclick="openActivityLogSheet('${a.id}')">
+      <div class="activity-card-emoji">${a.emoji}</div>
+      <div class="activity-card-name">${a.displayName}</div>
+      <span class="act-tier-badge ${tc.badgeCls}">${tc.shortLabel}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Render logged-today list ──────────────────────────────────────
+function renderActivityLoggedItems() {
+  const list = document.getElementById('activityLoggedList');
+  const section = document.getElementById('activityLoggedSection');
+  if (!list || !section) return;
+  const items = APP.todayActivityItems || [];
+  section.classList.toggle('hidden', items.length === 0);
+  list.innerHTML = items.map(item => {
+    const tc = ACTIVITY_TIER_CONFIG[item.tier] || ACTIVITY_TIER_CONFIG.lifestyle;
+    return `<div class="activity-log-item">
+      <div class="activity-log-info">
+        <span>${item.display_name}</span>
+        <span class="act-tier-badge ${tc.badgeCls}">${item.duration_min} min</span>
+      </div>
+      <button class="activity-log-remove" onclick="removeActivityItem('${item.item_id}')" aria-label="Remove">×</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Open log sheet ────────────────────────────────────────────────
+let _pendingActivityId = null;
+let _pendingActivityDuration = 30;
+const DURATION_PRESETS = [5, 10, 15, 20, 30, 45, 60, 90];
+
+function openActivityLogSheet(activityId) {
+  const act = allActivities().find(a => a.id === activityId);
+  if (!act) return;
+  _pendingActivityId = activityId;
+  _pendingActivityDuration = 30;
+
+  document.getElementById('actLogEmoji').textContent = act.emoji;
+  document.getElementById('actLogName').textContent = act.displayName;
+  const tc = ACTIVITY_TIER_CONFIG[act.tier] || ACTIVITY_TIER_CONFIG.lifestyle;
+  const badge = document.getElementById('actLogBadge');
+  badge.textContent = tc.label;
+  badge.className = `act-tier-badge ${tc.badgeCls}`;
+
+  // Note about this activity's science
+  const noteEl = document.getElementById('actLogNote');
+  if (noteEl) {
+    noteEl.textContent = act.note || '';
+    noteEl.style.display = act.note ? 'block' : 'none';
+  }
+
+  // Duration grid
+  const dGrid = document.getElementById('actLogDurationGrid');
+  dGrid.innerHTML = DURATION_PRESETS.map(d =>
+    `<button class="duration-btn${d === 30 ? ' active' : ''}" onclick="selectActivityDuration(${d}, this)">
+      ${d}<span class="duration-btn-unit">min</span>
+    </button>`
+  ).join('');
+  document.getElementById('actLogCustomMin').value = '';
+  document.getElementById('actLogConfirmBtn').textContent = 'Log 30 min';
+  document.getElementById('activityLogModal').classList.remove('hidden');
+}
+
+function openActivityLogSheetFromBrowser(activityId) {
+  document.getElementById('activityBrowserModal').classList.add('hidden');
+  setTimeout(() => openActivityLogSheet(activityId), 180);
+}
+
+function closeActivityLogModal(e) {
+  if (e && e.target !== document.getElementById('activityLogModal')) return;
+  document.getElementById('activityLogModal').classList.add('hidden');
+}
+
+function selectActivityDuration(min, btn) {
+  _pendingActivityDuration = min;
+  document.querySelectorAll('#actLogDurationGrid .duration-btn').forEach(b => b.classList.remove('active'));
+  btn?.classList.add('active');
+  document.getElementById('actLogConfirmBtn').textContent = `Log ${min} min`;
+}
+
+function selectCustomDuration(val) {
+  const min = Math.max(1, Math.min(300, parseInt(val) || 0));
+  if (min > 0) {
+    _pendingActivityDuration = min;
+    document.querySelectorAll('#actLogDurationGrid .duration-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('actLogConfirmBtn').textContent = `Log ${min} min`;
+  }
+}
+
+// ── Confirm and save a logged activity ────────────────────────────
+async function confirmLogActivity() {
+  const act = allActivities().find(a => a.id === _pendingActivityId);
+  if (!act || !activeChildId()) return;
+  const duration = _pendingActivityDuration || 30;
+  document.getElementById('activityLogModal').classList.add('hidden');
+
+  const { error } = await sb.from('daily_activity_items').insert({
+    child_id: activeChildId(),
+    log_date: APP.logDate,
+    activity_id: act.id,
+    display_name: act.displayName,
+    category: act.category,
+    tier: act.tier,
+    duration_min: duration,
+    is_custom: act.isCustom || false,
+  });
+
+  if (error) { showToast('⚠️', 'Could not save activity'); return; }
+  showToast('✅', `${act.displayName} · ${duration} min logged`);
+  await loadTodayActivityItems();
+}
+
+// ── Remove a logged activity ──────────────────────────────────────
+async function removeActivityItem(itemId) {
+  await sb.from('daily_activity_items').delete().eq('item_id', itemId);
+  APP.todayActivityItems = (APP.todayActivityItems || []).filter(i => i.item_id !== itemId);
+  renderActivityLoggedItems();
+  updateHUD();
+}
+
+// ── Toggle favourite (star) ───────────────────────────────────────
+async function toggleFavouriteActivity(activityId, btn) {
+  if (!activeChildId()) return;
+  const fav = APP.favoriteActivities || new Set(DEFAULT_FAVOURITE_ACTIVITIES);
+  const adding = !fav.has(activityId);
+  if (adding) {
+    await sb.from('favorite_activities').upsert({ child_id: activeChildId(), activity_id: activityId });
+    fav.add(activityId);
+  } else {
+    await sb.from('favorite_activities').delete().eq('child_id', activeChildId()).eq('activity_id', activityId);
+    fav.delete(activityId);
+  }
+  APP.favoriteActivities = fav;
+  btn?.classList.toggle('act-star-active', adding);
+  btn && (btn.textContent = adding ? '★' : '☆');
+  renderActivityCards();
+}
+
+// ── Activity browser modal ────────────────────────────────────────
+let _actBrowserFilter = 'all';
+
+async function openActivityBrowserModal() {
+  await loadCustomActivities();
+  _actBrowserFilter = 'all';
+  // Reset tabs
+  document.querySelectorAll('.activity-browser-tab').forEach((b, i) => b.classList.toggle('active', i === 0));
+  renderActivityBrowser();
+  document.getElementById('activityBrowserModal').classList.remove('hidden');
+}
+
+function closeActivityBrowserModal(e) {
+  if (e && e.target !== document.getElementById('activityBrowserModal')) return;
+  document.getElementById('activityBrowserModal').classList.add('hidden');
+}
+
+function setActivityBrowserFilter(filter, btn) {
+  _actBrowserFilter = filter;
+  document.querySelectorAll('.activity-browser-tab').forEach(b => b.classList.remove('active'));
+  btn?.classList.add('active');
+  renderActivityBrowser();
+}
+
+function renderActivityBrowser() {
+  const grid = document.getElementById('activityBrowserGrid');
+  if (!grid) return;
+  const fav = APP.favoriteActivities || new Set(DEFAULT_FAVOURITE_ACTIVITIES);
+  let acts = allActivities();
+
+  if (_actBrowserFilter === 'high_impact')   acts = acts.filter(a => a.tier === 'high_impact');
+  else if (_actBrowserFilter === 'weight_bearing') acts = acts.filter(a => a.tier === 'weight_bearing');
+  else if (_actBrowserFilter === 'cardio')    acts = acts.filter(a => a.tier === 'cardio');
+  else if (_actBrowserFilter === 'flexibility') acts = acts.filter(a => a.tier === 'flexibility' || a.tier === 'lifestyle');
+  else if (_actBrowserFilter === 'custom')    acts = acts.filter(a => a.isCustom);
+
+  grid.innerHTML = acts.map(a => {
+    const tc = ACTIVITY_TIER_CONFIG[a.tier] || ACTIVITY_TIER_CONFIG.lifestyle;
+    const starred = fav.has(a.id);
+    return `<div class="activity-browser-card">
+      <button class="act-star-btn ${starred ? 'act-star-active' : ''}"
+        onclick="toggleFavouriteActivity('${a.id}', this)" title="${starred ? 'Remove from Today grid' : 'Add to Today grid'}">
+        ${starred ? '★' : '☆'}
+      </button>
+      <div class="activity-card-emoji">${a.emoji}</div>
+      <div class="activity-card-name" style="font-size:11px;">${a.displayName}</div>
+      <span class="act-tier-badge ${tc.badgeCls}">${tc.shortLabel}</span>
+      ${a.note ? `<div class="activity-browser-note">${a.note}</div>` : ''}
+      <button class="act-log-quick-btn" onclick="openActivityLogSheetFromBrowser('${a.id}')">Log</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Save a custom activity ────────────────────────────────────────
+async function saveCustomActivity() {
+  const name  = document.getElementById('customActName')?.value?.trim();
+  const emoji = document.getElementById('customActEmoji')?.value?.trim() || '⭐';
+  const tier  = document.getElementById('customActTier')?.value || 'weight_bearing';
+  if (!name) { showToast('⚠️', 'Enter an activity name'); return; }
+
+  const actId = 'custom_' + Date.now().toString(36);
+  const { error } = await sb.from('custom_activities').insert({
+    activity_id: actId,
+    parent_id: APP.session.user.id,
+    display_name: name,
+    emoji: emoji.slice(0, 4), // emoji may be multi-char
+    tier,
+    category: 'custom',
+  });
+  if (error) { showToast('⚠️', 'Could not save activity'); return; }
+
+  document.getElementById('customActName').value = '';
+  document.getElementById('customActEmoji').value = '';
+  await loadCustomActivities();
+  renderActivityBrowser();
+  showToast('✅', `${emoji} ${name} added`);
+}
+
+// ── Load both favourites and activity items when Today opens ───────
+async function loadActivitySectionForToday() {
+  await Promise.all([
+    loadFavouriteActivities(),
+    loadTodayActivityItems(),
+    loadCustomActivities(),
+  ]);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// end activity library
 // ══════════════════════════════════════════════════════════════════
 
 function showAuthScreen() {
@@ -2945,15 +3373,13 @@ function updateHUD() {
   // has a ceiling effect above ~1.2 g/kg)
   const nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
 
-  // Impact loading (box jumps) raised to 55% of activity subscore —
-  // vertical impact is the most potent mechano-transductive stimulus for
-  // periosteal bone apposition and growth plate loading.
-  // (Forwood 1996, Bone; Bass et al. 1998, JBMR)
-  const hR = Math.min(s.hanging / 30, 1);
-  const jR = Math.min(s.jumps / 40, 1);
-  const yR = Math.min(s.yogaMin / 20, 1);
-  // Activity subscore: Jumps 55%, Hanging 25%, Yoga 20%
-  const actPct = hR * 0.25 + jR * 0.55 + yR * 0.20;
+  // ── Activity score — library-based weighted sum ───────────────
+  // Each logged activity contributes duration × tier_weight.
+  // 60 min of high-impact = 100%. Cannot exceed 1.0.
+  // Falls back to old state (hanging/jumps/yoga) if no items loaded
+  // yet — ensures the HUD still works on a fresh load before the
+  // async activity items arrive.
+  const actPct = calcActivityScore();
 
   // Overall: Sleep 40%, Nutrition 30%, Activity 30%
   // Sleep raised to 40% (was 30%) — 70-80% of GH secretion occurs
@@ -3091,21 +3517,15 @@ async function saveDay() {
       bedtime: s.bed,
       wake_time: s.wake,
       data_source: 'manual'
-    }, { onConflict: 'child_id,log_date' }),
-
-    sb.from('daily_activity').upsert({
-      child_id: childId,
-      log_date: saveDate,
-      hanging_decompression_sec: s.hanging,
-      box_jumps_reps: s.jumps,
-      stretching_yoga_duration_min: s.yogaMin,
-      data_source: 'manual'
     }, { onConflict: 'child_id,log_date' })
+    // Activity is now saved per-item in real-time via confirmLogActivity().
+    // The daily_activity table (bar_hanging/box_jumps/yoga) is kept for
+    // historical data only — new logs go into daily_activity_items.
   ]);
 
   btn.disabled = false;
 
-  const labels = ['Nutrition', 'Sleep', 'Activity'];
+  const labels = ['Nutrition', 'Sleep'];
   const failed = results
     .map((r, i) => ({ r, label: labels[i] }))
     .filter(x => x.r.status === 'rejected' || x.r.value?.error);
@@ -3221,16 +3641,35 @@ async function updateStats() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const sinceDate = sevenDaysAgo.toISOString().split('T')[0];
 
-  const [nutRes, sleepRes, actRes] = await Promise.all([
+  const [nutRes, sleepRes, actNewRes, actOldRes] = await Promise.all([
     sb.from('daily_nutrition').select('log_date, total_protein_g, calcium_mg, fluids_ml').eq('child_id', childId).gte('log_date', sinceDate),
     sb.from('daily_sleep').select('log_date, total_sleep_min, sleep_efficiency_score').eq('child_id', childId).gte('log_date', sinceDate),
+    // New activity items — group by date in JS
+    sb.from('daily_activity_items').select('log_date, tier, duration_min').eq('child_id', childId).gte('log_date', sinceDate),
+    // Old activity table — fallback for historical data
     sb.from('daily_activity').select('log_date, hanging_decompression_sec, box_jumps_reps, stretching_yoga_duration_min').eq('child_id', childId).gte('log_date', sinceDate)
   ]);
 
   const nutByDate = {}, sleepByDate = {}, actByDate = {};
   (nutRes.data || []).forEach(r => nutByDate[r.log_date] = r);
   (sleepRes.data || []).forEach(r => sleepByDate[r.log_date] = r);
-  (actRes.data || []).forEach(r => actByDate[r.log_date] = r);
+
+  // Group new activity items by date → weighted minutes
+  (actNewRes.data || []).forEach(r => {
+    const w = (ACTIVITY_TIER_CONFIG[r.tier] || ACTIVITY_TIER_CONFIG.lifestyle).weight;
+    actByDate[r.log_date] = (actByDate[r.log_date] || 0) + r.duration_min * w;
+  });
+  // Fill in old activity data where no new data exists (backward compat)
+  (actOldRes.data || []).forEach(r => {
+    if (actByDate[r.log_date] === undefined) {
+      const hR = Math.min((r.hanging_decompression_sec||0)/30, 1) * 0.25;
+      const jR = Math.min((r.box_jumps_reps||0)/40, 1) * 0.55;
+      const yR = Math.min((r.stretching_yoga_duration_min||0)/20, 1) * 0.20;
+      // Convert old score to weighted minutes equivalent
+      actByDate[r.log_date] = (hR + jR + yR) * 60;
+    }
+  });
+
   const allDates = [...new Set([...Object.keys(nutByDate), ...Object.keys(sleepByDate), ...Object.keys(actByDate)])];
 
   if (allDates.length > 0) {
@@ -3240,7 +3679,7 @@ async function updateStats() {
     // (there isn't one in this schema; a single day's score was never
     // meant to be a durable clinical value anyway).
     const dailyScores = allDates.map(date => {
-      const n = nutByDate[date], sl = sleepByDate[date], a = actByDate[date];
+      const n = nutByDate[date], sl = sleepByDate[date];
       const child = APP.children[APP.activeChild];
       const analyticProteinTarget = child
         ? calcProteinTargetG(child.date_of_birth, n?.mass_weight_kg || null, child.biological_sex)
@@ -3251,11 +3690,9 @@ async function updateStats() {
       // Growth-velocity weights: Calcium 50%, Protein 30%, Water 20%
       const nutPct = pR*0.30 + cR*0.50 + wR*0.20;
 
-      const hR = a ? Math.min((a.hanging_decompression_sec||0)/30, 1) : 0;
-      const jR = a ? Math.min((a.box_jumps_reps||0)/40, 1) : 0;
-      const yR = a ? Math.min((a.stretching_yoga_duration_min||0)/20, 1) : 0;
-      // Growth-velocity activity weights: Jumps 55%, Hanging 25%, Yoga 20%
-      const actPct = hR*0.25 + jR*0.55 + yR*0.20;
+      // Activity: new system uses weighted minutes (60 min high-impact = 100%)
+      const actWeightedMin = actByDate[date] || 0;
+      const actPct = Math.min(actWeightedMin / 60, 1.0);
 
       const durR = sl ? Math.min((sl.total_sleep_min||0)/(9.5*60), 1) : 0;
       const effR = sl ? (sl.sleep_efficiency_score||0)/100 : 0;
@@ -6328,6 +6765,7 @@ async function goTab(name) {
   }
   if (name === 'Today') {
     await loadGoogleHealthConnections(); // refresh Fitbit sync button
+    await loadActivitySectionForToday(); // cards, favourites, logged items
   }
   if (name === 'Medical') {
     await loadMedicalLogForDate();

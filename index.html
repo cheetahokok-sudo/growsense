@@ -262,32 +262,27 @@
 
       <!-- 2. Activity -->
       <div class="card" style="border-top: 3px solid var(--measured);">
-        <div class="card-header"><span class="card-title text-measured" data-i18n="today.activity.title">Activity & mechanical load</span></div>
+        <div class="card-header">
+          <span class="card-title text-measured" data-i18n="today.activity.title">Activity & mechanical load</span>
+          <button class="info-icon-btn" onclick="toggleInfo('activityNote')" aria-label="About activity scoring">i</button>
+        </div>
+        <div class="setup-note hidden" id="activityNote" style="padding:8px 16px; font-size:11px; border-bottom:0.5px solid var(--border);">
+          HIGH IMPACT activities (gymnastics, basketball, jumping, martial arts) are the strongest osteogenic stimulus — they directly load growth plates and trigger GH/IGF-1 release. Pre-puberty is the critical window. CARDIO (swimming, cycling) is excellent for heart health but has minimal bone growth benefit — combine with weight-bearing. Aim for 60 min HIGH IMPACT daily.
+        </div>
         <div class="card-body">
-          <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.activity.hanging" data-i18n="today.activity.hanging_label">Bar hanging</div><div class="form-lbl-sub" data-i18n="today.activity.hanging_sub">Spinal decompression · target 30s</div></div>
-            <div class="stepper">
-              <button class="step-btn" onclick="adj('hanging',-5)">−</button>
-              <div class="step-val" id="valHanging">15 sec</div>
-              <button class="step-btn" onclick="adj('hanging',5)">+</button>
-            </div>
-          </div>
-          <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.activity.jumps" data-i18n="today.activity.jumps_label">Box jumps</div><div class="form-lbl-sub" data-i18n="today.activity.jumps_sub">Mechanotransduction · target 40 reps</div></div>
-            <div class="stepper">
-              <button class="step-btn" onclick="adj('jumps',-5)">−</button>
-              <div class="step-val" id="valJumps">20 reps</div>
-              <button class="step-btn" onclick="adj('jumps',5)">+</button>
-            </div>
-          </div>
-          <div class="form-row" style="flex-direction:column; align-items:flex-start; gap:8px;">
-            <div class="form-lbl" data-i18n="today.activity.yoga" data-i18n="today.activity.yoga_label">Yoga / stretching</div>
-            <div class="seg" id="yogaSeg">
-              <button class="seg-btn active" onclick="setYoga(0,this)" data-i18n="common.none">None</button>
-              <button class="seg-btn" onclick="setYoga(10,this)" data-i18n="common.10_min">10 min</button>
-              <button class="seg-btn" onclick="setYoga(20,this)" data-i18n="common.20_min">20 min</button>
-              <button class="seg-btn" onclick="setYoga(30,this)" data-i18n="common.30_min">30 min</button>
-            </div>
+
+          <!-- Favourite activity cards grid (customisable — star in browser) -->
+          <div class="activity-card-grid" id="activityCardGrid"></div>
+
+          <!-- Browse / customise -->
+          <button class="btn-secondary" onclick="openActivityBrowserModal()" style="margin-top:6px; font-size:12px;">
+            + Browse activities / add custom
+          </button>
+
+          <!-- Logged today list — hidden until at least one item logged -->
+          <div id="activityLoggedSection" class="hidden">
+            <div class="form-lbl" style="margin-top:14px; margin-bottom:8px; font-size:12px; color:var(--text2);">Logged today</div>
+            <div id="activityLoggedList"></div>
           </div>
         </div>
       </div>
@@ -1181,6 +1176,84 @@
         style="color:var(--flag); font-size:12px; text-align:center; margin-top:4px;" data-i18n="measurement_edit.delete_btn">
         Delete this entry
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVITY LOG SHEET — slides up when an activity card is tapped -->
+<div class="modal-overlay hidden" id="activityLogModal" onclick="closeActivityLogModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="insight-sheet-hdr">
+      <span>Log activity</span>
+      <button class="modal-close-btn" onclick="document.getElementById('activityLogModal').classList.add('hidden')">✕</button>
+    </div>
+    <div style="padding:0 20px 36px;">
+      <!-- Activity identity -->
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+        <span id="actLogEmoji" style="font-size:32px; line-height:1;">🏀</span>
+        <div>
+          <div id="actLogName" style="font-size:16px; font-weight:700; color:var(--text); margin-bottom:4px;">Basketball</div>
+          <span id="actLogBadge" class="act-tier-badge act-tier-high">HIGH IMPACT</span>
+        </div>
+      </div>
+      <!-- Science note -->
+      <div id="actLogNote" class="setup-note" style="font-size:10.5px; margin-bottom:14px; display:none;"></div>
+      <!-- Duration presets -->
+      <div style="font-size:12px; font-weight:600; color:var(--text2); margin-bottom:8px;">Duration</div>
+      <div class="duration-grid" id="actLogDurationGrid"></div>
+      <!-- Custom -->
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+        <span style="font-size:12px; color:var(--text3);">Other:</span>
+        <input type="number" id="actLogCustomMin" class="num-input" placeholder="min" min="1" max="300"
+          style="width:80px;" oninput="selectCustomDuration(this.value)">
+        <span style="font-size:12px; color:var(--text3);">min</span>
+      </div>
+      <button class="btn-primary" id="actLogConfirmBtn" onclick="confirmLogActivity()">Log 30 min</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVITY BROWSER MODAL -->
+<div class="modal-overlay hidden" id="activityBrowserModal" onclick="closeActivityBrowserModal(event)">
+  <div class="modal-sheet" style="max-height:88vh; display:flex; flex-direction:column;">
+    <div class="modal-handle"></div>
+    <div class="insight-sheet-hdr" style="flex-shrink:0;">
+      <span>Activity library</span>
+      <button class="modal-close-btn" onclick="document.getElementById('activityBrowserModal').classList.add('hidden')">✕</button>
+    </div>
+    <div style="padding:0 16px 32px; overflow-y:auto; flex:1;">
+      <div class="setup-note" style="font-size:10.5px; margin-bottom:12px;">
+        ★ pins to Today grid. Tap <b>Log</b> to log now. <span style="color:var(--flag); font-weight:600;">HIGH IMPACT</span> = best growth plate stimulus. CARDIO = good for heart but minimal bone benefit — pair with weight-bearing.
+      </div>
+      <!-- Filter tabs -->
+      <div class="activity-browser-tabs">
+        <button class="activity-browser-tab active" onclick="setActivityBrowserFilter('all',this)">All</button>
+        <button class="activity-browser-tab" onclick="setActivityBrowserFilter('high_impact',this)">🔴 High Impact</button>
+        <button class="activity-browser-tab" onclick="setActivityBrowserFilter('weight_bearing',this)">🟡 Weight-bearing</button>
+        <button class="activity-browser-tab" onclick="setActivityBrowserFilter('cardio',this)">🔵 Cardio</button>
+        <button class="activity-browser-tab" onclick="setActivityBrowserFilter('flexibility',this)">⚪ Flexibility</button>
+        <button class="activity-browser-tab" onclick="setActivityBrowserFilter('custom',this)">My activities</button>
+      </div>
+      <!-- Grid -->
+      <div class="activity-browser-grid" id="activityBrowserGrid"></div>
+      <!-- Add custom -->
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border2);">
+        <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:8px;">Add custom activity</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <input type="text" id="customActName" class="text-input" placeholder="Activity name (e.g. Muay Thai)">
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="customActEmoji" class="num-input" placeholder="Emoji" style="width:72px; text-align:center; font-size:20px;">
+            <select id="customActTier" class="num-input" style="flex:1; padding-left:10px;">
+              <option value="high_impact">High Impact</option>
+              <option value="weight_bearing" selected>Weight-Bearing</option>
+              <option value="cardio">Cardio</option>
+              <option value="flexibility">Flexibility</option>
+            </select>
+          </div>
+          <button class="btn-secondary" onclick="saveCustomActivity()">Add activity</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
