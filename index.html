@@ -1074,16 +1074,28 @@
         <div id="tierStatusRow" style="background:var(--surface2); border-radius:12px; padding:12px 14px; margin-bottom:10px;"></div>
 
         <!-- Redeem activation code -->
-        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px;">
-          <div style="font-size:12px; font-weight:600; color:var(--text2); margin-bottom:8px;">Redeem activation code</div>
-          <div style="display:flex; gap:8px;">
-            <input type="text" id="redeemCodeInput" class="text-input" placeholder="GROW-XXXX-XXXX"
-              style="flex:1; text-transform:uppercase; letter-spacing:1px; font-family:monospace;"
-              aria-label="Activation code" maxlength="20"
-              oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')">
-            <button id="redeemCodeBtn" class="btn-secondary" onclick="redeemActivationCode()" style="white-space:nowrap;">Activate</button>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px;">
+          <!-- header -->
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:12px;">
+            <span style="font-size:16px; line-height:1;">🎟️</span>
+            <div style="font-size:13px; font-weight:600; color:var(--text);">Redeem activation code</div>
           </div>
-          <div class="setup-note" style="font-size:10.5px; margin-top:7px;">Got a code from a card or partner clinic? Enter it above. Codes are case-insensitive.</div>
+          <!-- full-width code input -->
+          <input type="text" id="redeemCodeInput" class="text-input"
+            placeholder="GROW-XXXX-XXXX"
+            aria-label="Activation code"
+            maxlength="20"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            style="width:100%; box-sizing:border-box; text-transform:uppercase; letter-spacing:3px; font-family:monospace; font-size:16px; font-weight:600; text-align:center; padding:12px 14px; margin-bottom:10px;"
+            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')">
+          <!-- full-width activate button -->
+          <button id="redeemCodeBtn" class="btn-primary" onclick="redeemActivationCode()"
+            style="width:100%; font-size:14px; padding:11px 0;">
+            Activate
+          </button>
+          <div class="setup-note" style="font-size:10.5px; margin-top:8px; text-align:center;">Got a code from a card or partner clinic? Enter it above. Codes are case-insensitive.</div>
         </div>
       </div>
 
