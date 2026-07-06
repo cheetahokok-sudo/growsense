@@ -43,25 +43,76 @@
   .logomark svg{width:19px;height:19px}
   .logo-txt{font-weight:700;font-size:19px;letter-spacing:-.01em}
   .logo-txt span{font-weight:400;opacity:.85}
-  .nav-links{display:flex;align-items:center;gap:26px}
-  .nav-links a{color:rgba(255,255,255,.82);font-size:14px;font-weight:500}
-  .nav-links a:hover{color:#fff}
-  .nav-login{color:#fff !important;font-weight:600 !important}
+  /* NAV */
+  nav{position:fixed;top:0;left:0;right:0;z-index:50;transition:background .3s,backdrop-filter .3s,border-color .3s;border-bottom:1px solid transparent}
+  nav.scrolled{background:rgba(11,32,25,.88);backdrop-filter:blur(16px) saturate(140%);border-bottom-color:rgba(255,255,255,.08)}
+  .navrow{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;max-width:1080px;margin:0 auto;gap:12px}
+  .logo{display:flex;align-items:center;gap:10px;color:#fff;flex-shrink:0}
+  .logomark{width:34px;height:34px;border-radius:9px;background:var(--green);display:flex;align-items:center;justify-content:center}
+  .logomark svg{width:19px;height:19px}
+  .logo-txt{font-weight:700;font-size:19px;letter-spacing:-.01em}
+  .logo-txt span{font-weight:400;opacity:.85}
 
-  /* language selector */
-  .langsel{display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px}
-  .langsel button{background:transparent;border:none;color:rgba(255,255,255,.66);font-size:12.5px;font-weight:600;padding:5px 9px;border-radius:999px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:4px;font-family:inherit}
-  .langsel button:hover{color:#fff}
-  .langsel button.on{background:#fff;color:var(--green-deep)}
-  .langsel .flag{font-size:13px}
-  @media(max-width:960px){.langsel button .lbl{display:none}.langsel button{padding:5px 6px}}
+  /* desktop right cluster */
+  .nav-right{display:flex;align-items:center;gap:16px}
+  .nav-login{color:#fff;font-weight:600;font-size:14px;white-space:nowrap;flex-shrink:0}
+  .nav-login:hover{opacity:.8}
+
+  /* globe language selector — desktop dropdown */
+  .globewrap{position:relative}
+  .globebtn{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:8px 14px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;white-space:nowrap}
+  .globebtn:hover{background:rgba(255,255,255,.16)}
+  .globebtn svg{opacity:.8;flex-shrink:0}
+  .globebtn .chevron{transition:transform .2s}
+  .globewrap.open .chevron{transform:rotate(180deg)}
+  .langdrop{position:absolute;top:calc(100% + 10px);right:0;background:#0f2e22;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:6px;min-width:210px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .18s,transform .18s,visibility .18s;z-index:100;box-shadow:0 20px 44px rgba(0,0,0,.4)}
+  .globewrap.open .langdrop{opacity:1;visibility:visible;transform:none}
+  .langdrop button{display:flex;align-items:center;justify-content:space-between;width:100%;background:transparent;border:none;color:rgba(255,255,255,.78);font-size:14px;font-weight:500;padding:11px 14px;border-radius:10px;cursor:pointer;font-family:inherit;text-align:left;transition:.12s}
+  .langdrop button:hover{background:rgba(255,255,255,.08);color:#fff}
+  .langdrop button.on{background:rgba(95,214,163,.14);color:#9fe3c2}
+  .langdrop button .lnative{font-size:13px;opacity:.65}
+  .langdrop .divider{height:1px;background:rgba(255,255,255,.08);margin:4px 6px}
+
+  /* hamburger — mobile only */
+  .hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:40px;height:40px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;cursor:pointer;padding:0 10px}
+  .hamburger span{display:block;height:1.5px;background:#fff;border-radius:2px;transition:.25s}
+  .hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+  .hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+  .hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+
+  /* mobile overlay */
+  .mob-overlay{position:fixed;inset:0;z-index:49;background:rgba(6,20,14,.0);pointer-events:none;transition:background .3s}
+  .mob-overlay.open{background:rgba(6,20,14,.7);pointer-events:all}
+  .mob-drawer{position:fixed;top:0;right:0;bottom:0;width:min(320px,88vw);background:var(--green-deep);z-index:60;transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:8px}
+  .mob-drawer.open{transform:none}
+  .mob-close{align-self:flex-end;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+  .mob-login{display:block;width:100%;padding:16px;border-radius:14px;background:#fff;color:var(--green-deep);font-weight:700;font-size:16px;text-align:center;margin-bottom:4px}
+  .mob-login:hover{opacity:.9}
+  .mob-section{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);padding:16px 4px 8px}
+  .mob-lang{display:flex;align-items:center;justify-content:space-between;width:100%;background:transparent;border:none;padding:13px 10px;border-radius:12px;cursor:pointer;font-family:inherit;text-align:left;transition:.12s}
+  .mob-lang:hover{background:rgba(255,255,255,.07)}
+  .mob-lang.on{background:rgba(95,214,163,.12)}
+  .mob-lang .mname{font-size:15px;font-weight:500;color:#fff}
+  .mob-lang .mnat{font-size:13px;color:rgba(255,255,255,.55)}
+  .mob-lang .tick{color:#9fe3c2;font-size:16px;opacity:0}
+  .mob-lang.on .tick{opacity:1}
+
+  @media(max-width:860px){
+    .nav-right{display:none}
+    .hamburger{display:flex}
+  }
+  @media(min-width:861px){
+    .mob-overlay,.mob-drawer{display:none!important}
+  }
 
   /* RTL */
   html[dir="rtl"] body{direction:rtl}
   html[dir="rtl"] .hero-h1,html[dir="rtl"] .hero-sub,html[dir="rtl"] .sec-head,html[dir="rtl"] .fr-copy,html[dir="rtl"] .flip-card{text-align:right}
   html[dir="rtl"] .fr-points li,html[dir="rtl"] .plan-list li,html[dir="rtl"] .flip-list li{flex-direction:row-reverse}
   html[dir="rtl"] .forecast-card{right:auto;left:6%}
-  html[dir="rtl"] .hero-cta .btn-outline::after{content:"←"}
+  html[dir="rtl"] .langdrop{right:auto;left:0}
+  html[dir="rtl"] .mob-drawer{right:auto;left:0;transform:translateX(-100%)}
+  html[dir="rtl"] .mob-drawer.open{transform:none}
 
   /* HERO */
   .hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;
@@ -255,16 +306,37 @@
 <!-- NAV -->
 <nav>
   <div class="navrow">
-    <div class="logo">
+    <a href="/" class="logo">
       <div class="logomark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg></div>
       <div class="logo-txt">Grow<span>Sense</span></div>
-    </div>
-    <div class="nav-links">
-      <div class="langsel" id="langsel"></div>
+    </a>
+    <!-- desktop right -->
+    <div class="nav-right">
+      <div class="globewrap" id="globewrap">
+        <button class="globebtn" id="globebtn" aria-label="Select language" aria-expanded="false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+          <span id="globelbl">EN</span>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="langdrop" id="langdrop" role="listbox"></div>
+      </div>
       <a href="app.html" class="nav-login" id="navLogin" data-i18n="nav.login">Log in</a>
     </div>
+    <!-- mobile hamburger -->
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
+
+<!-- mobile overlay + drawer -->
+<div class="mob-overlay" id="mobOverlay"></div>
+<div class="mob-drawer" id="mobDrawer" aria-hidden="true">
+  <button class="mob-close" id="mobClose" aria-label="Close menu">✕</button>
+  <a href="app.html" class="mob-login" id="mobLogin" data-i18n="nav.login">Log in</a>
+  <div class="mob-section">Language</div>
+  <div id="mobLangList"></div>
+</div>
 
 <!-- HERO -->
 <header class="hero">
@@ -729,150 +801,215 @@
 
 <script src="supabase-client.js"></script>
 <script>
-  // ── Languages ────────────────────────────────────────────────
+  // ── Language data — no flags, native names ───────────────────
   const LANGS = [
-    { code:'en', flag:'🇬🇧', lbl:'EN' },
-    { code:'th', flag:'🇹🇭', lbl:'TH' },
-    { code:'zh', flag:'🇨🇳', lbl:'ZH' },
-    { code:'ko', flag:'🇰🇷', lbl:'KO' },
-    { code:'vi', flag:'🇻🇳', lbl:'VI' },
-    { code:'ar', flag:'🇦🇪', lbl:'AR' },
+    { code:'en', label:'English',    native:'English'       },
+    { code:'th', label:'Thai',       native:'ภาษาไทย'       },
+    { code:'zh', label:'Chinese',    native:'中文'           },
+    { code:'ko', label:'Korean',     native:'한국어'         },
+    { code:'vi', label:'Vietnamese', native:'Tiếng Việt'    },
+    { code:'ar', label:'Arabic',     native:'العربية'       },
   ];
-  // Landing-page copy only. Uses the SAME localStorage key as the app
-  // (growsense_language) so the choice carries into app.html.
+  const SHORT = { en:'EN', th:'TH', zh:'ZH', ko:'KO', vi:'VI', ar:'AR' };
+
   const I18N = {
-    en:{ 'nav.login':'Log in','nav.continue':'Continue to Home →',
+    en:{ 'nav.login':'Log in','nav.continue':'Continue →',
       'hero.badge':'Pediatric growth intelligence for parents',
       'hero.title':'Know if your child is <em>growing to their potential.</em>',
       'hero.sub':"GrowSense turns height, sleep, nutrition, and clinical labs into one clear answer — and a research-backed projection of your child's adult height. Not another tracker. A growth companion.",
       'hero.cta_login':'Log in to your account','hero.cta_continue':'Continue to your home →',
       'hero.cta_explore':'Explore GrowSense →','hero.fine':'Free to start · No wearable required · 6 languages' },
-    th:{ 'nav.login':'เข้าสู่ระบบ','nav.continue':'ไปที่หน้าหลัก →',
+    th:{ 'nav.login':'เข้าสู่ระบบ','nav.continue':'เข้าสู่ระบบ →',
       'hero.badge':'ระบบวิเคราะห์การเจริญเติบโตของเด็ก สำหรับผู้ปกครอง',
       'hero.title':'รู้ว่าลูกของคุณ<em>กำลังเติบโตเต็มศักยภาพหรือไม่</em>',
-      'hero.sub':'GrowSense เปลี่ยนข้อมูลส่วนสูง การนอน โภชนาการ และผลแล็บ ให้เป็นคำตอบที่ชัดเจน พร้อมคาดการณ์ส่วนสูงเมื่อโตเต็มวัยจากงานวิจัย ไม่ใช่แค่แอปบันทึก แต่คือเพื่อนคู่คิดเรื่องการเติบโต',
+      'hero.sub':'GrowSense เปลี่ยนข้อมูลส่วนสูง การนอน โภชนาการ และผลแล็บ ให้เป็นคำตอบที่ชัดเจน พร้อมคาดการณ์ส่วนสูงเมื่อโตเต็มวัยจากงานวิจัย',
       'hero.cta_login':'เข้าสู่ระบบ','hero.cta_continue':'ไปที่หน้าหลักของคุณ →',
       'hero.cta_explore':'สำรวจ GrowSense →','hero.fine':'เริ่มฟรี · ไม่ต้องใช้อุปกรณ์สวมใส่ · 6 ภาษา' },
     zh:{ 'nav.login':'登录','nav.continue':'进入主页 →',
       'hero.badge':'为父母打造的儿童成长智能平台',
       'hero.title':'了解您的孩子<em>是否在充分发育成长。</em>',
-      'hero.sub':'GrowSense 将身高、睡眠、营养和临床化验整合成一个清晰的答案，并基于研究预测孩子的成年身高。不只是记录工具，而是成长伙伴。',
+      'hero.sub':'GrowSense 将身高、睡眠、营养和临床化验整合成一个清晰的答案，并基于研究预测孩子的成年身高。',
       'hero.cta_login':'登录您的账户','hero.cta_continue':'进入您的主页 →',
       'hero.cta_explore':'探索 GrowSense →','hero.fine':'免费开始 · 无需穿戴设备 · 6 种语言' },
-    ko:{ 'nav.login':'로그인','nav.continue':'홈으로 이동 →',
+    ko:{ 'nav.login':'로그인','nav.continue':'홈으로 →',
       'hero.badge':'부모를 위한 소아 성장 인텔리전스',
       'hero.title':'우리 아이가 <em>잠재력만큼 자라고 있는지</em> 확인하세요.',
-      'hero.sub':'GrowSense는 키, 수면, 영양, 임상 검사 결과를 하나의 명확한 답으로 바꾸고, 연구 기반으로 성인 키를 예측합니다. 단순 기록 앱이 아닌 성장 동반자입니다.',
+      'hero.sub':'GrowSense는 키, 수면, 영양, 임상 검사 결과를 하나의 명확한 답으로 바꾸고, 연구 기반으로 성인 키를 예측합니다.',
       'hero.cta_login':'계정에 로그인','hero.cta_continue':'홈으로 계속 →',
       'hero.cta_explore':'GrowSense 살펴보기 →','hero.fine':'무료 시작 · 웨어러블 불필요 · 6개 언어' },
-    vi:{ 'nav.login':'Đăng nhập','nav.continue':'Đến Trang chủ →',
+    vi:{ 'nav.login':'Đăng nhập','nav.continue':'Trang chủ →',
       'hero.badge':'Trí tuệ tăng trưởng nhi khoa cho cha mẹ',
       'hero.title':'Biết con bạn có đang <em>phát triển đúng tiềm năng hay không.</em>',
-      'hero.sub':'GrowSense biến chiều cao, giấc ngủ, dinh dưỡng và xét nghiệm lâm sàng thành một câu trả lời rõ ràng — cùng dự đoán chiều cao khi trưởng thành dựa trên nghiên cứu. Không chỉ là ứng dụng ghi chép, mà là người bạn đồng hành tăng trưởng.',
+      'hero.sub':'GrowSense biến chiều cao, giấc ngủ, dinh dưỡng và xét nghiệm lâm sàng thành một câu trả lời rõ ràng.',
       'hero.cta_login':'Đăng nhập tài khoản','hero.cta_continue':'Tiếp tục đến trang chủ →',
-      'hero.cta_explore':'Khám phá GrowSense →','hero.fine':'Miễn phí bắt đầu · Không cần thiết bị đeo · 6 ngôn ngữ' },
-    ar:{ 'nav.login':'تسجيل الدخول','nav.continue':'المتابعة إلى الرئيسية →',
+      'hero.cta_explore':'Khám phá GrowSense →','hero.fine':'Miễn phí · Không cần thiết bị đeo · 6 ngôn ngữ' },
+    ar:{ 'nav.login':'تسجيل الدخول','nav.continue':'الرئيسية →',
       'hero.badge':'منصة ذكاء نمو الأطفال لأولياء الأمور',
       'hero.title':'اعرف ما إذا كان طفلك <em>ينمو ليبلغ كامل إمكاناته.</em>',
-      'hero.sub':'يحوّل GrowSense بيانات الطول والنوم والتغذية والفحوصات المخبرية إلى إجابة واحدة واضحة — مع توقّع للطول عند البلوغ مبني على أبحاث علمية. ليس مجرد تطبيق تسجيل، بل رفيق نمو.',
+      'hero.sub':'يحوّل GrowSense بيانات الطول والنوم والتغذية والفحوصات المخبرية إلى إجابة واحدة واضحة.',
       'hero.cta_login':'تسجيل الدخول إلى حسابك','hero.cta_continue':'المتابعة إلى صفحتك الرئيسية →',
       'hero.cta_explore':'استكشف GrowSense →','hero.fine':'ابدأ مجانًا · لا حاجة لجهاز · 6 لغات' },
   };
 
   let curLang = 'en';
+  let hasSession = false;
+
+  // ── Build desktop dropdown ──────────────────────────────────
+  const globewrap = document.getElementById('globewrap');
+  const globebtn  = document.getElementById('globebtn');
+  const globelbl  = document.getElementById('globelbl');
+  const langdrop  = document.getElementById('langdrop');
+
+  LANGS.forEach((l,i) => {
+    if(i===3){ const d=document.createElement('div');d.className='divider';langdrop.appendChild(d); } // visual grouping after 3
+    const b = document.createElement('button');
+    b.dataset.code = l.code;
+    b.setAttribute('role','option');
+    b.innerHTML = `<span>${l.native}</span><span class="lnative">${l.label}</span>`;
+    b.onclick = () => { applyLang(l.code); closeGlobe(); };
+    langdrop.appendChild(b);
+  });
+
+  function openGlobe(){ globewrap.classList.add('open'); globebtn.setAttribute('aria-expanded','true'); }
+  function closeGlobe(){ globewrap.classList.remove('open'); globebtn.setAttribute('aria-expanded','false'); }
+  globebtn.addEventListener('click', e => { e.stopPropagation(); globewrap.classList.contains('open') ? closeGlobe() : openGlobe(); });
+  document.addEventListener('click', e => { if(!globewrap.contains(e.target)) closeGlobe(); });
+  document.addEventListener('keydown', e => { if(e.key==='Escape') closeGlobe(); });
+
+  // ── Build mobile drawer lang list ───────────────────────────
+  const mobLangList = document.getElementById('mobLangList');
+  LANGS.forEach(l => {
+    const b = document.createElement('button');
+    b.dataset.code = l.code;
+    b.className = 'mob-lang';
+    b.innerHTML = `<div><div class="mname">${l.native}</div><div class="mnat">${l.label}</div></div><span class="tick">✓</span>`;
+    b.onclick = () => { applyLang(l.code); closeMob(); };
+    mobLangList.appendChild(b);
+  });
+
+  // ── Hamburger / mobile drawer ────────────────────────────────
+  const hamburger  = document.getElementById('hamburger');
+  const mobOverlay = document.getElementById('mobOverlay');
+  const mobDrawer  = document.getElementById('mobDrawer');
+
+  function openMob(){
+    hamburger.classList.add('open');
+    mobOverlay.classList.add('open');
+    mobDrawer.classList.add('open');
+    mobDrawer.removeAttribute('aria-hidden');
+    document.body.style.overflow='hidden';
+  }
+  function closeMob(){
+    hamburger.classList.remove('open');
+    mobOverlay.classList.remove('open');
+    mobDrawer.classList.remove('open');
+    mobDrawer.setAttribute('aria-hidden','true');
+    document.body.style.overflow='';
+  }
+  hamburger.addEventListener('click', () => mobDrawer.classList.contains('open') ? closeMob() : openMob());
+  document.getElementById('mobClose').addEventListener('click', closeMob);
+  mobOverlay.addEventListener('click', closeMob);
+  document.addEventListener('keydown', e => { if(e.key==='Escape') closeMob(); });
+
+  // ── Apply language ───────────────────────────────────────────
   function applyLang(code){
     curLang = code;
     const dict = I18N[code] || I18N.en;
-    document.querySelectorAll('[data-i18n]').forEach(el=>{
+
+    // translate data-i18n elements
+    document.querySelectorAll('[data-i18n]').forEach(el => {
       const k = el.getAttribute('data-i18n');
       if(dict[k]) el.innerHTML = dict[k];
     });
+
+    // direction + lang attribute
     document.documentElement.lang = code;
-    document.documentElement.dir = (code === 'ar') ? 'rtl' : 'ltr';
-    document.querySelectorAll('#langsel button').forEach(b=>b.classList.toggle('on', b.dataset.code===code));
+    document.documentElement.dir = (code==='ar') ? 'rtl' : 'ltr';
+
+    // globe button label
+    globelbl.textContent = SHORT[code] || code.toUpperCase();
+
+    // dropdown active state
+    langdrop.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.code===code));
+
+    // mobile list active state
+    mobLangList.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.code===code));
+
     try{ localStorage.setItem('growsense_language', code); }catch(e){}
     refreshCtas();
   }
-  // build selector
-  const ls = document.getElementById('langsel');
-  LANGS.forEach(l=>{
-    const b=document.createElement('button');
-    b.dataset.code=l.code;
-    b.innerHTML=`<span class="flag">${l.flag}</span><span class="lbl">${l.lbl}</span>`;
-    b.onclick=()=>applyLang(l.code);
-    ls.appendChild(b);
-  });
-  // restore saved language (shared with the app)
-  let saved='en';
-  try{ saved = localStorage.getItem('growsense_language') || 'en'; }catch(e){}
-  if(!I18N[saved]) saved='en';
 
-  // ── Session-aware CTAs ───────────────────────────────────────
-  // Same origin as app.html → same Supabase session. If this browser
-  // already logged in, greet the returning parent and route them
-  // straight to Home instead of the login screen.
-  let hasSession = false;
+  // ── Session-aware CTAs ────────────────────────────────────────
   function refreshCtas(){
     const dict = I18N[curLang] || I18N.en;
-    const hero = document.getElementById('heroPrimary');
-    const nav  = document.getElementById('navLogin');
-    if(hasSession){
-      if(hero){ hero.innerHTML = dict['hero.cta_continue']; }
-      if(nav){ nav.textContent = dict['nav.continue']; }
-    }else{
-      if(hero){ hero.innerHTML = dict['hero.cta_login']; }
-      if(nav){ nav.textContent = dict['nav.login']; }
-    }
+    const heroPrimary = document.getElementById('heroPrimary');
+    const navLogin    = document.getElementById('navLogin');
+    const mobLogin    = document.getElementById('mobLogin');
+    const key = hasSession ? 'hero.cta_continue' : 'hero.cta_login';
+    const navKey = hasSession ? 'nav.continue' : 'nav.login';
+    if(heroPrimary) heroPrimary.innerHTML = dict[key];
+    if(navLogin)  navLogin.textContent  = dict[navKey];
+    if(mobLogin)  mobLogin.textContent  = dict[navKey];
   }
 
-  applyLang(saved); // paint language first
+  // restore saved language (shared key with app.html)
+  let saved = 'en';
+  try{ saved = localStorage.getItem('growsense_language') || 'en'; }catch(e){}
+  if(!I18N[saved]) saved = 'en';
+  applyLang(saved);
 
-  (async ()=>{
+  // check Supabase session (same origin → shared storage)
+  (async () => {
     try{
-      const sb = (typeof createGrowSenseClient==='function')
-        ? createGrowSenseClient()
-        : (window.supabase ? null : null);
+      const sb = (typeof createGrowSenseClient==='function') ? createGrowSenseClient() : null;
       if(sb){
         const { data } = await sb.auth.getSession();
         hasSession = !!(data && data.session);
         refreshCtas();
       }
-    }catch(e){ /* not logged in or client unavailable → default CTAs */ }
+    }catch(e){}
   })();
 
-  // nav background on scroll (WHOOP-style)
-  const navEl=document.querySelector('nav');
-  const onScroll=()=>{ navEl.classList.toggle('scrolled', window.scrollY>60); };
-  onScroll(); window.addEventListener('scroll',onScroll,{passive:true});
+  // ── Nav scroll background ────────────────────────────────────
+  const navEl = document.querySelector('nav');
+  const onScroll = () => navEl.classList.toggle('scrolled', window.scrollY > 60);
+  onScroll(); window.addEventListener('scroll', onScroll, { passive:true });
 
-  // ambient hero orbs ────────────────────────────────────────
+  // ── Hero orbs ────────────────────────────────────────────────
   const orbit = document.getElementById('orbit');
-  const colors = ['rgba(95,214,163,.30)','rgba(42,92,138,.28)','rgba(159,227,194,.22)'];
+  const oc = ['rgba(95,214,163,.30)','rgba(42,92,138,.28)','rgba(159,227,194,.22)'];
   for(let i=0;i<14;i++){
-    const o=document.createElement('div');o.className='orb';
+    const o=document.createElement('div'); o.className='orb';
     const s=6+Math.random()*22;
-    o.style.width=s+'px';o.style.height=s+'px';
-    o.style.left=(Math.random()*100)+'%';
-    o.style.top=(30+Math.random()*68)+'%';
-    o.style.background=colors[i%3];
-    o.style.opacity=(.2+Math.random()*.4).toFixed(2);
+    o.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${30+Math.random()*68}%;background:${oc[i%3]};opacity:${(.2+Math.random()*.4).toFixed(2)}`;
     orbit.appendChild(o);
   }
-  // reveal on scroll
-  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
-  document.querySelectorAll('.reveal').forEach((el,i)=>{el.style.transitionDelay=(Math.min(i,6)*40)+'ms';io.observe(el)});
 
-  // carousel dots
-  const car=document.getElementById('carousel');
-  const cards=car.querySelectorAll('.bcard');
-  const dotWrap=document.getElementById('cdots');
-  cards.forEach((_,i)=>{const d=document.createElement('div');d.className='cdot'+(i===0?' on':'');dotWrap.appendChild(d)});
-  const dots=dotWrap.querySelectorAll('.cdot');
-  car.addEventListener('scroll',()=>{
-    const i=Math.round(car.scrollLeft/(cards[0].offsetWidth+18));
-    dots.forEach((d,j)=>d.classList.toggle('on',j===Math.min(i,dots.length-1)));
-  },{passive:true});
-  dots.forEach((d,i)=>d.addEventListener('click',()=>car.scrollTo({left:i*(cards[0].offsetWidth+18),behavior:'smooth'})));
+  // ── Scroll reveal ────────────────────────────────────────────
+  const io = new IntersectionObserver((es) => {
+    es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold:.12 });
+  document.querySelectorAll('.reveal').forEach((el,i) => {
+    el.style.transitionDelay = (Math.min(i,6)*40)+'ms';
+    io.observe(el);
+  });
+
+  // ── Carousel dots ────────────────────────────────────────────
+  const car   = document.getElementById('carousel');
+  const cards = car.querySelectorAll('.bcard');
+  const dotWrap = document.getElementById('cdots');
+  cards.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.className = 'cdot' + (i===0 ? ' on' : '');
+    dotWrap.appendChild(d);
+  });
+  const dots = dotWrap.querySelectorAll('.cdot');
+  car.addEventListener('scroll', () => {
+    const idx = Math.round(car.scrollLeft / (cards[0].offsetWidth + 18));
+    dots.forEach((d,j) => d.classList.toggle('on', j === Math.min(idx, dots.length-1)));
+  }, { passive:true });
+  dots.forEach((d,i) => d.addEventListener('click', () =>
+    car.scrollTo({ left: i*(cards[0].offsetWidth+18), behavior:'smooth' })));
 </script>
 </body>
 </html>
