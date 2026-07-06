@@ -20,7 +20,8 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);-webkit-font-smoothing:antialiased;line-height:1.5}
+  html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+  body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--cream);-webkit-font-smoothing:antialiased;line-height:1.5;position:relative}
   .serif{font-family:'Fraunces',serif}
   a{text-decoration:none;color:inherit}
   .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
@@ -34,7 +35,8 @@
   .eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 
   /* NAV */
-  nav{position:absolute;top:0;left:0;right:0;z-index:20}
+  nav{position:fixed;top:0;left:0;right:0;z-index:50;transition:background .3s ease,backdrop-filter .3s ease,border-color .3s ease;border-bottom:1px solid transparent}
+  nav.scrolled{background:rgba(11,32,25,.82);backdrop-filter:blur(14px) saturate(140%);border-bottom-color:rgba(255,255,255,.08)}
   .navrow{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;max-width:1080px;margin:0 auto}
   .logo{display:flex;align-items:center;gap:10px;color:#fff}
   .logomark{width:34px;height:34px;border-radius:9px;background:var(--green);display:flex;align-items:center;justify-content:center}
@@ -63,7 +65,7 @@
 
   /* HERO */
   .hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;
-    background:linear-gradient(180deg,#153a2c 0%,#0E2A20 62%,#0b2019 100%);overflow:hidden}
+    background:linear-gradient(180deg,#153a2c 0%,#0E2A20 62%,#0b2019 100%);overflow:hidden;max-width:100%;contain:layout paint}
   .hero-orbit{position:absolute;inset:0;overflow:hidden;pointer-events:none}
   .orb{position:absolute;border-radius:50%;filter:blur(2px);opacity:.5}
   .hero-content{position:relative;z-index:5;padding:0 24px 46px;max-width:1080px;margin:0 auto;width:100%}
@@ -177,14 +179,30 @@
   .final-badges{margin-top:40px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,.6)}
   .final-badges span{display:inline-flex;align-items:center;gap:7px}
 
+  /* TESTIMONIALS */
+  .voices{background:var(--cream)}
+  .voice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:8px}
+  .voice{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:28px;display:flex;flex-direction:column}
+  .voice .stars{display:flex;gap:2px;margin-bottom:14px}
+  .voice .stars svg{width:15px;height:15px}
+  .voice .q{font-family:'Fraunces',serif;font-size:18px;line-height:1.4;color:var(--ink);font-weight:500;flex:1}
+  .voice .who{display:flex;align-items:center;gap:11px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+  .voice .av{width:38px;height:38px;border-radius:50%;background:var(--okbg);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px}
+  .voice .nm{font-size:13.5px;font-weight:600;color:var(--ink)}
+  .voice .rl{font-size:12px;color:var(--ink3)}
+  @media(max-width:760px){.voice-grid{grid-template-columns:1fr}}
+
   /* footer */
   footer{background:#0b2019;color:rgba(255,255,255,.5);padding:40px 24px;text-align:center;font-size:13px}
   .foot-disc{max-width:640px;margin:16px auto 0;font-size:12px;color:rgba(255,255,255,.38);line-height:1.6}
+  .foot-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
+  .foot-links a{color:rgba(255,255,255,.62);font-size:13px;transition:.15s}
+  .foot-links a:hover{color:#fff}
 
   /* BENEFIT CAROUSEL */
-  .carousel-sec{background:var(--cream);overflow:hidden}
+  .carousel-sec{background:var(--cream);overflow:hidden;max-width:100%}
   .carousel{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
-    padding:8px 24px 20px;margin:0 -24px;scrollbar-width:none}
+    padding:8px 24px 20px;scrollbar-width:none;scroll-padding-left:24px}
   .carousel::-webkit-scrollbar{display:none}
   .bcard{scroll-snap-align:center;flex:0 0 300px;border-radius:24px;overflow:hidden;position:relative;
     min-height:400px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;
@@ -472,6 +490,52 @@
   </div>
 </section>
 
+<!-- TESTIMONIALS -->
+<section class="voices">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <div class="eyebrow">Trusted by parents</div>
+      <h2>Peace of mind, one measurement at a time.</h2>
+    </div>
+    <div class="voice-grid">
+      <div class="voice reveal">
+        <div class="stars">
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        </div>
+        <div class="q">"For the first time I actually understand my son's growth chart. The predicted height gave me real reassurance before our check-up."</div>
+        <div class="who"><div class="av">N</div><div><div class="nm">Nut</div><div class="rl">Parent · Bangkok</div></div></div>
+      </div>
+      <div class="voice reveal">
+        <div class="stars">
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        </div>
+        <div class="q">"The sleep insight was eye-opening — I never connected bedtime with growth. We shifted it earlier and her readiness went up."</div>
+        <div class="who"><div class="av">M</div><div><div class="nm">Minh</div><div class="rl">Parent · Hanoi</div></div></div>
+      </div>
+      <div class="voice reveal">
+        <div class="stars">
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+        </div>
+        <div class="q">"Being able to hand my pediatrician a clean PDF of everything — labs, height, bone age — made our visit so much more useful."</div>
+        <div class="who"><div class="av">S</div><div><div class="nm">Somchai</div><div class="rl">Parent · Chiang Mai</div></div></div>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--ink3);margin-top:24px" class="reveal">Illustrative examples. We'll feature real member stories as our community grows.</p>
+  </div>
+</section>
+
 <!-- TRUST -->
 <section class="trust" id="trust">
   <div class="wrap">
@@ -654,6 +718,12 @@
     <span style="font-weight:700;font-size:16px">GrowSense</span>
   </div>
   © 2026 GrowSense · Pediatric growth intelligence
+  <div class="foot-links">
+    <a href="#how">How it works</a>
+    <a href="#science">The science</a>
+    <a href="#trust">Privacy</a>
+    <a href="mailto:contact@growsense.life">contact@growsense.life</a>
+  </div>
   <p class="foot-disc">GrowSense is an educational tool for parents and does not provide medical diagnosis or treatment. Growth projections, bone-age estimates, and readiness scores are informational and should be discussed with a qualified pediatrician or endocrinologist. Percentile bands are illustrative population references, not a substitute for your clinic's official growth chart.</p>
 </footer>
 
@@ -770,7 +840,12 @@
     }catch(e){ /* not logged in or client unavailable → default CTAs */ }
   })();
 
-  // ── ambient hero orbs ────────────────────────────────────────
+  // nav background on scroll (WHOOP-style)
+  const navEl=document.querySelector('nav');
+  const onScroll=()=>{ navEl.classList.toggle('scrolled', window.scrollY>60); };
+  onScroll(); window.addEventListener('scroll',onScroll,{passive:true});
+
+  // ambient hero orbs ────────────────────────────────────────
   const orbit = document.getElementById('orbit');
   const colors = ['rgba(95,214,163,.30)','rgba(42,92,138,.28)','rgba(159,227,194,.22)'];
   for(let i=0;i<14;i++){
