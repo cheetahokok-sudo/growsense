@@ -326,5 +326,11 @@
  "flutter.coach.calcium_gap": "Canxi đạt {n}% mục tiêu 1300 mg — sữa, phô mai hoặc đậu phụ bù nhanh.",
  "flutter.coach.all_good": "Ngày tuyệt vời — cả ba hệ thống đều đúng hướng. Duy trì chuỗi nhé.",
  "flutter.coach.beta": "Thông tin dựa trên quy tắc tính từ dữ liệu đã ghi của trẻ. Huấn luyện viên trò chuyện sắp ra mắt. Không phải lời khuyên y khoa.",
- "flutter.account.version": "Phiên bản ứng dụng"
+ "flutter.account.version": "Phiên bản ứng dụng",
+ "flutter.ongoing": "đang diễn ra",
+ "flutter.observed": "đã quan sát",
+ "flutter.chronological_age": "Tuổi thực",
+ "flutter.growth_measurements": "Số đo tăng trưởng",
+ "flutter.last_record": "gần nhất",
+ "flutter.history": "Lịch sử"
 }

@@ -199,49 +199,62 @@ class _HomeShellState extends State<HomeShell> {
         ],
       ),
       body: IndexedStack(index: _tab, children: screens),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openQuickLogSheet,
-        backgroundColor: GsColors.accent,
-        foregroundColor: Colors.white,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, size: 26),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        color: GsColors.surface,
-        elevation: 8,
-        padding: EdgeInsets.zero,
+      bottomNavigationBar: Container(
         height: 62,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 6,
-        child: Row(
-          children: [
-            _NavItem(
-              icon: Icons.today_outlined,
-              label: t('nav.today', 'Today'),
-              selected: _tab == 0,
-              onTap: () => setState(() => _tab = 0),
-            ),
-            _NavItem(
-              icon: Icons.insights_outlined,
-              label: t('nav.analytics', 'Analytics'),
-              selected: _tab == 1,
-              onTap: () => setState(() => _tab = 1),
-            ),
-            const SizedBox(width: 72), // FAB notch gap
-            _NavItem(
-              icon: Icons.auto_awesome_outlined,
-              label: t('nav.ai_coach', 'AI coach'),
-              selected: _tab == 2,
-              onTap: () => setState(() => _tab = 2),
-            ),
-            _NavItem(
-              icon: Icons.medical_information_outlined,
-              label: t('nav.medical', 'Medical'),
-              selected: _tab == 3,
-              onTap: () => setState(() => _tab = 3),
-            ),
-          ],
+        decoration: const BoxDecoration(
+          color: GsColors.surface,
+          border: Border(top: BorderSide(color: GsColors.border)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              _NavItem(
+                icon: Icons.today_outlined,
+                label: t('nav.today', 'Today'),
+                selected: _tab == 0,
+                onTap: () => setState(() => _tab = 0),
+              ),
+              _NavItem(
+                icon: Icons.insights_outlined,
+                label: t('nav.analytics', 'Analytics'),
+                selected: _tab == 1,
+                onTap: () => setState(() => _tab = 1),
+              ),
+              // Quick log lives at the same level as the tabs — a plain
+              // item, just marked with a small filled accent circle.
+              Expanded(
+                child: InkWell(
+                  onTap: _openQuickLogSheet,
+                  child: Center(
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        color: GsColors.accent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.add,
+                          size: 20, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+              _NavItem(
+                icon: Icons.auto_awesome_outlined,
+                label: t('nav.ai_coach', 'AI coach'),
+                selected: _tab == 2,
+                onTap: () => setState(() => _tab = 2),
+              ),
+              _NavItem(
+                icon: Icons.medical_information_outlined,
+                label: t('nav.medical', 'Medical'),
+                selected: _tab == 3,
+                onTap: () => setState(() => _tab = 3),
+              ),
+            ],
+          ),
         ),
       ),
     );

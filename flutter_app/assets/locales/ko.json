@@ -326,5 +326,11 @@
  "flutter.coach.calcium_gap": "칼슘이 1300 mg 목표의 {n}%입니다 — 우유, 치즈, 두부로 빠르게 채우세요.",
  "flutter.coach.all_good": "훌륭한 하루입니다 — 세 가지 모두 순조롭습니다. 연속 기록을 이어가세요.",
  "flutter.coach.beta": "이 아이의 기록 데이터로 계산한 규칙 기반 인사이트입니다. 대화형 코치가 곧 제공됩니다. 의학적 조언이 아닙니다.",
- "flutter.account.version": "앱 버전"
+ "flutter.account.version": "앱 버전",
+ "flutter.ongoing": "진행 중",
+ "flutter.observed": "관찰됨",
+ "flutter.chronological_age": "역연령",
+ "flutter.growth_measurements": "성장 측정",
+ "flutter.last_record": "최근",
+ "flutter.history": "기록"
 }

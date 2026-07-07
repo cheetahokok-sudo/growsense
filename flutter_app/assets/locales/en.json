@@ -326,5 +326,11 @@
  "flutter.coach.calcium_gap": "Calcium is at {n}% of the 1300 mg target — milk, cheese or tofu close the gap fast.",
  "flutter.coach.all_good": "Great day — all three systems are on track. Keep the streak going.",
  "flutter.coach.beta": "Rule-based insights computed from this child's logged data. A conversational coach is coming. Not medical advice.",
- "flutter.account.version": "App version"
+ "flutter.account.version": "App version",
+ "flutter.ongoing": "ongoing",
+ "flutter.observed": "observed",
+ "flutter.chronological_age": "Chronological age",
+ "flutter.growth_measurements": "Growth measurements",
+ "flutter.last_record": "last",
+ "flutter.history": "History"
 }

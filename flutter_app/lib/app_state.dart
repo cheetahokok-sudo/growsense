@@ -41,6 +41,16 @@ class AppState extends ChangeNotifier {
   /// — feeds the consistency card. Refreshed with loadDay.
   Set<String> weekLogDates = {};
 
+  // Clinical records for the active child — lazy-loaded when the
+  // Medical tab first needs them, then kept in sync by the CRUD
+  // methods below. Same tables the PWA's clinical log writes.
+  List<Map<String, dynamic>> boneAgeAssessments = [];
+  List<Map<String, dynamic>> labResults = [];
+  List<Map<String, dynamic>> illnessEvents = [];
+  List<Map<String, dynamic>> pubertyEvents = [];
+  String? _clinicalLoadedFor; // childId the lists were fetched for
+  bool loadingClinical = false;
+
   /// Which meal new food logs get tagged with — defaults to breakfast,
   /// same as the PWA's activeMealSlot.
   String activeMealSlot = 'breakfast';
@@ -81,6 +91,7 @@ class AppState extends ChangeNotifier {
   Future<void> setActiveChild(int i) async {
     if (i == activeChild) return;
     activeChild = i;
+    _clinicalLoadedFor = null; // clinical lists are per-child
     notifyListeners();
     await Future.wait(
         [loadDay(), loadMeasurements(), loadWeekConsistency()]);
@@ -333,6 +344,153 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> loadClinicalIfNeeded() async {
+    final childId = activeChildId;
+    if (childId == null || childId == _clinicalLoadedFor) return;
+    _clinicalLoadedFor = childId;
+    loadingClinical = true;
+    notifyListeners();
+    try {
+      final results = await Future.wait([
+        sb
+            .from('bone_age_assessments')
+            .select()
+            .eq('child_id', childId)
+            .order('study_date', ascending: false),
+        sb
+            .from('lab_results')
+            .select()
+            .eq('child_id', childId)
+            .order('lab_date', ascending: false),
+        sb
+            .from('illness_events')
+            .select()
+            .eq('child_id', childId)
+            .order('start_date', ascending: false),
+        sb
+            .from('puberty_events')
+            .select()
+            .eq('child_id', childId)
+            .order('event_date', ascending: false),
+      ]);
+      boneAgeAssessments = List<Map<String, dynamic>>.from(results[0]);
+      labResults = List<Map<String, dynamic>>.from(results[1]);
+      illnessEvents = List<Map<String, dynamic>>.from(results[2]);
+      pubertyEvents = List<Map<String, dynamic>>.from(results[3]);
+    } on PostgrestException catch (e) {
+      lastError = e.message;
+      _clinicalLoadedFor = null; // retry on next open
+    }
+    loadingClinical = false;
+    notifyListeners();
+  }
+
+  Future<String?> _insertClinical(String table, Map<String, dynamic> row,
+      List<Map<String, dynamic>> list) async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    try {
+      final saved = await sb
+          .from(table)
+          .insert({
+            'child_id': childId,
+            'created_by': sb.auth.currentUser?.id,
+            ...row,
+          })
+          .select()
+          .single();
+      list.insert(0, saved);
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<String?> _deleteClinical(String table, String idColumn, dynamic id,
+      List<Map<String, dynamic>> list) async {
+    try {
+      await sb.from(table).delete().eq(idColumn, id);
+      list.removeWhere((r) => r[idColumn] == id);
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<String?> addBoneAge({
+    required String studyDate,
+    required int boneAgeMonths,
+    double? sdMonths,
+    required String method,
+    required double chronologicalAgeMonths,
+    String? reportDoctor,
+    String? notes,
+  }) =>
+      _insertClinical('bone_age_assessments', {
+        'study_date': studyDate,
+        'bone_age_months': boneAgeMonths,
+        'sd_months': sdMonths,
+        'method': method,
+        'chronological_age_months': chronologicalAgeMonths,
+        'report_doctor': reportDoctor,
+        'notes': notes,
+      }, boneAgeAssessments);
+
+  Future<String?> deleteBoneAge(dynamic id) => _deleteClinical(
+      'bone_age_assessments', 'assessment_id', id, boneAgeAssessments);
+
+  Future<String?> addLabResult({
+    required String labDate,
+    required String analyteName,
+    required double resultValue,
+    required String unit,
+    double? referenceLow,
+    double? referenceHigh,
+  }) =>
+      _insertClinical('lab_results', {
+        'lab_date': labDate,
+        'analyte_name': analyteName,
+        'result_value': resultValue,
+        'unit': unit,
+        'reference_low': referenceLow,
+        'reference_high': referenceHigh,
+      }, labResults);
+
+  Future<String?> deleteLabResult(dynamic id) =>
+      _deleteClinical('lab_results', 'lab_result_id', id, labResults);
+
+  Future<String?> addIllnessEvent({
+    required String startDate,
+    String? endDate,
+    required String illnessType,
+    String? notes,
+  }) =>
+      _insertClinical('illness_events', {
+        'start_date': startDate,
+        'end_date': endDate,
+        'illness_type': illnessType,
+        'notes': notes,
+      }, illnessEvents);
+
+  Future<String?> deleteIllnessEvent(dynamic id) =>
+      _deleteClinical('illness_events', 'event_id', id, illnessEvents);
+
+  Future<String?> addPubertyEvent({
+    required String eventDate,
+    required String eventType,
+    int? tannerStage,
+  }) =>
+      _insertClinical('puberty_events', {
+        'event_date': eventDate,
+        'event_type': eventType,
+        'tanner_stage': tannerStage,
+      }, pubertyEvents);
+
+  Future<String?> deletePubertyEvent(dynamic id) =>
+      _deleteClinical('puberty_events', 'event_id', id, pubertyEvents);
+
   Future<void> loadMeasurements() async {
     final childId = activeChildId;
     if (childId == null) {
@@ -401,6 +559,12 @@ class AppState extends ChangeNotifier {
     activityItems = [];
     nutritionLogItems = [];
     measurements = [];
+    boneAgeAssessments = [];
+    labResults = [];
+    illnessEvents = [];
+    pubertyEvents = [];
+    _clinicalLoadedFor = null;
+    weekLogDates = {};
     activeMealSlot = 'breakfast';
     notifyListeners();
   }

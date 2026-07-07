@@ -326,5 +326,11 @@
  "flutter.coach.calcium_gap": "الكالسيوم عند {n}% من هدف 1300 ملغ — الحليب أو الجبن أو التوفو يسدّ الفجوة سريعًا.",
  "flutter.coach.all_good": "يوم رائع — الأنظمة الثلاثة على المسار الصحيح. حافظ على السلسلة.",
  "flutter.coach.beta": "رؤى قائمة على القواعد محسوبة من بيانات الطفل المسجلة. المدرب الحواري قادم قريبًا. ليست نصيحة طبية.",
- "flutter.account.version": "إصدار التطبيق"
+ "flutter.account.version": "إصدار التطبيق",
+ "flutter.ongoing": "مستمر",
+ "flutter.observed": "ملاحظ",
+ "flutter.chronological_age": "العمر الزمني",
+ "flutter.growth_measurements": "قياسات النمو",
+ "flutter.last_record": "آخر",
+ "flutter.history": "السجل"
 }

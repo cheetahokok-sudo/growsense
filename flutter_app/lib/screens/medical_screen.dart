@@ -8,6 +8,7 @@ import '../app_state.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'medical_modules.dart';
 
 /// Medical tab — growth measurement entry, WHO 2007 height-for-age
 /// chart (smooth percentile curves, measured points in measured-blue),
@@ -51,6 +52,11 @@ class _MedicalScreenState extends State<MedicalScreen> {
     });
   }
 
+  void _pushModule(Widget screen) {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => screen));
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -65,9 +71,14 @@ class _MedicalScreenState extends State<MedicalScreen> {
                   style: const TextStyle(color: GsColors.text3)));
         }
         _loadReadinessIfNeeded();
+        widget.appState.loadClinicalIfNeeded();
         if (_who == null) {
           return const Center(child: CircularProgressIndicator());
         }
+        final t = widget.i18n.t;
+        final s = widget.appState;
+        String lastDate(List<Map<String, dynamic>> rows, String col) =>
+            rows.isEmpty ? '' : (rows.first[col] as String? ?? '');
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
@@ -79,13 +90,207 @@ class _MedicalScreenState extends State<MedicalScreen> {
                 i18n: widget.i18n),
             const SizedBox(height: 12),
             _TargetHeightCard(child: child, i18n: widget.i18n),
-            const SizedBox(height: 12),
-            _EntryCard(appState: widget.appState, i18n: widget.i18n),
-            const SizedBox(height: 12),
-            _HistoryCard(appState: widget.appState, i18n: widget.i18n),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 8),
+              child: Text(t('medical.title', 'Clinical log'),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+            ),
+            _ModuleGroup(children: [
+              _ModuleRow(
+                emoji: '📏',
+                title: t('flutter.growth_measurements',
+                    'Growth measurements'),
+                count: s.measurements.length,
+                lastDate:
+                    lastDate(s.measurements, 'recorded_date'),
+                i18n: widget.i18n,
+                onTap: () => _pushModule(MeasurementsScreen(
+                    appState: s, i18n: widget.i18n)),
+              ),
+              _ModuleRow(
+                emoji: '🦴',
+                title: t('medical.bone_age.title', 'Bone age assessment'),
+                count: s.boneAgeAssessments.length,
+                lastDate: lastDate(s.boneAgeAssessments, 'study_date'),
+                i18n: widget.i18n,
+                onTap: () => _pushModule(
+                    BoneAgeScreen(appState: s, i18n: widget.i18n)),
+              ),
+              _ModuleRow(
+                emoji: '🧪',
+                title: t('medical.lab_values.title', 'Lab values'),
+                count: s.labResults.length,
+                lastDate: lastDate(s.labResults, 'lab_date'),
+                i18n: widget.i18n,
+                onTap: () => _pushModule(
+                    LabResultsScreen(appState: s, i18n: widget.i18n)),
+              ),
+              _ModuleRow(
+                emoji: '🤒',
+                title: t('medical.illness.title',
+                    'Development interference log'),
+                count: s.illnessEvents.length,
+                lastDate: lastDate(s.illnessEvents, 'start_date'),
+                i18n: widget.i18n,
+                onTap: () => _pushModule(
+                    IllnessLogScreen(appState: s, i18n: widget.i18n)),
+              ),
+              _ModuleRow(
+                emoji: '🌱',
+                title: t('medical.puberty.title', 'Puberty milestones'),
+                count: s.pubertyEvents.length,
+                lastDate: lastDate(s.pubertyEvents, 'event_date'),
+                i18n: widget.i18n,
+                onTap: () => _pushModule(
+                    PubertyScreen(appState: s, i18n: widget.i18n)),
+                last: true,
+              ),
+            ]),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(
+                  t('medical.subtitle',
+                      'Medical factors that affect growth interpretation'),
+                  style: const TextStyle(
+                      fontSize: 10.5, color: GsColors.text3)),
+            ),
           ],
         );
       },
+    );
+  }
+}
+
+// ── Clinical module list ────────────────────────────────────────────
+
+class _ModuleGroup extends StatelessWidget {
+  const _ModuleGroup({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: GsColors.surface,
+        borderRadius: BorderRadius.circular(GsRadius.md),
+        border: Border.all(color: GsColors.border),
+        boxShadow: gsShadow,
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _ModuleRow extends StatelessWidget {
+  const _ModuleRow({
+    required this.emoji,
+    required this.title,
+    required this.count,
+    required this.lastDate,
+    required this.i18n,
+    required this.onTap,
+    this.last = false,
+  });
+  final String emoji;
+  final String title;
+  final int count;
+  final String lastDate;
+  final I18n i18n;
+  final VoidCallback onTap;
+  final bool last;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = i18n.t;
+    final summary = count == 0
+        ? t('flutter.nothing_recorded', 'Nothing recorded yet.')
+        : '$count ${t('flutter.records', 'records')} · ${t('flutter.last_record', 'last')} $lastDate';
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          border: last
+              ? null
+              : const Border(bottom: BorderSide(color: GsColors.border)),
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 13.5, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(summary,
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: count == 0
+                              ? GsColors.text3
+                              : GsColors.text2)),
+                ],
+              ),
+            ),
+            if (count > 0)
+              Container(
+                margin: const EdgeInsetsDirectional.only(end: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                decoration: BoxDecoration(
+                  color: GsColors.accentLight,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Text('$count',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: GsColors.accentDark)),
+              ),
+            const Icon(Icons.chevron_right,
+                size: 18, color: GsColors.text3),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Growth measurements module — the entry + history cards that used
+/// to sit inline on the Medical tab, now one level deep like the
+/// other clinical modules.
+class MeasurementsScreen extends StatelessWidget {
+  const MeasurementsScreen(
+      {super.key, required this.appState, required this.i18n});
+  final AppState appState;
+  final I18n i18n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+            i18n.t('flutter.growth_measurements', 'Growth measurements'),
+            style:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      ),
+      body: ListenableBuilder(
+        listenable: appState,
+        builder: (context, _) => ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          children: [
+            _EntryCard(appState: appState, i18n: i18n),
+            const SizedBox(height: 12),
+            _HistoryCard(appState: appState, i18n: i18n),
+          ],
+        ),
+      ),
     );
   }
 }

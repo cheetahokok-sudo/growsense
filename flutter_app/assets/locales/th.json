@@ -326,5 +326,11 @@
  "flutter.coach.calcium_gap": "แคลเซียมอยู่ที่ {n}% ของเป้า 1300 mg — นม ชีส หรือเต้าหู้ช่วยปิดช่องว่างได้เร็ว",
  "flutter.coach.all_good": "วันนี้ยอดเยี่ยม — ทั้งสามระบบเป็นไปตามเป้า รักษาความต่อเนื่องไว้",
  "flutter.coach.beta": "ข้อมูลเชิงลึกแบบกฎเกณฑ์คำนวณจากข้อมูลที่บันทึกของเด็ก โค้ชสนทนากำลังจะมา ไม่ใช่คำแนะนำทางการแพทย์",
- "flutter.account.version": "เวอร์ชันแอป"
+ "flutter.account.version": "เวอร์ชันแอป",
+ "flutter.ongoing": "ต่อเนื่อง",
+ "flutter.observed": "สังเกตพบ",
+ "flutter.chronological_age": "อายุจริง (ตามปฏิทิน)",
+ "flutter.growth_measurements": "การวัดการเติบโต",
+ "flutter.last_record": "ล่าสุด",
+ "flutter.history": "ประวัติ"
 }

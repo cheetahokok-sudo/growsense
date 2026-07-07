@@ -326,5 +326,11 @@
  "flutter.coach.calcium_gap": "钙达到1300毫克目标的{n}%——牛奶、奶酪或豆腐能快速补足。",
  "flutter.coach.all_good": "很棒的一天——三个系统都在正轨上。保持连续记录。",
  "flutter.coach.beta": "基于规则的洞察，由该儿童的记录数据计算得出。对话式教练即将推出。非医疗建议。",
- "flutter.account.version": "应用版本"
+ "flutter.account.version": "应用版本",
+ "flutter.ongoing": "进行中",
+ "flutter.observed": "已观察",
+ "flutter.chronological_age": "实际年龄",
+ "flutter.growth_measurements": "生长测量",
+ "flutter.last_record": "最近",
+ "flutter.history": "历史"
 }
