@@ -69,12 +69,13 @@ ThemeData buildGrowSenseTheme([String localeCode = 'en']) {
   );
   return base.copyWith(
     textTheme: textTheme,
-    // Deep-green branded header — the same hero color as the PWA's
-    // landing page, giving the app a strong top edge.
+    // Light topbar matching the PWA's .topbar (logo on bg, subtle
+    // bottom border comes from the shell).
     appBarTheme: const AppBarTheme(
-      backgroundColor: GsColors.deepGreen,
-      foregroundColor: Colors.white,
+      backgroundColor: GsColors.bg,
+      foregroundColor: GsColors.text,
       elevation: 0,
+      scrolledUnderElevation: 0,
       centerTitle: false,
     ),
     cardTheme: CardThemeData(

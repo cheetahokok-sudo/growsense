@@ -313,5 +313,18 @@
  "flutter.days": "ngày",
  "flutter.save_sleep": "Lưu giấc ngủ",
  "flutter.sleep_saved": "Đã lưu giấc ngủ",
- "flutter.protein_target": "Mục tiêu tăng trưởng"
+ "flutter.protein_target": "Mục tiêu tăng trưởng",
+ "flutter.quick_log": "Ghi nhanh",
+ "flutter.log_food": "Ghi thức ăn",
+ "flutter.log_activity": "Ghi hoạt động",
+ "flutter.log_sleep": "Ghi giấc ngủ",
+ "flutter.log_measurement": "Ghi số đo",
+ "flutter.coach.biggest_lever": "Đòn bẩy lớn nhất hôm nay",
+ "flutter.coach.sleep_low": "Giấc ngủ là yếu tố tác động lớn nhất (40% mức sẵn sàng). Cố gắng đi ngủ trước 21:30 — phần lớn hormone tăng trưởng tiết ra trong giấc ngủ sâu đầu tiên.",
+ "flutter.coach.activity_low": "Thêm hoạt động tác động cao — nhảy, bóng rổ, nhảy dây. 60 phút có trọng số lấp đầy vòng; tác động cao tính đủ giá trị.",
+ "flutter.coach.protein_gap": "Protein còn thiếu {n} g so với mục tiêu tăng trưởng hôm nay.",
+ "flutter.coach.calcium_gap": "Canxi đạt {n}% mục tiêu 1300 mg — sữa, phô mai hoặc đậu phụ bù nhanh.",
+ "flutter.coach.all_good": "Ngày tuyệt vời — cả ba hệ thống đều đúng hướng. Duy trì chuỗi nhé.",
+ "flutter.coach.beta": "Thông tin dựa trên quy tắc tính từ dữ liệu đã ghi của trẻ. Huấn luyện viên trò chuyện sắp ra mắt. Không phải lời khuyên y khoa.",
+ "flutter.account.version": "Phiên bản ứng dụng"
 }

@@ -313,5 +313,18 @@
  "flutter.days": "days",
  "flutter.save_sleep": "Save sleep",
  "flutter.sleep_saved": "Sleep saved",
- "flutter.protein_target": "Growth target"
+ "flutter.protein_target": "Growth target",
+ "flutter.quick_log": "Quick log",
+ "flutter.log_food": "Log food",
+ "flutter.log_activity": "Log activity",
+ "flutter.log_sleep": "Log sleep",
+ "flutter.log_measurement": "Log measurement",
+ "flutter.coach.biggest_lever": "Biggest lever today",
+ "flutter.coach.sleep_low": "Sleep is the highest-leverage factor (40% of readiness). Aim for bedtime before 21:30 — most growth hormone is released in the first deep-sleep window.",
+ "flutter.coach.activity_low": "Add high-impact activity — jumping, basketball, skipping. 60 weighted minutes fills the ring; high-impact counts at full value.",
+ "flutter.coach.protein_gap": "Protein is {n} g short of today's growth target.",
+ "flutter.coach.calcium_gap": "Calcium is at {n}% of the 1300 mg target — milk, cheese or tofu close the gap fast.",
+ "flutter.coach.all_good": "Great day — all three systems are on track. Keep the streak going.",
+ "flutter.coach.beta": "Rule-based insights computed from this child's logged data. A conversational coach is coming. Not medical advice.",
+ "flutter.account.version": "App version"
 }

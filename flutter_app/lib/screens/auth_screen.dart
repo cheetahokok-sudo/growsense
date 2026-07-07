@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../i18n.dart';
 import '../theme.dart';
+import '../widgets/gs_logo.dart';
 
 /// Email + password sign-in against the shared Supabase project —
 /// mirrors the PWA's signInWithPassword flow. No sign-up here yet;
@@ -66,19 +67,10 @@ class _AuthScreenState extends State<AuthScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Center(
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    alignment: Alignment.center,
-                    margin: const EdgeInsets.only(bottom: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.22)),
-                    ),
-                    child: const Text('🌱', style: TextStyle(fontSize: 28)),
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 14),
+                    child: GsLogoMark(size: 44),
                   ),
                 ),
                 Text(

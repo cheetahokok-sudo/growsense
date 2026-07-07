@@ -313,5 +313,18 @@
  "flutter.days": "أيام",
  "flutter.save_sleep": "حفظ النوم",
  "flutter.sleep_saved": "تم حفظ النوم",
- "flutter.protein_target": "هدف النمو"
+ "flutter.protein_target": "هدف النمو",
+ "flutter.quick_log": "تسجيل سريع",
+ "flutter.log_food": "تسجيل طعام",
+ "flutter.log_activity": "تسجيل نشاط",
+ "flutter.log_sleep": "تسجيل نوم",
+ "flutter.log_measurement": "تسجيل قياس",
+ "flutter.coach.biggest_lever": "أكبر عامل تأثير اليوم",
+ "flutter.coach.sleep_low": "النوم هو العامل الأعلى تأثيرًا (40% من الجاهزية). استهدف النوم قبل 21:30 — يُفرز معظم هرمون النمو في أول نافذة نوم عميق.",
+ "flutter.coach.activity_low": "أضف نشاطًا عالي التأثير — القفز، كرة السلة، نط الحبل. 60 دقيقة مرجّحة تملأ الحلقة؛ يُحتسب النشاط عالي التأثير بقيمته الكاملة.",
+ "flutter.coach.protein_gap": "البروتين أقل من هدف النمو اليوم بمقدار {n} غ.",
+ "flutter.coach.calcium_gap": "الكالسيوم عند {n}% من هدف 1300 ملغ — الحليب أو الجبن أو التوفو يسدّ الفجوة سريعًا.",
+ "flutter.coach.all_good": "يوم رائع — الأنظمة الثلاثة على المسار الصحيح. حافظ على السلسلة.",
+ "flutter.coach.beta": "رؤى قائمة على القواعد محسوبة من بيانات الطفل المسجلة. المدرب الحواري قادم قريبًا. ليست نصيحة طبية.",
+ "flutter.account.version": "إصدار التطبيق"
 }

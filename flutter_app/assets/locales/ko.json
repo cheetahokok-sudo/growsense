@@ -313,5 +313,18 @@
  "flutter.days": "일",
  "flutter.save_sleep": "수면 저장",
  "flutter.sleep_saved": "수면이 저장되었습니다",
- "flutter.protein_target": "성장 목표"
+ "flutter.protein_target": "성장 목표",
+ "flutter.quick_log": "빠른 기록",
+ "flutter.log_food": "음식 기록",
+ "flutter.log_activity": "활동 기록",
+ "flutter.log_sleep": "수면 기록",
+ "flutter.log_measurement": "측정 기록",
+ "flutter.coach.biggest_lever": "오늘의 가장 큰 지렛대",
+ "flutter.coach.sleep_low": "수면은 가장 영향이 큰 요소입니다(준비도의 40%). 21:30 이전 취침을 목표로 하세요 — 성장호르몬 대부분이 첫 깊은 수면에서 분비됩니다.",
+ "flutter.coach.activity_low": "고강도 충격 활동을 추가하세요 — 점프, 농구, 줄넘기. 가중 60분이면 링이 가득 차며, 고강도는 전체 가치로 계산됩니다.",
+ "flutter.coach.protein_gap": "단백질이 오늘 성장 목표보다 {n} g 부족합니다.",
+ "flutter.coach.calcium_gap": "칼슘이 1300 mg 목표의 {n}%입니다 — 우유, 치즈, 두부로 빠르게 채우세요.",
+ "flutter.coach.all_good": "훌륭한 하루입니다 — 세 가지 모두 순조롭습니다. 연속 기록을 이어가세요.",
+ "flutter.coach.beta": "이 아이의 기록 데이터로 계산한 규칙 기반 인사이트입니다. 대화형 코치가 곧 제공됩니다. 의학적 조언이 아닙니다.",
+ "flutter.account.version": "앱 버전"
 }
