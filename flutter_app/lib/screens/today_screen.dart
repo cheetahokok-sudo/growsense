@@ -42,6 +42,8 @@ class TodayScreen extends StatelessWidget {
               else ...[
                 _NutritionCard(nutrition: appState.nutrition),
                 const SizedBox(height: 12),
+                _LoggedFoodCard(appState: appState),
+                const SizedBox(height: 12),
                 _SleepCard(sleep: appState.sleep),
                 const SizedBox(height: 12),
                 _ActivityCard(items: appState.activityItems),
@@ -198,6 +200,73 @@ class _NutritionCard extends StatelessWidget {
                 const Divider(height: 20, color: GsColors.border),
                 _MetricRow('Calcium', '${_fmt(calcium)} mg'),
                 _MetricRow('Fluids', '${_fmt(fluids)} ml'),
+              ],
+            ),
+    );
+  }
+}
+
+/// Per-item food log for the selected date — the reviewable list the
+/// PWA shows under "Logged today", with the same per-item delete undo.
+class _LoggedFoodCard extends StatelessWidget {
+  const _LoggedFoodCard({required this.appState});
+  final AppState appState;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = appState.nutritionLogItems;
+    final totalProtein = items.fold<double>(
+        0, (sum, i) => sum + ((i['protein_g'] as num?)?.toDouble() ?? 0));
+    return _GsCard(
+      title: 'Food log',
+      accentColor: GsColors.accent,
+      trailing: items.isEmpty
+          ? null
+          : Text('${items.length} items · ${_fmt(totalProtein)} g protein',
+              style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: GsColors.accent)),
+      child: items.isEmpty
+          ? const _EmptyNote('Nothing logged yet for this date.')
+          : Column(
+              children: [
+                for (final item in items)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item['food_name'] as String? ?? 'Food',
+                            style: const TextStyle(fontSize: 13.5),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          '${item['meal_slot'] ?? ''} · ${_fmt((item['protein_g'] as num?)?.toDouble() ?? 0)} g',
+                          style: const TextStyle(
+                              fontSize: 12, color: GsColors.text2),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.close,
+                              size: 16, color: GsColors.text3),
+                          onPressed: () async {
+                            final err = await appState
+                                .deleteNutritionLogItem(item['item_id']);
+                            if (err != null && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      backgroundColor: GsColors.flag,
+                                      content:
+                                          Text('Could not remove: $err')));
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
     );

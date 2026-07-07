@@ -31,6 +31,11 @@ class AppState extends ChangeNotifier {
   Map<String, dynamic>? nutrition; // daily_nutrition row
   Map<String, dynamic>? sleep; // daily_sleep row
   List<Map<String, dynamic>> activityItems = []; // daily_activity_items rows
+  List<Map<String, dynamic>> nutritionLogItems = []; // nutrition_log_items rows
+
+  /// Which meal new food logs get tagged with — defaults to breakfast,
+  /// same as the PWA's activeMealSlot.
+  String activeMealSlot = 'breakfast';
 
   bool loadingChildren = false;
   bool loadingDay = false;
@@ -90,6 +95,7 @@ class AppState extends ChangeNotifier {
       nutrition = null;
       sleep = null;
       activityItems = [];
+      nutritionLogItems = [];
       notifyListeners();
       return;
     }
@@ -115,17 +121,78 @@ class AppState extends ChangeNotifier {
             .eq('child_id', childId)
             .eq('log_date', logDate)
             .order('created_at', ascending: true),
+        sb
+            .from('nutrition_log_items')
+            .select()
+            .eq('child_id', childId)
+            .eq('log_date', logDate)
+            .order('logged_at', ascending: true),
       ]);
       nutrition = results[0] as Map<String, dynamic>?;
       sleep = results[1] as Map<String, dynamic>?;
       activityItems =
           List<Map<String, dynamic>>.from(results[2] as List? ?? []);
+      nutritionLogItems =
+          List<Map<String, dynamic>>.from(results[3] as List? ?? []);
       lastError = null;
     } on PostgrestException catch (e) {
       lastError = e.message;
     }
     loadingDay = false;
     notifyListeners();
+  }
+
+  void setMealSlot(String slot) {
+    activeMealSlot = slot;
+    notifyListeners();
+  }
+
+  /// Mirror of the PWA's recordNutritionLogItem() — one row per tap,
+  /// per-serving amounts, reviewable and undoable. daily_nutrition
+  /// totals are NOT written here; the PWA's save flow recomputes them
+  /// from these rows, so items logged in Flutter show up there too.
+  Future<String?> recordNutritionLogItem({
+    required String foodId,
+    required String foodName,
+    required double proteinG,
+    double? zincMg,
+    double? calciumMg,
+  }) async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    try {
+      final row = await sb
+          .from('nutrition_log_items')
+          .insert({
+            'child_id': childId,
+            'log_date': logDate,
+            'meal_slot': activeMealSlot,
+            'food_id': foodId,
+            'food_name': foodName,
+            'protein_g': proteinG,
+            'zinc_mg': zincMg,
+            'calcium_mg': calciumMg,
+            'created_by': sb.auth.currentUser?.id,
+          })
+          .select()
+          .single();
+      nutritionLogItems.add(row);
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<String?> deleteNutritionLogItem(dynamic itemId) async {
+    try {
+      await sb.from('nutrition_log_items').delete().eq('item_id', itemId);
+      nutritionLogItems.removeWhere((i) => i['item_id'] == itemId);
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
   }
 
   void reset() {
@@ -135,6 +202,8 @@ class AppState extends ChangeNotifier {
     nutrition = null;
     sleep = null;
     activityItems = [];
+    nutritionLogItems = [];
+    activeMealSlot = 'breakfast';
     notifyListeners();
   }
 }
