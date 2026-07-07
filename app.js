@@ -3391,6 +3391,7 @@ async function loadFoodFavoritesAndCustomFoods() {
 // Group mode ('type' | 'region') persists across open/close within
 // a session so the parent doesn't have to re-select each time.
 let _foodLibGroupMode = 'type';
+let _foodLibCategoryFilter = 'all'; // 'all' | 'chicken'|'beef'|'pork'|'fish'|'seafood'|'egg'|'dairy'|'plant'|'composite'
 
 const FOOD_TYPE_GROUPS = [
   { key: 'chicken',   label: 'Chicken & Poultry' },
@@ -3413,16 +3414,41 @@ const FOOD_REGION_GROUPS = [
 
 function openFoodLibraryModal() {
   if (!activeChildId()) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
-  // Reset search on open so the parent sees the full list
+  // Reset search + category tabs to clean state on every open
   const searchEl = document.getElementById('foodLibrarySearch');
   if (searchEl) searchEl.value = '';
+  _resetFoodLibraryBrowseUI();
   renderFoodLibraryBrowseList('');
   renderFoodLibraryMineList();
   document.getElementById('foodLibraryModal').classList.remove('hidden');
 }
 
-function closeFoodLibraryModal() {
+function closeFoodLibraryModal(e) {
+  // If called from the overlay onclick, only close when clicking the
+  // backdrop itself — not when clicking inside the sheet.
+  if (e && e.target !== document.getElementById('foodLibraryModal')) return;
   document.getElementById('foodLibraryModal').classList.add('hidden');
+}
+
+// Resets category tab to "All" and clears search on every open so
+// the parent always starts from a clean state.
+function _resetFoodLibraryBrowseUI() {
+  _foodLibCategoryFilter = 'all';
+  document.querySelectorAll('.food-cat-tab').forEach((b, i) => {
+    b.classList.toggle('active', i === 0);
+  });
+  const groupSeg = document.getElementById('foodGroupSeg');
+  if (groupSeg) groupSeg.style.display = '';
+}
+
+function setFoodCategoryFilter(cat, btn) {
+  _foodLibCategoryFilter = cat;
+  document.querySelectorAll('.food-cat-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  // Group-by toggle is only meaningful when showing all foods
+  const groupSeg = document.getElementById('foodGroupSeg');
+  if (groupSeg) groupSeg.style.display = cat === 'all' ? '' : 'none';
+  renderFoodLibraryBrowseList();
 }
 
 function setFoodGroupMode(mode, btn) {
@@ -3564,51 +3590,63 @@ function renderFoodLibraryBrowseList(searchQuery) {
     </div>`;
   }
 
-  // ── Build HTML by group mode ──────────────────────────────────────
+  // ── Build HTML ────────────────────────────────────────────────────
   let html = '';
   let totalShown = 0;
 
-  if (_foodLibGroupMode === 'type') {
-    FOOD_TYPE_GROUPS.forEach(grp => {
-      const items = presets.filter(f => f.category === grp.key);
-      if (!items.length) return;
-      html += groupHeader(grp.label, items.length);
-      items.forEach(f => { html += presetRow(f); totalShown++; });
-    });
-    // Items without a category field (older preset entries)
-    const uncat = presets.filter(f => !f.category);
-    if (uncat.length) {
-      html += groupHeader('Other', uncat.length);
-      uncat.forEach(f => { html += presetRow(f); totalShown++; });
+  if (_foodLibCategoryFilter !== 'all') {
+    // ── Category tab active: flat filtered list, no group headers ──
+    const filtered = presets.filter(f => f.category === _foodLibCategoryFilter);
+    if (filtered.length) {
+      filtered.forEach(f => { html += presetRow(f); totalShown++; });
+    }
+    // Custom foods don't have a category — show them only if the
+    // parent is actively searching (so their search results appear).
+    if (q && customs.length) {
+      html += groupHeader('My Custom Foods', customs.length);
+      customs.forEach(c => { html += customRow(c); totalShown++; });
     }
   } else {
-    // By region — no flag icons, text labels only
-    FOOD_REGION_GROUPS.forEach(grp => {
-      const items = presets.filter(f => grp.regions.includes(f.region || 'global'));
-      if (!items.length) return;
-      html += groupHeader(grp.label, items.length);
-      items.forEach(f => { html += presetRow(f); totalShown++; });
-    });
-    // Items with an unrecognised region field
-    const knownRegions = FOOD_REGION_GROUPS.flatMap(g => g.regions);
-    const unknown = presets.filter(f => f.region && !knownRegions.includes(f.region));
-    if (unknown.length) {
-      html += groupHeader('Other', unknown.length);
-      unknown.forEach(f => { html += presetRow(f); totalShown++; });
+    // ── "All" tab: grouped by type or region ──────────────────────
+    if (_foodLibGroupMode === 'type') {
+      FOOD_TYPE_GROUPS.forEach(grp => {
+        const items = presets.filter(f => f.category === grp.key);
+        if (!items.length) return;
+        html += groupHeader(grp.label, items.length);
+        items.forEach(f => { html += presetRow(f); totalShown++; });
+      });
+      const uncat = presets.filter(f => !f.category);
+      if (uncat.length) {
+        html += groupHeader('Other', uncat.length);
+        uncat.forEach(f => { html += presetRow(f); totalShown++; });
+      }
+    } else {
+      // By region — text labels only, no flag icons
+      FOOD_REGION_GROUPS.forEach(grp => {
+        const items = presets.filter(f => grp.regions.includes(f.region || 'global'));
+        if (!items.length) return;
+        html += groupHeader(grp.label, items.length);
+        items.forEach(f => { html += presetRow(f); totalShown++; });
+      });
+      const knownRegions = FOOD_REGION_GROUPS.flatMap(g => g.regions);
+      const unknown = presets.filter(f => f.region && !knownRegions.includes(f.region));
+      if (unknown.length) {
+        html += groupHeader('Other', unknown.length);
+        unknown.forEach(f => { html += presetRow(f); totalShown++; });
+      }
     }
-  }
-
-  // Custom foods always appear at the bottom of the browse list,
-  // regardless of group mode, since they have no category or region.
-  if (customs.length) {
-    html += groupHeader('My Custom Foods', customs.length);
-    customs.forEach(c => { html += customRow(c); totalShown++; });
+    // Custom foods always at the bottom in "All" mode
+    if (customs.length) {
+      html += groupHeader('My Custom Foods', customs.length);
+      customs.forEach(c => { html += customRow(c); totalShown++; });
+    }
   }
 
   if (totalShown === 0) {
-    html = `<div style="text-align:center; padding:28px 0; color:var(--text3); font-size:13px;">
-      No foods match <em>"${q}"</em>
-    </div>`;
+    const msg = q
+      ? `No foods match <em>"${q}"</em>`
+      : 'No foods in this category yet.';
+    html = `<div style="text-align:center; padding:28px 0; color:var(--text3); font-size:13px;">${msg}</div>`;
   }
 
   listEl.innerHTML = html;
