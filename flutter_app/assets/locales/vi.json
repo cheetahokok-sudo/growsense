@@ -309,5 +309,9 @@
  "flutter.records": "bản ghi",
  "flutter.nothing_recorded": "Chưa có bản ghi nào.",
  "flutter.could_not_load": "Không tải được",
- "flutter.language": "Ngôn ngữ"
+ "flutter.language": "Ngôn ngữ",
+ "flutter.days": "ngày",
+ "flutter.save_sleep": "Lưu giấc ngủ",
+ "flutter.sleep_saved": "Đã lưu giấc ngủ",
+ "flutter.protein_target": "Mục tiêu tăng trưởng"
 }

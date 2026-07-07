@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app_state.dart';
@@ -43,12 +44,33 @@ class _HomeShellState extends State<HomeShell> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GrowSense',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text('GrowSense',
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.fraunces(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20,
+                      color: Colors.white)),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: GsColors.accentLight,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ],
+        ),
         actions: [
           PopupMenuButton<String>(
             tooltip: t('flutter.language', 'Language'),
-            icon: const Icon(Icons.language, size: 20, color: GsColors.text2),
+            icon: Icon(Icons.language,
+                size: 20, color: Colors.white.withValues(alpha: 0.85)),
             onSelected: widget.i18n.setLanguage,
             itemBuilder: (context) => [
               for (final entry in supportedLanguages.entries)
@@ -72,7 +94,8 @@ class _HomeShellState extends State<HomeShell> {
           ),
           IconButton(
             tooltip: t('flutter.sign_out', 'Sign out'),
-            icon: const Icon(Icons.logout, size: 20, color: GsColors.text2),
+            icon: Icon(Icons.logout,
+                size: 20, color: Colors.white.withValues(alpha: 0.85)),
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
               widget.appState.reset();

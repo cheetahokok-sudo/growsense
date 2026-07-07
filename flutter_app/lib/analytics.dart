@@ -52,6 +52,33 @@ int calcProteinTargetG(String? dobStr, double? weightKg, String? sex) {
   return weightBased > minimumG ? weightBased : minimumG;
 }
 
+/// Growth-optimized protein target (port of calcProteinBoostTargetG):
+/// 1.2 g/kg with an age-dependent safe ceiling, floored at the DRI
+/// standard; without a weight, standard × 1.26.
+int calcProteinBoostTargetG(String? dobStr, double? weightKg, String? sex) {
+  final standard = calcProteinTargetG(dobStr, weightKg, sex);
+  double? ageYears;
+  if (dobStr != null) {
+    final dob = DateTime.tryParse(dobStr);
+    if (dob != null) {
+      ageYears = DateTime.now().difference(dob).inDays / 365.25;
+    }
+  }
+  double safeMaxPerKg;
+  if (ageYears == null || ageYears < 4) {
+    safeMaxPerKg = 1.3;
+  } else if (ageYears < 14) {
+    safeMaxPerKg = 1.5;
+  } else {
+    safeMaxPerKg = 1.6;
+  }
+  if (weightKg == null) return (standard * 1.26).round();
+  final boost = (weightKg * 1.2).round();
+  final safeMax = (weightKg * safeMaxPerKg).round();
+  final floored = boost > standard ? boost : standard;
+  return floored < safeMax ? floored : safeMax;
+}
+
 class DayMetrics {
   final String date;
   double? proteinG;

@@ -309,5 +309,9 @@
  "flutter.records": "条记录",
  "flutter.nothing_recorded": "尚无记录。",
  "flutter.could_not_load": "无法加载",
- "flutter.language": "语言"
+ "flutter.language": "语言",
+ "flutter.days": "天",
+ "flutter.save_sleep": "保存睡眠",
+ "flutter.sleep_saved": "已保存睡眠",
+ "flutter.protein_target": "生长目标"
 }

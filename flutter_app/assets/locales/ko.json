@@ -309,5 +309,9 @@
  "flutter.records": "건",
  "flutter.nothing_recorded": "아직 기록이 없습니다.",
  "flutter.could_not_load": "불러오지 못했습니다",
- "flutter.language": "언어"
+ "flutter.language": "언어",
+ "flutter.days": "일",
+ "flutter.save_sleep": "수면 저장",
+ "flutter.sleep_saved": "수면이 저장되었습니다",
+ "flutter.protein_target": "성장 목표"
 }

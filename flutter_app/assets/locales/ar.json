@@ -309,5 +309,9 @@
  "flutter.records": "سجلات",
  "flutter.nothing_recorded": "لا توجد سجلات بعد.",
  "flutter.could_not_load": "تعذر التحميل",
- "flutter.language": "اللغة"
+ "flutter.language": "اللغة",
+ "flutter.days": "أيام",
+ "flutter.save_sleep": "حفظ النوم",
+ "flutter.sleep_saved": "تم حفظ النوم",
+ "flutter.protein_target": "هدف النمو"
 }

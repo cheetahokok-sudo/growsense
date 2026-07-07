@@ -69,9 +69,11 @@ ThemeData buildGrowSenseTheme([String localeCode = 'en']) {
   );
   return base.copyWith(
     textTheme: textTheme,
+    // Deep-green branded header — the same hero color as the PWA's
+    // landing page, giving the app a strong top edge.
     appBarTheme: const AppBarTheme(
-      backgroundColor: GsColors.bg,
-      foregroundColor: GsColors.text,
+      backgroundColor: GsColors.deepGreen,
+      foregroundColor: Colors.white,
       elevation: 0,
       centerTitle: false,
     ),
@@ -111,13 +113,16 @@ ThemeData buildGrowSenseTheme([String localeCode = 'en']) {
         borderSide: const BorderSide(color: GsColors.accent, width: 1.5),
       ),
     ),
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+    // Label styles derive from the locale-aware text theme so Thai /
+    // Arabic glyphs render in the right font instead of tofu boxes.
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: GsColors.surface,
       selectedItemColor: GsColors.accent,
       unselectedItemColor: GsColors.text3,
       type: BottomNavigationBarType.fixed,
-      selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-      unselectedLabelStyle: TextStyle(fontSize: 11),
+      selectedLabelStyle: textTheme.bodySmall
+          ?.copyWith(fontSize: 11, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: textTheme.bodySmall?.copyWith(fontSize: 11),
     ),
   );
 }

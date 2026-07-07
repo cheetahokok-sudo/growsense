@@ -71,5 +71,9 @@
   "flutter.records": { "en": "records", "th": "รายการ", "vi": "bản ghi", "ko": "건", "zh": "条记录", "ar": "سجلات" },
   "flutter.nothing_recorded": { "en": "Nothing recorded yet.", "th": "ยังไม่มีบันทึก", "vi": "Chưa có bản ghi nào.", "ko": "아직 기록이 없습니다.", "zh": "尚无记录。", "ar": "لا توجد سجلات بعد." },
   "flutter.could_not_load": { "en": "Could not load", "th": "โหลดไม่สำเร็จ", "vi": "Không tải được", "ko": "불러오지 못했습니다", "zh": "无法加载", "ar": "تعذر التحميل" },
-  "flutter.language": { "en": "Language", "th": "ภาษา", "vi": "Ngôn ngữ", "ko": "언어", "zh": "语言", "ar": "اللغة" }
+  "flutter.language": { "en": "Language", "th": "ภาษา", "vi": "Ngôn ngữ", "ko": "언어", "zh": "语言", "ar": "اللغة" },
+  "flutter.days": { "en": "days", "th": "วัน", "vi": "ngày", "ko": "일", "zh": "天", "ar": "أيام" },
+  "flutter.save_sleep": { "en": "Save sleep", "th": "บันทึกการนอน", "vi": "Lưu giấc ngủ", "ko": "수면 저장", "zh": "保存睡眠", "ar": "حفظ النوم" },
+  "flutter.sleep_saved": { "en": "Sleep saved", "th": "บันทึกการนอนแล้ว", "vi": "Đã lưu giấc ngủ", "ko": "수면이 저장되었습니다", "zh": "已保存睡眠", "ar": "تم حفظ النوم" },
+  "flutter.protein_target": { "en": "Growth target", "th": "เป้าหมายการเติบโต", "vi": "Mục tiêu tăng trưởng", "ko": "성장 목표", "zh": "生长目标", "ar": "هدف النمو" }
 }

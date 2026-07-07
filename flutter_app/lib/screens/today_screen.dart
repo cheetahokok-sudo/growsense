@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'today_hud.dart';
 
 /// Today tab — read-only first pass: child switcher, date selector,
 /// and the day's nutrition / sleep / activity as saved by the PWA.
@@ -40,11 +41,15 @@ class TodayScreen extends StatelessWidget {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else ...[
+                ReadinessCard(appState: appState, i18n: i18n),
+                const SizedBox(height: 12),
+                ConsistencyCard(appState: appState, i18n: i18n),
+                const SizedBox(height: 12),
                 _NutritionCard(nutrition: appState.nutrition, i18n: i18n),
                 const SizedBox(height: 12),
                 _LoggedFoodCard(appState: appState, i18n: i18n),
                 const SizedBox(height: 12),
-                _SleepCard(sleep: appState.sleep, i18n: i18n),
+                SleepEditorCard(appState: appState, i18n: i18n),
                 const SizedBox(height: 12),
                 _ActivityCard(
                     items: appState.activityItems,
@@ -287,44 +292,6 @@ class _LoggedFoodCard extends StatelessWidget {
                       ],
                     ),
                   ),
-              ],
-            ),
-    );
-  }
-}
-
-class _SleepCard extends StatelessWidget {
-  const _SleepCard({required this.sleep, required this.i18n});
-  final Map<String, dynamic>? sleep;
-  final I18n i18n;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = i18n.t;
-    final totalMin = (sleep?['total_sleep_min'] as num?)?.toInt();
-    final wakes = (sleep?['night_wakes'] as num?)?.toInt();
-    final bedtime = sleep?['bedtime'] as String?;
-    final efficiency = (sleep?['sleep_efficiency_score'] as num?)?.toInt();
-
-    return _GsCard(
-      title: t('common.sleep', 'Sleep'),
-      accentColor: GsColors.estimated,
-      child: sleep == null
-          ? _EmptyNote(t('flutter.no_sleep_entry'))
-          : Column(
-              children: [
-                if (totalMin != null)
-                  _MetricRow(t('flutter.total_sleep', 'Total sleep'),
-                      '${totalMin ~/ 60}h ${totalMin % 60}m',
-                      bold: true),
-                if (bedtime != null)
-                  _MetricRow(t('today.sleep.bedtime', 'Bedtime'), bedtime),
-                if (wakes != null)
-                  _MetricRow(
-                      t('flutter.night_wakes', 'Night wakes'), '$wakes'),
-                if (efficiency != null)
-                  _MetricRow(t('flutter.efficiency_score', 'Efficiency score'),
-                      '$efficiency'),
               ],
             ),
     );

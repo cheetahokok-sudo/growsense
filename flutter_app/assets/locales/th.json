@@ -309,5 +309,9 @@
  "flutter.records": "รายการ",
  "flutter.nothing_recorded": "ยังไม่มีบันทึก",
  "flutter.could_not_load": "โหลดไม่สำเร็จ",
- "flutter.language": "ภาษา"
+ "flutter.language": "ภาษา",
+ "flutter.days": "วัน",
+ "flutter.save_sleep": "บันทึกการนอน",
+ "flutter.sleep_saved": "บันทึกการนอนแล้ว",
+ "flutter.protein_target": "เป้าหมายการเติบโต"
 }

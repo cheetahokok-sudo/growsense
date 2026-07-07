@@ -37,6 +37,10 @@ class AppState extends ChangeNotifier {
   // not per-logDate — reloaded on child switch)
   List<Map<String, dynamic>> measurements = [];
 
+  /// Dates (YYYY-MM-DD) in the current Mon–Sun week that have any log
+  /// — feeds the consistency card. Refreshed with loadDay.
+  Set<String> weekLogDates = {};
+
   /// Which meal new food logs get tagged with — defaults to breakfast,
   /// same as the PWA's activeMealSlot.
   String activeMealSlot = 'breakfast';
@@ -70,14 +74,16 @@ class AppState extends ChangeNotifier {
     }
     loadingChildren = false;
     notifyListeners();
-    await Future.wait([loadDay(), loadMeasurements()]);
+    await Future.wait(
+        [loadDay(), loadMeasurements(), loadWeekConsistency()]);
   }
 
   Future<void> setActiveChild(int i) async {
     if (i == activeChild) return;
     activeChild = i;
     notifyListeners();
-    await Future.wait([loadDay(), loadMeasurements()]);
+    await Future.wait(
+        [loadDay(), loadMeasurements(), loadWeekConsistency()]);
   }
 
   Future<void> setLogDate(String date) async {
@@ -244,6 +250,83 @@ class AppState extends ChangeNotifier {
       await sb.from('daily_activity_items').delete().eq('item_id', itemId);
       activityItems.removeWhere((i) => i['item_id'] == itemId);
       notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// Any log (food item, sleep, activity) marks the day as logged —
+  /// same signal the PWA's consistency row uses.
+  Future<void> loadWeekConsistency() async {
+    final childId = activeChildId;
+    if (childId == null) {
+      weekLogDates = {};
+      notifyListeners();
+      return;
+    }
+    final now = DateTime.now();
+    final monday =
+        localISO(now.subtract(Duration(days: (now.weekday - 1) % 7)));
+    try {
+      final results = await Future.wait([
+        sb
+            .from('nutrition_log_items')
+            .select('log_date')
+            .eq('child_id', childId)
+            .gte('log_date', monday),
+        sb
+            .from('daily_sleep')
+            .select('log_date')
+            .eq('child_id', childId)
+            .gte('log_date', monday),
+        sb
+            .from('daily_activity_items')
+            .select('log_date')
+            .eq('child_id', childId)
+            .gte('log_date', monday),
+      ]);
+      weekLogDates = {
+        for (final rows in results)
+          for (final r in rows as List) r['log_date'] as String,
+      };
+    } on PostgrestException {
+      // Consistency is decorative — never block the Today screen on it.
+    }
+    notifyListeners();
+  }
+
+  /// Mirror of the PWA's daily_sleep upsert in saveTodayData():
+  /// total from bed→wake across midnight; efficiency = duration
+  /// adequacy vs the 9.5h target.
+  Future<String?> saveSleep({
+    required String bedtime, // 'HH:mm'
+    required String wakeTime, // 'HH:mm'
+    required int nightWakes,
+  }) async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    final bed = bedtime.split(':').map(int.parse).toList();
+    final wake = wakeTime.split(':').map(int.parse).toList();
+    final bedMins = bed[0] * 60 + bed[1];
+    var wakeMins = wake[0] * 60 + wake[1];
+    if (bedMins > wakeMins) wakeMins += 1440;
+    final totalSleepMin = wakeMins - bedMins;
+    final efficiency =
+        ((totalSleepMin / (9.5 * 60)) * 100).round().clamp(0, 100);
+    try {
+      await sb.from('daily_sleep').upsert({
+        'child_id': childId,
+        'log_date': logDate,
+        'total_sleep_min': totalSleepMin,
+        'sleep_efficiency_score': efficiency,
+        'night_wakes': nightWakes,
+        'bedtime': bedtime,
+        'wake_time': wakeTime,
+        'data_source': 'manual',
+      }, onConflict: 'child_id,log_date');
+      await loadDay();
+      loadWeekConsistency();
       return null;
     } on PostgrestException catch (e) {
       return e.message;

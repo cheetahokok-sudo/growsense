@@ -309,5 +309,9 @@
  "flutter.records": "records",
  "flutter.nothing_recorded": "Nothing recorded yet.",
  "flutter.could_not_load": "Could not load",
- "flutter.language": "Language"
+ "flutter.language": "Language",
+ "flutter.days": "days",
+ "flutter.save_sleep": "Save sleep",
+ "flutter.sleep_saved": "Sleep saved",
+ "flutter.protein_target": "Growth target"
 }
