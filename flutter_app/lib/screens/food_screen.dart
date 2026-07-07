@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../food_data.dart';
+import '../i18n.dart';
 import '../theme.dart';
 
 /// Food tab — the 90-preset library with search + category filter,
@@ -9,8 +10,9 @@ import '../theme.dart';
 /// nutrition_log_items row for the active child + logDate under the
 /// selected meal slot.
 class FoodScreen extends StatefulWidget {
-  const FoodScreen({super.key, required this.appState});
+  const FoodScreen({super.key, required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   State<FoodScreen> createState() => _FoodScreenState();
@@ -20,18 +22,6 @@ class _FoodScreenState extends State<FoodScreen> {
   List<FoodItem> _all = [];
   String _query = '';
   String? _category; // null = all
-
-  static const _categoryLabels = {
-    'chicken': '🍗 Chicken',
-    'beef': '🥩 Beef',
-    'pork': '🥓 Pork',
-    'fish': '🐟 Fish',
-    'seafood': '🦐 Seafood',
-    'egg': '🥚 Egg',
-    'dairy': '🥛 Dairy',
-    'plant': '🌱 Plant',
-    'composite': '🍲 Dishes',
-  };
 
   @override
   void initState() {
@@ -63,18 +53,22 @@ class _FoodScreenState extends State<FoodScreen> {
           food.calciumPerServing == null ? null : _round1(food.calciumPerServing!),
     );
     if (!mounted) return;
+    final t = widget.i18n.t;
+    final slot = t('meal.${widget.appState.activeMealSlot}',
+        widget.appState.activeMealSlot);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       duration: const Duration(seconds: 2),
       backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
       content: Text(err == null
-          ? '${food.emoji} ${food.name} · ${_fmtG(food.proteinPerServing)} g protein → ${widget.appState.activeMealSlot}'
-          : 'Not saved: $err'),
+          ? '${food.emoji} ${food.name} · ${_fmtG(food.proteinPerServing)} ${t('flutter.g_protein', 'g protein')} → $slot'
+          : '${t('flutter.not_saved', 'Not saved')}: $err'),
     ));
   }
 
   @override
   Widget build(BuildContext context) {
     final appState = widget.appState;
+    final t = widget.i18n.t;
     return ListenableBuilder(
       listenable: appState,
       builder: (context, _) {
@@ -85,7 +79,8 @@ class _FoodScreenState extends State<FoodScreen> {
               child: TextField(
                 onChanged: (v) => setState(() => _query = v),
                 decoration: InputDecoration(
-                  hintText: 'Search ${_all.length} foods…',
+                  hintText: t('flutter.search_foods', 'Search {n} foods…',
+                      {'n': '${_all.length}'}),
                   prefixIcon:
                       const Icon(Icons.search, size: 20, color: GsColors.text3),
                   isDense: true,
@@ -100,13 +95,13 @@ class _FoodScreenState extends State<FoodScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   _CategoryChip(
-                    label: 'All',
+                    label: t('flutter.all', 'All'),
                     selected: _category == null,
                     onTap: () => setState(() => _category = null),
                   ),
                   for (final c in foodCategories)
                     _CategoryChip(
-                      label: _categoryLabels[c] ?? c,
+                      label: t('flutter.cat.$c', c),
                       selected: _category == c,
                       onTap: () => setState(() => _category = c),
                     ),
@@ -114,7 +109,7 @@ class _FoodScreenState extends State<FoodScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            _MealSlotBar(appState: appState),
+            _MealSlotBar(appState: appState, i18n: widget.i18n),
             Expanded(
               child: _all.isEmpty
                   ? const Center(child: CircularProgressIndicator())
@@ -122,8 +117,10 @@ class _FoodScreenState extends State<FoodScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                       itemCount: _filtered.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
-                      itemBuilder: (context, i) =>
-                          _FoodRow(food: _filtered[i], onLog: _log),
+                      itemBuilder: (context, i) => _FoodRow(
+                          food: _filtered[i],
+                          onLog: _log,
+                          i18n: widget.i18n),
                     ),
             ),
           ],
@@ -171,11 +168,11 @@ class _CategoryChip extends StatelessWidget {
 
 /// "Logging for" segmented control — same four slots as the PWA.
 class _MealSlotBar extends StatelessWidget {
-  const _MealSlotBar({required this.appState});
+  const _MealSlotBar({required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   static const _slots = ['breakfast', 'lunch', 'dinner', 'snack'];
-  static const _labels = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +202,7 @@ class _MealSlotBar extends StatelessWidget {
                           : null,
                     ),
                     child: Text(
-                      _labels[i],
+                      i18n.t('meal.${_slots[i]}', _slots[i]),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
@@ -228,9 +225,11 @@ class _MealSlotBar extends StatelessWidget {
 }
 
 class _FoodRow extends StatelessWidget {
-  const _FoodRow({required this.food, required this.onLog});
+  const _FoodRow(
+      {required this.food, required this.onLog, required this.i18n});
   final FoodItem food;
   final void Function(FoodItem) onLog;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +254,7 @@ class _FoodRow extends StatelessWidget {
                 Text(
                   [
                     if (food.prepNote != null) food.prepNote!,
-                    '${_fmtG(food.servingGrams)} g serving',
+                    '${_fmtG(food.servingGrams)} g · ${i18n.t('flutter.serving', 'serving')}',
                   ].join(' · '),
                   style:
                       const TextStyle(fontSize: 11.5, color: GsColors.text3),
@@ -272,8 +271,9 @@ class _FoodRow extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: GsColors.accent)),
-              const Text('protein',
-                  style: TextStyle(fontSize: 10.5, color: GsColors.text3)),
+              Text(i18n.t('flutter.protein', 'protein'),
+                  style: const TextStyle(
+                      fontSize: 10.5, color: GsColors.text3)),
             ],
           ),
           const SizedBox(width: 10),
@@ -285,7 +285,8 @@ class _FoodRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
               ),
               onPressed: () => onLog(food),
-              child: const Text('Log', style: TextStyle(fontSize: 12.5)),
+              child: Text(i18n.t('flutter.log_btn', 'Log'),
+                  style: const TextStyle(fontSize: 12.5)),
             ),
           ),
         ],

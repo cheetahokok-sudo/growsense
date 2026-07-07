@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../i18n.dart';
 import '../theme.dart';
 
 /// Today tab — read-only first pass: child switcher, date selector,
 /// and the day's nutrition / sleep / activity as saved by the PWA.
 /// Logging (writes) comes after the read path is proven.
 class TodayScreen extends StatelessWidget {
-  const TodayScreen({super.key, required this.appState});
+  const TodayScreen({super.key, required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +21,7 @@ class TodayScreen extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (appState.children.isEmpty) {
-          return const _EmptyNote(
-              'No child profiles yet.\nAdd your first child in the web app — '
-              'it will appear here.');
+          return _EmptyNote(i18n.t('flutter.no_children'));
         }
         return RefreshIndicator(
           onRefresh: appState.loadDay,
@@ -30,7 +30,7 @@ class TodayScreen extends StatelessWidget {
             children: [
               _ChildSwitcher(appState: appState),
               const SizedBox(height: 12),
-              _DateSelector(appState: appState),
+              _DateSelector(appState: appState, i18n: i18n),
               const SizedBox(height: 12),
               if (appState.lastError != null)
                 _ErrorCard(message: appState.lastError!),
@@ -40,14 +40,16 @@ class TodayScreen extends StatelessWidget {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else ...[
-                _NutritionCard(nutrition: appState.nutrition),
+                _NutritionCard(nutrition: appState.nutrition, i18n: i18n),
                 const SizedBox(height: 12),
-                _LoggedFoodCard(appState: appState),
+                _LoggedFoodCard(appState: appState, i18n: i18n),
                 const SizedBox(height: 12),
-                _SleepCard(sleep: appState.sleep),
+                _SleepCard(sleep: appState.sleep, i18n: i18n),
                 const SizedBox(height: 12),
                 _ActivityCard(
-                    items: appState.activityItems, appState: appState),
+                    items: appState.activityItems,
+                    appState: appState,
+                    i18n: i18n),
               ],
             ],
           ),
@@ -122,8 +124,9 @@ class _ChildSwitcher extends StatelessWidget {
 // ── Date selector ───────────────────────────────────────────────────
 
 class _DateSelector extends StatelessWidget {
-  const _DateSelector({required this.appState});
+  const _DateSelector({required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +148,9 @@ class _DateSelector extends StatelessWidget {
           Expanded(
             child: Center(
               child: Text(
-                isToday ? 'Today · ${appState.logDate}' : appState.logDate,
+                isToday
+                    ? '${i18n.t('nav.today', 'Today')} · ${appState.logDate}'
+                    : appState.logDate,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -157,8 +162,9 @@ class _DateSelector extends StatelessWidget {
           if (!isToday)
             TextButton(
               onPressed: () => appState.setLogDate(todayISO()),
-              child: const Text('Today',
-                  style: TextStyle(fontSize: 12, color: GsColors.accent)),
+              child: Text(i18n.t('nav.today', 'Today'),
+                  style: const TextStyle(
+                      fontSize: 12, color: GsColors.accent)),
             ),
           IconButton(
             icon: const Icon(Icons.chevron_right, color: GsColors.text2),
@@ -173,34 +179,44 @@ class _DateSelector extends StatelessWidget {
 // ── Cards ───────────────────────────────────────────────────────────
 
 class _NutritionCard extends StatelessWidget {
-  const _NutritionCard({required this.nutrition});
+  const _NutritionCard({required this.nutrition, required this.i18n});
   final Map<String, dynamic>? nutrition;
+  final I18n i18n;
 
   double _g(String key) => (nutrition?[key] as num?)?.toDouble() ?? 0;
 
   @override
   Widget build(BuildContext context) {
+    final t = i18n.t;
     final breakfast = _g('protein_breakfast_g');
     final lunch = _g('protein_lunch_g');
     final dinner = _g('protein_dinner_g');
     final total = breakfast + lunch + dinner;
     final calcium = _g('calcium_mg');
     final fluids = _g('fluids_ml');
+    final protein = t('common.protein', 'Protein');
 
     return _GsCard(
-      title: 'Nutrition',
+      title: t('common.nutrition', 'Nutrition'),
       accentColor: GsColors.accent,
       child: nutrition == null
-          ? const _EmptyNote('Nothing logged for this date.')
+          ? _EmptyNote(t('today.nutrition.empty'))
           : Column(
               children: [
-                _MetricRow('Protein — breakfast', '${_fmt(breakfast)} g'),
-                _MetricRow('Protein — lunch', '${_fmt(lunch)} g'),
-                _MetricRow('Protein — dinner', '${_fmt(dinner)} g'),
-                _MetricRow('Protein total', '${_fmt(total)} g', bold: true),
+                _MetricRow('$protein — ${t('meal.breakfast', 'Breakfast')}',
+                    '${_fmt(breakfast)} g'),
+                _MetricRow('$protein — ${t('meal.lunch', 'Lunch')}',
+                    '${_fmt(lunch)} g'),
+                _MetricRow('$protein — ${t('meal.dinner', 'Dinner')}',
+                    '${_fmt(dinner)} g'),
+                _MetricRow(t('today.nutrition.protein_total'),
+                    '${_fmt(total)} g',
+                    bold: true),
                 const Divider(height: 20, color: GsColors.border),
-                _MetricRow('Calcium', '${_fmt(calcium)} mg'),
-                _MetricRow('Fluids', '${_fmt(fluids)} ml'),
+                _MetricRow(t('common.calcium', 'Calcium'),
+                    '${_fmt(calcium)} mg'),
+                _MetricRow(t('today.nutrition.hydration', 'Fluids'),
+                    '${_fmt(fluids)} ml'),
               ],
             ),
     );
@@ -210,26 +226,29 @@ class _NutritionCard extends StatelessWidget {
 /// Per-item food log for the selected date — the reviewable list the
 /// PWA shows under "Logged today", with the same per-item delete undo.
 class _LoggedFoodCard extends StatelessWidget {
-  const _LoggedFoodCard({required this.appState});
+  const _LoggedFoodCard({required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
+    final t = i18n.t;
     final items = appState.nutritionLogItems;
     final totalProtein = items.fold<double>(
         0, (sum, i) => sum + ((i['protein_g'] as num?)?.toDouble() ?? 0));
     return _GsCard(
-      title: 'Food log',
+      title: t('flutter.food_log', 'Food log'),
       accentColor: GsColors.accent,
       trailing: items.isEmpty
           ? null
-          : Text('${items.length} items · ${_fmt(totalProtein)} g protein',
+          : Text(
+              '${items.length} ${t('flutter.items', 'items')} · ${_fmt(totalProtein)} ${t('flutter.g_protein', 'g protein')}',
               style: const TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                   color: GsColors.accent)),
       child: items.isEmpty
-          ? const _EmptyNote('Nothing logged yet for this date.')
+          ? _EmptyNote(t('today.nutrition.empty'))
           : Column(
               children: [
                 for (final item in items)
@@ -260,8 +279,8 @@ class _LoggedFoodCard extends StatelessWidget {
                               ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                       backgroundColor: GsColors.flag,
-                                      content:
-                                          Text('Could not remove: $err')));
+                                      content: Text(
+                                          '${t('flutter.could_not_remove', 'Could not remove')}: $err')));
                             }
                           },
                         ),
@@ -275,31 +294,37 @@ class _LoggedFoodCard extends StatelessWidget {
 }
 
 class _SleepCard extends StatelessWidget {
-  const _SleepCard({required this.sleep});
+  const _SleepCard({required this.sleep, required this.i18n});
   final Map<String, dynamic>? sleep;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
+    final t = i18n.t;
     final totalMin = (sleep?['total_sleep_min'] as num?)?.toInt();
     final wakes = (sleep?['night_wakes'] as num?)?.toInt();
     final bedtime = sleep?['bedtime'] as String?;
     final efficiency = (sleep?['sleep_efficiency_score'] as num?)?.toInt();
 
     return _GsCard(
-      title: 'Sleep',
+      title: t('common.sleep', 'Sleep'),
       accentColor: GsColors.estimated,
       child: sleep == null
-          ? const _EmptyNote('No sleep entry for this date.')
+          ? _EmptyNote(t('flutter.no_sleep_entry'))
           : Column(
               children: [
                 if (totalMin != null)
-                  _MetricRow('Total sleep',
+                  _MetricRow(t('flutter.total_sleep', 'Total sleep'),
                       '${totalMin ~/ 60}h ${totalMin % 60}m',
                       bold: true),
-                if (bedtime != null) _MetricRow('Bedtime', bedtime),
-                if (wakes != null) _MetricRow('Night wakes', '$wakes'),
+                if (bedtime != null)
+                  _MetricRow(t('today.sleep.bedtime', 'Bedtime'), bedtime),
+                if (wakes != null)
+                  _MetricRow(
+                      t('flutter.night_wakes', 'Night wakes'), '$wakes'),
                 if (efficiency != null)
-                  _MetricRow('Efficiency score', '$efficiency'),
+                  _MetricRow(t('flutter.efficiency_score', 'Efficiency score'),
+                      '$efficiency'),
               ],
             ),
     );
@@ -307,9 +332,11 @@ class _SleepCard extends StatelessWidget {
 }
 
 class _ActivityCard extends StatelessWidget {
-  const _ActivityCard({required this.items, required this.appState});
+  const _ActivityCard(
+      {required this.items, required this.appState, required this.i18n});
   final List<Map<String, dynamic>> items;
   final AppState appState;
+  final I18n i18n;
 
   static const _tierColor = {
     'high_impact': GsColors.flag,
@@ -321,21 +348,22 @@ class _ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = i18n.t;
     final totalMin = items.fold<double>(
         0, (sum, i) => sum + ((i['duration_min'] as num?)?.toDouble() ?? 0));
 
     return _GsCard(
-      title: 'Activity',
+      title: t('common.activity', 'Activity'),
       accentColor: GsColors.measured,
       trailing: items.isEmpty
           ? null
-          : Text('${_fmt(totalMin)} min',
+          : Text('${_fmt(totalMin)} ${t('flutter.min', 'min')}',
               style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: GsColors.measured)),
       child: items.isEmpty
-          ? const _EmptyNote('No activity logged for this date.')
+          ? _EmptyNote(t('flutter.no_activity_logged'))
           : Column(
               children: [
                 for (final item in items)
@@ -360,8 +388,8 @@ class _ActivityCard extends StatelessWidget {
                         ),
                         Text(
                           item['unit'] == 'reps'
-                              ? '${item['duration_value'] ?? '?'} reps'
-                              : '${_fmt((item['duration_min'] as num?)?.toDouble() ?? 0)} min',
+                              ? '${item['duration_value'] ?? '?'} ${t('flutter.reps', 'reps')}'
+                              : '${_fmt((item['duration_min'] as num?)?.toDouble() ?? 0)} ${t('flutter.min', 'min')}',
                           style: const TextStyle(
                               fontSize: 12.5,
                               color: GsColors.text2,
@@ -378,8 +406,8 @@ class _ActivityCard extends StatelessWidget {
                               ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                       backgroundColor: GsColors.flag,
-                                      content:
-                                          Text('Could not remove: $err')));
+                                      content: Text(
+                                          '${t('flutter.could_not_remove', 'Could not remove')}: $err')));
                             }
                           },
                         ),

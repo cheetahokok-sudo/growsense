@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../activity_data.dart';
 import '../app_state.dart';
+import '../i18n.dart';
 import '../theme.dart';
 
 /// Activity tab — 30-activity browser with tier filter tabs,
@@ -9,8 +10,10 @@ import '../theme.dart';
 /// bottom sheet (modal-sheet equivalent) with duration presets and
 /// an outdoor toggle, then inserts a daily_activity_items row.
 class ActivityScreen extends StatefulWidget {
-  const ActivityScreen({super.key, required this.appState});
+  const ActivityScreen(
+      {super.key, required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();
@@ -44,7 +47,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(GsRadius.lg)),
       ),
-      builder: (context) => _ActivityLogSheet(activity: act),
+      builder: (context) =>
+          _ActivityLogSheet(activity: act, i18n: widget.i18n),
     );
     if (result == null || !mounted) return;
 
@@ -58,19 +62,22 @@ class _ActivityScreenState extends State<ActivityScreen> {
       isOutdoor: result.outdoor,
     );
     if (!mounted) return;
-    final label =
-        act.unit == 'reps' ? '${result.value} reps' : '${result.value} min';
+    final t = widget.i18n.t;
+    final unitLabel = act.unit == 'reps'
+        ? t('flutter.reps', 'reps')
+        : t('flutter.min', 'min');
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       duration: const Duration(seconds: 2),
       backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
       content: Text(err == null
-          ? '${act.emoji} ${act.displayName} · $label${result.outdoor ? ' ☀️' : ''}'
-          : 'Could not save activity: $err'),
+          ? '${act.emoji} ${act.displayName} · ${result.value} $unitLabel${result.outdoor ? ' ☀️' : ''}'
+          : '${t('flutter.could_not_save_activity', 'Could not save activity')}: $err'),
     ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = widget.i18n.t;
     return Column(
       children: [
         const SizedBox(height: 12),
@@ -81,22 +88,23 @@ class _ActivityScreenState extends State<ActivityScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
               _TierChip(
-                label: 'All',
+                label: t('flutter.all', 'All'),
                 color: GsColors.text2,
                 selected: _tier == null,
                 onTap: () => setState(() => _tier = null),
               ),
-              for (final t in [
+              for (final tier in [
                 'high_impact',
                 'weight_bearing',
                 'cardio',
                 'flexibility'
               ])
                 _TierChip(
-                  label: activityTierConfig[t]!.shortLabel,
-                  color: tierColors[t]!,
-                  selected: _tier == t,
-                  onTap: () => setState(() => _tier = t),
+                  label: t('flutter.tier_short.$tier',
+                      activityTierConfig[tier]!.shortLabel),
+                  color: tierColors[tier]!,
+                  selected: _tier == tier,
+                  onTap: () => setState(() => _tier = tier),
                 ),
             ],
           ),
@@ -109,7 +117,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
             separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
               final act = _filtered[i];
-              final tc = activityTierConfig[act.tier]!;
+              final tierLabel = t('flutter.tier.${act.tier}',
+                  activityTierConfig[act.tier]!.label);
               final color = tierColors[act.tier]!;
               return Container(
                 padding:
@@ -139,7 +148,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                               color: color.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(tc.label,
+                            child: Text(tierLabel,
                                 style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
@@ -159,8 +168,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
                               const EdgeInsets.symmetric(horizontal: 12),
                         ),
                         onPressed: () => _openLogSheet(act),
-                        child: const Text('Log',
-                            style: TextStyle(fontSize: 12.5)),
+                        child: Text(t('flutter.log_btn', 'Log'),
+                            style: const TextStyle(fontSize: 12.5)),
                       ),
                     ),
                   ],
@@ -216,8 +225,9 @@ class _TierChip extends StatelessWidget {
 /// Duration picker sheet — same presets/defaults as the PWA
 /// (standard_min 30, small_min 2, reps 40) plus the outdoor toggle.
 class _ActivityLogSheet extends StatefulWidget {
-  const _ActivityLogSheet({required this.activity});
+  const _ActivityLogSheet({required this.activity, required this.i18n});
   final Activity activity;
+  final I18n i18n;
 
   @override
   State<_ActivityLogSheet> createState() => _ActivityLogSheetState();
@@ -246,10 +256,14 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = widget.i18n.t;
     final act = widget.activity;
-    final tc = activityTierConfig[act.tier]!;
+    final tierLabel =
+        t('flutter.tier.${act.tier}', activityTierConfig[act.tier]!.label);
     final color = _ActivityScreenState.tierColors[act.tier]!;
-    final unitLabel = act.unit == 'reps' ? 'reps' : 'min';
+    final unitLabel = act.unit == 'reps'
+        ? t('flutter.reps', 'reps')
+        : t('flutter.min', 'min');
 
     return SafeArea(
       child: Padding(
@@ -270,7 +284,7 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 2),
-                      Text(tc.label,
+                      Text(tierLabel,
                           style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -331,9 +345,12 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
               contentPadding: EdgeInsets.zero,
               dense: true,
               activeThumbColor: GsColors.accent,
-              title: const Text('Outdoor ☀️', style: TextStyle(fontSize: 13)),
-              subtitle: const Text('Sunlight → vitamin D synthesis',
-                  style: TextStyle(fontSize: 11, color: GsColors.text3)),
+              title: Text(t('flutter.outdoor', 'Outdoor ☀️'),
+                  style: const TextStyle(fontSize: 13)),
+              subtitle: Text(
+                  t('flutter.outdoor_sub', 'Sunlight → vitamin D synthesis'),
+                  style:
+                      const TextStyle(fontSize: 11, color: GsColors.text3)),
               value: _outdoor,
               onChanged: (v) => setState(() => _outdoor = v),
             ),
@@ -341,7 +358,7 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
             ElevatedButton(
               onPressed: () =>
                   Navigator.pop(context, (value: _value, outdoor: _outdoor)),
-              child: Text('Log $_value $unitLabel'),
+              child: Text('${t('flutter.log_btn', 'Log')} $_value $unitLabel'),
             ),
           ],
         ),

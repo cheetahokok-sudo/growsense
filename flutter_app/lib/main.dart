@@ -6,9 +6,11 @@
 // ══════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app_state.dart';
+import 'i18n.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_shell.dart';
 import 'theme.dart';
@@ -20,11 +22,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
       url: supabaseUrl, publishableKey: supabasePublishableKey);
-  runApp(const GrowSenseApp());
+  final i18n = await I18n.create();
+  runApp(GrowSenseApp(i18n: i18n));
 }
 
 class GrowSenseApp extends StatefulWidget {
-  const GrowSenseApp({super.key});
+  const GrowSenseApp({super.key, required this.i18n});
+  final I18n i18n;
 
   @override
   State<GrowSenseApp> createState() => _GrowSenseAppState();
@@ -35,11 +39,25 @@ class _GrowSenseAppState extends State<GrowSenseApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'GrowSense',
-      debugShowCheckedModeBanner: false,
-      theme: buildGrowSenseTheme(),
-      home: AuthGate(appState: appState),
+    return ListenableBuilder(
+      listenable: widget.i18n,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'GrowSense',
+          debugShowCheckedModeBanner: false,
+          theme: buildGrowSenseTheme(widget.i18n.code),
+          locale: widget.i18n.locale,
+          supportedLocales: [
+            for (final code in supportedLanguages.keys) Locale(code),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: AuthGate(appState: appState, i18n: widget.i18n),
+        );
+      },
     );
   }
 }
@@ -48,8 +66,9 @@ class _GrowSenseAppState extends State<GrowSenseApp> {
 /// 5-tab app shell — the Flutter equivalent of the PWA's
 /// #authScreen / #appRoot boot sequence.
 class AuthGate extends StatelessWidget {
-  const AuthGate({super.key, required this.appState});
+  const AuthGate({super.key, required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
@@ -58,9 +77,9 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = Supabase.instance.client.auth.currentSession;
         if (session == null) {
-          return const AuthScreen();
+          return AuthScreen(i18n: i18n);
         }
-        return HomeShell(appState: appState);
+        return HomeShell(appState: appState, i18n: i18n);
       },
     );
   }

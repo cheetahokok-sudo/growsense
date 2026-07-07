@@ -45,7 +45,9 @@ const gsShadow = [
   BoxShadow(color: Color(0x08141E19), offset: Offset(0, 2), blurRadius: 8),
 ];
 
-ThemeData buildGrowSenseTheme() {
+/// Theme is locale-aware: Thai gets Sarabun (the brand's Thai face),
+/// Arabic gets Noto Sans Arabic; everything else uses Inter.
+ThemeData buildGrowSenseTheme([String localeCode = 'en']) {
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
@@ -56,7 +58,12 @@ ThemeData buildGrowSenseTheme() {
     ),
     scaffoldBackgroundColor: GsColors.bg,
   );
-  final textTheme = GoogleFonts.interTextTheme(base.textTheme).apply(
+  final localizedText = switch (localeCode) {
+    'th' => GoogleFonts.sarabunTextTheme(base.textTheme),
+    'ar' => GoogleFonts.notoSansArabicTextTheme(base.textTheme),
+    _ => GoogleFonts.interTextTheme(base.textTheme),
+  };
+  final textTheme = localizedText.apply(
     bodyColor: GsColors.text,
     displayColor: GsColors.text,
   );

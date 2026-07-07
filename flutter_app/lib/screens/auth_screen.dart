@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../i18n.dart';
 import '../theme.dart';
 
 /// Email + password sign-in against the shared Supabase project —
 /// mirrors the PWA's signInWithPassword flow. No sign-up here yet;
-/// accounts are created in the web app for now.
+/// accounts are created in the web app for now. Language pills sit
+/// below the card, same as the PWA's pre-login language selector.
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+  const AuthScreen({super.key, required this.i18n});
+  final I18n i18n;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -24,7 +27,8 @@ class _AuthScreenState extends State<AuthScreen> {
     final email = _email.text.trim();
     final password = _password.text;
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Enter your email and password.');
+      setState(() => _error =
+          widget.i18n.t('flutter.enter_email_password'));
       return;
     }
     setState(() {
@@ -51,6 +55,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = widget.i18n.t;
     return Scaffold(
       backgroundColor: GsColors.deepGreen,
       body: SafeArea(
@@ -72,7 +77,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Pediatric growth intelligence',
+                  t('auth.subtitle', 'Pediatric growth intelligence'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
@@ -93,15 +98,16 @@ class _AuthScreenState extends State<AuthScreen> {
                         controller: _email,
                         keyboardType: TextInputType.emailAddress,
                         autocorrect: false,
-                        decoration: const InputDecoration(labelText: 'Email'),
+                        decoration: InputDecoration(
+                            labelText: t('common.email', 'Email')),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _password,
                         obscureText: true,
                         onSubmitted: (_) => _signIn(),
-                        decoration:
-                            const InputDecoration(labelText: 'Password'),
+                        decoration: InputDecoration(
+                            labelText: t('common.password', 'Password')),
                       ),
                       if (_error != null) ...[
                         const SizedBox(height: 12),
@@ -114,10 +120,44 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _busy ? null : _signIn,
-                        child: Text(_busy ? 'Signing in…' : 'Sign in'),
+                        child: Text(_busy
+                            ? t('flutter.signing_in', 'Signing in…')
+                            : t('auth.sign_in_btn', 'Sign in')),
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 20),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final entry in supportedLanguages.entries)
+                      GestureDetector(
+                        onTap: () => widget.i18n.setLanguage(entry.key),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: widget.i18n.code == entry.key
+                                ? Colors.white.withValues(alpha: 0.18)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color:
+                                    Colors.white.withValues(alpha: 0.28)),
+                          ),
+                          child: Text(
+                            entry.value,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),

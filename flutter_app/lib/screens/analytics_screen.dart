@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../analytics.dart';
 import '../app_state.dart';
+import '../i18n.dart';
 import '../theme.dart';
 
 /// Analytics tab — 7-day stat tiles and trend bars, port of the PWA's
 /// updateStats() view. Bars are plain widgets; a charting package can
 /// come later when the growth percentile curves are ported.
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({super.key, required this.appState});
+  const AnalyticsScreen(
+      {super.key, required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -30,14 +33,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = widget.i18n.t;
     return ListenableBuilder(
       listenable: widget.appState,
       builder: (context, _) {
         _loadIfNeeded();
         if (_future == null) {
-          return const Center(
-              child: Text('No child selected',
-                  style: TextStyle(color: GsColors.text3)));
+          return Center(
+              child: Text(t('flutter.no_child_selected', 'No child selected'),
+                  style: const TextStyle(color: GsColors.text3)));
         }
         return FutureBuilder<WeeklyAnalytics>(
           future: _future,
@@ -46,7 +50,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               return Center(
                   child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Could not load analytics: ${snap.error}',
+                child: Text(
+                    '${t('flutter.could_not_load', 'Could not load')}: ${snap.error}',
                     style: const TextStyle(
                         fontSize: 13, color: GsColors.flagDark)),
               ));
@@ -68,21 +73,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     children: [
                       Expanded(
                           child: _StatTile(
-                        label: 'Avg readiness, 7d',
+                        label:
+                            '${t('analytics.stats.avg_readiness', 'Avg readiness')} · ${t('flutter.7d', '7d')}',
                         value: a.avgScore == null
                             ? '—'
                             : a.avgScore!.round().toString(),
-                        suffix: a.avgScore == null ? null : 'of 100',
+                        suffix: a.avgScore == null
+                            ? null
+                            : t('today.hud.score_suffix', 'of 100'),
                         color: GsColors.accent,
                       )),
                       const SizedBox(width: 10),
                       Expanded(
                           child: _StatTile(
-                        label: 'Avg sleep, 7d',
+                        label:
+                            '${t('analytics.stats.avg_sleep', 'Avg sleep')} · ${t('flutter.7d', '7d')}',
                         value: a.avgSleepHours == null
                             ? '—'
                             : a.avgSleepHours!.toStringAsFixed(1),
-                        suffix: a.avgSleepHours == null ? null : 'hours',
+                        suffix: a.avgSleepHours == null
+                            ? null
+                            : t('flutter.hours', 'hours'),
                         color: GsColors.estimated,
                       )),
                     ],
@@ -92,13 +103,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     children: [
                       Expanded(
                           child: _StatTile(
-                        label: 'Height velocity',
+                        label: t('analytics.insight.height_velocity',
+                            'Height velocity'),
                         value: a.velocityCmPerYear == null
                             ? '—'
                             : a.velocityCmPerYear!.toStringAsFixed(1),
                         suffix: a.velocityCmPerYear == null
-                            ? a.velocityLabel
-                            : 'cm/yr · ${a.velocityLabel}',
+                            ? t('flutter.velocity.not_enough',
+                                a.velocityLabel)
+                            : 'cm/yr · ${t('flutter.velocity.${a.velocityLabel.replaceAll(' ', '_')}', a.velocityLabel)}',
                         color: a.velocityLabel == 'below range'
                             ? GsColors.flag
                             : GsColors.measured,
@@ -106,12 +119,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                           child: _StatTile(
-                        label: 'Height gain, 30d',
+                        label:
+                            '${t('analytics.stats.height_gain', 'Height gain')} · ${t('flutter.30d', '30d')}',
                         value: a.heightGain30dCm == null
                             ? '—'
                             : '${a.heightGain30dCm! >= 0 ? '+' : ''}${a.heightGain30dCm!.toStringAsFixed(1)}',
                         suffix: a.heightGain30dCm == null
-                            ? 'needs 2+ measurements'
+                            ? t('flutter.needs_two_measurements',
+                                'needs 2+ measurements')
                             : 'cm',
                         color: GsColors.measured,
                       )),
@@ -119,38 +134,43 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 14),
                   _TrendCard(
-                    title: 'Protein',
+                    title: t('common.protein', 'Protein'),
                     unit: 'g',
                     color: GsColors.accent,
                     days: a.days,
                     valueOf: (d) => d.proteinG,
+                    i18n: widget.i18n,
                   ),
                   const SizedBox(height: 12),
                   _TrendCard(
-                    title: 'Calcium',
+                    title: t('common.calcium', 'Calcium'),
                     unit: 'mg',
                     color: GsColors.accent,
                     days: a.days,
                     valueOf: (d) => d.calciumMg,
+                    i18n: widget.i18n,
                   ),
                   const SizedBox(height: 12),
                   _TrendCard(
-                    title: 'Sleep',
+                    title: t('common.sleep', 'Sleep'),
                     unit: 'h',
                     color: GsColors.estimated,
                     days: a.days,
                     valueOf: (d) =>
                         d.sleepMin == null ? null : d.sleepMin! / 60,
+                    i18n: widget.i18n,
                   ),
                   const SizedBox(height: 12),
                   _TrendCard(
-                    title: 'Activity (weighted)',
-                    unit: 'min',
+                    title:
+                        '${t('common.activity', 'Activity')} (${t('flutter.weighted', 'weighted')})',
+                    unit: t('flutter.min', 'min'),
                     color: GsColors.measured,
                     days: a.days,
                     valueOf: (d) => d.weightedActivityMin == 0
                         ? null
                         : d.weightedActivityMin,
+                    i18n: widget.i18n,
                   ),
                 ],
               ),
@@ -211,12 +231,14 @@ class _TrendCard extends StatelessWidget {
     required this.color,
     required this.days,
     required this.valueOf,
+    required this.i18n,
   });
   final String title;
   final String unit;
   final Color color;
   final List<DayMetrics> days;
   final double? Function(DayMetrics) valueOf;
+  final I18n i18n;
 
   static const _weekdayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -243,7 +265,7 @@ class _TrendCard extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w700, color: color)),
               if (maxVal > 0)
-                Text('max ${_fmt(maxVal)} $unit',
+                Text('${i18n.t('flutter.max', 'max')} ${_fmt(maxVal)} $unit',
                     style: const TextStyle(
                         fontSize: 10.5, color: GsColors.text3)),
             ],

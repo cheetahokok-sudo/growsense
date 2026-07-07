@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../analytics.dart';
 import '../app_state.dart';
 import '../growth_math.dart';
+import '../i18n.dart';
 import '../theme.dart';
 
 /// Medical tab — growth measurement entry, WHO 2007 height-for-age
@@ -15,8 +16,10 @@ import '../theme.dart';
 /// recent readiness. Colors follow the design system strictly:
 /// measured = confirmed data, estimated = forecasts only.
 class MedicalScreen extends StatefulWidget {
-  const MedicalScreen({super.key, required this.appState});
+  const MedicalScreen(
+      {super.key, required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   State<MedicalScreen> createState() => _MedicalScreenState();
@@ -55,9 +58,11 @@ class _MedicalScreenState extends State<MedicalScreen> {
       builder: (context, _) {
         final child = widget.appState.activeChildRow;
         if (child == null) {
-          return const Center(
-              child: Text('No child selected',
-                  style: TextStyle(color: GsColors.text3)));
+          return Center(
+              child: Text(
+                  widget.i18n
+                      .t('flutter.no_child_selected', 'No child selected'),
+                  style: const TextStyle(color: GsColors.text3)));
         }
         _loadReadinessIfNeeded();
         if (_who == null) {
@@ -70,13 +75,14 @@ class _MedicalScreenState extends State<MedicalScreen> {
                 appState: widget.appState,
                 child: child,
                 who: _who!,
-                readiness: _readiness),
+                readiness: _readiness,
+                i18n: widget.i18n),
             const SizedBox(height: 12),
-            _TargetHeightCard(child: child),
+            _TargetHeightCard(child: child, i18n: widget.i18n),
             const SizedBox(height: 12),
-            _EntryCard(appState: widget.appState),
+            _EntryCard(appState: widget.appState, i18n: widget.i18n),
             const SizedBox(height: 12),
-            _HistoryCard(appState: widget.appState),
+            _HistoryCard(appState: widget.appState, i18n: widget.i18n),
           ],
         );
       },
@@ -91,14 +97,17 @@ class _ChartCard extends StatelessWidget {
       {required this.appState,
       required this.child,
       required this.who,
-      required this.readiness});
+      required this.readiness,
+      required this.i18n});
   final AppState appState;
   final Map<String, dynamic> child;
   final WhoReference who;
   final double? readiness;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
+    final t = i18n.t;
     final dob = child['date_of_birth'] as String?;
     final sex = child['biological_sex'] as String?;
     final table = who.tableFor(sex);
@@ -115,7 +124,8 @@ class _ChartCard extends StatelessWidget {
     }
 
     // Percentile readout for the latest measurement
-    String readout = 'No measurements yet — add one below.';
+    String readout = t('flutter.no_measurements_hint',
+        'No measurements yet — add one below.');
     List<ProjectionPoint> projection = [];
     if (meas.isNotEmpty) {
       final (age, h) = meas.last;
@@ -123,7 +133,7 @@ class _ChartCard extends StatelessWidget {
       final z = zFromHeight(bands, h);
       final pct = zToPercentile(z);
       readout =
-          '${h.toStringAsFixed(1)} cm at ${age.toStringAsFixed(1)}y · ${pct.round()}th percentile (z ${z >= 0 ? '+' : ''}${z.toStringAsFixed(2)})';
+          '${h.toStringAsFixed(1)} cm · ${age.toStringAsFixed(1)}y · P${pct.round()} ${t('flutter.percentile', 'percentile')} (z ${z >= 0 ? '+' : ''}${z.toStringAsFixed(2)})';
 
       final target = calculateTargetHeight(
         motherHeightCm: (child['mother_height_cm'] as num?)?.toDouble(),
@@ -152,10 +162,11 @@ class _ChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 4),
-            child: Text('Height-for-age · WHO 2007',
-                style: TextStyle(
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+                '${t('analytics.charts.height_for_age', 'Height-for-age')} · WHO 2007',
+                style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: GsColors.measured)),
@@ -176,19 +187,17 @@ class _ChartCard extends StatelessWidget {
                 table: table,
                 measurements: meas,
                 projection: projection,
+                emptyLabel: t('flutter.no_measurements_chart',
+                    'No measurements logged yet'),
               ),
             ),
           ),
           const SizedBox(height: 6),
-          const Padding(
-            padding: EdgeInsets.only(left: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
             child: Text(
-              'Shaded: WHO percentile channels (3rd–97th, 15th–85th). '
-              'Blue: measured. Dashed gold: estimated trajectory — genetic '
-              'target (mid-parental, Zeevi 2024) blended with the current '
-              'channel and recent nutrition/activity/sleep. An estimate, '
-              'not a medical prediction.',
-              style: TextStyle(fontSize: 10, color: GsColors.text3),
+              t('flutter.chart_caption'),
+              style: const TextStyle(fontSize: 10, color: GsColors.text3),
             ),
           ),
         ],
@@ -205,10 +214,12 @@ class _GrowthChartPainter extends CustomPainter {
   _GrowthChartPainter(
       {required this.table,
       required this.measurements,
-      required this.projection});
+      required this.projection,
+      required this.emptyLabel});
   final List<List<double>> table;
   final List<(double, double)> measurements; // (ageYears, cm) asc
   final List<ProjectionPoint> projection;
+  final String emptyLabel;
 
   static const _padL = 34.0, _padR = 8.0, _padT = 8.0, _padB = 22.0;
 
@@ -380,7 +391,7 @@ class _GrowthChartPainter extends CustomPainter {
     if (visMeas.isEmpty) {
       _text(
           canvas,
-          'No measurements logged yet',
+          emptyLabel,
           Offset(_padL + w / 2 - 70, _padT + h / 2 - 6),
           const TextStyle(fontSize: 11, color: GsColors.text3));
     }
@@ -437,11 +448,13 @@ class _GrowthChartPainter extends CustomPainter {
 // ── Target height card ──────────────────────────────────────────────
 
 class _TargetHeightCard extends StatelessWidget {
-  const _TargetHeightCard({required this.child});
+  const _TargetHeightCard({required this.child, required this.i18n});
   final Map<String, dynamic> child;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
+    final t = i18n.t;
     final target = calculateTargetHeight(
       motherHeightCm: (child['mother_height_cm'] as num?)?.toDouble(),
       fatherHeightCm: (child['father_height_cm'] as num?)?.toDouble(),
@@ -458,31 +471,30 @@ class _TargetHeightCard extends StatelessWidget {
         border: Border.all(color: GsColors.estimated.withValues(alpha: 0.4)),
       ),
       child: target == null
-          ? const Text(
-              'Genetic potential: add mother & father heights in the web '
-              "app's Medical tab to unlock the mid-parental target height "
-              'and the personalised trajectory.',
-              style: TextStyle(fontSize: 12, color: GsColors.estimatedDark))
+          ? Text(t('flutter.add_parent_heights'),
+              style: const TextStyle(
+                  fontSize: 12, color: GsColors.estimatedDark))
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Genetic target height (adult)',
-                    style: TextStyle(
+                Text(
+                    t('flutter.genetic_target_title',
+                        'Genetic target height (adult)'),
+                    style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: GsColors.estimatedDark)),
                 const SizedBox(height: 6),
                 Text(
                     '${target.targetHeightCm.toStringAsFixed(1)} cm '
-                    '(range ${target.rangeLowCm.toStringAsFixed(1)}–${target.rangeHighCm.toStringAsFixed(1)})',
+                    '(${t('flutter.range', 'range')} ${target.rangeLowCm.toStringAsFixed(1)}–${target.rangeHighCm.toStringAsFixed(1)})',
                     style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: GsColors.estimatedDark)),
                 const SizedBox(height: 4),
                 Text(
-                    'Zeevi et al. 2024 method (age-corrected, regression to '
-                    'the mean). Traditional Tanner: ${target.tannerMidParentalCm.toStringAsFixed(1)} cm.',
+                    '${t('flutter.target_method')} ${target.tannerMidParentalCm.toStringAsFixed(1)} cm.',
                     style: const TextStyle(
                         fontSize: 10.5, color: GsColors.estimatedDark)),
               ],
@@ -494,8 +506,9 @@ class _TargetHeightCard extends StatelessWidget {
 // ── Measurement entry ───────────────────────────────────────────────
 
 class _EntryCard extends StatefulWidget {
-  const _EntryCard({required this.appState});
+  const _EntryCard({required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   State<_EntryCard> createState() => _EntryCardState();
@@ -515,12 +528,14 @@ class _EntryCardState extends State<_EntryCard> {
   }
 
   Future<void> _save() async {
+    final t = widget.i18n.t;
     final h = double.tryParse(_height.text);
     final w = double.tryParse(_weight.text);
     if (h == null || w == null || h <= 0 || w <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: GsColors.flag,
-          content: Text('Enter a valid height and weight')));
+          content: Text(t('flutter.invalid_height_weight',
+              'Enter a valid height and weight'))));
       return;
     }
     setState(() => _busy = true);
@@ -530,7 +545,9 @@ class _EntryCardState extends State<_EntryCard> {
     setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
-        content: Text(err == null ? '✅ Measurement logged' : 'Not saved: $err')));
+        content: Text(err == null
+            ? '✅ ${t('flutter.measurement_logged', 'Measurement logged')}'
+            : '${t('flutter.not_saved', 'Not saved')}: $err')));
     if (err == null) {
       _height.clear();
       _weight.clear();
@@ -550,8 +567,10 @@ class _EntryCardState extends State<_EntryCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Log a measurement',
-              style: TextStyle(
+          Text(
+              widget.i18n
+                  .t('analytics.log_measurement.title', 'Log measurement'),
+              style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: GsColors.accent)),
@@ -591,8 +610,10 @@ class _EntryCardState extends State<_EntryCard> {
                   controller: _height,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                      labelText: 'Height (cm)', isDense: true),
+                  decoration: InputDecoration(
+                      labelText:
+                          widget.i18n.t('common.height_cm', 'Height (cm)'),
+                      isDense: true),
                 ),
               ),
               const SizedBox(width: 8),
@@ -601,8 +622,10 @@ class _EntryCardState extends State<_EntryCard> {
                   controller: _weight,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                      labelText: 'Weight (kg)', isDense: true),
+                  decoration: InputDecoration(
+                      labelText:
+                          widget.i18n.t('common.weight_kg', 'Weight (kg)'),
+                      isDense: true),
                 ),
               ),
             ],
@@ -610,7 +633,10 @@ class _EntryCardState extends State<_EntryCard> {
           const SizedBox(height: 10),
           ElevatedButton(
             onPressed: _busy ? null : _save,
-            child: Text(_busy ? 'Saving…' : 'Save measurement'),
+            child: Text(_busy
+                ? widget.i18n.t('flutter.saving', 'Saving…')
+                : widget.i18n
+                    .t('flutter.save_measurement', 'Save measurement')),
           ),
         ],
       ),
@@ -621,11 +647,13 @@ class _EntryCardState extends State<_EntryCard> {
 // ── History list ────────────────────────────────────────────────────
 
 class _HistoryCard extends StatelessWidget {
-  const _HistoryCard({required this.appState});
+  const _HistoryCard({required this.appState, required this.i18n});
   final AppState appState;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
+    final t = i18n.t;
     final items = appState.measurements;
     return Container(
       padding: const EdgeInsets.all(14),
@@ -641,23 +669,24 @@ class _HistoryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Measurement history',
-                  style: TextStyle(
+              Text(t('flutter.measurement_history', 'Measurement history'),
+                  style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: GsColors.measured)),
-              Text('${items.length} records',
+              Text('${items.length} ${t('flutter.records', 'records')}',
                   style:
                       const TextStyle(fontSize: 11, color: GsColors.text3)),
             ],
           ),
           const SizedBox(height: 6),
           if (items.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 10),
-              child: Text('Nothing recorded yet.',
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(t('flutter.nothing_recorded', 'Nothing recorded yet.'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12.5, color: GsColors.text3)),
+                  style: const TextStyle(
+                      fontSize: 12.5, color: GsColors.text3)),
             )
           else
             for (final m in items)
@@ -685,7 +714,8 @@ class _HistoryCard extends StatelessWidget {
                       if (err != null && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             backgroundColor: GsColors.flag,
-                            content: Text('Could not remove: $err')));
+                            content: Text(
+                                '${t('flutter.could_not_remove', 'Could not remove')}: $err')));
                       }
                     },
                   ),

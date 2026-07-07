@@ -36,6 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.9.0
   google_fonts: ^6.2.1
+  shared_preferences: ^2.3.0
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +65,7 @@ flutter:
   assets:
     - assets/food_reference.json
     - assets/who_reference.json
+    - assets/locales/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
