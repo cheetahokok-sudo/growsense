@@ -3387,15 +3387,85 @@ async function loadFoodFavoritesAndCustomFoods() {
   buildFoodCardGrid();
 }
 
+// ── Food library browse state ─────────────────────────────────────
+// Group mode ('type' | 'region') persists across open/close within
+// a session so the parent doesn't have to re-select each time.
+let _foodLibGroupMode = 'type';
+
+const FOOD_TYPE_GROUPS = [
+  { key: 'chicken',   label: 'Chicken & Poultry' },
+  { key: 'beef',      label: 'Beef' },
+  { key: 'pork',      label: 'Pork' },
+  { key: 'fish',      label: 'Fish' },
+  { key: 'seafood',   label: 'Seafood' },
+  { key: 'egg',       label: 'Eggs' },
+  { key: 'dairy',     label: 'Dairy' },
+  { key: 'plant',     label: 'Plant-based' },
+  { key: 'composite', label: 'Mixed Dishes & Soups' },
+];
+
+const FOOD_REGION_GROUPS = [
+  { key: 'asia',          label: 'Asia',          regions: ['cn','kr','th','vn'] },
+  { key: 'middleeast',    label: 'Middle East',    regions: ['ae'] },
+  { key: 'europe',        label: 'Europe',         regions: ['eu'] },
+  { key: 'international', label: 'International',  regions: ['global','us'] },
+];
+
 function openFoodLibraryModal() {
   if (!activeChildId()) { showToast('⚠️', t('toast.error.no_child','Add a child profile first')); return; }
-  renderFoodLibraryBrowseList();
+  // Reset search on open so the parent sees the full list
+  const searchEl = document.getElementById('foodLibrarySearch');
+  if (searchEl) searchEl.value = '';
+  renderFoodLibraryBrowseList('');
   renderFoodLibraryMineList();
   document.getElementById('foodLibraryModal').classList.remove('hidden');
 }
 
 function closeFoodLibraryModal() {
   document.getElementById('foodLibraryModal').classList.add('hidden');
+}
+
+function setFoodGroupMode(mode, btn) {
+  _foodLibGroupMode = mode;
+  document.querySelectorAll('#foodGroupSeg .seg-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderFoodLibraryBrowseList();
+}
+
+function onFoodLibrarySearch(val) {
+  renderFoodLibraryBrowseList(val);
+}
+
+// Logs one serving of a food directly from the library browse list,
+// without requiring the parent to star it first. Identical math to
+// the food-card tap on the Today grid — same applyFoodTap() call,
+// same recordNutritionLogItem() path, same HUD update.
+function logFoodFromLibrary(source, refId) {
+  let protein, zinc, calcium, foodObj, name;
+
+  if (source === 'preset') {
+    const food = (typeof FOOD_REFERENCE_DATA !== 'undefined')
+      ? FOOD_REFERENCE_DATA.find(f => f.id === refId) : null;
+    if (!food) return;
+    const scale = food.servingGrams / 100;
+    protein  = Math.round(food.per100g.protein_g * scale * 10) / 10;
+    zinc     = food.per100g.zinc_mg     != null ? Math.round(food.per100g.zinc_mg     * scale * 100) / 100 : null;
+    calcium  = food.per100g.calcium_mg  != null ? Math.round(food.per100g.calcium_mg  * scale)             : null;
+    foodObj  = food;
+    name     = food.name;
+  } else {
+    // Custom food — values are already per-serving
+    const custom = (APP.customFoods || []).find(c => c.custom_food_id === refId);
+    if (!custom) return;
+    protein  = Number(custom.protein_g) || 0;
+    zinc     = custom.zinc_mg    != null ? Number(custom.zinc_mg)    : null;
+    calcium  = custom.calcium_mg != null ? Number(custom.calcium_mg) : null;
+    foodObj  = { id: null, name: custom.name };
+    name     = custom.name;
+  }
+
+  applyFoodTap(foodObj, protein, zinc, calcium, 1);
+  showToast('✅', `${name} · +${protein}g protein`);
 }
 
 function setFoodLibraryTab(tab, btn) {
@@ -3410,40 +3480,138 @@ function isFoodFavorited(source, refId) {
   return (APP.foodFavorites || []).some(f => f.food_source === source && f.food_ref_id === String(refId));
 }
 
-// Renders every preset + custom food with a star toggle. Favorited
-// items sort first, so a parent immediately sees their active set at
-// the top rather than hunting through the full list.
-function renderFoodLibraryBrowseList() {
+// Renders the food library browse list with:
+//   • live search filtering (name + prepNote)
+//   • grouping by protein type OR region (no flags — Asia / Middle East / Europe / International)
+//   • ★ star button  — pins/unpins from the Today home grid
+//   • + log button   — logs one serving immediately, no starring required
+//
+// searchQuery is read from the #foodLibrarySearch input if not passed
+// (so callers that don't have the value handy can just call with no arg).
+function renderFoodLibraryBrowseList(searchQuery) {
   const listEl = document.getElementById('foodLibraryBrowseList');
   if (!listEl) return;
 
-  const presetItems = FOOD_REFERENCE_DATA.map(f => ({ source: 'preset', refId: f.id, name: f.name, emoji: f.emoji, sub: f.prepNote }));
-  const customItems = (APP.customFoods || []).map(c => ({ source: 'custom', refId: c.custom_food_id, name: c.name, emoji: c.emoji || '🍽️', sub: 'custom' }));
-  const all = [...presetItems, ...customItems];
+  if (searchQuery === undefined) {
+    const searchEl = document.getElementById('foodLibrarySearch');
+    searchQuery = searchEl ? searchEl.value : '';
+  }
+  const q = (searchQuery || '').toLowerCase().trim();
 
-  all.sort((a, b) => {
-    const aFav = isFoodFavorited(a.source, a.refId), bFav = isFoodFavorited(b.source, b.refId);
-    if (aFav === bFav) return 0;
-    return aFav ? -1 : 1;
-  });
+  // ── Filtered data sets ────────────────────────────────────────────
+  const presets = (typeof FOOD_REFERENCE_DATA !== 'undefined' ? FOOD_REFERENCE_DATA : [])
+    .filter(f => !q || f.name.toLowerCase().includes(q) || (f.prepNote || '').toLowerCase().includes(q));
 
-  listEl.innerHTML = all.map(item => {
-    const fav = isFoodFavorited(item.source, item.refId);
-    return `
-      <div class="log-item-row">
-        <div class="log-item-left">
-          <span class="log-item-emoji">${item.emoji}</span>
-          <div class="log-item-info">
-            <span class="log-item-name">${item.name}</span>
-            <span class="log-item-meta">${item.sub || ''}</span>
-          </div>
-        </div>
-        <div class="log-item-right">
-          <button class="favorite-star ${fav ? 'active' : ''}" onclick="toggleFoodFavorite('${item.source}', '${item.refId}', this)" aria-label="${fav ? 'Remove from grid' : 'Add to grid'}">${fav ? '★' : '☆'}</button>
+  const customs = (APP.customFoods || [])
+    .filter(c => !q || c.name.toLowerCase().includes(q));
+
+  // ── Row builders ──────────────────────────────────────────────────
+  // Escape single-quotes in names used inside onclick attributes
+  const esc = s => String(s).replace(/'/g, "\\'");
+
+  function presetRow(f) {
+    const fav  = isFoodFavorited('preset', f.id);
+    const scale = f.servingGrams / 100;
+    const prot = Math.round(f.per100g.protein_g * scale * 10) / 10;
+    const sub  = `${f.servingGrams}g · +${prot}g protein`;
+    return `<div class="log-item-row" style="padding:9px 0; border-bottom:0.5px solid var(--border2); display:flex; align-items:center; justify-content:space-between; gap:6px;">
+      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+        <span style="font-size:20px; width:26px; text-align:center; flex-shrink:0;">${f.emoji}</span>
+        <div style="min-width:0;">
+          <div style="font-size:13px; font-weight:500; color:var(--text1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${f.name}</div>
+          <div style="font-size:11px; color:var(--text3);">${sub}</div>
         </div>
       </div>
-    `;
-  }).join('');
+      <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+        <button class="favorite-star ${fav ? 'active' : ''}"
+          onclick="toggleFoodFavorite('preset','${esc(f.id)}',this)"
+          aria-label="${fav ? 'Remove from grid' : 'Add to grid'}"
+          style="background:none; border:none; cursor:pointer; font-size:17px; padding:4px 2px; color:${fav ? 'var(--estimated)' : 'var(--text3)'}; line-height:1;">${fav ? '★' : '☆'}</button>
+        <button onclick="logFoodFromLibrary('preset','${esc(f.id)}')"
+          aria-label="Log ${esc(f.name)}"
+          style="background:var(--accent); color:#fff; border:none; border-radius:8px; width:30px; height:30px; font-size:19px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; line-height:1;">+</button>
+      </div>
+    </div>`;
+  }
+
+  function customRow(c) {
+    const fav = isFoodFavorited('custom', c.custom_food_id);
+    const sub = `${c.serving_grams}g · +${c.protein_g}g protein (est.)`;
+    return `<div class="log-item-row" style="padding:9px 0; border-bottom:0.5px solid var(--border2); display:flex; align-items:center; justify-content:space-between; gap:6px;">
+      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+        <span style="font-size:20px; width:26px; text-align:center; flex-shrink:0;">${c.emoji || '🍽️'}</span>
+        <div style="min-width:0;">
+          <div style="font-size:13px; font-weight:500; color:var(--text1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.name}</div>
+          <div style="font-size:11px; color:var(--text3);">${sub}</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+        <button class="favorite-star ${fav ? 'active' : ''}"
+          onclick="toggleFoodFavorite('custom','${esc(c.custom_food_id)}',this)"
+          aria-label="${fav ? 'Remove from grid' : 'Add to grid'}"
+          style="background:none; border:none; cursor:pointer; font-size:17px; padding:4px 2px; color:${fav ? 'var(--estimated)' : 'var(--text3)'}; line-height:1;">${fav ? '★' : '☆'}</button>
+        <button onclick="logFoodFromLibrary('custom','${esc(c.custom_food_id)}')"
+          aria-label="Log ${esc(c.name)}"
+          style="background:var(--accent); color:#fff; border:none; border-radius:8px; width:30px; height:30px; font-size:19px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; line-height:1;">+</button>
+      </div>
+    </div>`;
+  }
+
+  function groupHeader(label, count) {
+    return `<div style="padding:10px 0 3px; font-size:10.5px; font-weight:600; color:var(--text2); letter-spacing:0.06em; text-transform:uppercase; border-bottom:1.5px solid var(--border); margin-top:8px; display:flex; justify-content:space-between;">
+      <span>${label}</span>
+      <span style="font-weight:400; opacity:0.6;">${count}</span>
+    </div>`;
+  }
+
+  // ── Build HTML by group mode ──────────────────────────────────────
+  let html = '';
+  let totalShown = 0;
+
+  if (_foodLibGroupMode === 'type') {
+    FOOD_TYPE_GROUPS.forEach(grp => {
+      const items = presets.filter(f => f.category === grp.key);
+      if (!items.length) return;
+      html += groupHeader(grp.label, items.length);
+      items.forEach(f => { html += presetRow(f); totalShown++; });
+    });
+    // Items without a category field (older preset entries)
+    const uncat = presets.filter(f => !f.category);
+    if (uncat.length) {
+      html += groupHeader('Other', uncat.length);
+      uncat.forEach(f => { html += presetRow(f); totalShown++; });
+    }
+  } else {
+    // By region — no flag icons, text labels only
+    FOOD_REGION_GROUPS.forEach(grp => {
+      const items = presets.filter(f => grp.regions.includes(f.region || 'global'));
+      if (!items.length) return;
+      html += groupHeader(grp.label, items.length);
+      items.forEach(f => { html += presetRow(f); totalShown++; });
+    });
+    // Items with an unrecognised region field
+    const knownRegions = FOOD_REGION_GROUPS.flatMap(g => g.regions);
+    const unknown = presets.filter(f => f.region && !knownRegions.includes(f.region));
+    if (unknown.length) {
+      html += groupHeader('Other', unknown.length);
+      unknown.forEach(f => { html += presetRow(f); totalShown++; });
+    }
+  }
+
+  // Custom foods always appear at the bottom of the browse list,
+  // regardless of group mode, since they have no category or region.
+  if (customs.length) {
+    html += groupHeader('My Custom Foods', customs.length);
+    customs.forEach(c => { html += customRow(c); totalShown++; });
+  }
+
+  if (totalShown === 0) {
+    html = `<div style="text-align:center; padding:28px 0; color:var(--text3); font-size:13px;">
+      No foods match <em>"${q}"</em>
+    </div>`;
+  }
+
+  listEl.innerHTML = html;
 }
 
 function renderFoodLibraryMineList() {
