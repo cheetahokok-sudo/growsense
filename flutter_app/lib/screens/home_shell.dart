@@ -6,7 +6,7 @@ import '../theme.dart';
 import 'activity_screen.dart';
 import 'analytics_screen.dart';
 import 'food_screen.dart';
-import 'placeholder_screen.dart';
+import 'medical_screen.dart';
 import 'today_screen.dart';
 
 /// 5-tab shell: Today | Food | Activity | Analytics | Medical —
@@ -35,8 +35,7 @@ class _HomeShellState extends State<HomeShell> {
       FoodScreen(appState: widget.appState),
       ActivityScreen(appState: widget.appState),
       AnalyticsScreen(appState: widget.appState),
-      const PlaceholderScreen(
-          title: 'Medical', note: 'Growth measurements — coming to Flutter.'),
+      MedicalScreen(appState: widget.appState),
     ];
 
     return Scaffold(

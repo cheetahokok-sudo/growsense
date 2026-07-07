@@ -33,6 +33,10 @@ class AppState extends ChangeNotifier {
   List<Map<String, dynamic>> activityItems = []; // daily_activity_items rows
   List<Map<String, dynamic>> nutritionLogItems = []; // nutrition_log_items rows
 
+  // measurements rows for the active child, newest first (per-child,
+  // not per-logDate — reloaded on child switch)
+  List<Map<String, dynamic>> measurements = [];
+
   /// Which meal new food logs get tagged with — defaults to breakfast,
   /// same as the PWA's activeMealSlot.
   String activeMealSlot = 'breakfast';
@@ -66,14 +70,14 @@ class AppState extends ChangeNotifier {
     }
     loadingChildren = false;
     notifyListeners();
-    await loadDay();
+    await Future.wait([loadDay(), loadMeasurements()]);
   }
 
   Future<void> setActiveChild(int i) async {
     if (i == activeChild) return;
     activeChild = i;
     notifyListeners();
-    await loadDay();
+    await Future.wait([loadDay(), loadMeasurements()]);
   }
 
   Future<void> setLogDate(String date) async {
@@ -246,6 +250,65 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> loadMeasurements() async {
+    final childId = activeChildId;
+    if (childId == null) {
+      measurements = [];
+      notifyListeners();
+      return;
+    }
+    try {
+      final rows = await sb
+          .from('measurements')
+          .select('measurement_id, recorded_date, stature_height_cm, mass_weight_kg')
+          .eq('child_id', childId)
+          .order('recorded_date', ascending: false);
+      measurements = List<Map<String, dynamic>>.from(rows);
+    } on PostgrestException catch (e) {
+      lastError = e.message;
+    }
+    notifyListeners();
+  }
+
+  /// Mirror of the PWA's addMeasurement() — upsert on
+  /// child_id+recorded_date; calculated_bmi is a generated column,
+  /// never sent.
+  Future<String?> addMeasurement({
+    required String date,
+    required double heightCm,
+    required double weightKg,
+  }) async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    try {
+      await sb.from('measurements').upsert({
+        'child_id': childId,
+        'recorded_date': date,
+        'stature_height_cm': heightCm,
+        'mass_weight_kg': weightKg,
+        'data_source': 'manual',
+      }, onConflict: 'child_id,recorded_date');
+      await loadMeasurements();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<String?> deleteMeasurement(dynamic measurementId) async {
+    try {
+      await sb
+          .from('measurements')
+          .delete()
+          .eq('measurement_id', measurementId);
+      measurements.removeWhere((m) => m['measurement_id'] == measurementId);
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
   void reset() {
     children = [];
     activeChild = 0;
@@ -254,6 +317,7 @@ class AppState extends ChangeNotifier {
     sleep = null;
     activityItems = [];
     nutritionLogItems = [];
+    measurements = [];
     activeMealSlot = 'breakfast';
     notifyListeners();
   }

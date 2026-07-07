@@ -61,6 +61,7 @@ flutter:
 
   assets:
     - assets/food_reference.json
+    - assets/who_reference.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
