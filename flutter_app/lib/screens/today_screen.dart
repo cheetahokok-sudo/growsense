@@ -46,7 +46,8 @@ class TodayScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 _SleepCard(sleep: appState.sleep),
                 const SizedBox(height: 12),
-                _ActivityCard(items: appState.activityItems),
+                _ActivityCard(
+                    items: appState.activityItems, appState: appState),
               ],
             ],
           ),
@@ -306,14 +307,16 @@ class _SleepCard extends StatelessWidget {
 }
 
 class _ActivityCard extends StatelessWidget {
-  const _ActivityCard({required this.items});
+  const _ActivityCard({required this.items, required this.appState});
   final List<Map<String, dynamic>> items;
+  final AppState appState;
 
   static const _tierColor = {
     'high_impact': GsColors.flag,
     'weight_bearing': GsColors.accent,
     'cardio': GsColors.measured,
     'flexibility': GsColors.estimated,
+    'lifestyle': GsColors.estimated,
   };
 
   @override
@@ -356,11 +359,29 @@ class _ActivityCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${_fmt((item['duration_min'] as num?)?.toDouble() ?? 0)} min',
+                          item['unit'] == 'reps'
+                              ? '${item['duration_value'] ?? '?'} reps'
+                              : '${_fmt((item['duration_min'] as num?)?.toDouble() ?? 0)} min',
                           style: const TextStyle(
                               fontSize: 12.5,
                               color: GsColors.text2,
                               fontWeight: FontWeight.w600),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.close,
+                              size: 16, color: GsColors.text3),
+                          onPressed: () async {
+                            final err = await appState
+                                .deleteActivityItem(item['item_id']);
+                            if (err != null && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      backgroundColor: GsColors.flag,
+                                      content:
+                                          Text('Could not remove: $err')));
+                            }
+                          },
                         ),
                       ],
                     ),

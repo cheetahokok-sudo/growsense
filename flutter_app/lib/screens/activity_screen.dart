@@ -1,0 +1,351 @@
+import 'package:flutter/material.dart';
+
+import '../activity_data.dart';
+import '../app_state.dart';
+import '../theme.dart';
+
+/// Activity tab — 30-activity browser with tier filter tabs,
+/// mirroring the PWA's activity browser. Tapping Log opens a
+/// bottom sheet (modal-sheet equivalent) with duration presets and
+/// an outdoor toggle, then inserts a daily_activity_items row.
+class ActivityScreen extends StatefulWidget {
+  const ActivityScreen({super.key, required this.appState});
+  final AppState appState;
+
+  @override
+  State<ActivityScreen> createState() => _ActivityScreenState();
+}
+
+class _ActivityScreenState extends State<ActivityScreen> {
+  String? _tier; // null = all
+
+  static const tierColors = {
+    'high_impact': GsColors.flag,
+    'weight_bearing': GsColors.accent,
+    'cardio': GsColors.measured,
+    'flexibility': GsColors.estimated,
+    'lifestyle': GsColors.estimated,
+  };
+
+  List<Activity> get _filtered => [
+        for (final a in activityLibrary)
+          if (_tier == null ||
+              a.tier == _tier ||
+              // FLEX filter folds lifestyle in, same as the PWA's
+              // badge config mapping lifestyle → flex styling.
+              (_tier == 'flexibility' && a.tier == 'lifestyle'))
+            a,
+      ];
+
+  Future<void> _openLogSheet(Activity act) async {
+    final result = await showModalBottomSheet<({int value, bool outdoor})>(
+      context: context,
+      backgroundColor: GsColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(GsRadius.lg)),
+      ),
+      builder: (context) => _ActivityLogSheet(activity: act),
+    );
+    if (result == null || !mounted) return;
+
+    final err = await widget.appState.recordActivityItem(
+      activityId: act.id,
+      displayName: act.displayName,
+      category: act.category,
+      tier: act.tier,
+      rawValue: result.value,
+      unit: act.unit,
+      isOutdoor: result.outdoor,
+    );
+    if (!mounted) return;
+    final label =
+        act.unit == 'reps' ? '${result.value} reps' : '${result.value} min';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      duration: const Duration(seconds: 2),
+      backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
+      content: Text(err == null
+          ? '${act.emoji} ${act.displayName} · $label${result.outdoor ? ' ☀️' : ''}'
+          : 'Could not save activity: $err'),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 36,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              _TierChip(
+                label: 'All',
+                color: GsColors.text2,
+                selected: _tier == null,
+                onTap: () => setState(() => _tier = null),
+              ),
+              for (final t in [
+                'high_impact',
+                'weight_bearing',
+                'cardio',
+                'flexibility'
+              ])
+                _TierChip(
+                  label: activityTierConfig[t]!.shortLabel,
+                  color: tierColors[t]!,
+                  selected: _tier == t,
+                  onTap: () => setState(() => _tier = t),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            itemCount: _filtered.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (context, i) {
+              final act = _filtered[i];
+              final tc = activityTierConfig[act.tier]!;
+              final color = tierColors[act.tier]!;
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: GsColors.surface,
+                  borderRadius: BorderRadius.circular(GsRadius.md),
+                  border: Border.all(color: GsColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Text(act.emoji, style: const TextStyle(fontSize: 24)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(act.displayName,
+                              style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 3),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(tc.label,
+                                style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.4,
+                                    color: color)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      height: 32,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(52, 32),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        onPressed: () => _openLogSheet(act),
+                        child: const Text('Log',
+                            style: TextStyle(fontSize: 12.5)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TierChip extends StatelessWidget {
+  const _TierChip(
+      {required this.label,
+      required this.color,
+      required this.selected,
+      required this.onTap});
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? color : GsColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: selected ? color : GsColors.border2),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: selected ? Colors.white : GsColors.text2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Duration picker sheet — same presets/defaults as the PWA
+/// (standard_min 30, small_min 2, reps 40) plus the outdoor toggle.
+class _ActivityLogSheet extends StatefulWidget {
+  const _ActivityLogSheet({required this.activity});
+  final Activity activity;
+
+  @override
+  State<_ActivityLogSheet> createState() => _ActivityLogSheetState();
+}
+
+class _ActivityLogSheetState extends State<_ActivityLogSheet> {
+  late int _value;
+  late bool _outdoor;
+
+  List<int> get _presets => switch (widget.activity.presets) {
+        'reps' => durationPresetsReps,
+        'small_min' => durationPresetsSmallMin,
+        _ => durationPresetsMin,
+      };
+
+  @override
+  void initState() {
+    super.initState();
+    _value = switch (widget.activity.presets) {
+      'reps' => 40,
+      'small_min' => 2,
+      _ => 30,
+    };
+    _outdoor = widget.activity.outdoor;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final act = widget.activity;
+    final tc = activityTierConfig[act.tier]!;
+    final color = _ActivityScreenState.tierColors[act.tier]!;
+    final unitLabel = act.unit == 'reps' ? 'reps' : 'min';
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Text(act.emoji, style: const TextStyle(fontSize: 30)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(act.displayName,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(tc.label,
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
+                              color: color)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (act.note != null) ...[
+              const SizedBox(height: 10),
+              Text(act.note!,
+                  style:
+                      const TextStyle(fontSize: 11.5, color: GsColors.text2)),
+            ],
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final p in _presets)
+                  GestureDetector(
+                    onTap: () => setState(() => _value = p),
+                    child: Container(
+                      width: 72,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _value == p
+                            ? GsColors.accentLight
+                            : GsColors.surface2,
+                        borderRadius: BorderRadius.circular(GsRadius.sm),
+                        border: Border.all(
+                            color: _value == p
+                                ? GsColors.accent
+                                : Colors.transparent),
+                      ),
+                      child: Column(
+                        children: [
+                          Text('$p',
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: _value == p
+                                      ? GsColors.accentDark
+                                      : GsColors.text)),
+                          Text(unitLabel,
+                              style: const TextStyle(
+                                  fontSize: 10, color: GsColors.text3)),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              activeThumbColor: GsColors.accent,
+              title: const Text('Outdoor ☀️', style: TextStyle(fontSize: 13)),
+              subtitle: const Text('Sunlight → vitamin D synthesis',
+                  style: TextStyle(fontSize: 11, color: GsColors.text3)),
+              value: _outdoor,
+              onChanged: (v) => setState(() => _outdoor = v),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.pop(context, (value: _value, outdoor: _outdoor)),
+              child: Text('Log $_value $unitLabel'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -195,6 +195,57 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Mirror of the PWA's confirmLogActivity() insert. duration_min is
+  /// the readiness-score normalization: reps count 0.25 min each.
+  Future<String?> recordActivityItem({
+    required String activityId,
+    required String displayName,
+    required String category,
+    required String tier,
+    required int rawValue,
+    required String unit,
+    required bool isOutdoor,
+  }) async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    final durationMin = unit == 'reps' ? rawValue * 0.25 : rawValue.toDouble();
+    try {
+      final row = await sb
+          .from('daily_activity_items')
+          .insert({
+            'child_id': childId,
+            'log_date': logDate,
+            'activity_id': activityId,
+            'display_name': displayName,
+            'category': category,
+            'tier': tier,
+            'duration_min': durationMin,
+            'duration_value': rawValue,
+            'unit': unit,
+            'is_outdoor': isOutdoor,
+            'is_custom': false,
+          })
+          .select()
+          .single();
+      activityItems.add(row);
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<String?> deleteActivityItem(dynamic itemId) async {
+    try {
+      await sb.from('daily_activity_items').delete().eq('item_id', itemId);
+      activityItems.removeWhere((i) => i['item_id'] == itemId);
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
   void reset() {
     children = [];
     activeChild = 0;

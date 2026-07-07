@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app_state.dart';
 import '../theme.dart';
+import 'activity_screen.dart';
 import 'food_screen.dart';
 import 'placeholder_screen.dart';
 import 'today_screen.dart';
@@ -31,8 +32,7 @@ class _HomeShellState extends State<HomeShell> {
     final screens = [
       TodayScreen(appState: widget.appState),
       FoodScreen(appState: widget.appState),
-      const PlaceholderScreen(
-          title: 'Activity', note: 'Activity browser — coming to Flutter.'),
+      ActivityScreen(appState: widget.appState),
       const PlaceholderScreen(
           title: 'Analytics', note: 'Trends & percentiles — coming to Flutter.'),
       const PlaceholderScreen(
