@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
@@ -45,7 +47,7 @@ class TodayScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 ConsistencyCard(appState: appState, i18n: i18n),
                 const SizedBox(height: 12),
-                _NutritionCard(nutrition: appState.nutrition, i18n: i18n),
+                NutritionEditorCard(appState: appState, i18n: i18n),
                 const SizedBox(height: 12),
                 _LoggedFoodCard(appState: appState, i18n: i18n),
                 const SizedBox(height: 12),
@@ -183,47 +185,219 @@ class _DateSelector extends StatelessWidget {
 
 // ── Cards ───────────────────────────────────────────────────────────
 
-class _NutritionCard extends StatelessWidget {
-  const _NutritionCard({required this.nutrition, required this.i18n});
-  final Map<String, dynamic>? nutrition;
+/// Nutrition totals editor — food-card logs feed the numbers, but
+/// every total can be manually overridden with steppers (supplements,
+/// meals eaten away from the app), exactly like the PWA's manual
+/// steppers. Save writes daily_nutrition via the PWA-compatible
+/// meal-slot attribution in AppState.saveNutrition.
+class NutritionEditorCard extends StatefulWidget {
+  const NutritionEditorCard(
+      {super.key, required this.appState, required this.i18n});
+  final AppState appState;
   final I18n i18n;
 
-  double _g(String key) => (nutrition?[key] as num?)?.toDouble() ?? 0;
+  @override
+  State<NutritionEditorCard> createState() => _NutritionEditorCardState();
+}
+
+class _NutritionEditorCardState extends State<NutritionEditorCard> {
+  double? _protein;
+  double? _calcium;
+  double? _zinc;
+  int? _water;
+  bool _busy = false;
+  String? _seededFor;
+  double _itemsProtein = 0;
+
+  void _seedFromState() {
+    final s = widget.appState;
+    final key = '${s.activeChildId}|${s.logDate}|${s.nutritionLogItems.length}';
+    if (_seededFor == key) return;
+    _seededFor = key;
+
+    double items(String col) => s.nutritionLogItems.fold<double>(
+        0, (sum, i) => sum + ((i[col] as num?)?.toDouble() ?? 0));
+    double saved(String col) =>
+        (s.nutrition?[col] as num?)?.toDouble() ?? 0;
+
+    _itemsProtein = items('protein_g');
+    final savedProtein = saved('protein_breakfast_g') +
+        saved('protein_lunch_g') +
+        saved('protein_dinner_g');
+    _protein = math.max(_itemsProtein, savedProtein);
+    _calcium = math.max(items('calcium_mg'), saved('calcium_mg'));
+    _zinc = math.max(items('zinc_mg'), saved('zinc_mg'));
+    _water = (saved('fluids_ml') / 250).round();
+  }
+
+  Future<void> _save() async {
+    final t = widget.i18n.t;
+    setState(() => _busy = true);
+    final err = await widget.appState.saveNutrition(
+      proteinTotalG: _protein!,
+      calciumMg: _calcium!,
+      zincMg: _zinc!,
+      waterGlasses: _water!,
+    );
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _seededFor = null; // re-seed from the fresh save
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
+        content: Text(err == null
+            ? '✅ ${t('flutter.nutrition_saved', 'Nutrition saved')}'
+            : '${t('flutter.not_saved', 'Not saved')}: $err')));
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t = i18n.t;
-    final breakfast = _g('protein_breakfast_g');
-    final lunch = _g('protein_lunch_g');
-    final dinner = _g('protein_dinner_g');
-    final total = breakfast + lunch + dinner;
-    final calcium = _g('calcium_mg');
-    final fluids = _g('fluids_ml');
-    final protein = t('common.protein', 'Protein');
+    final t = widget.i18n.t;
+    return ListenableBuilder(
+      listenable: widget.appState,
+      builder: (context, _) {
+        _seedFromState();
+        return _GsCard(
+          title: t('common.nutrition', 'Nutrition'),
+          accentColor: GsColors.accent,
+          trailing: _itemsProtein > 0
+              ? Text(
+                  '${_fmt(_itemsProtein)} g ${t('flutter.from_food_log', 'from food log')}',
+                  style: const TextStyle(
+                      fontSize: 10.5, color: GsColors.text3))
+              : null,
+          child: Column(
+            children: [
+              _StepperRow(
+                label: t('today.nutrition.protein_total', 'Protein total'),
+                value: '${_fmt(_protein!)} g',
+                onMinus: _protein! > 0
+                    ? () => setState(
+                        () => _protein = math.max(0, _protein! - 1))
+                    : null,
+                onPlus: () => setState(() => _protein = _protein! + 1),
+              ),
+              _StepperRow(
+                label: t('today.nutrition.calcium_label', 'Calcium total'),
+                sub: t('today.nutrition.calcium_target',
+                    'Target: 1300mg / day'),
+                value: '${_fmt(_calcium!)} mg',
+                onMinus: _calcium! > 0
+                    ? () => setState(
+                        () => _calcium = math.max(0, _calcium! - 100))
+                    : null,
+                onPlus: () => setState(() => _calcium = _calcium! + 100),
+              ),
+              _StepperRow(
+                label: t('today.nutrition.zinc_label', 'Zinc total'),
+                sub: t('today.nutrition.zinc_sub',
+                    'Growth plate co-factor · target 8mg/day'),
+                value: '${_fmt(_zinc!)} mg',
+                onMinus: _zinc! > 0
+                    ? () => setState(
+                        () => _zinc = math.max(0, _zinc! - 0.5))
+                    : null,
+                onPlus: () => setState(() => _zinc = _zinc! + 0.5),
+              ),
+              _StepperRow(
+                label: t('today.nutrition.hydration', 'Hydration'),
+                value:
+                    '$_water ${t('flutter.glasses', 'glasses')} · ${_water! * 250} ml',
+                onMinus: _water! > 0
+                    ? () => setState(() => _water = _water! - 1)
+                    : null,
+                onPlus: () => setState(() => _water = _water! + 1),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _busy ? null : _save,
+                style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(42)),
+                child: Text(_busy
+                    ? t('flutter.saving', 'Saving…')
+                    : t('today.save_btn', "Save Today's Data")),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
-    return _GsCard(
-      title: t('common.nutrition', 'Nutrition'),
-      accentColor: GsColors.accent,
-      child: nutrition == null
-          ? _EmptyNote(t('today.nutrition.empty'))
-          : Column(
+class _StepperRow extends StatelessWidget {
+  const _StepperRow({
+    required this.label,
+    required this.value,
+    required this.onMinus,
+    required this.onPlus,
+    this.sub,
+  });
+  final String label;
+  final String? sub;
+  final String value;
+  final VoidCallback? onMinus;
+  final VoidCallback onPlus;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _MetricRow('$protein — ${t('meal.breakfast', 'Breakfast')}',
-                    '${_fmt(breakfast)} g'),
-                _MetricRow('$protein — ${t('meal.lunch', 'Lunch')}',
-                    '${_fmt(lunch)} g'),
-                _MetricRow('$protein — ${t('meal.dinner', 'Dinner')}',
-                    '${_fmt(dinner)} g'),
-                _MetricRow(t('today.nutrition.protein_total'),
-                    '${_fmt(total)} g',
-                    bold: true),
-                const Divider(height: 20, color: GsColors.border),
-                _MetricRow(t('common.calcium', 'Calcium'),
-                    '${_fmt(calcium)} mg'),
-                _MetricRow(t('today.nutrition.hydration', 'Fluids'),
-                    '${_fmt(fluids)} ml'),
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: GsColors.text)),
+                if (sub != null)
+                  Text(sub!,
+                      style: const TextStyle(
+                          fontSize: 9.5, color: GsColors.text3)),
               ],
             ),
+          ),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: GsColors.accentDark)),
+          const SizedBox(width: 10),
+          _RoundStepBtn(icon: Icons.remove, onTap: onMinus),
+          const SizedBox(width: 6),
+          _RoundStepBtn(icon: Icons.add, onTap: onPlus),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoundStepBtn extends StatelessWidget {
+  const _RoundStepBtn({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: onTap == null ? GsColors.surface2 : GsColors.accentLight,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon,
+            size: 15,
+            color: onTap == null ? GsColors.text3 : GsColors.accentDark),
+      ),
     );
   }
 }
@@ -445,32 +619,6 @@ class _GsCard extends StatelessWidget {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricRow extends StatelessWidget {
-  const _MetricRow(this.label, this.value, {this.bold = false});
-  final String label;
-  final String value;
-  final bool bold;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: const TextStyle(fontSize: 13, color: GsColors.text2)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
-                  color: bold ? GsColors.accent : GsColors.text)),
         ],
       ),
     );

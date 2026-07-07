@@ -58,41 +58,60 @@ class AccountScreen extends StatelessWidget {
                             fontSize: 12, color: GsColors.text3))
                   else
                     for (final c in appState.children)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 14,
-                              backgroundColor: GsColors.accentLight,
-                              child: Text(
-                                ((c['avatar'] as String?) ??
-                                        (c['name'] as String? ?? '?'))
-                                    .characters
-                                    .first
-                                    .toUpperCase(),
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    color: GsColors.accent,
-                                    fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(c['name'] as String? ?? '',
+                      InkWell(
+                        onTap: () => showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: GsColors.surface,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(GsRadius.lg)),
+                          ),
+                          builder: (_) => _ChildEditorSheet(
+                              appState: appState, i18n: i18n, child: c),
+                        ),
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 7),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: GsColors.accentLight,
+                                child: Text(
+                                  ((c['avatar'] as String?) ??
+                                          (c['name'] as String? ?? '?'))
+                                      .characters
+                                      .first
+                                      .toUpperCase(),
                                   style: const TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w600)),
-                            ),
-                            Text(c['date_of_birth'] as String? ?? '',
-                                style: const TextStyle(
-                                    fontSize: 11.5,
-                                    color: GsColors.text3)),
-                          ],
+                                      fontSize: 12,
+                                      color: GsColors.accent,
+                                      fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(c['name'] as String? ?? '',
+                                    style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600)),
+                              ),
+                              Text(c['date_of_birth'] as String? ?? '',
+                                  style: const TextStyle(
+                                      fontSize: 11.5,
+                                      color: GsColors.text3)),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.chevron_right,
+                                  size: 16, color: GsColors.text3),
+                            ],
+                          ),
                         ),
                       ),
                 ],
               ),
+              const SizedBox(height: 12),
+              _SubscriptionCard(appState: appState, i18n: i18n),
               const SizedBox(height: 12),
               _Card(
                 children: [
@@ -171,6 +190,307 @@ class AccountScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Subscription status — tier badge, expiry, and the free-tier usage
+/// counters the PWA gates on (user_accounts row).
+class _SubscriptionCard extends StatelessWidget {
+  const _SubscriptionCard({required this.appState, required this.i18n});
+  final AppState appState;
+  final I18n i18n;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = i18n.t;
+    final acct = appState.account;
+    final tier = (acct?['subscription_tier'] as String?) ?? 'free';
+    final expires = acct?['tier_expires_at'] as String?;
+    final isPaid = tier == 'premium' || tier == 'pro';
+    final tierLabel = switch (tier) {
+      'premium' => 'Premium',
+      'pro' => 'Pro',
+      _ => t('flutter.sub.free', 'Free'),
+    };
+    final measurementsUsed =
+        (acct?['total_measurements_logged'] as num?)?.toInt() ?? 0;
+    final aiUsed =
+        (acct?['ai_questions_this_month'] as num?)?.toInt() ?? 0;
+
+    return _Card(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(t('flutter.sub.title', 'Subscription'),
+                style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: GsColors.accent)),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: isPaid ? GsColors.estimatedLight : GsColors.surface2,
+                borderRadius: BorderRadius.circular(12),
+                border: isPaid
+                    ? Border.all(
+                        color: GsColors.estimated.withValues(alpha: 0.5))
+                    : null,
+              ),
+              child: Text(tierLabel,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isPaid
+                          ? GsColors.estimatedDark
+                          : GsColors.text2)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (isPaid && expires != null)
+          _InfoRow(
+              label: t('flutter.sub.expires', 'Valid until'),
+              value: expires.split('T').first),
+        if (!isPaid) ...[
+          _InfoRow(
+              label: t('flutter.sub.measurements_used',
+                  'Measurements used (lifetime)'),
+              value: '$measurementsUsed / 5'),
+          _InfoRow(
+              label: t('flutter.sub.ai_used', 'AI questions this month'),
+              value: '$aiUsed / 3'),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+                t('flutter.sub.history_30d',
+                    'History window: last 30 days on Free'),
+                style:
+                    const TextStyle(fontSize: 10.5, color: GsColors.text3)),
+          ),
+        ],
+        const SizedBox(height: 8),
+        Text(t('flutter.sub.manage_web',
+            'Upgrade & billing are managed in the web app.'),
+            style: const TextStyle(fontSize: 10.5, color: GsColors.text3)),
+      ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Text(label,
+                style:
+                    const TextStyle(fontSize: 12, color: GsColors.text2)),
+          ),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Child profile editor sheet — name, DOB, and parent heights/ages
+/// (the same children columns the PWA account screen writes). Parent
+/// heights feed the mid-parental genetic target and the Medical tab's
+/// trajectory.
+class _ChildEditorSheet extends StatefulWidget {
+  const _ChildEditorSheet(
+      {required this.appState, required this.i18n, required this.child});
+  final AppState appState;
+  final I18n i18n;
+  final Map<String, dynamic> child;
+
+  @override
+  State<_ChildEditorSheet> createState() => _ChildEditorSheetState();
+}
+
+class _ChildEditorSheetState extends State<_ChildEditorSheet> {
+  late final TextEditingController _name =
+      TextEditingController(text: widget.child['name'] as String? ?? '');
+  late String? _dob = widget.child['date_of_birth'] as String?;
+  late final TextEditingController _motherH = TextEditingController(
+      text: _numText(widget.child['mother_height_cm']));
+  late final TextEditingController _fatherH = TextEditingController(
+      text: _numText(widget.child['father_height_cm']));
+  late final TextEditingController _motherA = TextEditingController(
+      text: _numText(widget.child['mother_current_age']));
+  late final TextEditingController _fatherA = TextEditingController(
+      text: _numText(widget.child['father_current_age']));
+  bool _busy = false;
+
+  static String _numText(dynamic v) =>
+      v == null ? '' : (v as num).toString();
+
+  @override
+  void dispose() {
+    for (final c in [_name, _motherH, _fatherH, _motherA, _fatherA]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final t = widget.i18n.t;
+    final name = _name.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _busy = true);
+    final err = await widget.appState.updateChild(
+      widget.child['child_id'],
+      {
+        'name': name,
+        if (_dob != null) 'date_of_birth': _dob,
+        'mother_height_cm': double.tryParse(_motherH.text),
+        'father_height_cm': double.tryParse(_fatherH.text),
+        'mother_current_age': int.tryParse(_motherA.text),
+        'father_current_age': int.tryParse(_fatherA.text),
+      },
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (err == null) Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
+        content: Text(err == null
+            ? '✅ ${t('flutter.saved_ok', 'Saved')}'
+            : '${t('flutter.not_saved', 'Not saved')}: $err')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    return Padding(
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(t('flutter.edit_child', 'Edit child profile'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _name,
+                decoration: InputDecoration(
+                    labelText: t('flutter.child_name', "Child's name"),
+                    isDense: true),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 44),
+                  side: const BorderSide(color: GsColors.border2),
+                  foregroundColor: GsColors.text,
+                  alignment: AlignmentDirectional.centerStart,
+                ),
+                icon: const Icon(Icons.cake_outlined,
+                    size: 15, color: GsColors.text2),
+                label: Text(
+                    '${t('flutter.dob', 'Date of birth')}: ${_dob ?? '—'}',
+                    style: const TextStyle(fontSize: 12.5)),
+                onPressed: () async {
+                  final now = DateTime.now();
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate:
+                        _dob != null ? DateTime.parse(_dob!) : now,
+                    firstDate:
+                        now.subtract(const Duration(days: 365 * 19)),
+                    lastDate: now,
+                  );
+                  if (picked != null) {
+                    setState(() => _dob = localISO(picked));
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              Text(
+                  t('flutter.parent_heights',
+                      'Parent heights — unlocks the genetic target & trajectory'),
+                  style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: GsColors.estimatedDark)),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(
+                    child: TextField(
+                        controller: _motherH,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(
+                                decimal: true),
+                        decoration: InputDecoration(
+                            labelText: t(
+                                'analytics.target_height.mother_height',
+                                "Mother's height (cm)"),
+                            isDense: true))),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: TextField(
+                        controller: _motherA,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                            labelText: t(
+                                'analytics.target_height.mother_age',
+                                "Mother's age"),
+                            isDense: true))),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                    child: TextField(
+                        controller: _fatherH,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(
+                                decimal: true),
+                        decoration: InputDecoration(
+                            labelText: t(
+                                'analytics.target_height.father_height',
+                                "Father's height (cm)"),
+                            isDense: true))),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: TextField(
+                        controller: _fatherA,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                            labelText: t(
+                                'analytics.target_height.father_age',
+                                "Father's age"),
+                            isDense: true))),
+              ]),
+              const SizedBox(height: 14),
+              ElevatedButton(
+                onPressed: _busy ? null : _save,
+                child: Text(_busy
+                    ? t('flutter.saving', 'Saving…')
+                    : t('flutter.save', 'Save')),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

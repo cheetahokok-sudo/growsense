@@ -332,5 +332,21 @@
  "flutter.chronological_age": "العمر الزمني",
  "flutter.growth_measurements": "قياسات النمو",
  "flutter.last_record": "آخر",
- "flutter.history": "السجل"
+ "flutter.history": "السجل",
+ "flutter.glasses": "أكواب",
+ "flutter.from_food_log": "من سجل الطعام",
+ "flutter.nutrition_saved": "تم حفظ التغذية",
+ "flutter.sub.title": "الاشتراك",
+ "flutter.sub.free": "مجاني",
+ "flutter.sub.expires": "صالح حتى",
+ "flutter.sub.measurements_used": "القياسات المستخدمة (مدى الحياة)",
+ "flutter.sub.ai_used": "أسئلة الذكاء الاصطناعي هذا الشهر",
+ "flutter.sub.history_30d": "نافذة السجل: آخر 30 يومًا في الخطة المجانية",
+ "flutter.sub.manage_web": "تتم إدارة الترقية والفوترة في تطبيق الويب.",
+ "flutter.edit_child": "تعديل ملف الطفل",
+ "flutter.child_name": "اسم الطفل",
+ "flutter.dob": "تاريخ الميلاد",
+ "flutter.parent_heights": "طول الوالدين — يفتح الهدف الوراثي والمسار",
+ "flutter.save": "حفظ",
+ "flutter.saved_ok": "تم الحفظ"
 }

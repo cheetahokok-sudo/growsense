@@ -332,5 +332,21 @@
  "flutter.chronological_age": "Tuổi thực",
  "flutter.growth_measurements": "Số đo tăng trưởng",
  "flutter.last_record": "gần nhất",
- "flutter.history": "Lịch sử"
+ "flutter.history": "Lịch sử",
+ "flutter.glasses": "ly",
+ "flutter.from_food_log": "từ nhật ký ăn",
+ "flutter.nutrition_saved": "Đã lưu dinh dưỡng",
+ "flutter.sub.title": "Gói đăng ký",
+ "flutter.sub.free": "Miễn phí",
+ "flutter.sub.expires": "Hiệu lực đến",
+ "flutter.sub.measurements_used": "Số đo đã dùng (trọn đời)",
+ "flutter.sub.ai_used": "Câu hỏi AI tháng này",
+ "flutter.sub.history_30d": "Xem lịch sử: 30 ngày gần nhất (Miễn phí)",
+ "flutter.sub.manage_web": "Nâng cấp & thanh toán quản lý trong ứng dụng web.",
+ "flutter.edit_child": "Sửa hồ sơ trẻ",
+ "flutter.child_name": "Tên trẻ",
+ "flutter.dob": "Ngày sinh",
+ "flutter.parent_heights": "Chiều cao bố mẹ — mở khóa mục tiêu di truyền & quỹ đạo",
+ "flutter.save": "Lưu",
+ "flutter.saved_ok": "Đã lưu"
 }

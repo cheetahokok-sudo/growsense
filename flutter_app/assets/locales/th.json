@@ -332,5 +332,21 @@
  "flutter.chronological_age": "อายุจริง (ตามปฏิทิน)",
  "flutter.growth_measurements": "การวัดการเติบโต",
  "flutter.last_record": "ล่าสุด",
- "flutter.history": "ประวัติ"
+ "flutter.history": "ประวัติ",
+ "flutter.glasses": "แก้ว",
+ "flutter.from_food_log": "จากบันทึกอาหาร",
+ "flutter.nutrition_saved": "บันทึกโภชนาการแล้ว",
+ "flutter.sub.title": "แพ็กเกจสมาชิก",
+ "flutter.sub.free": "ฟรี",
+ "flutter.sub.expires": "ใช้ได้ถึง",
+ "flutter.sub.measurements_used": "การวัดที่ใช้ไป (ตลอดชีพ)",
+ "flutter.sub.ai_used": "คำถาม AI เดือนนี้",
+ "flutter.sub.history_30d": "ดูย้อนหลังได้ 30 วันในแพ็กเกจฟรี",
+ "flutter.sub.manage_web": "อัปเกรดและการชำระเงินจัดการในเว็บแอป",
+ "flutter.edit_child": "แก้ไขโปรไฟล์เด็ก",
+ "flutter.child_name": "ชื่อเด็ก",
+ "flutter.dob": "วันเกิด",
+ "flutter.parent_heights": "ส่วนสูงพ่อแม่ — ปลดล็อกเป้าหมายทางพันธุกรรมและแนวโน้ม",
+ "flutter.save": "บันทึก",
+ "flutter.saved_ok": "บันทึกแล้ว"
 }

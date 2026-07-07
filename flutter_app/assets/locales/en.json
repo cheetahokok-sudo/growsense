@@ -332,5 +332,21 @@
  "flutter.chronological_age": "Chronological age",
  "flutter.growth_measurements": "Growth measurements",
  "flutter.last_record": "last",
- "flutter.history": "History"
+ "flutter.history": "History",
+ "flutter.glasses": "glasses",
+ "flutter.from_food_log": "from food log",
+ "flutter.nutrition_saved": "Nutrition saved",
+ "flutter.sub.title": "Subscription",
+ "flutter.sub.free": "Free",
+ "flutter.sub.expires": "Valid until",
+ "flutter.sub.measurements_used": "Measurements used (lifetime)",
+ "flutter.sub.ai_used": "AI questions this month",
+ "flutter.sub.history_30d": "History window: last 30 days on Free",
+ "flutter.sub.manage_web": "Upgrade & billing are managed in the web app.",
+ "flutter.edit_child": "Edit child profile",
+ "flutter.child_name": "Child's name",
+ "flutter.dob": "Date of birth",
+ "flutter.parent_heights": "Parent heights — unlocks the genetic target & trajectory",
+ "flutter.save": "Save",
+ "flutter.saved_ok": "Saved"
 }

@@ -332,5 +332,21 @@
  "flutter.chronological_age": "实际年龄",
  "flutter.growth_measurements": "生长测量",
  "flutter.last_record": "最近",
- "flutter.history": "历史"
+ "flutter.history": "历史",
+ "flutter.glasses": "杯",
+ "flutter.from_food_log": "来自饮食记录",
+ "flutter.nutrition_saved": "已保存营养",
+ "flutter.sub.title": "订阅",
+ "flutter.sub.free": "免费",
+ "flutter.sub.expires": "有效期至",
+ "flutter.sub.measurements_used": "已用测量次数（终身）",
+ "flutter.sub.ai_used": "本月AI提问",
+ "flutter.sub.history_30d": "历史查看：免费版仅限最近30天",
+ "flutter.sub.manage_web": "升级与账单请在网页应用中管理。",
+ "flutter.edit_child": "编辑儿童档案",
+ "flutter.child_name": "孩子姓名",
+ "flutter.dob": "出生日期",
+ "flutter.parent_heights": "父母身高——解锁遗传目标与轨迹",
+ "flutter.save": "保存",
+ "flutter.saved_ok": "已保存"
 }

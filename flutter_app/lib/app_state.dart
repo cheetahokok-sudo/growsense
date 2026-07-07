@@ -27,6 +27,10 @@ class AppState extends ChangeNotifier {
   int activeChild = 0;
   String logDate = todayISO();
 
+  /// The signed-in parent's user_accounts row — subscription tier,
+  /// free-tier usage counters. Loaded once with the children.
+  Map<String, dynamic>? account;
+
   // Per-day data for the active child + logDate
   Map<String, dynamic>? nutrition; // daily_nutrition row
   Map<String, dynamic>? sleep; // daily_sleep row
@@ -66,10 +70,26 @@ class AppState extends ChangeNotifier {
 
   String? get activeChildId => activeChildRow?['child_id'] as String?;
 
+  Future<void> loadAccount() async {
+    final uid = sb.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      account = await sb
+          .from('user_accounts')
+          .select()
+          .eq('user_id', uid)
+          .maybeSingle();
+      notifyListeners();
+    } on PostgrestException {
+      // Non-fatal — subscription card just shows defaults.
+    }
+  }
+
   Future<void> loadChildren() async {
     loadingChildren = true;
     lastError = null;
     notifyListeners();
+    loadAccount();
     try {
       final rows = await sb
           .from('children')
@@ -338,6 +358,74 @@ class AppState extends ChangeNotifier {
       }, onConflict: 'child_id,log_date');
       await loadDay();
       loadWeekConsistency();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// Mirror of the PWA's daily_nutrition upsert in saveTodayData().
+  /// Per-meal protein = item sums by slot; any manual gap between the
+  /// edited total and what the log accounts for is attributed to the
+  /// selected meal slot; snack folds into dinner for storage (the
+  /// items keep the real snack tag).
+  Future<String?> saveNutrition({
+    required double proteinTotalG,
+    required double calciumMg,
+    required double zincMg,
+    required int waterGlasses,
+  }) async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+
+    final mealSums = {
+      'breakfast': 0.0, 'lunch': 0.0, 'dinner': 0.0, 'snack': 0.0,
+    };
+    for (final item in nutritionLogItems) {
+      final slot = item['meal_slot'] as String? ?? 'breakfast';
+      mealSums[mealSums.containsKey(slot) ? slot : 'breakfast'] =
+          (mealSums[mealSums.containsKey(slot) ? slot : 'breakfast'] ?? 0) +
+              ((item['protein_g'] as num?)?.toDouble() ?? 0);
+    }
+    final itemsTotal =
+        mealSums.values.fold<double>(0, (a, b) => a + b);
+    final manualGap = proteinTotalG - itemsTotal;
+    if (manualGap > 0) {
+      final slot =
+          mealSums.containsKey(activeMealSlot) ? activeMealSlot : 'breakfast';
+      mealSums[slot] = mealSums[slot]! + manualGap;
+    }
+    mealSums['dinner'] = mealSums['dinner']! + mealSums['snack']!;
+
+    double r1(double v) => (v * 10).roundToDouble() / 10;
+    try {
+      await sb.from('daily_nutrition').upsert({
+        'child_id': childId,
+        'log_date': logDate,
+        'protein_breakfast_g': r1(mealSums['breakfast']!),
+        'protein_lunch_g': r1(mealSums['lunch']!),
+        'protein_dinner_g': r1(mealSums['dinner']!),
+        'calcium_mg': calciumMg.round(),
+        'zinc_mg': r1(zincMg),
+        'fluids_ml': waterGlasses * 250, // 1 glass ≈ 250ml
+      }, onConflict: 'child_id,log_date');
+      await loadDay();
+      loadWeekConsistency();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// Update editable child-profile fields (name, DOB, parent heights
+  /// and ages — the same columns the PWA's account screen writes).
+  Future<String?> updateChild(
+      dynamic childId, Map<String, dynamic> fields) async {
+    try {
+      await sb.from('children').update(fields).eq('child_id', childId);
+      final i = children.indexWhere((c) => c['child_id'] == childId);
+      if (i >= 0) children[i] = {...children[i], ...fields};
+      notifyListeners();
       return null;
     } on PostgrestException catch (e) {
       return e.message;

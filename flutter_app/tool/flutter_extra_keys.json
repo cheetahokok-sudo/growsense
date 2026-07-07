@@ -94,5 +94,21 @@
   "flutter.chronological_age": { "en": "Chronological age", "th": "อายุจริง (ตามปฏิทิน)", "vi": "Tuổi thực", "ko": "역연령", "zh": "实际年龄", "ar": "العمر الزمني" },
   "flutter.growth_measurements": { "en": "Growth measurements", "th": "การวัดการเติบโต", "vi": "Số đo tăng trưởng", "ko": "성장 측정", "zh": "生长测量", "ar": "قياسات النمو" },
   "flutter.last_record": { "en": "last", "th": "ล่าสุด", "vi": "gần nhất", "ko": "최근", "zh": "最近", "ar": "آخر" },
-  "flutter.history": { "en": "History", "th": "ประวัติ", "vi": "Lịch sử", "ko": "기록", "zh": "历史", "ar": "السجل" }
+  "flutter.history": { "en": "History", "th": "ประวัติ", "vi": "Lịch sử", "ko": "기록", "zh": "历史", "ar": "السجل" },
+  "flutter.glasses": { "en": "glasses", "th": "แก้ว", "vi": "ly", "ko": "잔", "zh": "杯", "ar": "أكواب" },
+  "flutter.from_food_log": { "en": "from food log", "th": "จากบันทึกอาหาร", "vi": "từ nhật ký ăn", "ko": "음식 기록에서", "zh": "来自饮食记录", "ar": "من سجل الطعام" },
+  "flutter.nutrition_saved": { "en": "Nutrition saved", "th": "บันทึกโภชนาการแล้ว", "vi": "Đã lưu dinh dưỡng", "ko": "영양 정보가 저장되었습니다", "zh": "已保存营养", "ar": "تم حفظ التغذية" },
+  "flutter.sub.title": { "en": "Subscription", "th": "แพ็กเกจสมาชิก", "vi": "Gói đăng ký", "ko": "구독", "zh": "订阅", "ar": "الاشتراك" },
+  "flutter.sub.free": { "en": "Free", "th": "ฟรี", "vi": "Miễn phí", "ko": "무료", "zh": "免费", "ar": "مجاني" },
+  "flutter.sub.expires": { "en": "Valid until", "th": "ใช้ได้ถึง", "vi": "Hiệu lực đến", "ko": "유효 기간", "zh": "有效期至", "ar": "صالح حتى" },
+  "flutter.sub.measurements_used": { "en": "Measurements used (lifetime)", "th": "การวัดที่ใช้ไป (ตลอดชีพ)", "vi": "Số đo đã dùng (trọn đời)", "ko": "사용한 측정 횟수(평생)", "zh": "已用测量次数（终身）", "ar": "القياسات المستخدمة (مدى الحياة)" },
+  "flutter.sub.ai_used": { "en": "AI questions this month", "th": "คำถาม AI เดือนนี้", "vi": "Câu hỏi AI tháng này", "ko": "이번 달 AI 질문", "zh": "本月AI提问", "ar": "أسئلة الذكاء الاصطناعي هذا الشهر" },
+  "flutter.sub.history_30d": { "en": "History window: last 30 days on Free", "th": "ดูย้อนหลังได้ 30 วันในแพ็กเกจฟรี", "vi": "Xem lịch sử: 30 ngày gần nhất (Miễn phí)", "ko": "기록 조회: 무료 요금제는 최근 30일", "zh": "历史查看：免费版仅限最近30天", "ar": "نافذة السجل: آخر 30 يومًا في الخطة المجانية" },
+  "flutter.sub.manage_web": { "en": "Upgrade & billing are managed in the web app.", "th": "อัปเกรดและการชำระเงินจัดการในเว็บแอป", "vi": "Nâng cấp & thanh toán quản lý trong ứng dụng web.", "ko": "업그레이드 및 결제는 웹 앱에서 관리합니다.", "zh": "升级与账单请在网页应用中管理。", "ar": "تتم إدارة الترقية والفوترة في تطبيق الويب." },
+  "flutter.edit_child": { "en": "Edit child profile", "th": "แก้ไขโปรไฟล์เด็ก", "vi": "Sửa hồ sơ trẻ", "ko": "자녀 프로필 수정", "zh": "编辑儿童档案", "ar": "تعديل ملف الطفل" },
+  "flutter.child_name": { "en": "Child's name", "th": "ชื่อเด็ก", "vi": "Tên trẻ", "ko": "자녀 이름", "zh": "孩子姓名", "ar": "اسم الطفل" },
+  "flutter.dob": { "en": "Date of birth", "th": "วันเกิด", "vi": "Ngày sinh", "ko": "생년월일", "zh": "出生日期", "ar": "تاريخ الميلاد" },
+  "flutter.parent_heights": { "en": "Parent heights — unlocks the genetic target & trajectory", "th": "ส่วนสูงพ่อแม่ — ปลดล็อกเป้าหมายทางพันธุกรรมและแนวโน้ม", "vi": "Chiều cao bố mẹ — mở khóa mục tiêu di truyền & quỹ đạo", "ko": "부모 신장 — 유전적 목표와 궤적을 활성화합니다", "zh": "父母身高——解锁遗传目标与轨迹", "ar": "طول الوالدين — يفتح الهدف الوراثي والمسار" },
+  "flutter.save": { "en": "Save", "th": "บันทึก", "vi": "Lưu", "ko": "저장", "zh": "保存", "ar": "حفظ" },
+  "flutter.saved_ok": { "en": "Saved", "th": "บันทึกแล้ว", "vi": "Đã lưu", "ko": "저장됨", "zh": "已保存", "ar": "تم الحفظ" }
 }
