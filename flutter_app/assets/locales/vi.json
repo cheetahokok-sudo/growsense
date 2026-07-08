@@ -376,5 +376,14 @@
  "flutter.illness.days": "ngày",
  "flutter.illness.risk_high": "Có thể làm chậm tăng trưởng",
  "flutter.illness.risk_moderate": "Theo dõi tăng trưởng",
- "flutter.illness.risk_neutral": "Không ảnh hưởng tăng trưởng"
+ "flutter.illness.risk_neutral": "Không ảnh hưởng tăng trưởng",
+ "flutter.chart.height_mode": "Chiều cao",
+ "flutter.chart.bmi_mode": "BMI",
+ "flutter.chart.show_illness": "Thời kỳ bệnh",
+ "flutter.chart.bmi_caption": "Vùng BMI theo tuổi của WHO. Xanh: khỏe mạnh. Dải vàng: thừa cân (+1 đến +2 SD). Đỏ: béo phì (>+2 SD). Xám xanh: gầy (<−2 SD). Hồng: thời kỳ bệnh đã ghi.",
+ "flutter.bmi.healthy_range": "Khỏe mạnh",
+ "flutter.bmi.overweight": "Thừa cân",
+ "flutter.bmi.obesity": "Béo phì",
+ "flutter.bmi.thinness": "Gầy",
+ "flutter.bmi.severe_thinness": "Rất gầy"
 }

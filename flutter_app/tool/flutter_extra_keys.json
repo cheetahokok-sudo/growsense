@@ -138,5 +138,14 @@
   "flutter.illness.days": { "en": "days", "th": "วัน", "vi": "ngày", "ko": "일", "zh": "天", "ar": "أيام" },
   "flutter.illness.risk_high": { "en": "May slow growth", "th": "อาจชะลอการเติบโต", "vi": "Có thể làm chậm tăng trưởng", "ko": "성장 지연 가능", "zh": "可能减缓生长", "ar": "قد يبطئ النمو" },
   "flutter.illness.risk_moderate": { "en": "Watch growth", "th": "ควรเฝ้าดูการเติบโต", "vi": "Theo dõi tăng trưởng", "ko": "성장 관찰", "zh": "留意生长", "ar": "راقب النمو" },
-  "flutter.illness.risk_neutral": { "en": "Growth-neutral", "th": "ไม่กระทบการเติบโต", "vi": "Không ảnh hưởng tăng trưởng", "ko": "성장 영향 없음", "zh": "不影响生长", "ar": "لا يؤثر على النمو" }
+  "flutter.illness.risk_neutral": { "en": "Growth-neutral", "th": "ไม่กระทบการเติบโต", "vi": "Không ảnh hưởng tăng trưởng", "ko": "성장 영향 없음", "zh": "不影响生长", "ar": "لا يؤثر على النمو" },
+  "flutter.chart.height_mode": { "en": "Height", "th": "ส่วนสูง", "vi": "Chiều cao", "ko": "키", "zh": "身高", "ar": "الطول" },
+  "flutter.chart.bmi_mode": { "en": "BMI", "th": "BMI", "vi": "BMI", "ko": "BMI", "zh": "BMI", "ar": "BMI" },
+  "flutter.chart.show_illness": { "en": "Illness periods", "th": "ช่วงเจ็บป่วย", "vi": "Thời kỳ bệnh", "ko": "질병 기간", "zh": "患病期", "ar": "فترات المرض" },
+  "flutter.chart.bmi_caption": { "en": "Shaded WHO BMI-for-age zones. Green: healthy. Gold band: overweight (+1 to +2 SD). Red: obesity (>+2 SD). Blue-grey: thinness (<−2 SD). Pink shading marks logged illness periods.", "th": "โซน BMI ตามอายุของ WHO เขียว: ปกติ · แถบทอง: น้ำหนักเกิน (+1 ถึง +2 SD) · แดง: อ้วน (>+2 SD) · เทาน้ำเงิน: ผอม (<−2 SD) · แถบชมพูคือช่วงที่บันทึกว่าป่วย", "vi": "Vùng BMI theo tuổi của WHO. Xanh: khỏe mạnh. Dải vàng: thừa cân (+1 đến +2 SD). Đỏ: béo phì (>+2 SD). Xám xanh: gầy (<−2 SD). Hồng: thời kỳ bệnh đã ghi.", "ko": "WHO 연령별 BMI 구간. 초록: 건강. 금색: 과체중(+1~+2 SD). 빨강: 비만(>+2 SD). 청회색: 저체중(<−2 SD). 분홍: 기록된 질병 기간.", "zh": "WHO年龄别BMI区间。绿色：健康。金色带：超重（+1至+2 SD）。红色：肥胖（>+2 SD）。蓝灰：偏瘦（<−2 SD）。粉色为已记录的患病期。", "ar": "مناطق مؤشر كتلة الجسم حسب العمر (WHO). أخضر: صحي. ذهبي: زيادة وزن (+1 إلى +2 SD). أحمر: سمنة (>+2 SD). رمادي-أزرق: نحافة (<−2 SD). وردي: فترات المرض المسجلة." },
+  "flutter.bmi.healthy_range": { "en": "Healthy range", "th": "อยู่ในเกณฑ์ปกติ", "vi": "Khỏe mạnh", "ko": "정상 범위", "zh": "健康范围", "ar": "نطاق صحي" },
+  "flutter.bmi.overweight": { "en": "Overweight", "th": "น้ำหนักเกิน", "vi": "Thừa cân", "ko": "과체중", "zh": "超重", "ar": "زيادة وزن" },
+  "flutter.bmi.obesity": { "en": "Obesity", "th": "อ้วน", "vi": "Béo phì", "ko": "비만", "zh": "肥胖", "ar": "سمنة" },
+  "flutter.bmi.thinness": { "en": "Thinness", "th": "ผอม", "vi": "Gầy", "ko": "저체중", "zh": "偏瘦", "ar": "نحافة" },
+  "flutter.bmi.severe_thinness": { "en": "Severe thinness", "th": "ผอมมาก", "vi": "Rất gầy", "ko": "심한 저체중", "zh": "严重偏瘦", "ar": "نحافة شديدة" }
 }

@@ -376,5 +376,14 @@
  "flutter.illness.days": "일",
  "flutter.illness.risk_high": "성장 지연 가능",
  "flutter.illness.risk_moderate": "성장 관찰",
- "flutter.illness.risk_neutral": "성장 영향 없음"
+ "flutter.illness.risk_neutral": "성장 영향 없음",
+ "flutter.chart.height_mode": "키",
+ "flutter.chart.bmi_mode": "BMI",
+ "flutter.chart.show_illness": "질병 기간",
+ "flutter.chart.bmi_caption": "WHO 연령별 BMI 구간. 초록: 건강. 금색: 과체중(+1~+2 SD). 빨강: 비만(>+2 SD). 청회색: 저체중(<−2 SD). 분홍: 기록된 질병 기간.",
+ "flutter.bmi.healthy_range": "정상 범위",
+ "flutter.bmi.overweight": "과체중",
+ "flutter.bmi.obesity": "비만",
+ "flutter.bmi.thinness": "저체중",
+ "flutter.bmi.severe_thinness": "심한 저체중"
 }

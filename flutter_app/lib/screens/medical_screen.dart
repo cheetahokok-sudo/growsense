@@ -28,6 +28,7 @@ class MedicalScreen extends StatefulWidget {
 
 class _MedicalScreenState extends State<MedicalScreen> {
   WhoReference? _who;
+  WhoBmiReference? _bmi;
   double? _readiness; // 7-day avg readiness for the projection nudge
   String? _readinessChildId;
 
@@ -36,6 +37,9 @@ class _MedicalScreenState extends State<MedicalScreen> {
     super.initState();
     loadWhoReference().then((w) {
       if (mounted) setState(() => _who = w);
+    });
+    loadBmiReference().then((b) {
+      if (mounted) setState(() => _bmi = b);
     });
   }
 
@@ -72,7 +76,7 @@ class _MedicalScreenState extends State<MedicalScreen> {
         }
         _loadReadinessIfNeeded();
         widget.appState.loadClinicalIfNeeded();
-        if (_who == null) {
+        if (_who == null || _bmi == null) {
           return const Center(child: CircularProgressIndicator());
         }
         final t = widget.i18n.t;
@@ -86,6 +90,7 @@ class _MedicalScreenState extends State<MedicalScreen> {
                 appState: widget.appState,
                 child: child,
                 who: _who!,
+                bmi: _bmi!,
                 readiness: _readiness,
                 i18n: widget.i18n),
             const SizedBox(height: 12),
@@ -297,64 +302,116 @@ class MeasurementsScreen extends StatelessWidget {
 
 // ── Chart card ──────────────────────────────────────────────────────
 
-class _ChartCard extends StatelessWidget {
+class _ChartCard extends StatefulWidget {
   const _ChartCard(
       {required this.appState,
       required this.child,
       required this.who,
+      required this.bmi,
       required this.readiness,
       required this.i18n});
   final AppState appState;
   final Map<String, dynamic> child;
   final WhoReference who;
+  final WhoBmiReference bmi;
   final double? readiness;
   final I18n i18n;
 
   @override
+  State<_ChartCard> createState() => _ChartCardState();
+}
+
+class _ChartCardState extends State<_ChartCard> {
+  String _mode = 'height'; // 'height' | 'bmi'
+  bool _showIllness = true;
+
+  @override
   Widget build(BuildContext context) {
-    final t = i18n.t;
+    final t = widget.i18n.t;
+    final child = widget.child;
     final dob = child['date_of_birth'] as String?;
     final sex = child['biological_sex'] as String?;
-    final table = who.tableFor(sex);
+    final isBmi = _mode == 'bmi';
+    final heightTable = widget.who.tableFor(sex);
+    final bmiTable = widget.bmi.tableFor(sex);
 
-    // Measurements oldest → newest as (ageYears, heightCm)
+    // Measurements oldest → newest as (ageYears, value)
     final meas = <(double, double)>[];
     if (dob != null) {
-      for (final m in appState.measurements.reversed) {
+      for (final m in widget.appState.measurements.reversed) {
         final h = (m['stature_height_cm'] as num?)?.toDouble();
+        final wkg = (m['mass_weight_kg'] as num?)?.toDouble();
         final date = m['recorded_date'] as String?;
         if (h == null || date == null) continue;
-        meas.add((ageYearsAt(dob, date), h));
+        if (isBmi) {
+          if (wkg == null || h <= 0) continue;
+          meas.add((ageYearsAt(dob, date), wkg / ((h / 100) * (h / 100))));
+        } else {
+          meas.add((ageYearsAt(dob, date), h));
+        }
       }
     }
 
-    // Percentile readout for the latest measurement
+    // Illness period spans (start→end age), only when toggled on.
+    final spans = <(double, double)>[];
+    if (_showIllness && dob != null) {
+      final todayIso = todayISO();
+      for (final e in widget.appState.illnessEvents) {
+        final s = e['start_date'] as String?;
+        if (s == null) continue;
+        final end = (e['end_date'] as String?) ?? todayIso;
+        spans.add((ageYearsAt(dob, s), ageYearsAt(dob, end)));
+      }
+    }
+
+    List<double> bandsForAge(double ageMonths) {
+      if (isBmi) {
+        final lms = interpolateLms(bmiTable, ageMonths);
+        return [
+          for (final z in [-2.0, -1.0, 0.0, 1.0, 2.0])
+            bmiAtZ(z, lms.l, lms.m, lms.s)
+        ];
+      }
+      return interpolateBands(heightTable, ageMonths);
+    }
+
+    // Readout for the latest measurement + (height only) projection.
     String readout = t('flutter.no_measurements_hint',
         'No measurements yet — add one below.');
     List<ProjectionPoint> projection = [];
     if (meas.isNotEmpty) {
-      final (age, h) = meas.last;
-      final bands = interpolateBands(table, age * 12);
-      final z = zFromHeight(bands, h);
-      final pct = zToPercentile(z);
-      readout =
-          '${h.toStringAsFixed(1)} cm · ${age.toStringAsFixed(1)}y · P${pct.round()} ${t('flutter.percentile', 'percentile')} (z ${z >= 0 ? '+' : ''}${z.toStringAsFixed(2)})';
-
-      final target = calculateTargetHeight(
-        motherHeightCm: (child['mother_height_cm'] as num?)?.toDouble(),
-        fatherHeightCm: (child['father_height_cm'] as num?)?.toDouble(),
-        motherAge: (child['mother_current_age'] as num?)?.toInt(),
-        fatherAge: (child['father_current_age'] as num?)?.toInt(),
-        childSex: sex,
-      );
-      projection = projectGrowth(
-        table: table,
-        currentAgeYears: age,
-        currentHeightCm: h,
-        targetZ: target?.correctedZ,
-        readinessScore: readiness,
-      );
+      final (age, v) = meas.last;
+      if (isBmi) {
+        final lms = interpolateLms(bmiTable, age * 12);
+        final z = bmiToZ(v, lms.l, lms.m, lms.s);
+        final cls = bmiClassification(z);
+        readout =
+            'BMI ${v.toStringAsFixed(1)} · ${age.toStringAsFixed(1)}y · P${zToPercentile(z).round()} · ${t('flutter.bmi.$cls', cls)}';
+      } else {
+        final bands = interpolateBands(heightTable, age * 12);
+        final z = zFromHeight(bands, v);
+        readout =
+            '${v.toStringAsFixed(1)} cm · ${age.toStringAsFixed(1)}y · P${zToPercentile(z).round()} ${t('flutter.percentile', 'percentile')} (z ${z >= 0 ? '+' : ''}${z.toStringAsFixed(2)})';
+        final target = calculateTargetHeight(
+          motherHeightCm: (child['mother_height_cm'] as num?)?.toDouble(),
+          fatherHeightCm: (child['father_height_cm'] as num?)?.toDouble(),
+          motherAge: (child['mother_current_age'] as num?)?.toInt(),
+          fatherAge: (child['father_current_age'] as num?)?.toInt(),
+          childSex: sex,
+        );
+        projection = projectGrowth(
+          table: heightTable,
+          currentAgeYears: age,
+          currentHeightCm: v,
+          targetZ: target?.correctedZ,
+          readinessScore: widget.readiness,
+        );
+      }
     }
+
+    final title = isBmi
+        ? '${t('analytics.charts.bmi_for_age', 'BMI-for-age')} · WHO 2007'
+        : '${t('analytics.charts.height_for_age', 'Height-for-age')} · WHO 2007';
 
     return Container(
       decoration: BoxDecoration(
@@ -367,43 +424,121 @@ class _ChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(
-                '${t('analytics.charts.height_for_age', 'Height-for-age')} · WHO 2007',
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: GsColors.measured)),
+          // Mode toggle (Height | BMI)
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: GsColors.surface2,
+              borderRadius: BorderRadius.circular(GsRadius.sm + 2),
+            ),
+            child: Row(
+              children: [
+                for (final m in ['height', 'bmi'])
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _mode = m),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _mode == m
+                              ? GsColors.surface
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(GsRadius.sm),
+                          boxShadow: _mode == m ? gsShadow : null,
+                        ),
+                        child: Text(
+                            m == 'bmi'
+                                ? t('flutter.chart.bmi_mode', 'BMI')
+                                : t('flutter.chart.height_mode', 'Height'),
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: _mode == m
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: _mode == m
+                                    ? GsColors.text
+                                    : GsColors.text2)),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(title,
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color:
+                            isBmi ? GsColors.accent : GsColors.measured)),
+              ),
+              // Illness-period show/hide toggle
+              GestureDetector(
+                onTap: () => setState(() => _showIllness = !_showIllness),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: _showIllness
+                            ? GsColors.flag.withValues(alpha: 0.25)
+                            : GsColors.surface2,
+                        border: Border.all(
+                            color: _showIllness
+                                ? GsColors.flag
+                                : GsColors.border2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: _showIllness
+                          ? const Icon(Icons.check,
+                              size: 10, color: GsColors.flag)
+                          : null,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(t('flutter.chart.show_illness', 'Illness periods'),
+                        style: const TextStyle(
+                            fontSize: 10.5, color: GsColors.text2)),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(readout,
-                style:
-                    const TextStyle(fontSize: 11.5, color: GsColors.text2)),
-          ),
+          Text(readout,
+              style: const TextStyle(fontSize: 11.5, color: GsColors.text2)),
           const SizedBox(height: 8),
           SizedBox(
             height: 260,
             width: double.infinity,
             child: CustomPaint(
               painter: _GrowthChartPainter(
-                table: table,
+                bandsForAge: bandsForAge,
+                ageMinYears: (isBmi ? bmiTable : heightTable).first[0] / 12,
+                ageMaxYears: (isBmi ? bmiTable : heightTable).last[0] / 12,
                 measurements: meas,
                 projection: projection,
                 emptyLabel: t('flutter.no_measurements_chart',
                     'No measurements logged yet'),
+                yStep: isBmi ? 2 : 10,
+                bandLabels: isBmi
+                    ? const ['−2', '−1', '0', '+1', '+2']
+                    : const ['3', '15', '50', '85', '97'],
+                illnessSpans: spans,
+                bmiZones: isBmi,
               ),
             ),
           ),
           const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(
-              t('flutter.chart_caption'),
-              style: const TextStyle(fontSize: 10, color: GsColors.text3),
-            ),
+          Text(
+            isBmi ? t('flutter.chart.bmi_caption') : t('flutter.chart_caption'),
+            style: const TextStyle(fontSize: 10, color: GsColors.text3),
           ),
         ],
       ),
@@ -416,29 +551,40 @@ class _ChartCard extends StatelessWidget {
 /// the smooth physiologic curves parents see in a paediatrician's
 /// chart, not straight segments.
 class _GrowthChartPainter extends CustomPainter {
-  _GrowthChartPainter(
-      {required this.table,
-      required this.measurements,
-      required this.projection,
-      required this.emptyLabel});
-  final List<List<double>> table;
-  final List<(double, double)> measurements; // (ageYears, cm) asc
+  _GrowthChartPainter({
+    required this.bandsForAge,
+    required this.ageMinYears,
+    required this.ageMaxYears,
+    required this.measurements,
+    required this.projection,
+    required this.emptyLabel,
+    required this.yStep,
+    required this.bandLabels,
+    this.illnessSpans = const [],
+    this.bmiZones = false,
+  });
+  final List<double> Function(double ageMonths) bandsForAge;
+  final double ageMinYears, ageMaxYears;
+  final List<(double, double)> measurements; // (ageYears, value) asc
   final List<ProjectionPoint> projection;
   final String emptyLabel;
+  final int yStep;
+  final List<String> bandLabels; // right-edge labels, low→high
+  final List<(double, double)> illnessSpans; // (startAge, endAge)
+  final bool bmiZones; // color the channels as BMI health zones
 
   static const _padL = 34.0, _padR = 8.0, _padT = 8.0, _padB = 22.0;
 
   @override
   void paint(Canvas canvas, Size size) {
-    // X range: around the data if present, else the child-age window
-    double minAge = table.first[0] / 12, maxAge = table.last[0] / 12;
+    // X range: around the data if present, else the reference window
+    double minAge = ageMinYears, maxAge = ageMaxYears;
     if (measurements.isNotEmpty) {
       final firstAge = measurements.first.$1;
       final lastAge = measurements.last.$1;
-      final projEnd =
-          projection.isEmpty ? lastAge + 2.0 : lastAge + 3.0;
-      minAge = math.max(table.first[0] / 12, firstAge - 0.75);
-      maxAge = math.min(table.last[0] / 12, math.max(projEnd, lastAge + 2.0));
+      final projEnd = projection.isEmpty ? lastAge + 2.0 : lastAge + 3.0;
+      minAge = math.max(ageMinYears, firstAge - 0.75);
+      maxAge = math.min(ageMaxYears, math.max(projEnd, lastAge + 2.0));
     }
     final w = size.width - _padL - _padR;
     final h = size.height - _padT - _padB;
@@ -462,7 +608,7 @@ class _GrowthChartPainter extends CustomPainter {
     final bandVals = <List<double>>[];
     for (var i = 0; i <= samples; i++) {
       final age = minAge + (maxAge - minAge) * i / samples;
-      bandVals.add(interpolateBands(table, age * 12));
+      bandVals.add(bandsForAge(age * 12));
     }
     var yMinV = double.infinity, yMaxV = -double.infinity;
     for (final b in bandVals) {
@@ -496,11 +642,10 @@ class _GrowthChartPainter extends CustomPainter {
       ..color = GsColors.border
       ..strokeWidth = 0.7;
     final labelStyle = const TextStyle(fontSize: 9, color: GsColors.text3);
-    final cmStep = (yMaxV - yMinV) > 45 ? 10 : 5;
-    for (var cm = (yMinV / cmStep).ceil() * cmStep; cm < yMaxV; cm += cmStep) {
-      final y = py(cm.toDouble());
+    for (var v = (yMinV / yStep).ceil() * yStep; v < yMaxV; v += yStep) {
+      final y = py(v.toDouble());
       canvas.drawLine(Offset(_padL, y), Offset(_padL + w, y), gridPaint);
-      _text(canvas, '$cm', Offset(2, y - 6), labelStyle);
+      _text(canvas, '$v', Offset(2, y - 6), labelStyle);
     }
     for (var age = minAge.ceil(); age <= maxAge.floor(); age++) {
       final x = px(age.toDouble());
@@ -513,7 +658,17 @@ class _GrowthChartPainter extends CustomPainter {
     canvas.save();
     canvas.clipRect(Rect.fromLTWH(_padL, _padT, w, h));
 
-    // ── Percentile channels (smooth) ──
+    // ── Illness period shading (behind the curves) ──
+    final illnessPaint = Paint()..color = GsColors.flag.withValues(alpha: 0.10);
+    for (final (startA, endA) in illnessSpans) {
+      final x0 = px(startA.clamp(minAge, maxAge));
+      final x1 = px((endA <= startA ? startA + 0.02 : endA).clamp(minAge, maxAge));
+      canvas.drawRect(
+          Rect.fromLTRB(x0, _padT, math.max(x1, x0 + 1.5), _padT + h),
+          illnessPaint);
+    }
+
+    // ── Percentile / BMI channels (smooth) ──
     void fillBetween(List<Offset> top, List<Offset> bottom, Color color) {
       final path = _smoothPath(bottom)
         ..lineTo(top.last.dx, top.last.dy);
@@ -524,8 +679,24 @@ class _GrowthChartPainter extends CustomPainter {
       canvas.drawPath(path, Paint()..color = color);
     }
 
-    fillBetween(bandPts[4], bandPts[0], GsColors.text3.withValues(alpha: 0.12));
-    fillBetween(bandPts[3], bandPts[1], GsColors.text3.withValues(alpha: 0.14));
+    if (bmiZones) {
+      // BMI health zones: bands are [-2, -1, 0, +1, +2] SD.
+      final botEdge = [for (final p in bandPts[4]) Offset(p.dx, _padT + h)];
+      final topEdge = [for (final p in bandPts[0]) Offset(p.dx, _padT)];
+      // thinness (< −2 SD) down to the bottom edge
+      fillBetween(bandPts[0], botEdge, GsColors.measured.withValues(alpha: 0.10));
+      // healthy channel (−2 to +1 SD)
+      fillBetween(bandPts[3], bandPts[0], GsColors.accent.withValues(alpha: 0.10));
+      // overweight (+1 to +2 SD)
+      fillBetween(bandPts[4], bandPts[3], GsColors.estimated.withValues(alpha: 0.16));
+      // obesity (> +2 SD) up to the top edge
+      fillBetween(topEdge, bandPts[4], GsColors.flag.withValues(alpha: 0.12));
+    } else {
+      fillBetween(
+          bandPts[4], bandPts[0], GsColors.text3.withValues(alpha: 0.12));
+      fillBetween(
+          bandPts[3], bandPts[1], GsColors.text3.withValues(alpha: 0.14));
+    }
 
     void curve(List<Offset> pts, Color color, double width) {
       canvas.drawPath(
@@ -586,10 +757,9 @@ class _GrowthChartPainter extends CustomPainter {
 
     // Band edge labels on the right, outside the clip so they can sit
     // in the right padding gutter.
-    final edgeLabels = ['3', '15', '50', '85', '97'];
-    for (var b = 0; b < 5; b++) {
-      _text(canvas, edgeLabels[b],
-          Offset(bandPts[b].last.dx - 12, bandPts[b].last.dy - 11),
+    for (var b = 0; b < 5 && b < bandLabels.length; b++) {
+      _text(canvas, bandLabels[b],
+          Offset(bandPts[b].last.dx - 14, bandPts[b].last.dy - 11),
           const TextStyle(fontSize: 8, color: GsColors.text3));
     }
 
@@ -647,7 +817,8 @@ class _GrowthChartPainter extends CustomPainter {
   bool shouldRepaint(covariant _GrowthChartPainter old) =>
       old.measurements != measurements ||
       old.projection != projection ||
-      old.table != table;
+      old.illnessSpans != illnessSpans ||
+      old.bmiZones != bmiZones;
 }
 
 // ── Target height card ──────────────────────────────────────────────

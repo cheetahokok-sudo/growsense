@@ -65,6 +65,7 @@ flutter:
   assets:
     - assets/food_reference.json
     - assets/who_reference.json
+    - assets/who_bmi_reference.json
     - assets/coach_library.json
     - assets/illness_reference.json
     - assets/locales/

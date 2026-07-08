@@ -376,5 +376,14 @@
  "flutter.illness.days": "天",
  "flutter.illness.risk_high": "可能减缓生长",
  "flutter.illness.risk_moderate": "留意生长",
- "flutter.illness.risk_neutral": "不影响生长"
+ "flutter.illness.risk_neutral": "不影响生长",
+ "flutter.chart.height_mode": "身高",
+ "flutter.chart.bmi_mode": "BMI",
+ "flutter.chart.show_illness": "患病期",
+ "flutter.chart.bmi_caption": "WHO年龄别BMI区间。绿色：健康。金色带：超重（+1至+2 SD）。红色：肥胖（>+2 SD）。蓝灰：偏瘦（<−2 SD）。粉色为已记录的患病期。",
+ "flutter.bmi.healthy_range": "健康范围",
+ "flutter.bmi.overweight": "超重",
+ "flutter.bmi.obesity": "肥胖",
+ "flutter.bmi.thinness": "偏瘦",
+ "flutter.bmi.severe_thinness": "严重偏瘦"
 }

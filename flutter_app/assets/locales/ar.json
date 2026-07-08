@@ -376,5 +376,14 @@
  "flutter.illness.days": "أيام",
  "flutter.illness.risk_high": "قد يبطئ النمو",
  "flutter.illness.risk_moderate": "راقب النمو",
- "flutter.illness.risk_neutral": "لا يؤثر على النمو"
+ "flutter.illness.risk_neutral": "لا يؤثر على النمو",
+ "flutter.chart.height_mode": "الطول",
+ "flutter.chart.bmi_mode": "BMI",
+ "flutter.chart.show_illness": "فترات المرض",
+ "flutter.chart.bmi_caption": "مناطق مؤشر كتلة الجسم حسب العمر (WHO). أخضر: صحي. ذهبي: زيادة وزن (+1 إلى +2 SD). أحمر: سمنة (>+2 SD). رمادي-أزرق: نحافة (<−2 SD). وردي: فترات المرض المسجلة.",
+ "flutter.bmi.healthy_range": "نطاق صحي",
+ "flutter.bmi.overweight": "زيادة وزن",
+ "flutter.bmi.obesity": "سمنة",
+ "flutter.bmi.thinness": "نحافة",
+ "flutter.bmi.severe_thinness": "نحافة شديدة"
 }

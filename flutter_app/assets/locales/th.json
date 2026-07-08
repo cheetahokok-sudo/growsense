@@ -376,5 +376,14 @@
  "flutter.illness.days": "วัน",
  "flutter.illness.risk_high": "อาจชะลอการเติบโต",
  "flutter.illness.risk_moderate": "ควรเฝ้าดูการเติบโต",
- "flutter.illness.risk_neutral": "ไม่กระทบการเติบโต"
+ "flutter.illness.risk_neutral": "ไม่กระทบการเติบโต",
+ "flutter.chart.height_mode": "ส่วนสูง",
+ "flutter.chart.bmi_mode": "BMI",
+ "flutter.chart.show_illness": "ช่วงเจ็บป่วย",
+ "flutter.chart.bmi_caption": "โซน BMI ตามอายุของ WHO เขียว: ปกติ · แถบทอง: น้ำหนักเกิน (+1 ถึง +2 SD) · แดง: อ้วน (>+2 SD) · เทาน้ำเงิน: ผอม (<−2 SD) · แถบชมพูคือช่วงที่บันทึกว่าป่วย",
+ "flutter.bmi.healthy_range": "อยู่ในเกณฑ์ปกติ",
+ "flutter.bmi.overweight": "น้ำหนักเกิน",
+ "flutter.bmi.obesity": "อ้วน",
+ "flutter.bmi.thinness": "ผอม",
+ "flutter.bmi.severe_thinness": "ผอมมาก"
 }

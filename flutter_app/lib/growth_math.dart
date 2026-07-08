@@ -135,6 +135,79 @@ double heightAtZ(List<double> bands, double z) {
   return bands[2];
 }
 
+// ── BMI-for-age (WHO 2007, L/M/S Box-Cox) ───────────────────────────
+// Unlike height, BMI-for-age is genuinely skewed, so the WHO reference
+// stores L/M/S triplets and the percentile uses the full Box-Cox
+// transform. Same method as the PWA's bmi-percentile.js.
+
+class WhoBmiReference {
+  final List<List<double>> boys; // rows: [months, L, M, S]
+  final List<List<double>> girls;
+  WhoBmiReference(this.boys, this.girls);
+  List<List<double>> tableFor(String? sex) =>
+      (sex ?? 'male').toLowerCase() == 'female' ? girls : boys;
+}
+
+WhoBmiReference? _bmiCache;
+
+Future<WhoBmiReference> loadBmiReference() async {
+  if (_bmiCache != null) return _bmiCache!;
+  final raw = await rootBundle.loadString('assets/who_bmi_reference.json');
+  final j = jsonDecode(raw) as Map<String, dynamic>;
+  List<List<double>> rows(String key) => [
+        for (final r in j[key] as List)
+          [for (final v in r as List) (v as num).toDouble()],
+      ];
+  _bmiCache =
+      WhoBmiReference(rows('bmi_boys_5_19'), rows('bmi_girls_5_19'));
+  return _bmiCache!;
+}
+
+/// Interpolate L, M, S to an exact age (months); clamps at table ends.
+({double l, double m, double s}) interpolateLms(
+    List<List<double>> table, double ageMonths) {
+  if (ageMonths <= table.first[0]) {
+    final r = table.first;
+    return (l: r[1], m: r[2], s: r[3]);
+  }
+  if (ageMonths >= table.last[0]) {
+    final r = table.last;
+    return (l: r[1], m: r[2], s: r[3]);
+  }
+  for (var i = 0; i < table.length - 1; i++) {
+    final r0 = table[i], r1 = table[i + 1];
+    if (ageMonths >= r0[0] && ageMonths <= r1[0]) {
+      final f = (ageMonths - r0[0]) / (r1[0] - r0[0]);
+      return (
+        l: r0[1] + f * (r1[1] - r0[1]),
+        m: r0[2] + f * (r1[2] - r0[2]),
+        s: r0[3] + f * (r1[3] - r0[3]),
+      );
+    }
+  }
+  final r = table.last;
+  return (l: r[1], m: r[2], s: r[3]);
+}
+
+double bmiToZ(double bmi, double l, double m, double s) =>
+    l.abs() < 1e-9 ? math.log(bmi / m) / s : (math.pow(bmi / m, l) - 1) / (l * s);
+
+/// Inverse: BMI value at a z-score for given L/M/S (for chart bands).
+double bmiAtZ(double z, double l, double m, double s) =>
+    l.abs() < 1e-9 ? m * math.exp(s * z) : m * math.pow(1 + l * s * z, 1 / l);
+
+double zToBmiPercentile(double z) => zToPercentile(z);
+
+/// WHO's published cutoffs for this reference: obesity >+2SD,
+/// overweight >+1SD, thinness <−2SD, severe thinness <−3SD.
+String bmiClassification(double z) {
+  if (z > 2) return 'obesity';
+  if (z > 1) return 'overweight';
+  if (z < -3) return 'severe_thinness';
+  if (z < -2) return 'thinness';
+  return 'healthy_range';
+}
+
 // ── Target height (Zeevi et al. 2024) ───────────────────────────────
 
 const adultMean = {'male': 176.5, 'female': 163.2};

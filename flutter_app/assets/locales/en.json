@@ -376,5 +376,14 @@
  "flutter.illness.days": "days",
  "flutter.illness.risk_high": "May slow growth",
  "flutter.illness.risk_moderate": "Watch growth",
- "flutter.illness.risk_neutral": "Growth-neutral"
+ "flutter.illness.risk_neutral": "Growth-neutral",
+ "flutter.chart.height_mode": "Height",
+ "flutter.chart.bmi_mode": "BMI",
+ "flutter.chart.show_illness": "Illness periods",
+ "flutter.chart.bmi_caption": "Shaded WHO BMI-for-age zones. Green: healthy. Gold band: overweight (+1 to +2 SD). Red: obesity (>+2 SD). Blue-grey: thinness (<−2 SD). Pink shading marks logged illness periods.",
+ "flutter.bmi.healthy_range": "Healthy range",
+ "flutter.bmi.overweight": "Overweight",
+ "flutter.bmi.obesity": "Obesity",
+ "flutter.bmi.thinness": "Thinness",
+ "flutter.bmi.severe_thinness": "Severe thinness"
 }
