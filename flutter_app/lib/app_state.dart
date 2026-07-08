@@ -6,8 +6,27 @@
 // yet — the first prototype is read-only over the day's data.
 // ══════════════════════════════════════════════════════════════════
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Downscale an X-ray to <=800px JPEG for AI vision analysis — same
+/// 800px/0.85 rule as the PWA's canvas downscale. Top-level so it can
+/// run through compute() off the UI thread (no-op isolate on web).
+Uint8List downscaleXrayJpeg(Uint8List bytes) {
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) return bytes;
+  const maxDim = 800;
+  img.Image out = decoded;
+  if (decoded.width > maxDim || decoded.height > maxDim) {
+    out = decoded.width >= decoded.height
+        ? img.copyResize(decoded, width: maxDim)
+        : img.copyResize(decoded, height: maxDim);
+  }
+  return Uint8List.fromList(img.encodeJpg(out, quality: 85));
+}
 
 /// Local-calendar-day ISO string (YYYY-MM-DD). Deliberately NOT
 /// DateTime.toIso8601String().split('T') — that would be UTC and
@@ -593,6 +612,7 @@ class AppState extends ChangeNotifier {
     required double chronologicalAgeMonths,
     String? reportDoctor,
     String? notes,
+    String? xrayStoragePath,
   }) =>
       _insertClinical('bone_age_assessments', {
         'study_date': studyDate,
@@ -602,10 +622,103 @@ class AppState extends ChangeNotifier {
         'chronological_age_months': chronologicalAgeMonths,
         'report_doctor': reportDoctor,
         'notes': notes,
+        'xray_storage_path': xrayStoragePath,
       }, boneAgeAssessments);
 
-  Future<String?> deleteBoneAge(dynamic id) => _deleteClinical(
-      'bone_age_assessments', 'assessment_id', id, boneAgeAssessments);
+  Future<String?> deleteBoneAge(dynamic id) async {
+    // Remove the stored X-ray first (same as the PWA) — non-fatal if
+    // it fails, the DB row is the source of truth.
+    final rec = boneAgeAssessments
+        .cast<Map<String, dynamic>?>()
+        .firstWhere((r) => r?['assessment_id'] == id, orElse: () => null);
+    final path = rec?['xray_storage_path'] as String?;
+    if (path != null) {
+      try {
+        await sb.storage.from('bone-xrays').remove([path]);
+      } catch (_) {}
+    }
+    return _deleteClinical(
+        'bone_age_assessments', 'assessment_id', id, boneAgeAssessments);
+  }
+
+  /// Upload an X-ray image (already downscaled JPEG bytes) to the
+  /// bone-xrays bucket. Returns the storage path, or null on failure.
+  Future<String?> uploadBoneXray(Uint8List jpegBytes) async {
+    final childId = activeChildId;
+    if (childId == null) return null;
+    final path = '$childId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+    try {
+      await sb.storage.from('bone-xrays').uploadBinary(path, jpegBytes,
+          fileOptions:
+              const FileOptions(contentType: 'image/jpeg', upsert: false));
+      return path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Signed URLs for X-ray thumbnails, cached per path (valid 1h —
+  // plenty for a screen session).
+  final Map<String, String> _xrayUrlCache = {};
+  Future<String?> xraySignedUrl(String path) async {
+    final cached = _xrayUrlCache[path];
+    if (cached != null) return cached;
+    try {
+      final url =
+          await sb.storage.from('bone-xrays').createSignedUrl(path, 3600);
+      _xrayUrlCache[path] = url;
+      return url;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// AI second opinion — sends the stored X-ray to the bone-age-analysis
+  /// Edge Function (Claude Vision, GP framework, v2 carpal-anchor
+  /// algorithm). The function persists ai_analysis_result on the row;
+  /// we mirror it into local state. Returns an error string or null.
+  bool boneAgeAiRunning = false;
+  Future<String?> runBoneAgeAI(Map<String, dynamic> record) async {
+    final path = record['xray_storage_path'] as String?;
+    if (path == null) return 'No X-ray image attached';
+    boneAgeAiRunning = true;
+    notifyListeners();
+    try {
+      // Download from storage, downscale to <=800px JPEG like the PWA
+      // (vision reads bones fine at that size; keeps payload small).
+      final bytes = await sb.storage.from('bone-xrays').download(path);
+      final resized = await compute(downscaleXrayJpeg, bytes);
+      final res = await sb.functions.invoke('bone-age-analysis', body: {
+        'image_base64': base64Encode(resized),
+        'media_type': 'image/jpeg',
+        'chronological_age_months': record['chronological_age_months'],
+        'sex': activeChildRow?['sex'] ?? 'male',
+        'assessment_id': record['assessment_id'],
+      });
+      final data = res.data as Map<String, dynamic>?;
+      if (data == null || data['error'] != null) {
+        return (data?['error'] ?? 'AI service returned no result').toString();
+      }
+      final idx = boneAgeAssessments
+          .indexWhere((r) => r['assessment_id'] == record['assessment_id']);
+      if (idx >= 0) {
+        boneAgeAssessments[idx]['ai_analysis_result'] = data['result'];
+        boneAgeAssessments[idx]['ai_analysis_date'] =
+            DateTime.now().toIso8601String();
+      }
+      return null;
+    } on FunctionException catch (e) {
+      final detail = e.details;
+      return detail is Map
+          ? (detail['error'] ?? detail['detail'] ?? e.reasonPhrase).toString()
+          : (e.reasonPhrase ?? 'AI analysis failed');
+    } catch (e) {
+      return e.toString();
+    } finally {
+      boneAgeAiRunning = false;
+      notifyListeners();
+    }
+  }
 
   Future<String?> addLabResult({
     required String labDate,

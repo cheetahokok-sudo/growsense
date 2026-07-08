@@ -8,6 +8,7 @@ import '../app_state.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'bone_age_screen.dart';
 import 'medical_modules.dart';
 
 /// Medical tab — growth measurement entry, WHO 2007 height-for-age
