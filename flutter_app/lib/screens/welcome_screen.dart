@@ -417,8 +417,8 @@ class _RingDemoPainter extends CustomPainter {
             ..strokeWidth = 9 * scale);
       const start = -math.pi / 2;
       final sweep = 2 * math.pi * pct;
-      final head =
-          Color.lerp(color.withValues(alpha: 0.65), color, pct)!;
+      final light = color.withValues(alpha: 0.55);
+      final head = Color.lerp(light, color, pct)!;
       canvas.drawArc(
           rect,
           start,
@@ -426,16 +426,19 @@ class _RingDemoPainter extends CustomPainter {
           false,
           Paint()
             ..shader = SweepGradient(
-              colors: [color.withValues(alpha: 0.55), head],
+              endAngle: sweep,
+              colors: [light, head],
               transform: const GradientRotation(-math.pi / 2),
             ).createShader(rect)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 9 * scale
-            ..strokeCap = StrokeCap.round);
+            ..strokeCap = StrokeCap.butt);
       final end = start + sweep;
-      final tip = center + Offset(math.cos(end) * r, math.sin(end) * r);
-      canvas.drawCircle(tip, 5.4 * scale, Paint()..color = head);
-      canvas.drawCircle(tip, 2.2 * scale, Paint()..color = Colors.white);
+      final startTip =
+          center + Offset(math.cos(start) * r, math.sin(start) * r);
+      final endTip = center + Offset(math.cos(end) * r, math.sin(end) * r);
+      canvas.drawCircle(startTip, 4.5 * scale, Paint()..color = light);
+      canvas.drawCircle(endTip, 4.5 * scale, Paint()..color = head);
     }
 
     // Brighter shades of the brand tokens so arcs pop on dark glass
@@ -544,72 +547,141 @@ class _BoneAgeDemo extends StatelessWidget {
   }
 }
 
+/// Stylized hand radiograph — glowing bones on film-dark ground, with
+/// the amber carpal-analysis ellipse echoing the real AI overlay.
 class _BoneAgeDemoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
+    const boneCol = Color(0xFFD6E6F5); // radiograph white-blue
+    const amber = Color(0xFFE0BD75); // AI annotation accent
 
-    // ±band around the identity diagonal
-    final band = Path()
-      ..moveTo(0, h * 0.80)
-      ..lineTo(w, h * 0.05)
-      ..lineTo(w, h * 0.35)
-      ..lineTo(0, h * 1.0)
-      ..close();
-    canvas.drawPath(band, Paint()..color = Colors.white.withValues(alpha: 0.08));
+    // Film-dark vignette so the card interior reads as an X-ray plate
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.06, 0, w * 0.88, h), const Radius.circular(12)),
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0, -0.2),
+          radius: 1.1,
+          colors: [
+            const Color(0xFF07140E).withValues(alpha: 0.55),
+            const Color(0xFF020805).withValues(alpha: 0.85),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, w, h)),
+    );
 
-    // Identity diagonal — dashed
-    final dash = Paint()
-      ..color = Colors.white.withValues(alpha: 0.55)
-      ..strokeWidth = 1.6;
-    final a = Offset(0, h * 0.9);
-    final b = Offset(w, h * 0.2);
-    final total = (b - a).distance;
-    final dir = (b - a) / total;
-    var d = 0.0;
-    while (d < total) {
-      final end = math.min(d + 6, total);
-      canvas.drawLine(a + dir * d, a + dir * end, dash);
-      d = end + 5;
+    // Bone segment helper: blurred glow underlay + capsule stroke
+    void bone(Offset a, Offset b, double width) {
+      final glow = Paint()
+        ..color = boneCol.withValues(alpha: 0.35)
+        ..strokeWidth = width + 3
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      final core = Paint()
+        ..color = boneCol.withValues(alpha: 0.85)
+        ..strokeWidth = width
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(a, b, glow);
+      canvas.drawLine(a, b, core);
     }
 
-    // Serial studies below the line (delayed) with trajectory
-    const blue = Color(0xFF7FB2E5);
-    final pts = [
-      Offset(w * 0.22, h * 0.86),
-      Offset(w * 0.52, h * 0.66),
-      Offset(w * 0.80, h * 0.44),
+    // Layout: left-hand PA, wrist at bottom center, fingers fanning up.
+    final cx = w * 0.5;
+    final wristY = h * 0.97;
+
+    // Radius + ulna stubs entering from below
+    bone(Offset(cx - 7, h * 1.05), Offset(cx - 6, wristY - 4), 7);
+    bone(Offset(cx + 8, h * 1.06), Offset(cx + 7, wristY - 2), 6);
+
+    // Carpal cluster — small ossified circles (the AI's primary anchor)
+    final carpals = [
+      Offset(cx - 10, h * 0.86),
+      Offset(cx + 2, h * 0.84),
+      Offset(cx + 13, h * 0.86),
+      Offset(cx - 4, h * 0.90),
+      Offset(cx + 8, h * 0.91),
     ];
-    final line = Paint()
-      ..color = blue.withValues(alpha: 0.6)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    final tr = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (final p in pts.skip(1)) {
-      tr.lineTo(p.dx, p.dy);
-    }
-    canvas.drawPath(tr, line);
-    for (var i = 0; i < pts.length; i++) {
-      if (i == pts.length - 1) {
-        canvas.drawCircle(
-            pts[i], 9, Paint()..color = blue.withValues(alpha: 0.25));
-      }
-      canvas.drawCircle(pts[i], 4.6, Paint()..color = blue);
+    for (final c in carpals) {
       canvas.drawCircle(
-          pts[i],
-          4.6,
+          c,
+          4.2,
           Paint()
-            ..color = Colors.white
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.4);
+            ..color = boneCol.withValues(alpha: 0.30)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5));
+      canvas.drawCircle(
+          c, 3.2, Paint()..color = boneCol.withValues(alpha: 0.8));
     }
 
-    // 🦴 marker chip near latest point
+    // Metacarpals fanning from the carpals to the knuckle row, then
+    // three phalanx segments per finger with joint gaps.
+    // (dx of knuckle, finger length factor, base width)
+    final fingers = [
+      (-0.30, 0.72, 4.4), // index... actually little→index left to right
+      (-0.15, 0.88, 4.8),
+      (0.00, 1.00, 5.0), // middle — tallest
+      (0.15, 0.90, 4.8),
+    ];
+    for (final f in fingers) {
+      final kx = cx + w * f.$1;
+      final knuckle = Offset(kx, h * 0.56);
+      // metacarpal
+      bone(Offset(cx + w * f.$1 * 0.35, h * 0.82), knuckle, f.$3 + 1);
+      // phalanges: proximal, middle, distal with 3px gaps
+      final tipY = h * (0.56 - 0.40 * f.$2);
+      final seg = (knuckle.dy - tipY) / 3;
+      for (var i = 0; i < 3; i++) {
+        final yA = knuckle.dy - seg * i - 2.5;
+        final yB = knuckle.dy - seg * (i + 1) + 2.5;
+        bone(Offset(kx, yA), Offset(kx, yB), f.$3 - i * 0.9);
+      }
+    }
+    // Thumb — two segments angled out to the right
+    bone(Offset(cx + 16, h * 0.84), Offset(cx + w * 0.26, h * 0.66), 5.2);
+    bone(Offset(cx + w * 0.26, h * 0.64), Offset(cx + w * 0.34, h * 0.50), 4.4);
+    bone(Offset(cx + w * 0.34, h * 0.48), Offset(cx + w * 0.385, h * 0.38), 3.6);
+
+    // AI carpal-analysis ellipse — dashed amber, like the real overlay
+    final carpalRect = Rect.fromCenter(
+        center: Offset(cx + 1, h * 0.875), width: w * 0.30, height: h * 0.16);
+    final dashPaint = Paint()
+      ..color = amber
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+    final ellipse = Path()..addOval(carpalRect);
+    for (final metric in ellipse.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        final end = math.min(d + 5, metric.length);
+        canvas.drawPath(metric.extractPath(d, end), dashPaint);
+        d = end + 4;
+      }
+    }
+    // "5/8" carpal count chip beside the ellipse
     final tp = TextPainter(
-        text: const TextSpan(text: '🦴', style: TextStyle(fontSize: 15)),
+        text: const TextSpan(
+            text: '5/8',
+            style: TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w800, color: amber)),
         textDirection: TextDirection.ltr)
       ..layout();
-    tp.paint(canvas, Offset(w * 0.80 - 8, h * 0.44 - 30));
+    tp.paint(canvas, Offset(cx + w * 0.19, h * 0.80));
+
+    // Diagonal scan sheen — the AI "reading" the film
+    canvas.save();
+    canvas.clipRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(w * 0.06, 0, w * 0.88, h), const Radius.circular(12)));
+    canvas.rotate(-0.5);
+    canvas.drawRect(
+      Rect.fromLTWH(-w * 0.2, h * 0.72, w * 1.6, 14),
+      Paint()
+        ..shader = LinearGradient(colors: [
+          amber.withValues(alpha: 0),
+          amber.withValues(alpha: 0.20),
+          amber.withValues(alpha: 0),
+        ]).createShader(Rect.fromLTWH(-w * 0.2, 0, w * 1.6, 14)),
+    );
+    canvas.restore();
   }
 
   @override

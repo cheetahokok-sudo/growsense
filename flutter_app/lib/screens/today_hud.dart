@@ -401,10 +401,12 @@ class _RingsPainter extends CustomPainter {
             ..strokeCap = StrokeCap.round
             ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 * scale));
 
-      // Gradient arc — tail stays light, head carries the intake level
+      // Gradient arc — the gradient spans exactly the swept arc, so it
+      // runs continuously light → head with no seam at 12 o'clock, and
+      // the head only reaches the deep brand color at 100% intake.
       final shader = SweepGradient(
         startAngle: 0,
-        endAngle: 2 * math.pi,
+        endAngle: sweep,
         colors: [light, head],
         transform: const GradientRotation(-math.pi / 2),
       ).createShader(rect);
@@ -417,13 +419,18 @@ class _RingsPainter extends CustomPainter {
             ..shader = shader
             ..style = PaintingStyle.stroke
             ..strokeWidth = stroke
-            ..strokeCap = StrokeCap.round);
+            ..strokeCap = StrokeCap.butt);
 
-      // Bright end-cap dot — matches the head's saturation
-      final end = start + sweep;
-      final tip = center + Offset(math.cos(end) * r, math.sin(end) * r);
-      canvas.drawCircle(tip, stroke * 0.62, Paint()..color = head);
-      canvas.drawCircle(tip, stroke * 0.26, Paint()..color = Colors.white);
+      // Flush rounded ends: butt cap + colored half-dots. A plain
+      // round cap would sample the wrapped gradient and paint a dark
+      // sliver on the start cap.
+      final endA = start + sweep;
+      final startTip =
+          center + Offset(math.cos(start) * r, math.sin(start) * r);
+      final endTip =
+          center + Offset(math.cos(endA) * r, math.sin(endA) * r);
+      canvas.drawCircle(startTip, stroke / 2, Paint()..color = light);
+      canvas.drawCircle(endTip, stroke / 2, Paint()..color = head);
     }
 
     ring(48, nut, const Color(0xFF5FA87E), GsColors.accent);
