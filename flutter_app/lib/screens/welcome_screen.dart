@@ -202,7 +202,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 'dots on a chart.'),
       ),
       _Slide(
-        visual: const _GlassCard(child: _BoneAgeDemo()),
+        visual: _GlassCard(
+            height: 330, child: _BoneAgeDemo(i18n: widget.i18n)),
         title: t('flutter.welcome.s4_title',
             'The history no single clinic keeps'),
         body: t(
@@ -255,8 +256,10 @@ class _Slide extends StatelessWidget {
 /// Frosted liquid-glass card: backdrop blur over the ambient blobs,
 /// low-alpha fill, hairline border, and a specular top edge highlight.
 class _GlassCard extends StatelessWidget {
-  const _GlassCard({required this.child});
+  const _GlassCard({required this.child, this.height = 230});
   final Widget child;
+  final double width = 280;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -265,8 +268,8 @@ class _GlassCard extends StatelessWidget {
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
-          width: 280,
-          height: 230,
+          width: width,
+          height: height,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(26),
             border:
@@ -535,153 +538,253 @@ class _GrowthDemoPainter extends CustomPainter {
 }
 
 class _BoneAgeDemo extends StatelessWidget {
-  const _BoneAgeDemo();
+  const _BoneAgeDemo({required this.i18n});
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 230,
-      height: 165,
-      child: CustomPaint(painter: _BoneAgeDemoPainter()),
+    final t = i18n.t;
+    final ageLbl = t('flutter.welcome.age', 'Age');
+    final baLbl = t('flutter.welcome.bone_age', 'Bone age');
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // X-ray plate with the AI badge floating on top
+          SizedBox(
+            height: 196,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: CustomPaint(painter: _BoneAgeDemoPainter()),
+                  ),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.verified_user_outlined,
+                            size: 18, color: GsColors.accent),
+                        const SizedBox(height: 2),
+                        const Text('AI',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                height: 1.1,
+                                color: GsColors.deepGreen)),
+                        Text(
+                            t('flutter.welcome.second_opinion',
+                                'Second\nOpinion'),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                fontSize: 8.5,
+                                height: 1.2,
+                                fontWeight: FontWeight.w600,
+                                color: GsColors.deepGreen)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Serial-study timeline — the "history" this slide promises
+          _TimelineRow(top: '2024 · $ageLbl 8y 3m', sub: '$baLbl 7y 10m'),
+          const SizedBox(height: 8),
+          _TimelineRow(top: '2023 · $ageLbl 7y 2m', sub: '$baLbl 6y 6m'),
+        ],
+      ),
     );
   }
 }
 
-/// Stylized hand radiograph — glowing bones on film-dark ground, with
-/// the amber carpal-analysis ellipse echoing the real AI overlay.
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({required this.top, required this.sub});
+  final String top;
+  final String sub;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: const BoxDecoration(
+              color: GsColors.accent, shape: BoxShape.circle),
+          child: const Icon(Icons.check, size: 13, color: Colors.white),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(top,
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withValues(alpha: 0.95))),
+              Text(sub,
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.6))),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Hand radiograph — anatomical PA left hand on a film-dark plate:
+/// soft-tissue halo, bones with epiphyseal flares and joint gaps,
+/// carpal cluster inside the amber AI-analysis ellipse (echoing the
+/// real overlay). Green-tinted like a clinical film viewer.
 class _BoneAgeDemoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
-    const boneCol = Color(0xFFD6E6F5); // radiograph white-blue
+    const boneCol = Color(0xFFD3EBDD); // green-tinted radiograph white
     const amber = Color(0xFFE0BD75); // AI annotation accent
 
-    // Film-dark vignette so the card interior reads as an X-ray plate
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(w * 0.06, 0, w * 0.88, h), const Radius.circular(12)),
+    // Film plate
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, w, h),
       Paint()
         ..shader = RadialGradient(
-          center: const Alignment(0, -0.2),
-          radius: 1.1,
+          center: const Alignment(0, -0.3),
+          radius: 1.2,
           colors: [
-            const Color(0xFF07140E).withValues(alpha: 0.55),
-            const Color(0xFF020805).withValues(alpha: 0.85),
+            const Color(0xFF0B2418),
+            const Color(0xFF041008),
           ],
         ).createShader(Rect.fromLTWH(0, 0, w, h)),
     );
 
-    // Bone segment helper: blurred glow underlay + capsule stroke
+    final cx = w * 0.46; // hand slightly left, thumb has room right
+
+    // ── Soft tissue halo — palm + blurred finger sleeves ─────────────
+    final tissue = Paint()
+      ..color = boneCol.withValues(alpha: 0.10)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+    canvas.drawOval(
+        Rect.fromCenter(
+            center: Offset(cx + 6, h * 0.72), width: w * 0.52, height: h * 0.5),
+        tissue);
+
+    void sleeve(Offset a, Offset b, double width) => canvas.drawLine(
+        a,
+        b,
+        Paint()
+          ..color = boneCol.withValues(alpha: 0.09)
+          ..strokeWidth = width
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+
+    // ── Bone helper: shaft + flared epiphyseal ends ──────────────────
+    final glowP = Paint()
+      ..color = boneCol.withValues(alpha: 0.28)
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
     void bone(Offset a, Offset b, double width) {
-      final glow = Paint()
-        ..color = boneCol.withValues(alpha: 0.35)
-        ..strokeWidth = width + 3
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-      final core = Paint()
-        ..color = boneCol.withValues(alpha: 0.85)
-        ..strokeWidth = width
-        ..strokeCap = StrokeCap.round;
-      canvas.drawLine(a, b, glow);
-      canvas.drawLine(a, b, core);
+      canvas.drawLine(a, b, glowP..strokeWidth = width + 3);
+      // shaft narrower than the ends — classic long-bone silhouette
+      canvas.drawLine(
+          a,
+          b,
+          Paint()
+            ..color = boneCol.withValues(alpha: 0.88)
+            ..strokeWidth = width * 0.62
+            ..strokeCap = StrokeCap.round);
+      final endP = Paint()..color = boneCol.withValues(alpha: 0.95);
+      canvas.drawCircle(a, width * 0.5, endP);
+      canvas.drawCircle(b, width * 0.5, endP);
     }
 
-    // Layout: left-hand PA, wrist at bottom center, fingers fanning up.
-    final cx = w * 0.5;
-    final wristY = h * 0.97;
+    // ── Forearm: radius + ulna entering from below ───────────────────
+    bone(Offset(cx - 12, h * 1.06), Offset(cx - 9, h * 0.945), 10);
+    bone(Offset(cx + 12, h * 1.06), Offset(cx + 10, h * 0.95), 8);
 
-    // Radius + ulna stubs entering from below
-    bone(Offset(cx - 7, h * 1.05), Offset(cx - 6, wristY - 4), 7);
-    bone(Offset(cx + 8, h * 1.06), Offset(cx + 7, wristY - 2), 6);
-
-    // Carpal cluster — small ossified circles (the AI's primary anchor)
+    // ── Carpal cluster (the AI's primary anchor) ─────────────────────
     final carpals = [
-      Offset(cx - 10, h * 0.86),
-      Offset(cx + 2, h * 0.84),
-      Offset(cx + 13, h * 0.86),
-      Offset(cx - 4, h * 0.90),
-      Offset(cx + 8, h * 0.91),
+      (Offset(cx - 17, h * 0.855), 5.0),
+      (Offset(cx - 4, h * 0.84), 5.5),
+      (Offset(cx + 9, h * 0.85), 5.0),
+      (Offset(cx - 11, h * 0.895), 4.4),
+      (Offset(cx + 2, h * 0.90), 4.8),
+      (Offset(cx + 14, h * 0.895), 4.2),
+      (Offset(cx + 22, h * 0.855), 4.0),
     ];
-    for (final c in carpals) {
+    for (final (c, r) in carpals) {
       canvas.drawCircle(
           c,
-          4.2,
+          r + 1.5,
           Paint()
-            ..color = boneCol.withValues(alpha: 0.30)
+            ..color = boneCol.withValues(alpha: 0.25)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5));
-      canvas.drawCircle(
-          c, 3.2, Paint()..color = boneCol.withValues(alpha: 0.8));
+      canvas.drawCircle(c, r, Paint()..color = boneCol.withValues(alpha: 0.85));
     }
 
-    // Metacarpals fanning from the carpals to the knuckle row, then
-    // three phalanx segments per finger with joint gaps.
-    // (dx of knuckle, finger length factor, base width)
+    // ── Fingers: (knuckle dx, tip dx, knuckle y, tip y, width) ───────
+    // little → index, mostly vertical like a clinical PA film.
     final fingers = [
-      (-0.30, 0.72, 4.4), // index... actually little→index left to right
-      (-0.15, 0.88, 4.8),
-      (0.00, 1.00, 5.0), // middle — tallest
-      (0.15, 0.90, 4.8),
+      (-0.24, -0.275, 0.52, 0.26, 6.0), // little
+      (-0.115, -0.13, 0.485, 0.115, 7.0), // ring
+      (0.005, 0.005, 0.475, 0.075, 7.4), // middle — tallest
+      (0.125, 0.15, 0.50, 0.17, 7.0), // index
     ];
     for (final f in fingers) {
-      final kx = cx + w * f.$1;
-      final knuckle = Offset(kx, h * 0.56);
-      // metacarpal
-      bone(Offset(cx + w * f.$1 * 0.35, h * 0.82), knuckle, f.$3 + 1);
-      // phalanges: proximal, middle, distal with 3px gaps
-      final tipY = h * (0.56 - 0.40 * f.$2);
-      final seg = (knuckle.dy - tipY) / 3;
+      final knuckle = Offset(cx + w * f.$1, h * f.$3);
+      final tip = Offset(cx + w * f.$2, h * f.$4);
+      sleeve(knuckle, tip, f.$5 * 2.6);
+      // metacarpal from carpal row up to the knuckle
+      bone(Offset(cx + w * f.$1 * 0.42, h * 0.82), knuckle, f.$5 + 1.2);
+      // three phalanges: proximal 45%, middle 30%, distal 25%
+      const fr = [0.0, 0.45, 0.75, 1.0];
       for (var i = 0; i < 3; i++) {
-        final yA = knuckle.dy - seg * i - 2.5;
-        final yB = knuckle.dy - seg * (i + 1) + 2.5;
-        bone(Offset(kx, yA), Offset(kx, yB), f.$3 - i * 0.9);
+        final a = Offset.lerp(knuckle, tip, fr[i])!;
+        final b = Offset.lerp(knuckle, tip, fr[i + 1])!;
+        final dir = (b - a) / (b - a).distance;
+        bone(a + dir * 2.6, b - dir * 2.6, f.$5 - i * 1.1);
       }
     }
-    // Thumb — two segments angled out to the right
-    bone(Offset(cx + 16, h * 0.84), Offset(cx + w * 0.26, h * 0.66), 5.2);
-    bone(Offset(cx + w * 0.26, h * 0.64), Offset(cx + w * 0.34, h * 0.50), 4.4);
-    bone(Offset(cx + w * 0.34, h * 0.48), Offset(cx + w * 0.385, h * 0.38), 3.6);
 
-    // AI carpal-analysis ellipse — dashed amber, like the real overlay
+    // ── Thumb: metacarpal + two phalanges angled out right ───────────
+    sleeve(Offset(cx + 24, h * 0.84), Offset(cx + w * 0.36, h * 0.42), 18);
+    bone(Offset(cx + 24, h * 0.845), Offset(cx + w * 0.245, h * 0.645), 7.6);
+    bone(Offset(cx + w * 0.255, h * 0.615), Offset(cx + w * 0.315, h * 0.50),
+        6.4);
+    bone(Offset(cx + w * 0.325, h * 0.475), Offset(cx + w * 0.36, h * 0.405),
+        5.2);
+
+    // ── Amber dashed carpal-analysis ellipse (the real AI overlay) ───
     final carpalRect = Rect.fromCenter(
-        center: Offset(cx + 1, h * 0.875), width: w * 0.30, height: h * 0.16);
+        center: Offset(cx + 2, h * 0.875), width: w * 0.44, height: h * 0.17);
     final dashPaint = Paint()
       ..color = amber
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4;
+      ..strokeWidth = 1.6;
     final ellipse = Path()..addOval(carpalRect);
     for (final metric in ellipse.computeMetrics()) {
       var d = 0.0;
       while (d < metric.length) {
-        final end = math.min(d + 5, metric.length);
+        final end = math.min(d + 6, metric.length);
         canvas.drawPath(metric.extractPath(d, end), dashPaint);
-        d = end + 4;
+        d = end + 5;
       }
     }
-    // "5/8" carpal count chip beside the ellipse
-    final tp = TextPainter(
-        text: const TextSpan(
-            text: '5/8',
-            style: TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w800, color: amber)),
-        textDirection: TextDirection.ltr)
-      ..layout();
-    tp.paint(canvas, Offset(cx + w * 0.19, h * 0.80));
-
-    // Diagonal scan sheen — the AI "reading" the film
-    canvas.save();
-    canvas.clipRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(w * 0.06, 0, w * 0.88, h), const Radius.circular(12)));
-    canvas.rotate(-0.5);
-    canvas.drawRect(
-      Rect.fromLTWH(-w * 0.2, h * 0.72, w * 1.6, 14),
-      Paint()
-        ..shader = LinearGradient(colors: [
-          amber.withValues(alpha: 0),
-          amber.withValues(alpha: 0.20),
-          amber.withValues(alpha: 0),
-        ]).createShader(Rect.fromLTWH(-w * 0.2, 0, w * 1.6, 14)),
-    );
-    canvas.restore();
   }
 
   @override

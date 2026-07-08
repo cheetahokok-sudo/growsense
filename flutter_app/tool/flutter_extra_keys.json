@@ -231,5 +231,8 @@
   "flutter.insight.lever_calcium": { "en": "calcium is the lever — one dairy or tofu serving closes it", "th": "แคลเซียมคือคันโยก — นมหรือเต้าหู้อีกหนึ่งเสิร์ฟก็ถึงเป้า", "vi": "canxi là đòn bẩy — một phần sữa hoặc đậu hũ là đủ", "ko": "칼슘이 레버예요 — 유제품이나 두부 한 번이면 채워져요", "zh": "钙是抓手——一份奶制品或豆腐就能补齐", "ar": "الكالسيوم هو الرافعة — حصة ألبان أو توفو تكفي" },
   "flutter.insight.lever_water": { "en": "a few more glasses of water close the loop", "th": "น้ำอีกไม่กี่แก้วก็ครบแล้ว", "vi": "thêm vài ly nước là trọn vẹn", "ko": "물 몇 잔이면 마무리돼요", "zh": "再喝几杯水就圆满了", "ar": "بضعة أكواب ماء تكمل الدائرة" },
   "flutter.insight.lever_active": { "en": "{m} active minutes would lift it", "th": "ขยับอีก {m} นาทีจะช่วยยกคะแนน", "vi": "{m} phút vận động nữa sẽ nâng điểm", "ko": "{m}분 더 움직이면 올라가요", "zh": "再运动 {m} 分钟就能提升", "ar": "{m} دقيقة نشاط ترفعها" },
-  "flutter.insight.lever_sleep": { "en": "an earlier bedtime tonight lifts tomorrow's reading", "th": "คืนนี้นอนเร็วขึ้น พรุ่งนี้ค่าอ่านจะดีขึ้น", "vi": "tối nay ngủ sớm hơn sẽ nâng chỉ số ngày mai", "ko": "오늘 밤 일찍 자면 내일 지표가 올라가요", "zh": "今晚早点睡，明天的读数会更好", "ar": "النوم مبكرًا الليلة يرفع قراءة الغد" }
+  "flutter.insight.lever_sleep": { "en": "an earlier bedtime tonight lifts tomorrow's reading", "th": "คืนนี้นอนเร็วขึ้น พรุ่งนี้ค่าอ่านจะดีขึ้น", "vi": "tối nay ngủ sớm hơn sẽ nâng chỉ số ngày mai", "ko": "오늘 밤 일찍 자면 내일 지표가 올라가요", "zh": "今晚早点睡，明天的读数会更好", "ar": "النوم مبكرًا الليلة يرفع قراءة الغد" },
+  "flutter.welcome.age": { "en": "Age", "th": "อายุ", "vi": "Tuổi", "ko": "나이", "zh": "年龄", "ar": "العمر" },
+  "flutter.welcome.bone_age": { "en": "Bone age", "th": "อายุกระดูก", "vi": "Tuổi xương", "ko": "골연령", "zh": "骨龄", "ar": "العمر العظمي" },
+  "flutter.welcome.second_opinion": { "en": "Second\nOpinion", "th": "ความเห็น\nที่สอง", "vi": "Ý kiến\nthứ hai", "ko": "2차\n소견", "zh": "第二\n意见", "ar": "رأي\nثانٍ" }
 }

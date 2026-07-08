@@ -469,5 +469,8 @@
  "flutter.insight.lever_calcium": "칼슘이 레버예요 — 유제품이나 두부 한 번이면 채워져요",
  "flutter.insight.lever_water": "물 몇 잔이면 마무리돼요",
  "flutter.insight.lever_active": "{m}분 더 움직이면 올라가요",
- "flutter.insight.lever_sleep": "오늘 밤 일찍 자면 내일 지표가 올라가요"
+ "flutter.insight.lever_sleep": "오늘 밤 일찍 자면 내일 지표가 올라가요",
+ "flutter.welcome.age": "나이",
+ "flutter.welcome.bone_age": "골연령",
+ "flutter.welcome.second_opinion": "2차\n소견"
 }

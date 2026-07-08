@@ -469,5 +469,8 @@
  "flutter.insight.lever_calcium": "แคลเซียมคือคันโยก — นมหรือเต้าหู้อีกหนึ่งเสิร์ฟก็ถึงเป้า",
  "flutter.insight.lever_water": "น้ำอีกไม่กี่แก้วก็ครบแล้ว",
  "flutter.insight.lever_active": "ขยับอีก {m} นาทีจะช่วยยกคะแนน",
- "flutter.insight.lever_sleep": "คืนนี้นอนเร็วขึ้น พรุ่งนี้ค่าอ่านจะดีขึ้น"
+ "flutter.insight.lever_sleep": "คืนนี้นอนเร็วขึ้น พรุ่งนี้ค่าอ่านจะดีขึ้น",
+ "flutter.welcome.age": "อายุ",
+ "flutter.welcome.bone_age": "อายุกระดูก",
+ "flutter.welcome.second_opinion": "ความเห็น\nที่สอง"
 }
