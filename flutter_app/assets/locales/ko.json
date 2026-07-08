@@ -350,5 +350,19 @@
  "flutter.save": "저장",
  "flutter.saved_ok": "저장됨",
  "flutter.coach.no_match": "준비된 답변과 연결하지 못했습니다. 다시 표현하거나 추천 질문을 누르거나 소아과 의사에게 문의하세요. (이 코치는 검증된 라이브러리에서 답하며 실시간 AI를 사용하지 않습니다.)",
- "flutter.coach.no_questions": "이 카테고리에 추천 질문이 아직 없습니다 — 아래에서 직접 물어보세요."
+ "flutter.coach.no_questions": "이 카테고리에 추천 질문이 아직 없습니다 — 아래에서 직접 물어보세요.",
+ "flutter.coach.hi_morning": "좋은 아침이에요",
+ "flutter.coach.hi_afternoon": "좋은 오후예요",
+ "flutter.coach.hi_evening": "좋은 저녁이에요",
+ "flutter.coach.how_is_today": "오늘 {name}는 어떤가요?",
+ "flutter.coach.summary_score": "오늘 {name}의 준비도는 100점 중 {score}점이에요.",
+ "flutter.coach.summary_focus": "오늘은 {area}이(가) 가장 도움이 될 부분이에요.",
+ "flutter.coach.summary_strong": "{area}이(가) 아주 좋아요 — 잘하고 있어요.",
+ "flutter.coach.no_logs_today": "오늘 {name}의 기록이 아직 없어요 — 음식·수면·활동을 하나만 기록해도 조언이 정확해져요.",
+ "flutter.coach.weekly_reminder": "지난 7일 중 {days}일만 기록되었어요. 매일 꾸준히 기록하면 성장 추세가 훨씬 정확해져요.",
+ "flutter.coach.browse_topics": "주제 둘러보기",
+ "flutter.coach.not_sure": "무엇을 물어볼지 모르겠나요? 주제를 고르거나 질문을 누르거나 아래에 직접 입력하세요.",
+ "flutter.coach.thinking_search": "라이브러리를 검색하는 중…",
+ "flutter.coach.thinking_data": "{name}의 데이터를 확인하는 중…",
+ "flutter.coach.new_chat": "새 대화"
 }

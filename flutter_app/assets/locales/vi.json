@@ -350,5 +350,19 @@
  "flutter.save": "Lưu",
  "flutter.saved_ok": "Đã lưu",
  "flutter.coach.no_match": "Tôi không khớp được câu này với câu trả lời có sẵn. Hãy diễn đạt lại, chạm vào câu hỏi gợi ý, hoặc hỏi bác sĩ nhi. (Trợ lý này trả lời từ thư viện đã kiểm chứng — không dùng AI trực tiếp.)",
- "flutter.coach.no_questions": "Chưa có câu hỏi gợi ý cho mục này — hãy hỏi trực tiếp bên dưới."
+ "flutter.coach.no_questions": "Chưa có câu hỏi gợi ý cho mục này — hãy hỏi trực tiếp bên dưới.",
+ "flutter.coach.hi_morning": "Chào buổi sáng",
+ "flutter.coach.hi_afternoon": "Chào buổi chiều",
+ "flutter.coach.hi_evening": "Chào buổi tối",
+ "flutter.coach.how_is_today": "Hôm nay {name} thế nào rồi?",
+ "flutter.coach.summary_score": "Mức sẵn sàng của {name} hôm nay là {score}/100.",
+ "flutter.coach.summary_focus": "Hôm nay {area} là điều giúp ích nhất.",
+ "flutter.coach.summary_strong": "{area} đang rất tốt — làm tốt lắm.",
+ "flutter.coach.no_logs_today": "Hôm nay chưa ghi gì cho {name} — thêm một mục ăn, ngủ hoặc hoạt động sẽ giúp lời khuyên chính xác hơn.",
+ "flutter.coach.weekly_reminder": "Chỉ {days} trong 7 ngày qua được ghi. Ghi đều mỗi ngày giúp xu hướng tăng trưởng đáng tin hơn nhiều.",
+ "flutter.coach.browse_topics": "Duyệt chủ đề",
+ "flutter.coach.not_sure": "Chưa biết hỏi gì? Chọn chủ đề, chạm câu hỏi, hoặc tự nhập bên dưới.",
+ "flutter.coach.thinking_search": "Đang tìm trong thư viện…",
+ "flutter.coach.thinking_data": "Đang kiểm tra dữ liệu của {name}…",
+ "flutter.coach.new_chat": "Trò chuyện mới"
 }

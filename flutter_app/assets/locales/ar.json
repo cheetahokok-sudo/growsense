@@ -350,5 +350,19 @@
  "flutter.save": "حفظ",
  "flutter.saved_ok": "تم الحفظ",
  "flutter.coach.no_match": "لم أتمكن من مطابقة ذلك مع إجاباتي المُعدّة. جرّب إعادة الصياغة، أو اضغط على سؤال مقترح، أو استشر طبيب الأطفال. (يجيب هذا المساعد من مكتبة موثّقة — دون استخدام ذكاء اصطناعي مباشر.)",
- "flutter.coach.no_questions": "لا توجد أسئلة مقترحة لهذه الفئة بعد — اسأل مباشرة أدناه."
+ "flutter.coach.no_questions": "لا توجد أسئلة مقترحة لهذه الفئة بعد — اسأل مباشرة أدناه.",
+ "flutter.coach.hi_morning": "صباح الخير",
+ "flutter.coach.hi_afternoon": "مساء الخير",
+ "flutter.coach.hi_evening": "مساء الخير",
+ "flutter.coach.how_is_today": "كيف حال {name} اليوم؟",
+ "flutter.coach.summary_score": "جاهزية {name} اليوم {score} من 100.",
+ "flutter.coach.summary_focus": "{area} هو الأكثر قابلية للتحسين اليوم.",
+ "flutter.coach.summary_strong": "{area} يبدو قويًا — أحسنت.",
+ "flutter.coach.no_logs_today": "لا يوجد تسجيل لـ {name} اليوم بعد — إدخال طعام أو نوم أو نشاط سريع سيحسّن النصيحة.",
+ "flutter.coach.weekly_reminder": "تم تسجيل {days} فقط من آخر 7 أيام. التسجيل اليومي المنتظم يجعل اتجاهات النمو أكثر موثوقية.",
+ "flutter.coach.browse_topics": "تصفّح المواضيع",
+ "flutter.coach.not_sure": "لا تعرف بماذا تسأل؟ اختر موضوعًا، أو اضغط سؤالًا، أو اكتب سؤالك أدناه.",
+ "flutter.coach.thinking_search": "جارٍ البحث في المكتبة…",
+ "flutter.coach.thinking_data": "جارٍ فحص بيانات {name}…",
+ "flutter.coach.new_chat": "محادثة جديدة"
 }

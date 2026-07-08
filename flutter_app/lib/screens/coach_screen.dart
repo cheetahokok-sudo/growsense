@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
@@ -5,12 +7,17 @@ import '../coach_library.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'today_hud.dart';
 
 /// AI Coach — a chat that answers from GrowSense's own question library
 /// (Supabase ai_coach_questions + the bundled pilot batch), filling
-/// each answer template with this child's real data. No external LLM:
-/// free text is matched to the closest library question by word
-/// overlap, and only answers with a verified source show a citation.
+/// each answer template with this child's real data. No external LLM.
+///
+/// Warmth without over-familiarity: the greeting and daily summary
+/// address the child by name to feel caring, but individual answers
+/// only use the name when they actually reference personal data (the
+/// template carries a {{name}} token) — generic educational answers
+/// stay name-free by design.
 class CoachScreen extends StatefulWidget {
   const CoachScreen({super.key, required this.appState, required this.i18n});
   final AppState appState;
@@ -23,9 +30,11 @@ class CoachScreen extends StatefulWidget {
 class _Msg {
   final String text;
   final bool fromUser;
+  final bool thinking;
   final String? citation;
   final List<CoachQuestion> followUps;
-  _Msg(this.text, this.fromUser, {this.citation, this.followUps = const []});
+  _Msg(this.text, this.fromUser,
+      {this.thinking = false, this.citation, this.followUps = const []});
 }
 
 class _CoachScreenState extends State<CoachScreen> {
@@ -35,6 +44,7 @@ class _CoachScreenState extends State<CoachScreen> {
   final _scroll = ScrollController();
   final List<_Msg> _messages = [];
   String _category = 'all';
+  bool _busy = false;
 
   @override
   void initState() {
@@ -79,31 +89,52 @@ class _CoachScreenState extends State<CoachScreen> {
     });
   }
 
-  void _ask(String text, {String? exactHint}) {
+  Future<void> _ask(String text, {String? exactHint}) async {
     final lib = _lib;
-    if (lib == null || text.trim().isEmpty) return;
-    setState(() => _messages.add(_Msg(text.trim(), true)));
-    final answerable = _answerable;
-    final matched = findBestMatch(text, answerable, exactHint: exactHint);
+    if (lib == null || text.trim().isEmpty || _busy) return;
     final t = widget.i18n.t;
 
-    if (matched?.answerTemplate != null) {
-      final filled = fillTemplate(matched!.answerTemplate!, _ctx);
-      // Up to 3 same-category follow-ups that are answerable now.
-      final follows = [
-        for (final q in answerable)
-          if (q.category == matched.category && q.text != matched.text) q,
-      ]..sort((a, b) => a.priority.compareTo(b.priority));
-      setState(() => _messages.add(_Msg(filled, false,
-          citation: matched.citation, followUps: follows.take(3).toList())));
-    } else {
-      setState(() => _messages.add(_Msg(
-          t('flutter.coach.no_match',
-              "I couldn't match that to one of my prepared answers. Try rephrasing, tap a suggested question, or ask your pediatrician. (This coach answers from a verified library — no live AI model is used.)"),
-          false)));
-    }
+    setState(() {
+      _busy = true;
+      _messages.add(_Msg(text.trim(), true));
+      _messages.add(_Msg('', false, thinking: true)); // "searching…"
+    });
     _input.clear();
     _scrollDown();
+
+    // A brief, honest pause so the parent sees the library being
+    // searched — the matching itself is instant, this is deliberate
+    // feedback, not a fake delay dressed up as more than it is.
+    await Future.delayed(const Duration(milliseconds: 850));
+    if (!mounted) return;
+
+    final answerable = _answerable;
+    final matched = findBestMatch(text, answerable, exactHint: exactHint);
+
+    setState(() {
+      _messages.removeWhere((m) => m.thinking);
+      if (matched?.answerTemplate != null) {
+        final filled = fillTemplate(matched!.answerTemplate!, _ctx);
+        final follows = [
+          for (final q in answerable)
+            if (q.category == matched.category && q.text != matched.text) q,
+        ]..sort((a, b) => a.priority.compareTo(b.priority));
+        _messages.add(_Msg(filled, false,
+            citation: matched.citation, followUps: follows.take(3).toList()));
+      } else {
+        _messages.add(_Msg(t('flutter.coach.no_match'), false));
+      }
+      _busy = false;
+    });
+    _scrollDown();
+  }
+
+  void _resetChat() {
+    setState(() {
+      _messages.clear();
+      _category = 'all';
+      _busy = false;
+    });
   }
 
   @override
@@ -124,8 +155,10 @@ class _CoachScreenState extends State<CoachScreen> {
           children: [
             Expanded(
               child: _messages.isEmpty
-                  ? _WelcomeAndSuggestions(
+                  ? _WelcomeView(
+                      appState: widget.appState,
                       i18n: widget.i18n,
+                      who: _who,
                       answerable: _answerable,
                       category: _category,
                       onCategory: (c) => setState(() => _category = c),
@@ -134,16 +167,48 @@ class _CoachScreenState extends State<CoachScreen> {
                   : ListView.builder(
                       controller: _scroll,
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      itemCount: _messages.length,
-                      itemBuilder: (context, i) => _Bubble(
-                        msg: _messages[i],
-                        onFollowUp: (q) => _ask(q.text, exactHint: q.text),
-                      ),
+                      itemCount: _messages.length + 1,
+                      itemBuilder: (context, i) {
+                        if (i == 0) {
+                          return Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: TextButton.icon(
+                                onPressed: _resetChat,
+                                style: TextButton.styleFrom(
+                                    foregroundColor: GsColors.text3,
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: const Size(0, 28)),
+                                icon: const Icon(Icons.refresh, size: 14),
+                                label: Text(
+                                    t('flutter.coach.new_chat', 'New chat'),
+                                    style: const TextStyle(fontSize: 11.5)),
+                              ),
+                            ),
+                          );
+                        }
+                        final msg = _messages[i - 1];
+                        if (msg.thinking) {
+                          return _ThinkingBubble(
+                              i18n: widget.i18n,
+                              name: (widget.appState.activeChildRow?['name']
+                                      as String? ??
+                                  '')
+                                  .split(' ')
+                                  .first);
+                        }
+                        return _Bubble(
+                          msg: msg,
+                          onFollowUp: (q) => _ask(q.text, exactHint: q.text),
+                        );
+                      },
                     ),
             ),
             _Composer(
               controller: _input,
-              hint: t('ai.welcome_message', 'Ask about your child’s growth…'),
+              hint: t('flutter.coach.not_sure', 'Ask about growth…'),
+              enabled: !_busy,
               onSend: () => _ask(_input.text),
             ),
           ],
@@ -153,23 +218,60 @@ class _CoachScreenState extends State<CoachScreen> {
   }
 }
 
-class _WelcomeAndSuggestions extends StatelessWidget {
-  const _WelcomeAndSuggestions({
+// ── Welcome: greeting + daily summary + topic browser + suggestions ──
+
+class _WelcomeView extends StatelessWidget {
+  const _WelcomeView({
+    required this.appState,
     required this.i18n,
+    required this.who,
     required this.answerable,
     required this.category,
     required this.onCategory,
     required this.onAsk,
   });
+  final AppState appState;
   final I18n i18n;
+  final WhoReference? who;
   final List<CoachQuestion> answerable;
   final String category;
   final void Function(String) onCategory;
   final void Function(CoachQuestion) onAsk;
 
+  String _areaLabel(String area) => switch (area) {
+        'nutrition' => i18n.t('common.nutrition', 'Nutrition'),
+        'activity' => i18n.t('common.activity', 'Activity'),
+        _ => i18n.t('common.sleep', 'Sleep'),
+      };
+
   @override
   Widget build(BuildContext context) {
     final t = i18n.t;
+    final name =
+        (appState.activeChildRow?['name'] as String? ?? '').split(' ').first;
+    final hour = DateTime.now().hour;
+    final hi = hour < 12
+        ? t('flutter.coach.hi_morning', 'Good morning')
+        : hour < 18
+            ? t('flutter.coach.hi_afternoon', 'Good afternoon')
+            : t('flutter.coach.hi_evening', 'Good evening');
+
+    // Daily summary from the same readiness math the Today tab uses.
+    final s = computeHudScores(appState);
+    final loggedToday = appState.nutritionLogItems.isNotEmpty ||
+        appState.sleep != null ||
+        appState.activityItems.isNotEmpty;
+    final systems = [
+      ('sleep', s.slpPct),
+      ('activity', s.actPct),
+      ('nutrition', s.nutPct),
+    ]..sort((a, b) => a.$2.compareTo(b.$2));
+    final weakest = systems.first;
+    final strongest = systems.last;
+
+    // Weekly consistency nudge.
+    final loggedDays = appState.weekLogDates.length;
+
     final cats = <String>{for (final q in answerable) q.category};
     final shown = [
       for (final q in answerable)
@@ -179,39 +281,117 @@ class _WelcomeAndSuggestions extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       children: [
+        // Greeting + summary
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: GsColors.surface,
+            gradient: const LinearGradient(
+              colors: [GsColors.accent, GsColors.accentDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(GsRadius.md),
-            border: Border.all(color: GsColors.border),
             boxShadow: gsShadow,
           ),
-          child: Text(
-            t('ai.subtitle',
-                'I answer from GrowSense’s verified library using this child’s logged data. I’m not a doctor — bring the Analytics trend to your pediatrician for decisions.'),
-            style: const TextStyle(fontSize: 12.5, color: GsColors.text2),
-          ),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          height: 32,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Chip(
-                  label: t('flutter.all', 'All'),
-                  selected: category == 'all',
-                  onTap: () => onCategory('all')),
-              for (final c in cats)
-                _Chip(
-                    label: coachCategoryLabels[c] ?? c,
-                    selected: category == c,
-                    onTap: () => onCategory(c)),
+              Text('$hi 👋',
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      color: Colors.white.withValues(alpha: 0.85))),
+              const SizedBox(height: 2),
+              Text(
+                  t('flutter.coach.how_is_today', 'How is {name} doing today?')
+                      .replaceAll('{name}', name),
+                  style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+              const SizedBox(height: 10),
+              if (!loggedToday)
+                Text(
+                    t('flutter.coach.no_logs_today')
+                        .replaceAll('{name}', name),
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.4,
+                        color: Colors.white.withValues(alpha: 0.92)))
+              else ...[
+                Text(
+                    t('flutter.coach.summary_score')
+                        .replaceAll('{name}', name)
+                        .replaceAll('{score}', '${s.score}'),
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600,
+                        color: Colors.white)),
+                const SizedBox(height: 4),
+                Text(
+                    strongest.$2 >= 0.85
+                        ? t('flutter.coach.summary_strong')
+                            .replaceAll('{area}', _areaLabel(strongest.$1))
+                        : t('flutter.coach.summary_focus')
+                            .replaceAll('{area}', _areaLabel(weakest.$1)),
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.4,
+                        color: Colors.white.withValues(alpha: 0.92))),
+              ],
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        if (loggedDays < 4) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: GsColors.estimatedLight,
+              borderRadius: BorderRadius.circular(GsRadius.sm),
+              border:
+                  Border.all(color: GsColors.estimated.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              children: [
+                const Text('📅', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                      t('flutter.coach.weekly_reminder')
+                          .replaceAll('{days}', '$loggedDays'),
+                      style: const TextStyle(
+                          fontSize: 11.5,
+                          height: 1.35,
+                          color: GsColors.estimatedDark)),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        Text(t('flutter.coach.browse_topics', 'Browse topics'),
+            style:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(t('flutter.coach.not_sure',
+            'Not sure what to ask? Pick a topic or a question below.'),
+            style: const TextStyle(fontSize: 11.5, color: GsColors.text3)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _TopicChip(
+                label: t('flutter.all', 'All'),
+                selected: category == 'all',
+                onTap: () => onCategory('all')),
+            for (final c in cats)
+              _TopicChip(
+                  label: coachCategoryLabels[c] ?? c,
+                  selected: category == c,
+                  onTap: () => onCategory(c)),
+          ],
+        ),
+        const SizedBox(height: 14),
         for (final q in shown.take(12))
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -226,9 +406,17 @@ class _WelcomeAndSuggestions extends StatelessWidget {
                   borderRadius: BorderRadius.circular(GsRadius.md),
                   border: Border.all(color: GsColors.border2),
                 ),
-                child: Text(q.text,
-                    style: const TextStyle(
-                        fontSize: 13, color: GsColors.text)),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(q.text,
+                          style: const TextStyle(
+                              fontSize: 13, color: GsColors.text)),
+                    ),
+                    const Icon(Icons.north_east,
+                        size: 14, color: GsColors.text3),
+                  ],
+                ),
               ),
             ),
           ),
@@ -246,6 +434,99 @@ class _WelcomeAndSuggestions extends StatelessWidget {
   }
 }
 
+// ── Thinking bubble — animated dots + a rotating status line ─────────
+
+class _ThinkingBubble extends StatefulWidget {
+  const _ThinkingBubble({required this.i18n, required this.name});
+  final I18n i18n;
+  final String name;
+
+  @override
+  State<_ThinkingBubble> createState() => _ThinkingBubbleState();
+}
+
+class _ThinkingBubbleState extends State<_ThinkingBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _dots = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 900))
+    ..repeat();
+  int _stage = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Swap the status line once partway through the ~850ms pause.
+    _timer = Timer(const Duration(milliseconds: 430), () {
+      if (mounted) setState(() => _stage = 1);
+    });
+  }
+
+  @override
+  void dispose() {
+    _dots.dispose();
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    final label = _stage == 0
+        ? t('flutter.coach.thinking_search', 'Searching the library…')
+        : t('flutter.coach.thinking_data', "Checking {name}'s data…")
+            .replaceAll('{name}', widget.name);
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10, right: 60),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: GsColors.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(GsRadius.md),
+            topRight: Radius.circular(GsRadius.md),
+            bottomRight: Radius.circular(GsRadius.md),
+          ),
+          border: Border.all(color: GsColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedBuilder(
+              animation: _dots,
+              builder: (context, _) {
+                return Row(
+                  children: List.generate(3, (i) {
+                    final phase = (_dots.value + i * 0.33) % 1.0;
+                    final on = phase < 0.5;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: GsColors.accent
+                              .withValues(alpha: on ? 0.9 : 0.25),
+                        ),
+                      ),
+                    );
+                  }),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 12, color: GsColors.text3)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Bubble extends StatelessWidget {
   const _Bubble({required this.msg, required this.onFollowUp});
   final _Msg msg;
@@ -259,9 +540,9 @@ class _Bubble extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.only(bottom: 10, left: 40),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: GsColors.accent,
-            borderRadius: const BorderRadius.only(
+            borderRadius: BorderRadius.only(
               topLeft: Radius.circular(GsRadius.md),
               topRight: Radius.circular(GsRadius.md),
               bottomLeft: Radius.circular(GsRadius.md),
@@ -343,10 +624,14 @@ class _Bubble extends StatelessWidget {
 
 class _Composer extends StatelessWidget {
   const _Composer(
-      {required this.controller, required this.hint, required this.onSend});
+      {required this.controller,
+      required this.hint,
+      required this.onSend,
+      required this.enabled});
   final TextEditingController controller;
   final String hint;
   final VoidCallback onSend;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -363,6 +648,7 @@ class _Composer extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
+                enabled: enabled,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => onSend(),
                 decoration: InputDecoration(
@@ -375,13 +661,14 @@ class _Composer extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: onSend,
+              onTap: enabled ? onSend : null,
               child: Container(
                 width: 42,
                 height: 42,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                    color: GsColors.accent, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                    color: enabled ? GsColors.accent : GsColors.text3,
+                    shape: BoxShape.circle),
                 child: const Icon(Icons.arrow_upward,
                     size: 20, color: Colors.white),
               ),
@@ -393,8 +680,8 @@ class _Composer extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip(
+class _TopicChip extends StatelessWidget {
+  const _TopicChip(
       {required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
@@ -402,25 +689,21 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? GsColors.accent : GsColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border:
-                Border.all(color: selected ? GsColors.accent : GsColors.border2),
-          ),
-          child: Text(label,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : GsColors.text2)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? GsColors.accent : GsColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border:
+              Border.all(color: selected ? GsColors.accent : GsColors.border2),
         ),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : GsColors.text2)),
       ),
     );
   }
