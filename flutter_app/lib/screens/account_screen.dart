@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
 import 'devices_screen.dart';
+import 'settings_modules.dart';
 import 'welcome_screen.dart';
 
 /// Account & settings — pushed from the top-bar avatar. Uses the same
@@ -110,10 +112,52 @@ class AccountScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                  const SizedBox(height: 8),
+                  // Add another child (limit enforced in AppState: tier
+                  // limit from subscription_tier_limits, hard cap 4)
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) =>
+                          AddChildScreen(appState: appState, i18n: i18n),
+                    )),
+                    icon: const Icon(Icons.person_add_alt, size: 16),
+                    label: Text(
+                        t('flutter.child.add_btn', 'Add another child'),
+                        style: const TextStyle(fontSize: 12.5)),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
               _SubscriptionCard(appState: appState, i18n: i18n),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) =>
+                      ShareChildScreen(appState: appState, i18n: i18n),
+                )),
+                child: _Card(
+                  children: [
+                    Row(
+                      children: [
+                        const Text('🩺', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                              t('flutter.share.title',
+                                  'Share with a doctor'),
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: GsColors.accent)),
+                        ),
+                        const Icon(Icons.chevron_right,
+                            size: 18, color: GsColors.text3),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 12),
               InkWell(
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(
@@ -167,6 +211,47 @@ class AccountScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 12),
+              // Support & legal — the standard set every consumer health
+              // app ships (WHOOP/Google Health parity): contact, privacy,
+              // terms, and an account-deletion path.
+              _Card(
+                children: [
+                  Text(t('flutter.legal.title', 'Support & legal'),
+                      style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: GsColors.accent)),
+                  const SizedBox(height: 4),
+                  _LinkRow(
+                      icon: Icons.support_agent,
+                      label: t('flutter.legal.support', 'Contact support'),
+                      onTap: () => launchUrl(Uri.parse(
+                          'mailto:cheetahokok@gmail.com?subject=GrowSense%20support'))),
+                  _LinkRow(
+                      icon: Icons.privacy_tip_outlined,
+                      label:
+                          t('flutter.legal.privacy', 'Privacy policy'),
+                      onTap: () => launchUrl(
+                          Uri.parse(
+                              'https://cheetahokok-sudo.github.io/growsense/#privacy'),
+                          mode: LaunchMode.externalApplication)),
+                  _LinkRow(
+                      icon: Icons.description_outlined,
+                      label: t('flutter.legal.terms', 'Terms of use'),
+                      onTap: () => launchUrl(
+                          Uri.parse(
+                              'https://cheetahokok-sudo.github.io/growsense/#terms'),
+                          mode: LaunchMode.externalApplication)),
+                  _LinkRow(
+                      icon: Icons.delete_outline,
+                      label: t('flutter.legal.delete',
+                          'Request account deletion'),
+                      color: GsColors.flag,
+                      onTap: () => launchUrl(Uri.parse(
+                          'mailto:cheetahokok@gmail.com?subject=GrowSense%20account%20deletion%20request'))),
+                ],
               ),
               const SizedBox(height: 12),
               _Card(
@@ -332,7 +417,109 @@ class _SubscriptionCard extends StatelessWidget {
         Text(t('flutter.sub.manage_web',
             'Upgrade & billing are managed in the web app.'),
             style: const TextStyle(fontSize: 10.5, color: GsColors.text3)),
+        const SizedBox(height: 10),
+        _RedeemRow(appState: appState, i18n: i18n),
       ],
+    );
+  }
+}
+
+/// Activation-code field — calls the redeem-code Edge Function and the
+/// tier badge above updates immediately via AppState.notifyListeners.
+class _RedeemRow extends StatefulWidget {
+  const _RedeemRow({required this.appState, required this.i18n});
+  final AppState appState;
+  final I18n i18n;
+
+  @override
+  State<_RedeemRow> createState() => _RedeemRowState();
+}
+
+class _RedeemRowState extends State<_RedeemRow> {
+  final _code = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _redeem() async {
+    setState(() => _busy = true);
+    final (msg, err) =
+        await widget.appState.redeemActivationCode(_code.text);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (err == null) _code.clear();
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err == null ? '🎉 $msg' : '⚠️ $err')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    // Stacked (not a Row): a TextField in a Row here blows up layout
+    // with "BoxConstraints forces an infinite width" inside the
+    // stretch-Column card on web — and full-width reads better anyway.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _code,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(
+              labelText: t('flutter.sub.redeem_label', 'Activation code'),
+              isDense: true),
+          style: const TextStyle(fontSize: 13, letterSpacing: 1),
+        ),
+        const SizedBox(height: 8),
+        ElevatedButton(
+          onPressed: _busy ? null : _redeem,
+          child: Text(
+              _busy
+                  ? t('flutter.sub.activating', 'Activating…')
+                  : t('flutter.sub.activate', 'Activate'),
+              style: const TextStyle(fontSize: 12.5)),
+        ),
+      ],
+    );
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  const _LinkRow(
+      {required this.icon,
+      required this.label,
+      required this.onTap,
+      this.color});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, size: 17, color: color ?? GsColors.text2),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: color ?? GsColors.text)),
+            ),
+            const Icon(Icons.chevron_right,
+                size: 16, color: GsColors.text3),
+          ],
+        ),
+      ),
     );
   }
 }

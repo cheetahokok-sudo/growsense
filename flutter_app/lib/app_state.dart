@@ -7,6 +7,7 @@
 // ══════════════════════════════════════════════════════════════════
 
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
@@ -624,6 +625,143 @@ class AppState extends ChangeNotifier {
         'notes': notes,
         'xray_storage_path': xrayStoragePath,
       }, boneAgeAssessments);
+
+  // ── Account / settings actions ─────────────────────────────────────
+
+  /// Add a child profile — same shape as the PWA's addChild(), with the
+  /// tier limit read live from subscription_tier_limits (client caching
+  /// would make the check trivially stale) and a hard product cap of 4.
+  Future<String?> addChild({
+    required String name,
+    required String dob,
+    required String sex,
+    int? gestationalWeeks,
+    double? birthWeightKg,
+    double? birthLengthCm,
+    bool isSga = false,
+  }) async {
+    final uid = sb.auth.currentUser?.id;
+    if (uid == null) return 'Not signed in';
+    try {
+      final tier = (account?['subscription_tier'] as String?) ?? 'free';
+      final limitRow = await sb
+          .from('subscription_tier_limits')
+          .select('max_children')
+          .eq('tier', tier)
+          .maybeSingle();
+      final tierLimit = (limitRow?['max_children'] as num?)?.toInt();
+      final limit = math.min(tierLimit ?? 4, 4);
+      final activeCount =
+          children.where((c) => c['status'] != 'archived').length;
+      if (activeCount >= limit) {
+        return 'Your $tier plan supports up to $limit child profiles';
+      }
+
+      final payload = <String, dynamic>{
+        'parent_id': uid,
+        'name': name,
+        'date_of_birth': dob,
+        'biological_sex': sex,
+        'gestational_age_weeks': ?gestationalWeeks,
+        'birth_weight_kg': ?birthWeightKg,
+        'birth_length_cm': ?birthLengthCm,
+        // A confirmed-by-doctor flag the parent relays — the app never
+        // computes SGA itself (see migration_sga_tracking.sql).
+        if (isSga) 'is_sga': true,
+        if (isSga) 'sga_confirmed_by': uid,
+      };
+      final row =
+          await sb.from('children').insert(payload).select().single();
+      children.add(row);
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// Share a child with a doctor/researcher account by email.
+  /// find_clinician_by_email is a SECURITY DEFINER function returning
+  /// only user_id + account_role for clinician accounts — it cannot be
+  /// used to enumerate emails (parent/unknown emails return no rows).
+  Future<String?> shareChildWithClinician(
+      dynamic childId, String email) async {
+    try {
+      final matches = await sb
+          .rpc('find_clinician_by_email', params: {'lookup_email': email});
+      final list = List<Map<String, dynamic>>.from(matches as List? ?? []);
+      if (list.isEmpty) {
+        return 'No Doctor or Researcher account found with that email';
+      }
+      await sb.from('doctor_patient_assignments').insert({
+        'doctor_id': list.first['user_id'],
+        'child_id': childId,
+        'is_active': true,
+      });
+      return null;
+    } on PostgrestException catch (e) {
+      return e.code == '23505'
+          ? 'Already shared with this account'
+          : e.message;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> loadShares(dynamic childId) async {
+    try {
+      final rows = await sb
+          .from('doctor_patient_assignments')
+          .select(
+              'assignment_id, doctor_id, is_active, user_accounts(email, account_role)')
+          .eq('child_id', childId)
+          .eq('is_active', true);
+      return List<Map<String, dynamic>>.from(rows);
+    } on PostgrestException {
+      return [];
+    }
+  }
+
+  Future<String?> revokeShare(dynamic assignmentId) async {
+    try {
+      await sb
+          .from('doctor_patient_assignments')
+          .update({'is_active': false}).eq('assignment_id', assignmentId);
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// Redeem an activation code via the redeem-code Edge Function.
+  /// Returns (successMessage, error) — exactly one is non-null.
+  Future<(String?, String?)> redeemActivationCode(String rawCode) async {
+    final code = rawCode.trim().toUpperCase().replaceAll(RegExp(r'\s+'), '');
+    if (code.isEmpty) return (null, 'Enter an activation code');
+    try {
+      final res =
+          await sb.functions.invoke('redeem-code', body: {'code': code});
+      final data = res.data as Map<String, dynamic>?;
+      if (data == null || data['error'] != null) {
+        return (null, (data?['error'] ?? 'Redemption failed').toString());
+      }
+      account?['subscription_tier'] = data['tier'];
+      account?['tier_expires_at'] = data['expires_at'];
+      account?['billing_source'] = 'code';
+      notifyListeners();
+      return (
+        (data['message'] ?? '${data['tier']} activated!').toString(),
+        null
+      );
+    } on FunctionException catch (e) {
+      final detail = e.details;
+      return (
+        null,
+        detail is Map
+            ? (detail['error'] ?? e.reasonPhrase ?? 'Redemption failed')
+                .toString()
+            : (e.reasonPhrase ?? 'Redemption failed')
+      );
+    }
+  }
 
   Future<String?> deleteBoneAge(dynamic id) async {
     // Remove the stored X-ray first (same as the PWA) — non-fatal if
