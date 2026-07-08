@@ -68,67 +68,85 @@ class _HomeShellState extends State<HomeShell> {
     final t = widget.i18n.t;
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: GsColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(GsRadius.lg)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(t('flutter.quick_log', 'Quick log'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  _QuickAction(
-                    emoji: '🍗',
-                    label: t('flutter.log_food', 'Log food'),
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      _quickLog('food');
-                    },
-                  ),
-                  _QuickAction(
-                    emoji: '🏀',
-                    label: t('flutter.log_activity', 'Log activity'),
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      _quickLog('activity');
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _QuickAction(
-                    emoji: '😴',
-                    label: t('flutter.log_sleep', 'Log sleep'),
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      _quickLog('sleep');
-                    },
-                  ),
-                  _QuickAction(
-                    emoji: '📏',
-                    label: t('flutter.log_measurement', 'Log measurement'),
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      _quickLog('measurement');
-                    },
-                  ),
-                ],
-              ),
-            ],
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        void go(String action) {
+          Navigator.pop(sheetContext);
+          _quickLog(action);
+        }
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: GsColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-        ),
-      ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Grab handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: GsColors.border2,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 14),
+                    child: Text(t('flutter.quick_log', 'Quick log'),
+                        style: const TextStyle(
+                            fontSize: 17, fontWeight: FontWeight.w800)),
+                  ),
+                  Row(
+                    children: [
+                      _QuickTile(
+                        emoji: '🍗',
+                        label: t('flutter.log_food', 'Log food'),
+                        tint: GsColors.accent,
+                        onTap: () => go('food'),
+                      ),
+                      const SizedBox(width: 12),
+                      _QuickTile(
+                        emoji: '🏃',
+                        label: t('flutter.log_activity', 'Log activity'),
+                        tint: GsColors.measured,
+                        onTap: () => go('activity'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _QuickTile(
+                        emoji: '😴',
+                        label: t('flutter.log_sleep', 'Log sleep'),
+                        tint: GsColors.estimated,
+                        onTap: () => go('sleep'),
+                      ),
+                      const SizedBox(width: 12),
+                      _QuickTile(
+                        emoji: '📏',
+                        label: t('flutter.log_measurement', 'Log measurement'),
+                        tint: GsColors.flag,
+                        onTap: () => go('measurement'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -136,7 +154,10 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
     final screens = [
-      TodayScreen(appState: widget.appState, i18n: widget.i18n),
+      TodayScreen(
+          appState: widget.appState,
+          i18n: widget.i18n,
+          onQuickLog: _quickLog),
       AnalyticsScreen(appState: widget.appState, i18n: widget.i18n),
       CoachScreen(appState: widget.appState, i18n: widget.i18n),
       MedicalScreen(appState: widget.appState, i18n: widget.i18n),
@@ -295,44 +316,77 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-class _QuickAction extends StatelessWidget {
-  const _QuickAction(
-      {required this.emoji, required this.label, required this.onTap});
+/// Modern quick-log tile — soft tinted card, gradient icon bubble,
+/// large tap target, gentle press-scale.
+class _QuickTile extends StatefulWidget {
+  const _QuickTile(
+      {required this.emoji,
+      required this.label,
+      required this.tint,
+      required this.onTap});
   final String emoji;
   final String label;
+  final Color tint;
   final VoidCallback onTap;
+
+  @override
+  State<_QuickTile> createState() => _QuickTileState();
+}
+
+class _QuickTileState extends State<_QuickTile> {
+  bool _down = false;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: GestureDetector(
-          onTap: onTap,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _down = true),
+        onTapCancel: () => setState(() => _down = false),
+        onTapUp: (_) => setState(() => _down = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _down ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 110),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 18),
             decoration: BoxDecoration(
-              color: GsColors.surface2,
-              borderRadius: BorderRadius.circular(GsRadius.md),
+              gradient: LinearGradient(
+                colors: [
+                  widget.tint.withValues(alpha: 0.10),
+                  widget.tint.withValues(alpha: 0.02),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: widget.tint.withValues(alpha: 0.18)),
             ),
             child: Column(
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 56,
+                  height: 56,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: GsColors.surface,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        widget.tint.withValues(alpha: 0.22),
+                        widget.tint.withValues(alpha: 0.10),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     shape: BoxShape.circle,
-                    boxShadow: gsShadow,
                   ),
-                  child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                  child: Text(widget.emoji, style: const TextStyle(fontSize: 26)),
                 ),
-                const SizedBox(height: 8),
-                Text(label,
+                const SizedBox(height: 10),
+                Text(widget.label,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600)),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: GsColors.text)),
               ],
             ),
           ),

@@ -396,5 +396,12 @@
  "flutter.dev.planned": "计划中",
  "flutter.dev.connected": "已连接",
  "flutter.dev.reconnect": "重新连接",
- "flutter.dev.available": "可用"
+ "flutter.dev.available": "可用",
+ "flutter.clinical.tools": "工具",
+ "flutter.clinical.explore": "点击任意卡片打开儿科工具——骨龄、化验值、青春期分期和患病记录。",
+ "flutter.sleep.synced_from": "同步自",
+ "flutter.sleep.mismatch": "连接的账户与该儿童保存的可穿戴设备邮箱不一致",
+ "flutter.sleep.connect_devices": "在设备中连接以自动同步",
+ "flutter.analytics.avg": "平均",
+ "flutter.analytics.of_target": "达标"
 }

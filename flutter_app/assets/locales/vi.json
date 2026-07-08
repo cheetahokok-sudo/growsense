@@ -396,5 +396,12 @@
  "flutter.dev.planned": "Sắp có",
  "flutter.dev.connected": "Đã kết nối",
  "flutter.dev.reconnect": "Kết nối lại",
- "flutter.dev.available": "Có sẵn"
+ "flutter.dev.available": "Có sẵn",
+ "flutter.clinical.tools": "công cụ",
+ "flutter.clinical.explore": "Chạm bất kỳ thẻ nào để mở công cụ nhi khoa — tuổi xương, kết quả xét nghiệm, giai đoạn dậy thì và nhật ký bệnh.",
+ "flutter.sleep.synced_from": "Đồng bộ từ",
+ "flutter.sleep.mismatch": "Tài khoản kết nối khác với email thiết bị đã lưu của trẻ",
+ "flutter.sleep.connect_devices": "kết nối trong Thiết bị để tự đồng bộ",
+ "flutter.analytics.avg": "TB",
+ "flutter.analytics.of_target": "so với mục tiêu"
 }

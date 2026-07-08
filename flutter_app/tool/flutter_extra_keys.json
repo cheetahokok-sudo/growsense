@@ -158,5 +158,12 @@
   "flutter.dev.planned": { "en": "Planned", "th": "กำลังพัฒนา", "vi": "Sắp có", "ko": "예정", "zh": "计划中", "ar": "مُخطط" },
   "flutter.dev.connected": { "en": "Connected", "th": "เชื่อมต่อแล้ว", "vi": "Đã kết nối", "ko": "연결됨", "zh": "已连接", "ar": "متصل" },
   "flutter.dev.reconnect": { "en": "Reconnect", "th": "เชื่อมต่อใหม่", "vi": "Kết nối lại", "ko": "재연결", "zh": "重新连接", "ar": "إعادة الربط" },
-  "flutter.dev.available": { "en": "Available", "th": "พร้อมใช้งาน", "vi": "Có sẵn", "ko": "사용 가능", "zh": "可用", "ar": "متاح" }
+  "flutter.dev.available": { "en": "Available", "th": "พร้อมใช้งาน", "vi": "Có sẵn", "ko": "사용 가능", "zh": "可用", "ar": "متاح" },
+  "flutter.clinical.tools": { "en": "tools", "th": "เครื่องมือ", "vi": "công cụ", "ko": "도구", "zh": "工具", "ar": "أدوات" },
+  "flutter.clinical.explore": { "en": "Tap any card to open the pediatric tools — bone age, lab values, puberty staging, and the illness tracker.", "th": "แตะการ์ดใดก็ได้เพื่อเปิดเครื่องมือกุมารเวช — อายุกระดูก ผลแล็บ ระยะเจริญพันธุ์ และบันทึกการเจ็บป่วย", "vi": "Chạm bất kỳ thẻ nào để mở công cụ nhi khoa — tuổi xương, kết quả xét nghiệm, giai đoạn dậy thì và nhật ký bệnh.", "ko": "카드를 눌러 소아 도구를 여세요 — 골연령, 검사 수치, 사춘기 단계, 질병 기록.", "zh": "点击任意卡片打开儿科工具——骨龄、化验值、青春期分期和患病记录。", "ar": "اضغط أي بطاقة لفتح أدوات طب الأطفال — عمر العظام، القيم المخبرية، مراحل البلوغ، وسجل المرض." },
+  "flutter.sleep.synced_from": { "en": "Synced from", "th": "ซิงค์จาก", "vi": "Đồng bộ từ", "ko": "동기화 출처", "zh": "同步自", "ar": "تمت المزامنة من" },
+  "flutter.sleep.mismatch": { "en": "Connected account differs from this child's saved wearable email", "th": "บัญชีที่เชื่อมต่อไม่ตรงกับอีเมลอุปกรณ์ที่บันทึกไว้ของเด็ก", "vi": "Tài khoản kết nối khác với email thiết bị đã lưu của trẻ", "ko": "연결된 계정이 이 아이의 저장된 웨어러블 이메일과 다릅니다", "zh": "连接的账户与该儿童保存的可穿戴设备邮箱不一致", "ar": "الحساب المتصل يختلف عن بريد الجهاز المحفوظ لهذا الطفل" },
+  "flutter.sleep.connect_devices": { "en": "connect in Devices to auto-sync", "th": "เชื่อมต่อในเมนูอุปกรณ์เพื่อซิงค์อัตโนมัติ", "vi": "kết nối trong Thiết bị để tự đồng bộ", "ko": "기기에서 연결하면 자동 동기화됩니다", "zh": "在设备中连接以自动同步", "ar": "اربط في الأجهزة للمزامنة التلقائية" },
+  "flutter.analytics.avg": { "en": "avg", "th": "เฉลี่ย", "vi": "TB", "ko": "평균", "zh": "平均", "ar": "متوسط" },
+  "flutter.analytics.of_target": { "en": "of target", "th": "ของเป้าหมาย", "vi": "so với mục tiêu", "ko": "목표 대비", "zh": "达标", "ar": "من الهدف" }
 }

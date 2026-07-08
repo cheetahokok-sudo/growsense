@@ -97,10 +97,35 @@ class _MedicalScreenState extends State<MedicalScreen> {
             _TargetHeightCard(child: child, i18n: widget.i18n),
             const SizedBox(height: 16),
             Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 8),
-              child: Text(t('medical.title', 'Clinical log'),
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700)),
+              padding: const EdgeInsets.only(left: 4, bottom: 2),
+              child: Row(
+                children: [
+                  Text(t('medical.title', 'Clinical log'),
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 7, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: GsColors.measuredLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('5 ${t('flutter.clinical.tools', 'tools')}',
+                        style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: GsColors.measuredDark)),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 10),
+              child: Text(
+                  t('flutter.clinical.explore',
+                      'Tap any card to open the pediatric tools — bone age, lab values, puberty staging, and the illness tracker.'),
+                  style: const TextStyle(fontSize: 11, color: GsColors.text3)),
             ),
             _ModuleGroup(children: [
               _ModuleRow(

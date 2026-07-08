@@ -173,17 +173,35 @@ class _CoachScreenState extends State<CoachScreen> {
                           return Align(
                             alignment: AlignmentDirectional.centerEnd,
                             child: Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: TextButton.icon(
-                                onPressed: _resetChat,
-                                style: TextButton.styleFrom(
-                                    foregroundColor: GsColors.text3,
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: const Size(0, 28)),
-                                icon: const Icon(Icons.refresh, size: 14),
-                                label: Text(
-                                    t('flutter.coach.new_chat', 'New chat'),
-                                    style: const TextStyle(fontSize: 11.5)),
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: GestureDetector(
+                                onTap: _resetChat,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: GsColors.accentLight,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                        color: GsColors.accent
+                                            .withValues(alpha: 0.4)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.add_comment_outlined,
+                                          size: 14, color: GsColors.accentDark),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                          t('flutter.coach.new_chat',
+                                              'New chat'),
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: GsColors.accentDark)),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           );

@@ -11,9 +11,14 @@ import 'today_hud.dart';
 /// and the day's nutrition / sleep / activity as saved by the PWA.
 /// Logging (writes) comes after the read path is proven.
 class TodayScreen extends StatelessWidget {
-  const TodayScreen({super.key, required this.appState, required this.i18n});
+  const TodayScreen(
+      {super.key,
+      required this.appState,
+      required this.i18n,
+      required this.onQuickLog});
   final AppState appState;
   final I18n i18n;
+  final void Function(String action) onQuickLog;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +31,7 @@ class TodayScreen extends StatelessWidget {
         if (appState.children.isEmpty) {
           return _EmptyNote(i18n.t('flutter.no_children'));
         }
+        appState.loadWearableStatus();
         return RefreshIndicator(
           onRefresh: appState.loadDay,
           child: ListView(
@@ -44,6 +50,30 @@ class TodayScreen extends StatelessWidget {
                 )
               else ...[
                 ReadinessCard(appState: appState, i18n: i18n),
+                const SizedBox(height: 10),
+                // Prominent daily-log actions right under the ring so
+                // logging food/activity is the obvious next step.
+                Row(
+                  children: [
+                    Expanded(
+                      child: _LogCta(
+                        emoji: '🍗',
+                        label: i18n.t('flutter.log_food', 'Log food'),
+                        color: GsColors.accent,
+                        onTap: () => onQuickLog('food'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _LogCta(
+                        emoji: '🏃',
+                        label: i18n.t('flutter.log_activity', 'Log activity'),
+                        color: GsColors.measured,
+                        onTap: () => onQuickLog('activity'),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 ConsistencyCard(appState: appState, i18n: i18n),
                 const SizedBox(height: 12),
@@ -620,6 +650,55 @@ class _GsCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Filled call-to-action button for the daily-log shortcuts under the
+/// readiness ring.
+class _LogCta extends StatelessWidget {
+  const _LogCta(
+      {required this.emoji,
+      required this.label,
+      required this.color,
+      required this.onTap});
+  final String emoji;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(GsRadius.md),
+          boxShadow: [
+            BoxShadow(
+                color: color.withValues(alpha: 0.28),
+                offset: const Offset(0, 3),
+                blurRadius: 8),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 17)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }

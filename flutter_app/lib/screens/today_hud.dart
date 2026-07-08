@@ -481,6 +481,20 @@ class _SleepEditorCardState extends State<SleepEditorCard> {
     }
   }
 
+  Future<void> _syncWearable() async {
+    final t = widget.i18n.t;
+    final (nights, err) = await widget.appState.syncFitbit();
+    if (!mounted) return;
+    _seededFor = null; // re-seed from freshly synced values
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
+      content: Text(err == null
+          ? '✅ ${nights ?? 0} ${t('flutter.dev.nights_synced', 'nights synced')}'
+          : '${t('flutter.not_saved', 'Sync failed')}: $err'),
+    ));
+  }
+
   Future<void> _save() async {
     final t = widget.i18n.t;
     setState(() => _busy = true);
@@ -546,6 +560,12 @@ class _SleepEditorCardState extends State<SleepEditorCard> {
                                 color: GsColors.estimatedDark)),
                       ],
                     ),
+                    _WearableSyncRow(
+                        appState: widget.appState,
+                        i18n: widget.i18n,
+                        onSync: widget.appState.syncingWearable
+                            ? null
+                            : _syncWearable),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -620,6 +640,106 @@ class _SleepEditorCardState extends State<SleepEditorCard> {
         );
       },
     );
+  }
+}
+
+/// Sleep-card wearable strip: when a device is connected, shows the
+/// synced account + a Sync now button; otherwise surfaces the child's
+/// saved wearable email as a cross-check hint. Both come straight from
+/// the shared wearable status the Devices screen uses.
+class _WearableSyncRow extends StatelessWidget {
+  const _WearableSyncRow(
+      {required this.appState, required this.i18n, required this.onSync});
+  final AppState appState;
+  final I18n i18n;
+  final VoidCallback? onSync;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = i18n.t;
+    final status = appState.wearableStatus;
+    final childEmail =
+        (appState.activeChildRow?['wearable_account_email'] as String?)
+            ?.trim();
+
+    if (status != null) {
+      final email = status['google_email'] as String? ?? '';
+      final lastSync = (status['last_sync_at'] as String?)?.split('T').first;
+      final mismatch = childEmail != null &&
+          childEmail.isNotEmpty &&
+          childEmail.toLowerCase() != email.toLowerCase();
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: GsColors.estimatedLight,
+            borderRadius: BorderRadius.circular(GsRadius.sm),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.watch_outlined,
+                      size: 15, color: GsColors.estimatedDark),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                        '${t('flutter.sleep.synced_from', 'Synced from')} $email${lastSync != null ? ' · $lastSync' : ''}',
+                        style: const TextStyle(
+                            fontSize: 10.5, color: GsColors.estimatedDark),
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: onSync,
+                    child: Text(
+                        onSync == null
+                            ? t('flutter.saving', 'Syncing…')
+                            : t('flutter.dev.sync_now', 'Sync now'),
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: onSync == null
+                                ? GsColors.text3
+                                : GsColors.accent)),
+                  ),
+                ],
+              ),
+              if (mismatch)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                      '⚠️ ${t('flutter.sleep.mismatch', 'Connected account differs from this child\'s saved wearable email')}',
+                      style: const TextStyle(
+                          fontSize: 9.5, color: GsColors.flagDark)),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (childEmail != null && childEmail.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Row(
+          children: [
+            const Icon(Icons.watch_outlined,
+                size: 14, color: GsColors.text3),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                  '$childEmail · ${t('flutter.sleep.connect_devices', 'connect in Devices to auto-sync')}',
+                  style: const TextStyle(fontSize: 10, color: GsColors.text3),
+                  overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 

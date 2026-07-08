@@ -396,5 +396,12 @@
  "flutter.dev.planned": "กำลังพัฒนา",
  "flutter.dev.connected": "เชื่อมต่อแล้ว",
  "flutter.dev.reconnect": "เชื่อมต่อใหม่",
- "flutter.dev.available": "พร้อมใช้งาน"
+ "flutter.dev.available": "พร้อมใช้งาน",
+ "flutter.clinical.tools": "เครื่องมือ",
+ "flutter.clinical.explore": "แตะการ์ดใดก็ได้เพื่อเปิดเครื่องมือกุมารเวช — อายุกระดูก ผลแล็บ ระยะเจริญพันธุ์ และบันทึกการเจ็บป่วย",
+ "flutter.sleep.synced_from": "ซิงค์จาก",
+ "flutter.sleep.mismatch": "บัญชีที่เชื่อมต่อไม่ตรงกับอีเมลอุปกรณ์ที่บันทึกไว้ของเด็ก",
+ "flutter.sleep.connect_devices": "เชื่อมต่อในเมนูอุปกรณ์เพื่อซิงค์อัตโนมัติ",
+ "flutter.analytics.avg": "เฉลี่ย",
+ "flutter.analytics.of_target": "ของเป้าหมาย"
 }

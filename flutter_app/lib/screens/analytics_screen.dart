@@ -60,6 +60,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             final a = snap.data!;
+            final child = widget.appState.activeChildRow ?? const {};
             return RefreshIndicator(
               onRefresh: () async {
                 _loadedChildId = null;
@@ -140,6 +141,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     days: a.days,
                     valueOf: (d) => d.proteinG,
                     i18n: widget.i18n,
+                    target: calcProteinTargetG(
+                            child['date_of_birth'] as String?,
+                            null,
+                            child['biological_sex'] as String?)
+                        .toDouble(),
                   ),
                   const SizedBox(height: 12),
                   _TrendCard(
@@ -149,6 +155,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     days: a.days,
                     valueOf: (d) => d.calciumMg,
                     i18n: widget.i18n,
+                    target: 1300,
                   ),
                   const SizedBox(height: 12),
                   _TrendCard(
@@ -159,6 +166,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     valueOf: (d) =>
                         d.sleepMin == null ? null : d.sleepMin! / 60,
                     i18n: widget.i18n,
+                    target: 9.5,
                   ),
                   const SizedBox(height: 12),
                   _TrendCard(
@@ -170,6 +178,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     valueOf: (d) => d.weightedActivityMin == 0
                         ? null
                         : d.weightedActivityMin,
+                    target: 60,
                     i18n: widget.i18n,
                   ),
                 ],
@@ -232,6 +241,7 @@ class _TrendCard extends StatelessWidget {
     required this.days,
     required this.valueOf,
     required this.i18n,
+    this.target,
   });
   final String title;
   final String unit;
@@ -239,13 +249,32 @@ class _TrendCard extends StatelessWidget {
   final List<DayMetrics> days;
   final double? Function(DayMetrics) valueOf;
   final I18n i18n;
+  final double? target; // per-day goal for the insight line + goal marker
 
   static const _weekdayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   @override
   Widget build(BuildContext context) {
+    final t = i18n.t;
     final values = [for (final d in days) valueOf(d)];
-    final maxVal = values.whereType<double>().fold<double>(0, (m, v) => v > m ? v : m);
+    final logged = values.whereType<double>().toList();
+    final maxVal =
+        logged.fold<double>(target ?? 0, (m, v) => v > m ? v : m);
+    final avg = logged.isEmpty
+        ? null
+        : logged.reduce((a, b) => a + b) / logged.length;
+    // Insight: average vs target, and simple direction (first vs last half).
+    String? insight;
+    Color insightColor = GsColors.text3;
+    if (avg != null && target != null && target! > 0) {
+      final pct = (avg / target! * 100).round();
+      final onTrack = pct >= 90;
+      insight =
+          '${t('flutter.analytics.avg', 'avg')} ${_fmt(avg)} $unit · $pct% ${t('flutter.analytics.of_target', 'of target')}';
+      insightColor = onTrack ? GsColors.accent : GsColors.estimatedDark;
+    } else if (avg != null) {
+      insight = '${t('flutter.analytics.avg', 'avg')} ${_fmt(avg)} $unit';
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -265,55 +294,113 @@ class _TrendCard extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w700, color: color)),
               if (maxVal > 0)
-                Text('${i18n.t('flutter.max', 'max')} ${_fmt(maxVal)} $unit',
+                Text('${t('flutter.max', 'max')} ${_fmt(maxVal)} $unit',
                     style: const TextStyle(
                         fontSize: 10.5, color: GsColors.text3)),
             ],
           ),
+          if (insight != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(insight,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: insightColor)),
+            ),
           const SizedBox(height: 10),
           SizedBox(
             height: 82,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            child: Stack(
               children: [
-                for (var i = 0; i < days.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 6),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (values[i] != null)
-                          Text(_fmt(values[i]!),
-                              style: const TextStyle(
-                                  fontSize: 9, color: GsColors.text2)),
-                        const SizedBox(height: 2),
-                        Container(
-                          height: values[i] == null || maxVal == 0
-                              ? 3
-                              : 3 + 40 * (values[i]! / maxVal),
-                          decoration: BoxDecoration(
-                            color: values[i] == null
-                                ? GsColors.surface2
-                                : color,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _weekdayLetters[
-                              (DateTime.parse(days[i].date).weekday - 1) % 7],
-                          style: const TextStyle(
-                              fontSize: 9.5, color: GsColors.text3),
-                        ),
-                      ],
-                    ),
+                // Dashed goal line
+                if (target != null && target! > 0 && maxVal > 0)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 18 + 40 * (target! / maxVal),
+                    child: _DashedLine(color: color.withValues(alpha: 0.5)),
                   ),
-                ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (var i = 0; i < days.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 6),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            if (values[i] != null)
+                              Text(_fmt(values[i]!),
+                                  style: const TextStyle(
+                                      fontSize: 9, color: GsColors.text2)),
+                            const SizedBox(height: 2),
+                            TweenAnimationBuilder<double>(
+                              tween: Tween(
+                                  begin: 0,
+                                  end: values[i] == null || maxVal == 0
+                                      ? 3
+                                      : 3 + 40 * (values[i]! / maxVal)),
+                              duration: Duration(
+                                  milliseconds: 450 + i * 60),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, h, _) => Container(
+                                height: h,
+                                decoration: BoxDecoration(
+                                  color: values[i] == null
+                                      ? GsColors.surface2
+                                      : (target != null &&
+                                              target! > 0 &&
+                                              values[i]! >= target!)
+                                          ? color
+                                          : color.withValues(alpha: 0.55),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _weekdayLetters[
+                                  (DateTime.parse(days[i].date).weekday - 1) %
+                                      7],
+                              style: const TextStyle(
+                                  fontSize: 9.5, color: GsColors.text3),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Thin dashed horizontal line used as the goal marker on trend bars.
+class _DashedLine extends StatelessWidget {
+  const _DashedLine({required this.color});
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        const dash = 5.0, gap = 4.0;
+        final count = (c.maxWidth / (dash + gap)).floor();
+        return Row(
+          children: List.generate(
+              count,
+              (_) => Padding(
+                    padding: const EdgeInsets.only(right: gap),
+                    child: Container(width: dash, height: 1.2, color: color),
+                  )),
+        );
+      },
     );
   }
 }

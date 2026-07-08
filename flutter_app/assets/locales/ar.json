@@ -396,5 +396,12 @@
  "flutter.dev.planned": "مُخطط",
  "flutter.dev.connected": "متصل",
  "flutter.dev.reconnect": "إعادة الربط",
- "flutter.dev.available": "متاح"
+ "flutter.dev.available": "متاح",
+ "flutter.clinical.tools": "أدوات",
+ "flutter.clinical.explore": "اضغط أي بطاقة لفتح أدوات طب الأطفال — عمر العظام، القيم المخبرية، مراحل البلوغ، وسجل المرض.",
+ "flutter.sleep.synced_from": "تمت المزامنة من",
+ "flutter.sleep.mismatch": "الحساب المتصل يختلف عن بريد الجهاز المحفوظ لهذا الطفل",
+ "flutter.sleep.connect_devices": "اربط في الأجهزة للمزامنة التلقائية",
+ "flutter.analytics.avg": "متوسط",
+ "flutter.analytics.of_target": "من الهدف"
 }
