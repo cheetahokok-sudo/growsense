@@ -26,12 +26,42 @@ Future<void> main() async {
   runApp(GrowSenseApp(i18n: i18n));
 }
 
+/// App-wide messenger so the Fitbit OAuth callback can report back
+/// even before a Scaffold is mounted.
+final rootMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 class GrowSenseApp extends StatefulWidget {
   const GrowSenseApp({super.key, required this.i18n});
   final I18n i18n;
 
   @override
   State<GrowSenseApp> createState() => _GrowSenseAppState();
+}
+
+bool _oauthHandled = false;
+
+/// If we returned from Google's consent screen with ?code=&state=,
+/// finish the Fitbit connection once the user is signed in.
+Future<void> handleFitbitCallback(AppState appState) async {
+  if (_oauthHandled) return;
+  final params = Uri.base.queryParameters;
+  final code = params['code'];
+  final state = params['state'];
+  if (code == null || state == null || !state.contains(':')) return;
+  _oauthHandled = true;
+  final childId = state.split(':').first;
+  final uuidRe = RegExp(
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      caseSensitive: false);
+  if (!uuidRe.hasMatch(childId)) return;
+  final (email, err) = await appState.connectFitbitWithCode(code, childId);
+  rootMessengerKey.currentState?.showSnackBar(SnackBar(
+    backgroundColor:
+        err == null ? const Color(0xFF1B4632) : const Color(0xFFA23B3B),
+    content: Text(err == null
+        ? '✅ Fitbit connected${email != null ? ' ($email)' : ''}'
+        : 'Fitbit connection failed: $err'),
+  ));
 }
 
 class _GrowSenseAppState extends State<GrowSenseApp> {
@@ -45,6 +75,7 @@ class _GrowSenseAppState extends State<GrowSenseApp> {
         return MaterialApp(
           title: 'GrowSense',
           debugShowCheckedModeBanner: false,
+          scaffoldMessengerKey: rootMessengerKey,
           theme: buildGrowSenseTheme(widget.i18n.code),
           locale: widget.i18n.locale,
           supportedLocales: [
@@ -79,6 +110,9 @@ class AuthGate extends StatelessWidget {
         if (session == null) {
           return AuthScreen(i18n: i18n);
         }
+        // Finish a Fitbit OAuth round-trip if we came back with a code.
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => handleFitbitCallback(appState));
         return HomeShell(appState: appState, i18n: i18n);
       },
     );

@@ -55,6 +55,13 @@ class AppState extends ChangeNotifier {
   String? _clinicalLoadedFor; // childId the lists were fetched for
   bool loadingClinical = false;
 
+  /// google_health_connection_status row for the active child (Fitbit /
+  /// Google Health), or null if not connected. Read-only safe view —
+  /// no tokens. Reused by the Devices screen.
+  Map<String, dynamic>? wearableStatus;
+  String? _wearableLoadedFor;
+  bool syncingWearable = false;
+
   /// Which meal new food logs get tagged with — defaults to breakfast,
   /// same as the PWA's activeMealSlot.
   String activeMealSlot = 'breakfast';
@@ -112,6 +119,7 @@ class AppState extends ChangeNotifier {
     if (i == activeChild) return;
     activeChild = i;
     _clinicalLoadedFor = null; // clinical lists are per-child
+    _wearableLoadedFor = null;
     notifyListeners();
     await Future.wait(
         [loadDay(), loadMeasurements(), loadWeekConsistency()]);
@@ -432,6 +440,76 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Reads the safe Fitbit/Google connection status view for the active
+  /// child. Reuses the same backend the PWA connects through.
+  Future<void> loadWearableStatus({bool force = false}) async {
+    final childId = activeChildId;
+    if (childId == null) {
+      wearableStatus = null;
+      notifyListeners();
+      return;
+    }
+    if (!force && childId == _wearableLoadedFor) return;
+    _wearableLoadedFor = childId;
+    try {
+      wearableStatus = await sb
+          .from('google_health_connection_status')
+          .select()
+          .eq('child_id', childId)
+          .maybeSingle();
+    } on PostgrestException {
+      wearableStatus = null;
+    }
+    notifyListeners();
+  }
+
+  /// Completes the Fitbit OAuth flow: hands the returned code to the
+  /// google-health-auth Edge Function, which exchanges it for tokens
+  /// server-side. Returns (connectedEmail, error).
+  Future<(String?, String?)> connectFitbitWithCode(
+      String code, String childId) async {
+    try {
+      final res = await sb.functions
+          .invoke('google-health-auth', body: {'code': code, 'child_id': childId});
+      final data = res.data as Map<String, dynamic>?;
+      if (res.status != 200) {
+        return (null, (data?['error'] as String?) ?? 'Connection failed');
+      }
+      await loadWearableStatus(force: true);
+      return (data?['google_email'] as String?, null);
+    } catch (e) {
+      return (null, e.toString());
+    }
+  }
+
+  /// Triggers the google-health-sync Edge Function to pull recent nights
+  /// of Fitbit sleep (lands in daily_sleep with deep/rem/HRV columns).
+  /// Returns the number of nights synced, or an error string.
+  Future<(int?, String?)> syncFitbit({int daysBack = 14}) async {
+    final childId = activeChildId;
+    final token = sb.auth.currentSession?.accessToken;
+    if (childId == null || token == null) return (null, 'Not signed in');
+    syncingWearable = true;
+    notifyListeners();
+    try {
+      final res = await sb.functions.invoke('google-health-sync',
+          body: {'child_id': childId, 'days_back': daysBack});
+      final data = res.data as Map<String, dynamic>?;
+      syncingWearable = false;
+      if (res.status != 200) {
+        notifyListeners();
+        return (null, (data?['error'] as String?) ?? 'Sync failed');
+      }
+      await loadWearableStatus(force: true);
+      await loadDay();
+      return ((data?['nights_synced'] as num?)?.toInt() ?? 0, null);
+    } catch (e) {
+      syncingWearable = false;
+      notifyListeners();
+      return (null, e.toString());
+    }
+  }
+
   Future<void> loadClinicalIfNeeded() async {
     final childId = activeChildId;
     if (childId == null || childId == _clinicalLoadedFor) return;
@@ -652,6 +730,8 @@ class AppState extends ChangeNotifier {
     illnessEvents = [];
     pubertyEvents = [];
     _clinicalLoadedFor = null;
+    wearableStatus = null;
+    _wearableLoadedFor = null;
     weekLogDates = {};
     activeMealSlot = 'breakfast';
     notifyListeners();

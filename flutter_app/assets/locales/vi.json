@@ -385,5 +385,16 @@
  "flutter.bmi.overweight": "Thừa cân",
  "flutter.bmi.obesity": "Béo phì",
  "flutter.bmi.thinness": "Gầy",
- "flutter.bmi.severe_thinness": "Rất gầy"
+ "flutter.bmi.severe_thinness": "Rất gầy",
+ "flutter.dev.title": "Thiết bị & cảm biến",
+ "flutter.dev.intro": "Kết nối thiết bị đeo để giấc ngủ, HRV và hoạt động tự động đưa vào mô hình tăng trưởng. Chất lượng giấc ngủ là đòn bẩy lớn nhất với hormone tăng trưởng — nên thiết bị theo dõi giấc ngủ đáng kết nối nhất.",
+ "flutter.dev.connect": "Kết nối",
+ "flutter.dev.connect_web": "Mở ứng dụng web để kết nối thiết bị này.",
+ "flutter.dev.sync_now": "Đồng bộ ngay",
+ "flutter.dev.nights_synced": "đêm đã đồng bộ",
+ "flutter.dev.last_sync": "đồng bộ gần nhất",
+ "flutter.dev.planned": "Sắp có",
+ "flutter.dev.connected": "Đã kết nối",
+ "flutter.dev.reconnect": "Kết nối lại",
+ "flutter.dev.available": "Có sẵn"
 }

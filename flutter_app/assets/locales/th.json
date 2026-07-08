@@ -385,5 +385,16 @@
  "flutter.bmi.overweight": "น้ำหนักเกิน",
  "flutter.bmi.obesity": "อ้วน",
  "flutter.bmi.thinness": "ผอม",
- "flutter.bmi.severe_thinness": "ผอมมาก"
+ "flutter.bmi.severe_thinness": "ผอมมาก",
+ "flutter.dev.title": "อุปกรณ์และเซนเซอร์",
+ "flutter.dev.intro": "เชื่อมต่ออุปกรณ์สวมใส่เพื่อให้ข้อมูลการนอน HRV และกิจกรรมเข้าสู่โมเดลการเติบโตอัตโนมัติ คุณภาพการนอนคือปัจจัยสำคัญที่สุดต่อโกรทฮอร์โมน อุปกรณ์วัดการนอนจึงคุ้มค่าที่สุดในการเชื่อมต่อ",
+ "flutter.dev.connect": "เชื่อมต่อ",
+ "flutter.dev.connect_web": "เปิดเว็บแอปเพื่อเชื่อมต่ออุปกรณ์นี้",
+ "flutter.dev.sync_now": "ซิงค์ตอนนี้",
+ "flutter.dev.nights_synced": "คืนที่ซิงค์แล้ว",
+ "flutter.dev.last_sync": "ซิงค์ล่าสุด",
+ "flutter.dev.planned": "กำลังพัฒนา",
+ "flutter.dev.connected": "เชื่อมต่อแล้ว",
+ "flutter.dev.reconnect": "เชื่อมต่อใหม่",
+ "flutter.dev.available": "พร้อมใช้งาน"
 }

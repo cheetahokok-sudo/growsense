@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'devices_screen.dart';
 
 /// Account & settings — pushed from the top-bar avatar. Uses the same
 /// account.* locale keys as the PWA's account screen. Child editing
@@ -112,6 +113,33 @@ class AccountScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _SubscriptionCard(appState: appState, i18n: i18n),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) =>
+                      DevicesScreen(appState: appState, i18n: i18n),
+                )),
+                child: _Card(
+                  children: [
+                    Row(
+                      children: [
+                        const Text('⌚', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                              t('flutter.dev.title', 'Devices & sensors'),
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: GsColors.accent)),
+                        ),
+                        const Icon(Icons.chevron_right,
+                            size: 18, color: GsColors.text3),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 12),
               _Card(
                 children: [

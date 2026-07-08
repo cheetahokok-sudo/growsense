@@ -385,5 +385,16 @@
  "flutter.bmi.overweight": "과체중",
  "flutter.bmi.obesity": "비만",
  "flutter.bmi.thinness": "저체중",
- "flutter.bmi.severe_thinness": "심한 저체중"
+ "flutter.bmi.severe_thinness": "심한 저체중",
+ "flutter.dev.title": "기기 및 센서",
+ "flutter.dev.intro": "웨어러블을 연결하면 수면, HRV, 활동이 성장 모델에 자동으로 반영됩니다. 수면의 질이 성장호르몬에 가장 큰 영향을 주므로 수면 추적 기기가 가장 유용합니다.",
+ "flutter.dev.connect": "연결",
+ "flutter.dev.connect_web": "이 기기를 연결하려면 웹 앱을 여세요.",
+ "flutter.dev.sync_now": "지금 동기화",
+ "flutter.dev.nights_synced": "일치된 야간 수면",
+ "flutter.dev.last_sync": "최근 동기화",
+ "flutter.dev.planned": "예정",
+ "flutter.dev.connected": "연결됨",
+ "flutter.dev.reconnect": "재연결",
+ "flutter.dev.available": "사용 가능"
 }

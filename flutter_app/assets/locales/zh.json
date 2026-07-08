@@ -385,5 +385,16 @@
  "flutter.bmi.overweight": "超重",
  "flutter.bmi.obesity": "肥胖",
  "flutter.bmi.thinness": "偏瘦",
- "flutter.bmi.severe_thinness": "严重偏瘦"
+ "flutter.bmi.severe_thinness": "严重偏瘦",
+ "flutter.dev.title": "设备与传感器",
+ "flutter.dev.intro": "连接可穿戴设备，让睡眠、HRV和活动自动进入生长模型。睡眠质量是影响生长激素的最大因素——因此睡眠追踪设备最值得连接。",
+ "flutter.dev.connect": "连接",
+ "flutter.dev.connect_web": "请打开网页应用连接此设备。",
+ "flutter.dev.sync_now": "立即同步",
+ "flutter.dev.nights_synced": "个夜晚已同步",
+ "flutter.dev.last_sync": "最近同步",
+ "flutter.dev.planned": "计划中",
+ "flutter.dev.connected": "已连接",
+ "flutter.dev.reconnect": "重新连接",
+ "flutter.dev.available": "可用"
 }

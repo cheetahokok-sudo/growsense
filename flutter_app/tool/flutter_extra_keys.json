@@ -147,5 +147,16 @@
   "flutter.bmi.overweight": { "en": "Overweight", "th": "น้ำหนักเกิน", "vi": "Thừa cân", "ko": "과체중", "zh": "超重", "ar": "زيادة وزن" },
   "flutter.bmi.obesity": { "en": "Obesity", "th": "อ้วน", "vi": "Béo phì", "ko": "비만", "zh": "肥胖", "ar": "سمنة" },
   "flutter.bmi.thinness": { "en": "Thinness", "th": "ผอม", "vi": "Gầy", "ko": "저체중", "zh": "偏瘦", "ar": "نحافة" },
-  "flutter.bmi.severe_thinness": { "en": "Severe thinness", "th": "ผอมมาก", "vi": "Rất gầy", "ko": "심한 저체중", "zh": "严重偏瘦", "ar": "نحافة شديدة" }
+  "flutter.bmi.severe_thinness": { "en": "Severe thinness", "th": "ผอมมาก", "vi": "Rất gầy", "ko": "심한 저체중", "zh": "严重偏瘦", "ar": "نحافة شديدة" },
+  "flutter.dev.title": { "en": "Devices & sensors", "th": "อุปกรณ์และเซนเซอร์", "vi": "Thiết bị & cảm biến", "ko": "기기 및 센서", "zh": "设备与传感器", "ar": "الأجهزة والمستشعرات" },
+  "flutter.dev.intro": { "en": "Connect a wearable so sleep, HRV, and activity flow into the growth model automatically. Sleep quality is the single biggest lever on growth hormone — so a sleep-tracking device is the most valuable to connect.", "th": "เชื่อมต่ออุปกรณ์สวมใส่เพื่อให้ข้อมูลการนอน HRV และกิจกรรมเข้าสู่โมเดลการเติบโตอัตโนมัติ คุณภาพการนอนคือปัจจัยสำคัญที่สุดต่อโกรทฮอร์โมน อุปกรณ์วัดการนอนจึงคุ้มค่าที่สุดในการเชื่อมต่อ", "vi": "Kết nối thiết bị đeo để giấc ngủ, HRV và hoạt động tự động đưa vào mô hình tăng trưởng. Chất lượng giấc ngủ là đòn bẩy lớn nhất với hormone tăng trưởng — nên thiết bị theo dõi giấc ngủ đáng kết nối nhất.", "ko": "웨어러블을 연결하면 수면, HRV, 활동이 성장 모델에 자동으로 반영됩니다. 수면의 질이 성장호르몬에 가장 큰 영향을 주므로 수면 추적 기기가 가장 유용합니다.", "zh": "连接可穿戴设备，让睡眠、HRV和活动自动进入生长模型。睡眠质量是影响生长激素的最大因素——因此睡眠追踪设备最值得连接。", "ar": "اربط جهازًا لتتدفق بيانات النوم وتقلب معدل ضربات القلب والنشاط تلقائيًا إلى نموذج النمو. جودة النوم هي العامل الأكبر على هرمون النمو — لذا جهاز تتبع النوم هو الأكثر قيمة." },
+  "flutter.dev.connect": { "en": "Connect", "th": "เชื่อมต่อ", "vi": "Kết nối", "ko": "연결", "zh": "连接", "ar": "ربط" },
+  "flutter.dev.connect_web": { "en": "Open the web app to connect this device.", "th": "เปิดเว็บแอปเพื่อเชื่อมต่ออุปกรณ์นี้", "vi": "Mở ứng dụng web để kết nối thiết bị này.", "ko": "이 기기를 연결하려면 웹 앱을 여세요.", "zh": "请打开网页应用连接此设备。", "ar": "افتح تطبيق الويب لربط هذا الجهاز." },
+  "flutter.dev.sync_now": { "en": "Sync now", "th": "ซิงค์ตอนนี้", "vi": "Đồng bộ ngay", "ko": "지금 동기화", "zh": "立即同步", "ar": "المزامنة الآن" },
+  "flutter.dev.nights_synced": { "en": "nights synced", "th": "คืนที่ซิงค์แล้ว", "vi": "đêm đã đồng bộ", "ko": "일치된 야간 수면", "zh": "个夜晚已同步", "ar": "ليلة تمت مزامنتها" },
+  "flutter.dev.last_sync": { "en": "last sync", "th": "ซิงค์ล่าสุด", "vi": "đồng bộ gần nhất", "ko": "최근 동기화", "zh": "最近同步", "ar": "آخر مزامنة" },
+  "flutter.dev.planned": { "en": "Planned", "th": "กำลังพัฒนา", "vi": "Sắp có", "ko": "예정", "zh": "计划中", "ar": "مُخطط" },
+  "flutter.dev.connected": { "en": "Connected", "th": "เชื่อมต่อแล้ว", "vi": "Đã kết nối", "ko": "연결됨", "zh": "已连接", "ar": "متصل" },
+  "flutter.dev.reconnect": { "en": "Reconnect", "th": "เชื่อมต่อใหม่", "vi": "Kết nối lại", "ko": "재연결", "zh": "重新连接", "ar": "إعادة الربط" },
+  "flutter.dev.available": { "en": "Available", "th": "พร้อมใช้งาน", "vi": "Có sẵn", "ko": "사용 가능", "zh": "可用", "ar": "متاح" }
 }
