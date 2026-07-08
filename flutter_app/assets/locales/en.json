@@ -403,5 +403,7 @@
  "flutter.sleep.mismatch": "Connected account differs from this child's saved wearable email",
  "flutter.sleep.connect_devices": "connect in Devices to auto-sync",
  "flutter.analytics.avg": "avg",
- "flutter.analytics.of_target": "of target"
+ "flutter.analytics.of_target": "of target",
+ "flutter.log_illness": "Log illness",
+ "flutter.log_labs": "Log lab result"
 }

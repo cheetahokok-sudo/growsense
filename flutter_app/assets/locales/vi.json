@@ -403,5 +403,7 @@
  "flutter.sleep.mismatch": "Tài khoản kết nối khác với email thiết bị đã lưu của trẻ",
  "flutter.sleep.connect_devices": "kết nối trong Thiết bị để tự đồng bộ",
  "flutter.analytics.avg": "TB",
- "flutter.analytics.of_target": "so với mục tiêu"
+ "flutter.analytics.of_target": "so với mục tiêu",
+ "flutter.log_illness": "Ghi bệnh",
+ "flutter.log_labs": "Ghi kết quả XN"
 }

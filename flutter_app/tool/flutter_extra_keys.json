@@ -165,5 +165,7 @@
   "flutter.sleep.mismatch": { "en": "Connected account differs from this child's saved wearable email", "th": "บัญชีที่เชื่อมต่อไม่ตรงกับอีเมลอุปกรณ์ที่บันทึกไว้ของเด็ก", "vi": "Tài khoản kết nối khác với email thiết bị đã lưu của trẻ", "ko": "연결된 계정이 이 아이의 저장된 웨어러블 이메일과 다릅니다", "zh": "连接的账户与该儿童保存的可穿戴设备邮箱不一致", "ar": "الحساب المتصل يختلف عن بريد الجهاز المحفوظ لهذا الطفل" },
   "flutter.sleep.connect_devices": { "en": "connect in Devices to auto-sync", "th": "เชื่อมต่อในเมนูอุปกรณ์เพื่อซิงค์อัตโนมัติ", "vi": "kết nối trong Thiết bị để tự đồng bộ", "ko": "기기에서 연결하면 자동 동기화됩니다", "zh": "在设备中连接以自动同步", "ar": "اربط في الأجهزة للمزامنة التلقائية" },
   "flutter.analytics.avg": { "en": "avg", "th": "เฉลี่ย", "vi": "TB", "ko": "평균", "zh": "平均", "ar": "متوسط" },
-  "flutter.analytics.of_target": { "en": "of target", "th": "ของเป้าหมาย", "vi": "so với mục tiêu", "ko": "목표 대비", "zh": "达标", "ar": "من الهدف" }
+  "flutter.analytics.of_target": { "en": "of target", "th": "ของเป้าหมาย", "vi": "so với mục tiêu", "ko": "목표 대비", "zh": "达标", "ar": "من الهدف" },
+  "flutter.log_illness": { "en": "Log illness", "th": "บันทึกการป่วย", "vi": "Ghi bệnh", "ko": "질병 기록", "zh": "记录患病", "ar": "تسجيل مرض" },
+  "flutter.log_labs": { "en": "Log lab result", "th": "บันทึกผลแล็บ", "vi": "Ghi kết quả XN", "ko": "검사 결과 기록", "zh": "记录化验", "ar": "تسجيل تحليل" }
 }

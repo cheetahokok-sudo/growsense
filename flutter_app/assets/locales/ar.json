@@ -403,5 +403,7 @@
  "flutter.sleep.mismatch": "الحساب المتصل يختلف عن بريد الجهاز المحفوظ لهذا الطفل",
  "flutter.sleep.connect_devices": "اربط في الأجهزة للمزامنة التلقائية",
  "flutter.analytics.avg": "متوسط",
- "flutter.analytics.of_target": "من الهدف"
+ "flutter.analytics.of_target": "من الهدف",
+ "flutter.log_illness": "تسجيل مرض",
+ "flutter.log_labs": "تسجيل تحليل"
 }

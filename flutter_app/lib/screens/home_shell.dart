@@ -10,6 +10,7 @@ import 'activity_screen.dart';
 import 'analytics_screen.dart';
 import 'coach_screen.dart';
 import 'food_screen.dart';
+import 'medical_modules.dart';
 import 'medical_screen.dart';
 import 'today_screen.dart';
 
@@ -60,7 +61,16 @@ class _HomeShellState extends State<HomeShell> {
       case 'sleep':
         setState(() => _tab = 0);
       case 'measurement':
-        setState(() => _tab = 3);
+        _push(MeasurementsScreen(appState: widget.appState, i18n: widget.i18n),
+            t('flutter.growth_measurements', 'Growth measurements'));
+      case 'illness':
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => IllnessLogScreen(
+                appState: widget.appState, i18n: widget.i18n)));
+      case 'labs':
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => LabResultsScreen(
+                appState: widget.appState, i18n: widget.i18n)));
     }
   }
 
@@ -136,8 +146,26 @@ class _HomeShellState extends State<HomeShell> {
                       _QuickTile(
                         emoji: '📏',
                         label: t('flutter.log_measurement', 'Log measurement'),
-                        tint: GsColors.flag,
+                        tint: GsColors.measured,
                         onTap: () => go('measurement'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _QuickTile(
+                        emoji: '🤒',
+                        label: t('flutter.log_illness', 'Log illness'),
+                        tint: GsColors.estimated,
+                        onTap: () => go('illness'),
+                      ),
+                      const SizedBox(width: 12),
+                      _QuickTile(
+                        emoji: '🧪',
+                        label: t('flutter.log_labs', 'Log lab result'),
+                        tint: GsColors.flag,
+                        onTap: () => go('labs'),
                       ),
                     ],
                   ),

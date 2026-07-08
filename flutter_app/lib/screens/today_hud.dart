@@ -138,30 +138,12 @@ class ReadinessCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    SizedBox(
-                      width: 110,
-                      height: 110,
-                      child: CustomPaint(
-                        painter: _RingsPainter(
-                            nut: s.nutPct, act: s.actPct, slp: s.slpPct),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('${s.score}',
-                                  style: const TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w800,
-                                      height: 1.0,
-                                      color: GsColors.text)),
-                              Text(t('today.hud.score_suffix', 'of 100'),
-                                  style: const TextStyle(
-                                      fontSize: 10, color: GsColors.text3)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    _ReadinessRing(
+                        nut: s.nutPct,
+                        act: s.actPct,
+                        slp: s.slpPct,
+                        score: s.score,
+                        i18n: i18n),
                     const SizedBox(width: 18),
                     Expanded(
                       child: Column(
@@ -225,41 +207,149 @@ class ReadinessCard extends StatelessWidget {
   }
 }
 
-/// Three concentric progress rings, same geometry as the PWA's SVG
-/// (radii 47/36/25 in a 110-box, stroke 7, from 12 o'clock).
-class _RingsPainter extends CustomPainter {
-  _RingsPainter({required this.nut, required this.act, required this.slp});
+/// Animated readiness ring — three concentric gradient arcs with a
+/// soft glow and end-cap dots, and a score that counts up. Re-animates
+/// whenever the component scores change (keyed on their values).
+class _ReadinessRing extends StatelessWidget {
+  const _ReadinessRing(
+      {required this.nut,
+      required this.act,
+      required this.slp,
+      required this.score,
+      required this.i18n});
   final double nut, act, slp;
+  final int score;
+  final I18n i18n;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('$nut-$act-$slp'),
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 950),
+      curve: Curves.easeOutCubic,
+      builder: (context, a, _) {
+        return SizedBox(
+          width: 122,
+          height: 122,
+          child: CustomPaint(
+            painter: _RingsPainter(nut: nut, act: act, slp: slp, anim: a),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ShaderMask(
+                    shaderCallback: (r) => const LinearGradient(
+                      colors: [GsColors.accent, GsColors.measured],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(r),
+                    child: Text('${(score * a).round()}',
+                        style: const TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                            height: 1.0,
+                            letterSpacing: -1,
+                            color: Colors.white)),
+                  ),
+                  Text(i18n.t('today.hud.score_suffix', 'of 100'),
+                      style: const TextStyle(
+                          fontSize: 9.5,
+                          letterSpacing: 0.5,
+                          color: GsColors.text3)),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Three concentric progress rings with gradient sweep, soft glow, and
+/// a bright end-cap dot for a premium finish.
+class _RingsPainter extends CustomPainter {
+  _RingsPainter(
+      {required this.nut,
+      required this.act,
+      required this.slp,
+      required this.anim});
+  final double nut, act, slp, anim;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final scale = size.width / 110;
-    void ring(double radius, double pct, Color color) {
+    final scale = size.width / 122;
+    final stroke = 8.0 * scale;
+
+    void ring(double radius, double rawPct, Color light, Color full) {
       final r = radius * scale;
-      final track = Paint()
-        ..color = GsColors.surface2
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 7 * scale;
-      canvas.drawCircle(center, r, track);
-      if (pct <= 0) return;
-      final arc = Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 7 * scale
-        ..strokeCap = StrokeCap.round;
-      canvas.drawArc(Rect.fromCircle(center: center, radius: r), -math.pi / 2,
-          2 * math.pi * pct.clamp(0.0, 1.0), false, arc);
+      final rect = Rect.fromCircle(center: center, radius: r);
+      final pct = (rawPct.clamp(0.0, 1.0)) * anim;
+
+      // Track
+      canvas.drawCircle(
+          center,
+          r,
+          Paint()
+            ..color = GsColors.surface2
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = stroke);
+      if (pct <= 0.001) return;
+
+      const start = -math.pi / 2;
+      final sweep = 2 * math.pi * pct;
+
+      // Soft glow underneath
+      canvas.drawArc(
+          rect,
+          start,
+          sweep,
+          false,
+          Paint()
+            ..color = full.withValues(alpha: 0.30)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = stroke + 4 * scale
+            ..strokeCap = StrokeCap.round
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 * scale));
+
+      // Gradient arc
+      final shader = SweepGradient(
+        startAngle: 0,
+        endAngle: 2 * math.pi,
+        colors: [light, full],
+        transform: const GradientRotation(-math.pi / 2),
+      ).createShader(rect);
+      canvas.drawArc(
+          rect,
+          start,
+          sweep,
+          false,
+          Paint()
+            ..shader = shader
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = stroke
+            ..strokeCap = StrokeCap.round);
+
+      // Bright end-cap dot
+      final end = start + sweep;
+      final tip = center + Offset(math.cos(end) * r, math.sin(end) * r);
+      canvas.drawCircle(tip, stroke * 0.62, Paint()..color = full);
+      canvas.drawCircle(tip, stroke * 0.26, Paint()..color = Colors.white);
     }
 
-    ring(47, nut, GsColors.accent);
-    ring(36, act, GsColors.measured);
-    ring(25, slp, GsColors.estimated);
+    ring(48, nut, const Color(0xFF5FA87E), GsColors.accent);
+    ring(37, act, const Color(0xFF5B8FC0), GsColors.measured);
+    ring(26, slp, const Color(0xFFC9A45E), GsColors.estimated);
   }
 
   @override
   bool shouldRepaint(covariant _RingsPainter old) =>
-      old.nut != nut || old.act != act || old.slp != slp;
+      old.nut != nut ||
+      old.act != act ||
+      old.slp != slp ||
+      old.anim != anim;
 }
 
 class _MetricRow extends StatelessWidget {

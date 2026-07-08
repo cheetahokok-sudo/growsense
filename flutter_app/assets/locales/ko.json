@@ -403,5 +403,7 @@
  "flutter.sleep.mismatch": "연결된 계정이 이 아이의 저장된 웨어러블 이메일과 다릅니다",
  "flutter.sleep.connect_devices": "기기에서 연결하면 자동 동기화됩니다",
  "flutter.analytics.avg": "평균",
- "flutter.analytics.of_target": "목표 대비"
+ "flutter.analytics.of_target": "목표 대비",
+ "flutter.log_illness": "질병 기록",
+ "flutter.log_labs": "검사 결과 기록"
 }

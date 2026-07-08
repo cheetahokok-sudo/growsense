@@ -403,5 +403,7 @@
  "flutter.sleep.mismatch": "连接的账户与该儿童保存的可穿戴设备邮箱不一致",
  "flutter.sleep.connect_devices": "在设备中连接以自动同步",
  "flutter.analytics.avg": "平均",
- "flutter.analytics.of_target": "达标"
+ "flutter.analytics.of_target": "达标",
+ "flutter.log_illness": "记录患病",
+ "flutter.log_labs": "记录化验"
 }
