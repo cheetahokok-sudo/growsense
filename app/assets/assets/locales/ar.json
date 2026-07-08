@@ -469,5 +469,8 @@
  "flutter.insight.lever_calcium": "الكالسيوم هو الرافعة — حصة ألبان أو توفو تكفي",
  "flutter.insight.lever_water": "بضعة أكواب ماء تكمل الدائرة",
  "flutter.insight.lever_active": "{m} دقيقة نشاط ترفعها",
- "flutter.insight.lever_sleep": "النوم مبكرًا الليلة يرفع قراءة الغد"
+ "flutter.insight.lever_sleep": "النوم مبكرًا الليلة يرفع قراءة الغد",
+ "flutter.welcome.age": "العمر",
+ "flutter.welcome.bone_age": "العمر العظمي",
+ "flutter.welcome.second_opinion": "رأي\nثانٍ"
 }

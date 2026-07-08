@@ -469,5 +469,8 @@
  "flutter.insight.lever_calcium": "钙是抓手——一份奶制品或豆腐就能补齐",
  "flutter.insight.lever_water": "再喝几杯水就圆满了",
  "flutter.insight.lever_active": "再运动 {m} 分钟就能提升",
- "flutter.insight.lever_sleep": "今晚早点睡，明天的读数会更好"
+ "flutter.insight.lever_sleep": "今晚早点睡，明天的读数会更好",
+ "flutter.welcome.age": "年龄",
+ "flutter.welcome.bone_age": "骨龄",
+ "flutter.welcome.second_opinion": "第二\n意见"
 }

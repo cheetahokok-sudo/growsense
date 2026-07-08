@@ -469,5 +469,8 @@
  "flutter.insight.lever_calcium": "calcium is the lever — one dairy or tofu serving closes it",
  "flutter.insight.lever_water": "a few more glasses of water close the loop",
  "flutter.insight.lever_active": "{m} active minutes would lift it",
- "flutter.insight.lever_sleep": "an earlier bedtime tonight lifts tomorrow's reading"
+ "flutter.insight.lever_sleep": "an earlier bedtime tonight lifts tomorrow's reading",
+ "flutter.welcome.age": "Age",
+ "flutter.welcome.bone_age": "Bone age",
+ "flutter.welcome.second_opinion": "Second\nOpinion"
 }

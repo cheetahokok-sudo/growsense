@@ -469,5 +469,8 @@
  "flutter.insight.lever_calcium": "canxi là đòn bẩy — một phần sữa hoặc đậu hũ là đủ",
  "flutter.insight.lever_water": "thêm vài ly nước là trọn vẹn",
  "flutter.insight.lever_active": "{m} phút vận động nữa sẽ nâng điểm",
- "flutter.insight.lever_sleep": "tối nay ngủ sớm hơn sẽ nâng chỉ số ngày mai"
+ "flutter.insight.lever_sleep": "tối nay ngủ sớm hơn sẽ nâng chỉ số ngày mai",
+ "flutter.welcome.age": "Tuổi",
+ "flutter.welcome.bone_age": "Tuổi xương",
+ "flutter.welcome.second_opinion": "Ý kiến\nthứ hai"
 }
