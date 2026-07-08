@@ -203,7 +203,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       ),
       _Slide(
         visual: _GlassCard(
-            height: 330, child: _BoneAgeDemo(i18n: widget.i18n)),
+            height: 392, child: _BoneAgeDemo(i18n: widget.i18n)),
         title: t('flutter.welcome.s4_title',
             'The history no single clinic keeps'),
         body: t(
@@ -553,7 +553,7 @@ class _BoneAgeDemo extends StatelessWidget {
         children: [
           // X-ray plate with the AI badge floating on top
           SizedBox(
-            height: 196,
+            height: 210,
             child: Stack(
               children: [
                 Positioned.fill(
@@ -599,11 +599,15 @@ class _BoneAgeDemo extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          // Serial-study timeline — the "history" this slide promises
-          _TimelineRow(top: '2024 · $ageLbl 8y 3m', sub: '$baLbl 7y 10m'),
-          const SizedBox(height: 8),
-          _TimelineRow(top: '2023 · $ageLbl 7y 2m', sub: '$baLbl 6y 6m'),
+          const SizedBox(height: 14),
+          // Serial-study timeline — the "history" this slide promises,
+          // with a connecting line so it reads as one continuous record.
+          _TimelineRow(
+              top: '2024 · $ageLbl 8y 3m', sub: '$baLbl 7y 10m'),
+          _TimelineRow(
+              top: '2023 · $ageLbl 7y 2m', sub: '$baLbl 6y 6m'),
+          _TimelineRow(
+              top: '2022 · $ageLbl 6y 1m', sub: '$baLbl 5y 2m', isLast: true),
         ],
       ),
     );
@@ -611,36 +615,52 @@ class _BoneAgeDemo extends StatelessWidget {
 }
 
 class _TimelineRow extends StatelessWidget {
-  const _TimelineRow({required this.top, required this.sub});
+  const _TimelineRow(
+      {required this.top, required this.sub, this.isLast = false});
   final String top;
   final String sub;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 20,
-          height: 20,
-          decoration: const BoxDecoration(
-              color: GsColors.accent, shape: BoxShape.circle),
-          child: const Icon(Icons.check, size: 13, color: Colors.white),
+        Column(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: const BoxDecoration(
+                  color: GsColors.accent, shape: BoxShape.circle),
+              child: const Icon(Icons.check, size: 13, color: Colors.white),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 22,
+                color: GsColors.accent.withValues(alpha: 0.35),
+              ),
+          ],
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(top,
-                  style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withValues(alpha: 0.95))),
-              Text(sub,
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.6))),
-            ],
+          child: Padding(
+            padding: EdgeInsets.only(bottom: isLast ? 0 : 6, top: 1),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(top,
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.95))),
+                Text(sub,
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.6))),
+              ],
+            ),
           ),
         ),
       ],
@@ -656,126 +676,134 @@ class _BoneAgeDemoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
-    const boneCol = Color(0xFFD3EBDD); // green-tinted radiograph white
-    const amber = Color(0xFFE0BD75); // AI annotation accent
+    // Phosphor-screen palette: white-hot bone core, vivid green halo —
+    // denser and higher-contrast than a clinical film, closer to how
+    // parents picture "AI reading an X-ray."
+    const core = Color(0xFFF4FFF1);
+    const glow = Color(0xFF69E36F);
+    const ring = Color(0xFF8CF08A); // AI analysis ellipse
 
-    // Film plate
+    // Film plate — near-black with a faint green cast
     canvas.drawRect(
       Rect.fromLTWH(0, 0, w, h),
       Paint()
         ..shader = RadialGradient(
-          center: const Alignment(0, -0.3),
-          radius: 1.2,
-          colors: [
-            const Color(0xFF0B2418),
-            const Color(0xFF041008),
-          ],
+          center: const Alignment(0, -0.25),
+          radius: 1.15,
+          colors: [const Color(0xFF07160E), const Color(0xFF020805)],
         ).createShader(Rect.fromLTWH(0, 0, w, h)),
     );
 
-    final cx = w * 0.46; // hand slightly left, thumb has room right
+    final cx = w * 0.47; // hand centered, thumb has room to the right
 
     // ── Soft tissue halo — palm + blurred finger sleeves ─────────────
-    final tissue = Paint()
-      ..color = boneCol.withValues(alpha: 0.10)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
     canvas.drawOval(
         Rect.fromCenter(
-            center: Offset(cx + 6, h * 0.72), width: w * 0.52, height: h * 0.5),
-        tissue);
+            center: Offset(cx + 4, h * 0.66), width: w * 0.66, height: h * 0.66),
+        Paint()
+          ..color = glow.withValues(alpha: 0.10)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14));
 
     void sleeve(Offset a, Offset b, double width) => canvas.drawLine(
         a,
         b,
         Paint()
-          ..color = boneCol.withValues(alpha: 0.09)
+          ..color = glow.withValues(alpha: 0.12)
           ..strokeWidth = width
           ..strokeCap = StrokeCap.round
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7));
 
-    // ── Bone helper: shaft + flared epiphyseal ends ──────────────────
-    final glowP = Paint()
-      ..color = boneCol.withValues(alpha: 0.28)
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    // ── Bone helper: bright core + green glow + bulbous joint ends —
+    // denser/thicker than a literal skeleton for a "wow" phosphor look.
     void bone(Offset a, Offset b, double width) {
-      canvas.drawLine(a, b, glowP..strokeWidth = width + 3);
-      // shaft narrower than the ends — classic long-bone silhouette
       canvas.drawLine(
           a,
           b,
           Paint()
-            ..color = boneCol.withValues(alpha: 0.88)
-            ..strokeWidth = width * 0.62
+            ..color = glow.withValues(alpha: 0.55)
+            ..strokeWidth = width + 5
+            ..strokeCap = StrokeCap.round
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
+      canvas.drawLine(
+          a,
+          b,
+          Paint()
+            ..color = core.withValues(alpha: 0.95)
+            ..strokeWidth = width * 0.72
             ..strokeCap = StrokeCap.round);
-      final endP = Paint()..color = boneCol.withValues(alpha: 0.95);
-      canvas.drawCircle(a, width * 0.5, endP);
-      canvas.drawCircle(b, width * 0.5, endP);
+      final endGlow = Paint()..color = glow.withValues(alpha: 0.7);
+      final endCore = Paint()..color = core;
+      canvas.drawCircle(a, width * 0.62, endGlow);
+      canvas.drawCircle(b, width * 0.62, endGlow);
+      canvas.drawCircle(a, width * 0.42, endCore);
+      canvas.drawCircle(b, width * 0.42, endCore);
     }
 
     // ── Forearm: radius + ulna entering from below ───────────────────
-    bone(Offset(cx - 12, h * 1.06), Offset(cx - 9, h * 0.945), 10);
-    bone(Offset(cx + 12, h * 1.06), Offset(cx + 10, h * 0.95), 8);
+    bone(Offset(cx - 13, h * 1.08), Offset(cx - 10, h * 0.95), 12);
+    bone(Offset(cx + 13, h * 1.08), Offset(cx + 11, h * 0.955), 10);
 
-    // ── Carpal cluster (the AI's primary anchor) ─────────────────────
+    // ── Carpal mass (the AI's primary anchor) — tightly packed and
+    // overlapping so it reads as one dense cluster, like a real film.
     final carpals = [
-      (Offset(cx - 17, h * 0.855), 5.0),
-      (Offset(cx - 4, h * 0.84), 5.5),
-      (Offset(cx + 9, h * 0.85), 5.0),
-      (Offset(cx - 11, h * 0.895), 4.4),
-      (Offset(cx + 2, h * 0.90), 4.8),
-      (Offset(cx + 14, h * 0.895), 4.2),
-      (Offset(cx + 22, h * 0.855), 4.0),
+      (Offset(cx - 19, h * 0.865), 6.0),
+      (Offset(cx - 6, h * 0.845), 6.6),
+      (Offset(cx + 7, h * 0.85), 6.2),
+      (Offset(cx + 19, h * 0.865), 5.6),
+      (Offset(cx - 12, h * 0.905), 5.4),
+      (Offset(cx + 1, h * 0.915), 5.8),
+      (Offset(cx + 13, h * 0.905), 5.2),
     ];
     for (final (c, r) in carpals) {
       canvas.drawCircle(
           c,
-          r + 1.5,
+          r + 2.5,
           Paint()
-            ..color = boneCol.withValues(alpha: 0.25)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5));
-      canvas.drawCircle(c, r, Paint()..color = boneCol.withValues(alpha: 0.85));
+            ..color = glow.withValues(alpha: 0.35)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.5));
+      canvas.drawCircle(c, r, Paint()..color = core.withValues(alpha: 0.92));
     }
 
     // ── Fingers: (knuckle dx, tip dx, knuckle y, tip y, width) ───────
-    // little → index, mostly vertical like a clinical PA film.
+    // Straight and close together, filling the frame — matches a real
+    // PA hand film far better than a splayed fan.
     final fingers = [
-      (-0.24, -0.275, 0.52, 0.26, 6.0), // little
-      (-0.115, -0.13, 0.485, 0.115, 7.0), // ring
-      (0.005, 0.005, 0.475, 0.075, 7.4), // middle — tallest
-      (0.125, 0.15, 0.50, 0.17, 7.0), // index
+      (-0.205, -0.215, 0.535, 0.245, 7.6), // little
+      (-0.075, -0.082, 0.485, 0.075, 8.8), // ring
+      (0.030, 0.032, 0.470, 0.020, 9.2), // middle — tallest
+      (0.135, 0.145, 0.495, 0.135, 8.6), // index
     ];
     for (final f in fingers) {
       final knuckle = Offset(cx + w * f.$1, h * f.$3);
       final tip = Offset(cx + w * f.$2, h * f.$4);
-      sleeve(knuckle, tip, f.$5 * 2.6);
-      // metacarpal from carpal row up to the knuckle
-      bone(Offset(cx + w * f.$1 * 0.42, h * 0.82), knuckle, f.$5 + 1.2);
+      sleeve(knuckle, tip, f.$5 * 2.5);
+      // metacarpal from carpal mass up to the knuckle
+      bone(Offset(cx + w * f.$1 * 0.55, h * 0.83), knuckle, f.$5 + 1.4);
       // three phalanges: proximal 45%, middle 30%, distal 25%
       const fr = [0.0, 0.45, 0.75, 1.0];
       for (var i = 0; i < 3; i++) {
         final a = Offset.lerp(knuckle, tip, fr[i])!;
         final b = Offset.lerp(knuckle, tip, fr[i + 1])!;
         final dir = (b - a) / (b - a).distance;
-        bone(a + dir * 2.6, b - dir * 2.6, f.$5 - i * 1.1);
+        bone(a + dir * 2.8, b - dir * 2.8, f.$5 - i * 1.2);
       }
     }
 
     // ── Thumb: metacarpal + two phalanges angled out right ───────────
-    sleeve(Offset(cx + 24, h * 0.84), Offset(cx + w * 0.36, h * 0.42), 18);
-    bone(Offset(cx + 24, h * 0.845), Offset(cx + w * 0.245, h * 0.645), 7.6);
-    bone(Offset(cx + w * 0.255, h * 0.615), Offset(cx + w * 0.315, h * 0.50),
-        6.4);
-    bone(Offset(cx + w * 0.325, h * 0.475), Offset(cx + w * 0.36, h * 0.405),
-        5.2);
+    sleeve(Offset(cx + 26, h * 0.85), Offset(cx + w * 0.37, h * 0.46), 20);
+    bone(Offset(cx + 26, h * 0.855), Offset(cx + w * 0.255, h * 0.655), 8.8);
+    bone(Offset(cx + w * 0.265, h * 0.625), Offset(cx + w * 0.325, h * 0.515),
+        7.4);
+    bone(Offset(cx + w * 0.335, h * 0.49), Offset(cx + w * 0.37, h * 0.425),
+        6.0);
 
-    // ── Amber dashed carpal-analysis ellipse (the real AI overlay) ───
+    // ── Dashed green carpal-analysis ellipse (the real AI overlay) ───
     final carpalRect = Rect.fromCenter(
-        center: Offset(cx + 2, h * 0.875), width: w * 0.44, height: h * 0.17);
+        center: Offset(cx, h * 0.885), width: w * 0.46, height: h * 0.18);
     final dashPaint = Paint()
-      ..color = amber
+      ..color = ring
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6;
+      ..strokeWidth = 2.0;
     final ellipse = Path()..addOval(carpalRect);
     for (final metric in ellipse.computeMetrics()) {
       var d = 0.0;
