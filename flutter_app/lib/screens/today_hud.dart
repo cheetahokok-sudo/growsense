@@ -96,6 +96,56 @@ HudScores computeHudScores(AppState appState) {
   return HudScores(nutPct, actPct, slpPct, pR, cR, wR, score, boost);
 }
 
+/// One-line narrative under the ring — the "so what" of today's
+/// numbers. Rule-based: praise the strongest lever, hand the parent
+/// the weakest one with a concrete next step. Positive framing only;
+/// the ring already shows what's low, the line says what to do.
+String dailyInsight(I18n i18n, HudScores s) {
+  final t = i18n.t;
+  if (s.nutPct <= 0.01 && s.actPct <= 0.01 && s.slpPct <= 0.01) {
+    return t('flutter.insight.empty',
+        'A quiet ring so far — log the first meal and it wakes up.');
+  }
+  final ranked = [
+    ('nut', s.nutPct),
+    ('act', s.actPct),
+    ('slp', s.slpPct),
+  ]..sort((a, b) => b.$2.compareTo(a.$2));
+
+  final praise = switch (ranked.first.$1) {
+    'nut' => t('flutter.insight.lead_nut', 'Nutrition is carrying today'),
+    'act' => t('flutter.insight.lead_act', 'Activity is carrying today'),
+    _ => t('flutter.insight.lead_slp', 'Sleep is carrying today'),
+  };
+  if (s.score >= 85) {
+    return '$praise — ${t('flutter.insight.strong', 'a strong day, keep the rhythm.')}';
+  }
+
+  String action;
+  switch (ranked.last.$1) {
+    case 'nut':
+      if (s.pR < 0.999) {
+        final toGo = ((1 - s.pR) * s.proteinBoostTarget).ceil();
+        action = t('flutter.insight.lever_protein',
+            'protein is the lever, {g} g to go', {'g': '$toGo'});
+      } else if (s.cR < 0.999) {
+        action = t('flutter.insight.lever_calcium',
+            'calcium is the lever — one dairy or tofu serving closes it');
+      } else {
+        action = t('flutter.insight.lever_water',
+            'a few more glasses of water close the loop');
+      }
+    case 'act':
+      final m = ((1 - s.actPct) * 60).ceil();
+      action = t('flutter.insight.lever_active',
+          '{m} active minutes would lift it', {'m': '$m'});
+    default:
+      action = t('flutter.insight.lever_sleep',
+          "an earlier bedtime tonight lifts tomorrow's reading");
+  }
+  return '$praise — $action.';
+}
+
 // ── Readiness card ──────────────────────────────────────────────────
 
 class ReadinessCard extends StatelessWidget {
@@ -193,6 +243,36 @@ class ReadinessCard extends StatelessWidget {
                         last: true),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: GsColors.surface2,
+                    borderRadius: BorderRadius.circular(GsRadius.sm),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 3,
+                        height: 30,
+                        margin: const EdgeInsetsDirectional.only(end: 8),
+                        decoration: BoxDecoration(
+                          color: GsColors.accent,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text('✨ ${dailyInsight(i18n, s)}',
+                            style: const TextStyle(
+                                fontSize: 11.5,
+                                color: GsColors.text2,
+                                height: 1.45)),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Text(
                     '${t('flutter.protein_target', 'Growth target')}: ${s.proteinBoostTarget} g',
@@ -287,7 +367,13 @@ class _RingsPainter extends CustomPainter {
     void ring(double radius, double rawPct, Color light, Color full) {
       final r = radius * scale;
       final rect = Rect.fromCircle(center: center, radius: r);
-      final pct = (rawPct.clamp(0.0, 1.0)) * anim;
+      final filled = rawPct.clamp(0.0, 1.0);
+      final pct = filled * anim;
+
+      // The gradient itself is a data layer: the arc head deepens with
+      // intake, so a pale ring literally reads "just started" and a
+      // fully saturated one "at target" (min → max intake %).
+      final head = Color.lerp(light, full, 0.35 + 0.65 * filled)!;
 
       // Track
       canvas.drawCircle(
@@ -302,24 +388,24 @@ class _RingsPainter extends CustomPainter {
       const start = -math.pi / 2;
       final sweep = 2 * math.pi * pct;
 
-      // Soft glow underneath
+      // Soft glow underneath — brightens as the ring fills
       canvas.drawArc(
           rect,
           start,
           sweep,
           false,
           Paint()
-            ..color = full.withValues(alpha: 0.30)
+            ..color = head.withValues(alpha: 0.15 + 0.15 * filled)
             ..style = PaintingStyle.stroke
             ..strokeWidth = stroke + 4 * scale
             ..strokeCap = StrokeCap.round
             ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 * scale));
 
-      // Gradient arc
+      // Gradient arc — tail stays light, head carries the intake level
       final shader = SweepGradient(
         startAngle: 0,
         endAngle: 2 * math.pi,
-        colors: [light, full],
+        colors: [light, head],
         transform: const GradientRotation(-math.pi / 2),
       ).createShader(rect);
       canvas.drawArc(
@@ -333,10 +419,10 @@ class _RingsPainter extends CustomPainter {
             ..strokeWidth = stroke
             ..strokeCap = StrokeCap.round);
 
-      // Bright end-cap dot
+      // Bright end-cap dot — matches the head's saturation
       final end = start + sweep;
       final tip = center + Offset(math.cos(end) * r, math.sin(end) * r);
-      canvas.drawCircle(tip, stroke * 0.62, Paint()..color = full);
+      canvas.drawCircle(tip, stroke * 0.62, Paint()..color = head);
       canvas.drawCircle(tip, stroke * 0.26, Paint()..color = Colors.white);
     }
 

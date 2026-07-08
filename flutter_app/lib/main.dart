@@ -7,12 +7,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app_state.dart';
 import 'i18n.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_shell.dart';
+import 'screens/welcome_screen.dart';
 import 'theme.dart';
 
 const supabaseUrl = 'https://ogpkmcqaulohexanucng.supabase.co';
@@ -93,13 +95,36 @@ class _GrowSenseAppState extends State<GrowSenseApp> {
   }
 }
 
-/// Shows the sign-in screen until a Supabase session exists, then the
-/// 5-tab app shell — the Flutter equivalent of the PWA's
-/// #authScreen / #appRoot boot sequence.
-class AuthGate extends StatelessWidget {
+/// Shows the welcome carousel on first launch, then the sign-in
+/// screen until a Supabase session exists, then the 5-tab app shell —
+/// the Flutter equivalent of the PWA's #authScreen / #appRoot boot.
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key, required this.appState, required this.i18n});
   final AppState appState;
   final I18n i18n;
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool? _welcomeSeen; // null while the pref is loading
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((p) {
+      if (mounted) {
+        setState(() => _welcomeSeen = p.getBool('welcome_seen') ?? false);
+      }
+    });
+  }
+
+  Future<void> _markWelcomeSeen() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('welcome_seen', true);
+    if (mounted) setState(() => _welcomeSeen = true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,12 +133,22 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = Supabase.instance.client.auth.currentSession;
         if (session == null) {
-          return AuthScreen(i18n: i18n);
+          // Brand-colored blank while the pref loads (~1 frame) so
+          // returning users never see a welcome flash.
+          if (_welcomeSeen == null) {
+            return const Scaffold(
+                backgroundColor: GsColors.deepGreen, body: SizedBox());
+          }
+          if (_welcomeSeen == false) {
+            return WelcomeScreen(
+                i18n: widget.i18n, onDone: _markWelcomeSeen);
+          }
+          return AuthScreen(i18n: widget.i18n);
         }
         // Finish a Fitbit OAuth round-trip if we came back with a code.
-        WidgetsBinding.instance
-            .addPostFrameCallback((_) => handleFitbitCallback(appState));
-        return HomeShell(appState: appState, i18n: i18n);
+        WidgetsBinding.instance.addPostFrameCallback(
+            (_) => handleFitbitCallback(widget.appState));
+        return HomeShell(appState: widget.appState, i18n: widget.i18n);
       },
     );
   }
