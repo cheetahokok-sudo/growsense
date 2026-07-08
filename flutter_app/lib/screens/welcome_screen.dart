@@ -203,7 +203,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       ),
       _Slide(
         visual: _GlassCard(
-            height: 392, child: _BoneAgeDemo(i18n: widget.i18n)),
+            height: 358, child: _BoneAgeDemo(i18n: widget.i18n)),
         title: t('flutter.welcome.s4_title',
             'The history no single clinic keeps'),
         body: t(
@@ -551,52 +551,24 @@ class _BoneAgeDemo extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // X-ray plate with the AI badge floating on top
-          SizedBox(
-            height: 210,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: CustomPaint(painter: _BoneAgeDemoPainter()),
-                  ),
+          // X-ray plate — the badge and carpal-analysis ring are baked
+          // into the artwork, so we show it whole (its own aspect ratio)
+          // rather than overlaying our own badge.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: AspectRatio(
+              aspectRatio: 746 / 515,
+              child: Container(
+                color: const Color(0xFF07160E), // film-dark plate
+                child: Image.asset(
+                  'assets/welcome/xray_hand.png',
+                  fit: BoxFit.cover,
+                  // Fall back to the drawn version if the asset is
+                  // missing, so the build never breaks.
+                  errorBuilder: (context, error, stack) =>
+                      CustomPaint(painter: _BoneAgeDemoPainter()),
                 ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        const Icon(Icons.verified_user_outlined,
-                            size: 18, color: GsColors.accent),
-                        const SizedBox(height: 2),
-                        const Text('AI',
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                height: 1.1,
-                                color: GsColors.deepGreen)),
-                        Text(
-                            t('flutter.welcome.second_opinion',
-                                'Second\nOpinion'),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                fontSize: 8.5,
-                                height: 1.2,
-                                fontWeight: FontWeight.w600,
-                                color: GsColors.deepGreen)),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 14),
