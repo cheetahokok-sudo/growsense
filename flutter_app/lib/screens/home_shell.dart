@@ -138,10 +138,7 @@ class _HomeShellState extends State<HomeShell> {
     final screens = [
       TodayScreen(appState: widget.appState, i18n: widget.i18n),
       AnalyticsScreen(appState: widget.appState, i18n: widget.i18n),
-      CoachScreen(
-          appState: widget.appState,
-          i18n: widget.i18n,
-          onQuickLog: _quickLog),
+      CoachScreen(appState: widget.appState, i18n: widget.i18n),
       MedicalScreen(appState: widget.appState, i18n: widget.i18n),
     ];
 

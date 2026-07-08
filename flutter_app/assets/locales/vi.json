@@ -348,5 +348,7 @@
  "flutter.dob": "Ngày sinh",
  "flutter.parent_heights": "Chiều cao bố mẹ — mở khóa mục tiêu di truyền & quỹ đạo",
  "flutter.save": "Lưu",
- "flutter.saved_ok": "Đã lưu"
+ "flutter.saved_ok": "Đã lưu",
+ "flutter.coach.no_match": "Tôi không khớp được câu này với câu trả lời có sẵn. Hãy diễn đạt lại, chạm vào câu hỏi gợi ý, hoặc hỏi bác sĩ nhi. (Trợ lý này trả lời từ thư viện đã kiểm chứng — không dùng AI trực tiếp.)",
+ "flutter.coach.no_questions": "Chưa có câu hỏi gợi ý cho mục này — hãy hỏi trực tiếp bên dưới."
 }

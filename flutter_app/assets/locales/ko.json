@@ -348,5 +348,7 @@
  "flutter.dob": "생년월일",
  "flutter.parent_heights": "부모 신장 — 유전적 목표와 궤적을 활성화합니다",
  "flutter.save": "저장",
- "flutter.saved_ok": "저장됨"
+ "flutter.saved_ok": "저장됨",
+ "flutter.coach.no_match": "준비된 답변과 연결하지 못했습니다. 다시 표현하거나 추천 질문을 누르거나 소아과 의사에게 문의하세요. (이 코치는 검증된 라이브러리에서 답하며 실시간 AI를 사용하지 않습니다.)",
+ "flutter.coach.no_questions": "이 카테고리에 추천 질문이 아직 없습니다 — 아래에서 직접 물어보세요."
 }

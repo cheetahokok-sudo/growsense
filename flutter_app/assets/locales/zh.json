@@ -348,5 +348,7 @@
  "flutter.dob": "出生日期",
  "flutter.parent_heights": "父母身高——解锁遗传目标与轨迹",
  "flutter.save": "保存",
- "flutter.saved_ok": "已保存"
+ "flutter.saved_ok": "已保存",
+ "flutter.coach.no_match": "我无法将其匹配到已准备的回答。请换个说法、点选建议问题，或咨询儿科医生。（本教练基于已核实的知识库作答，未使用实时AI。）",
+ "flutter.coach.no_questions": "该分类暂无建议问题——请在下方直接提问。"
 }
