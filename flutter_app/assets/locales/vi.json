@@ -364,5 +364,17 @@
  "flutter.coach.not_sure": "Chưa biết hỏi gì? Chọn chủ đề, chạm câu hỏi, hoặc tự nhập bên dưới.",
  "flutter.coach.thinking_search": "Đang tìm trong thư viện…",
  "flutter.coach.thinking_data": "Đang kiểm tra dữ liệu của {name}…",
- "flutter.coach.new_chat": "Trò chuyện mới"
+ "flutter.coach.new_chat": "Trò chuyện mới",
+ "flutter.illness.severity": "Mức độ",
+ "flutter.illness.mild": "Nhẹ",
+ "flutter.illness.moderate": "Vừa",
+ "flutter.illness.severe": "Nặng",
+ "flutter.illness.meds_given": "Thuốc đã dùng",
+ "flutter.illness.growth_insight": "Thông tin tăng trưởng",
+ "flutter.illness.monitor": "Ghi chiều cao trong 30–60 ngày tới để thấy thay đổi trên biểu đồ.",
+ "flutter.illness.typical": "Thường",
+ "flutter.illness.days": "ngày",
+ "flutter.illness.risk_high": "Có thể làm chậm tăng trưởng",
+ "flutter.illness.risk_moderate": "Theo dõi tăng trưởng",
+ "flutter.illness.risk_neutral": "Không ảnh hưởng tăng trưởng"
 }

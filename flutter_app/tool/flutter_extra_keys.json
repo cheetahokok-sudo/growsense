@@ -126,5 +126,17 @@
   "flutter.coach.not_sure": { "en": "Not sure what to ask? Pick a topic, tap a question, or type your own below.", "th": "ไม่รู้จะถามอะไร? เลือกหัวข้อ แตะคำถาม หรือพิมพ์คำถามของคุณด้านล่าง", "vi": "Chưa biết hỏi gì? Chọn chủ đề, chạm câu hỏi, hoặc tự nhập bên dưới.", "ko": "무엇을 물어볼지 모르겠나요? 주제를 고르거나 질문을 누르거나 아래에 직접 입력하세요.", "zh": "不知道问什么？选个主题、点一个问题，或在下方输入。", "ar": "لا تعرف بماذا تسأل؟ اختر موضوعًا، أو اضغط سؤالًا، أو اكتب سؤالك أدناه." },
   "flutter.coach.thinking_search": { "en": "Searching the library…", "th": "กำลังค้นหาในคลังข้อมูล…", "vi": "Đang tìm trong thư viện…", "ko": "라이브러리를 검색하는 중…", "zh": "正在检索知识库…", "ar": "جارٍ البحث في المكتبة…" },
   "flutter.coach.thinking_data": { "en": "Checking {name}'s data…", "th": "กำลังตรวจข้อมูลของ {name}…", "vi": "Đang kiểm tra dữ liệu của {name}…", "ko": "{name}의 데이터를 확인하는 중…", "zh": "正在核对{name}的数据…", "ar": "جارٍ فحص بيانات {name}…" },
-  "flutter.coach.new_chat": { "en": "New chat", "th": "แชทใหม่", "vi": "Trò chuyện mới", "ko": "새 대화", "zh": "新对话", "ar": "محادثة جديدة" }
+  "flutter.coach.new_chat": { "en": "New chat", "th": "แชทใหม่", "vi": "Trò chuyện mới", "ko": "새 대화", "zh": "新对话", "ar": "محادثة جديدة" },
+  "flutter.illness.severity": { "en": "Severity", "th": "ความรุนแรง", "vi": "Mức độ", "ko": "심각도", "zh": "严重程度", "ar": "الشدّة" },
+  "flutter.illness.mild": { "en": "Mild", "th": "เล็กน้อย", "vi": "Nhẹ", "ko": "경미", "zh": "轻度", "ar": "خفيف" },
+  "flutter.illness.moderate": { "en": "Moderate", "th": "ปานกลาง", "vi": "Vừa", "ko": "중등도", "zh": "中度", "ar": "متوسط" },
+  "flutter.illness.severe": { "en": "Severe", "th": "รุนแรง", "vi": "Nặng", "ko": "심함", "zh": "重度", "ar": "شديد" },
+  "flutter.illness.meds_given": { "en": "Medications given", "th": "ยาที่ได้รับ", "vi": "Thuốc đã dùng", "ko": "투여한 약물", "zh": "使用的药物", "ar": "الأدوية المُعطاة" },
+  "flutter.illness.growth_insight": { "en": "Growth insight", "th": "ข้อมูลด้านการเติบโต", "vi": "Thông tin tăng trưởng", "ko": "성장 관련 안내", "zh": "生长提示", "ar": "ملاحظة عن النمو" },
+  "flutter.illness.monitor": { "en": "Log height over the next 30–60 days so a baseline change would show up on the chart.", "th": "บันทึกส่วนสูงในช่วง 30–60 วันข้างหน้า เพื่อให้เห็นการเปลี่ยนแปลงบนกราฟ", "vi": "Ghi chiều cao trong 30–60 ngày tới để thấy thay đổi trên biểu đồ.", "ko": "앞으로 30–60일 동안 키를 기록하면 변화가 그래프에 나타납니다.", "zh": "在接下来的30–60天记录身高，基线变化就能在图表上显现。", "ar": "سجّل الطول خلال 30–60 يومًا القادمة ليظهر أي تغيّر على الرسم البياني." },
+  "flutter.illness.typical": { "en": "Typical", "th": "โดยทั่วไป", "vi": "Thường", "ko": "일반적", "zh": "通常", "ar": "عادةً" },
+  "flutter.illness.days": { "en": "days", "th": "วัน", "vi": "ngày", "ko": "일", "zh": "天", "ar": "أيام" },
+  "flutter.illness.risk_high": { "en": "May slow growth", "th": "อาจชะลอการเติบโต", "vi": "Có thể làm chậm tăng trưởng", "ko": "성장 지연 가능", "zh": "可能减缓生长", "ar": "قد يبطئ النمو" },
+  "flutter.illness.risk_moderate": { "en": "Watch growth", "th": "ควรเฝ้าดูการเติบโต", "vi": "Theo dõi tăng trưởng", "ko": "성장 관찰", "zh": "留意生长", "ar": "راقب النمو" },
+  "flutter.illness.risk_neutral": { "en": "Growth-neutral", "th": "ไม่กระทบการเติบโต", "vi": "Không ảnh hưởng tăng trưởng", "ko": "성장 영향 없음", "zh": "不影响生长", "ar": "لا يؤثر على النمو" }
 }

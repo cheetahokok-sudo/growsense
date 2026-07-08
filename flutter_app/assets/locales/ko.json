@@ -364,5 +364,17 @@
  "flutter.coach.not_sure": "무엇을 물어볼지 모르겠나요? 주제를 고르거나 질문을 누르거나 아래에 직접 입력하세요.",
  "flutter.coach.thinking_search": "라이브러리를 검색하는 중…",
  "flutter.coach.thinking_data": "{name}의 데이터를 확인하는 중…",
- "flutter.coach.new_chat": "새 대화"
+ "flutter.coach.new_chat": "새 대화",
+ "flutter.illness.severity": "심각도",
+ "flutter.illness.mild": "경미",
+ "flutter.illness.moderate": "중등도",
+ "flutter.illness.severe": "심함",
+ "flutter.illness.meds_given": "투여한 약물",
+ "flutter.illness.growth_insight": "성장 관련 안내",
+ "flutter.illness.monitor": "앞으로 30–60일 동안 키를 기록하면 변화가 그래프에 나타납니다.",
+ "flutter.illness.typical": "일반적",
+ "flutter.illness.days": "일",
+ "flutter.illness.risk_high": "성장 지연 가능",
+ "flutter.illness.risk_moderate": "성장 관찰",
+ "flutter.illness.risk_neutral": "성장 영향 없음"
 }

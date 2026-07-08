@@ -364,5 +364,17 @@
  "flutter.coach.not_sure": "ไม่รู้จะถามอะไร? เลือกหัวข้อ แตะคำถาม หรือพิมพ์คำถามของคุณด้านล่าง",
  "flutter.coach.thinking_search": "กำลังค้นหาในคลังข้อมูล…",
  "flutter.coach.thinking_data": "กำลังตรวจข้อมูลของ {name}…",
- "flutter.coach.new_chat": "แชทใหม่"
+ "flutter.coach.new_chat": "แชทใหม่",
+ "flutter.illness.severity": "ความรุนแรง",
+ "flutter.illness.mild": "เล็กน้อย",
+ "flutter.illness.moderate": "ปานกลาง",
+ "flutter.illness.severe": "รุนแรง",
+ "flutter.illness.meds_given": "ยาที่ได้รับ",
+ "flutter.illness.growth_insight": "ข้อมูลด้านการเติบโต",
+ "flutter.illness.monitor": "บันทึกส่วนสูงในช่วง 30–60 วันข้างหน้า เพื่อให้เห็นการเปลี่ยนแปลงบนกราฟ",
+ "flutter.illness.typical": "โดยทั่วไป",
+ "flutter.illness.days": "วัน",
+ "flutter.illness.risk_high": "อาจชะลอการเติบโต",
+ "flutter.illness.risk_moderate": "ควรเฝ้าดูการเติบโต",
+ "flutter.illness.risk_neutral": "ไม่กระทบการเติบโต"
 }

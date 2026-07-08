@@ -364,5 +364,17 @@
  "flutter.coach.not_sure": "Not sure what to ask? Pick a topic, tap a question, or type your own below.",
  "flutter.coach.thinking_search": "Searching the library…",
  "flutter.coach.thinking_data": "Checking {name}'s data…",
- "flutter.coach.new_chat": "New chat"
+ "flutter.coach.new_chat": "New chat",
+ "flutter.illness.severity": "Severity",
+ "flutter.illness.mild": "Mild",
+ "flutter.illness.moderate": "Moderate",
+ "flutter.illness.severe": "Severe",
+ "flutter.illness.meds_given": "Medications given",
+ "flutter.illness.growth_insight": "Growth insight",
+ "flutter.illness.monitor": "Log height over the next 30–60 days so a baseline change would show up on the chart.",
+ "flutter.illness.typical": "Typical",
+ "flutter.illness.days": "days",
+ "flutter.illness.risk_high": "May slow growth",
+ "flutter.illness.risk_moderate": "Watch growth",
+ "flutter.illness.risk_neutral": "Growth-neutral"
 }

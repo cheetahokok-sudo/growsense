@@ -364,5 +364,17 @@
  "flutter.coach.not_sure": "لا تعرف بماذا تسأل؟ اختر موضوعًا، أو اضغط سؤالًا، أو اكتب سؤالك أدناه.",
  "flutter.coach.thinking_search": "جارٍ البحث في المكتبة…",
  "flutter.coach.thinking_data": "جارٍ فحص بيانات {name}…",
- "flutter.coach.new_chat": "محادثة جديدة"
+ "flutter.coach.new_chat": "محادثة جديدة",
+ "flutter.illness.severity": "الشدّة",
+ "flutter.illness.mild": "خفيف",
+ "flutter.illness.moderate": "متوسط",
+ "flutter.illness.severe": "شديد",
+ "flutter.illness.meds_given": "الأدوية المُعطاة",
+ "flutter.illness.growth_insight": "ملاحظة عن النمو",
+ "flutter.illness.monitor": "سجّل الطول خلال 30–60 يومًا القادمة ليظهر أي تغيّر على الرسم البياني.",
+ "flutter.illness.typical": "عادةً",
+ "flutter.illness.days": "أيام",
+ "flutter.illness.risk_high": "قد يبطئ النمو",
+ "flutter.illness.risk_moderate": "راقب النمو",
+ "flutter.illness.risk_neutral": "لا يؤثر على النمو"
 }

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../growth_math.dart' show ageYearsAt;
 import '../i18n.dart';
+import '../illness_reference.dart';
 import '../theme.dart';
 
 // ── Shared scaffolding ──────────────────────────────────────────────
@@ -579,9 +580,11 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
 
 // ── Illness log ─────────────────────────────────────────────────────
 
-const illnessTypes = [
-  'fever', 'cold', 'flu', 'ear', 'stomach', 'skin', 'injury', 'hospital',
-];
+const _riskColor = {
+  'high': GsColors.flag,
+  'moderate': GsColors.estimated,
+  'neutral': GsColors.accent,
+};
 
 class IllnessLogScreen extends StatefulWidget {
   const IllnessLogScreen(
@@ -594,16 +597,46 @@ class IllnessLogScreen extends StatefulWidget {
 }
 
 class _IllnessLogScreenState extends State<IllnessLogScreen> {
+  IllnessReference? _ref;
   String? _start;
   String? _end;
   String _type = 'fever';
+  String _severity = 'mild';
+  final Set<String> _meds = {};
   final _notes = TextEditingController();
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    IllnessReference.load().then((r) {
+      if (mounted) {
+        setState(() {
+          _ref = r;
+          if (r.illnesses.isNotEmpty) _type = r.illnesses.first.id;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
     _notes.dispose();
     super.dispose();
+  }
+
+  /// Auto-suggest an end date from the illness's typical duration when
+  /// the parent picks a start date and hasn't set an end yet.
+  void _onStartChanged(String? v) {
+    setState(() {
+      _start = v;
+      final ill = _ref?.illness(_type);
+      if (v != null && _end == null && ill != null) {
+        final d = DateTime.parse(v).add(Duration(days: ill.durationMax));
+        final today = DateTime.now();
+        _end = localISO(d.isAfter(today) ? today : d);
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -615,14 +648,25 @@ class _IllnessLogScreenState extends State<IllnessLogScreen> {
       return;
     }
     setState(() => _busy = true);
+    final details = IllnessDetails(
+      severity: _severity,
+      medIds: _meds.toList(),
+      freeText: _notes.text.trim(),
+    );
     final err = await widget.appState.addIllnessEvent(
       startDate: _start!,
       endDate: _end,
       illnessType: _type,
-      notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+      notes: details.encode(),
     );
     if (!mounted) return;
-    setState(() => _busy = false);
+    setState(() {
+      _busy = false;
+      if (err == null) {
+        _meds.clear();
+        _notes.clear();
+      }
+    });
     _snack(context, err, t('medical.illness.add_btn'),
         t('flutter.not_saved', 'Not saved'));
   }
@@ -630,6 +674,24 @@ class _IllnessLogScreenState extends State<IllnessLogScreen> {
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
+    final ref = _ref;
+    if (ref == null) {
+      return Scaffold(
+        appBar: AppBar(
+            title: Text(
+                t('medical.illness.title', 'Development interference log'),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700))),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    final selectedIll = ref.illness(_type);
+    // Medications that carry a growth flag, among those selected.
+    final flaggedMeds = [
+      for (final id in _meds)
+        if (ref.med(id) case final m? when m.risk != 'neutral') m,
+    ];
+
     return ListenableBuilder(
       listenable: widget.appState,
       builder: (context, _) => _ModuleScaffold(
@@ -639,21 +701,70 @@ class _IllnessLogScreenState extends State<IllnessLogScreen> {
           children: [
             DropdownButtonFormField<String>(
               initialValue: _type,
+              isExpanded: true,
               decoration: _dec(t('common.type', 'Type')),
               items: [
-                for (final type in illnessTypes)
+                for (final ill in ref.illnesses)
                   DropdownMenuItem(
-                      value: type,
-                      child: Text(t('medical.illness.type.$type', type),
+                      value: ill.id,
+                      child: Text('${ill.emoji}  ${ill.label}',
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 13))),
               ],
               onChanged: (v) => setState(() => _type = v!),
             ),
-            const SizedBox(height: 10),
+            if (selectedIll != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                  '${t('flutter.illness.typical', 'Typical')}: ${selectedIll.durationMin}–${selectedIll.durationMax} ${t('flutter.illness.days', 'days')} · ${selectedIll.growthNote}',
+                  style:
+                      const TextStyle(fontSize: 10.5, color: GsColors.text3)),
+            ],
+            const SizedBox(height: 12),
+            // Severity segmented control
+            Text(t('flutter.illness.severity', 'Severity'),
+                style: const TextStyle(fontSize: 11.5, color: GsColors.text2)),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                for (final s in ['mild', 'moderate', 'severe'])
+                  Expanded(
+                    child: Padding(
+                      padding:
+                          EdgeInsets.only(right: s == 'severe' ? 0 : 6),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _severity = s),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 9),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: _severity == s
+                                ? (s == 'severe'
+                                    ? GsColors.flag
+                                    : s == 'moderate'
+                                        ? GsColors.estimated
+                                        : GsColors.accent)
+                                : GsColors.surface2,
+                            borderRadius: BorderRadius.circular(GsRadius.sm),
+                          ),
+                          child: Text(t('flutter.illness.$s', s),
+                              style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: _severity == s
+                                      ? Colors.white
+                                      : GsColors.text2)),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
             _DateButton(
               label: t('common.start_date', 'Start date'),
               value: _start,
-              onChanged: (v) => setState(() => _start = v),
+              onChanged: _onStartChanged,
             ),
             const SizedBox(height: 8),
             _DateButton(
@@ -662,7 +773,117 @@ class _IllnessLogScreenState extends State<IllnessLogScreen> {
               value: _end,
               onChanged: (v) => setState(() => _end = v),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
+            // Medications given
+            Text(t('flutter.illness.meds_given', 'Medications given'),
+                style: const TextStyle(fontSize: 11.5, color: GsColors.text2)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final m in ref.medications)
+                  GestureDetector(
+                    onTap: () => setState(() =>
+                        _meds.contains(m.id) ? _meds.remove(m.id) : _meds.add(m.id)),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _meds.contains(m.id)
+                            ? (_riskColor[m.risk] ?? GsColors.accent)
+                                .withValues(alpha: 0.14)
+                            : GsColors.surface2,
+                        borderRadius: BorderRadius.circular(GsRadius.sm),
+                        border: Border.all(
+                            color: _meds.contains(m.id)
+                                ? (_riskColor[m.risk] ?? GsColors.accent)
+                                : Colors.transparent),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            margin: const EdgeInsetsDirectional.only(end: 6),
+                            decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color:
+                                    _riskColor[m.risk] ?? GsColors.accent),
+                          ),
+                          Flexible(
+                            child: Text(m.name,
+                                style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: GsColors.text)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // Growth insight callout for any flagged medication
+            if (flaggedMeds.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: GsColors.estimatedLight,
+                  borderRadius: BorderRadius.circular(GsRadius.sm),
+                  border: Border.all(
+                      color: GsColors.estimated.withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('⚠️', style: TextStyle(fontSize: 14)),
+                        const SizedBox(width: 6),
+                        Text(
+                            t('flutter.illness.growth_insight',
+                                'Growth insight'),
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: GsColors.estimatedDark)),
+                      ],
+                    ),
+                    for (final m in flaggedMeds) ...[
+                      const SizedBox(height: 8),
+                      Text(m.name,
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: _riskColor[m.risk])),
+                      const SizedBox(height: 2),
+                      Text(m.insight,
+                          style: const TextStyle(
+                              fontSize: 11.5,
+                              height: 1.4,
+                              color: GsColors.estimatedDark)),
+                      if (m.citation != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text('Source: ${m.citation}',
+                              style: const TextStyle(
+                                  fontSize: 9, color: GsColors.text3)),
+                        ),
+                    ],
+                    const SizedBox(height: 8),
+                    Text('📏 ${t('flutter.illness.monitor')}',
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: GsColors.estimatedDark)),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
             TextField(
                 controller: _notes,
                 decoration:
@@ -681,12 +902,23 @@ class _IllnessLogScreenState extends State<IllnessLogScreen> {
           items: widget.appState.illnessEvents,
           onDelete: (r) =>
               widget.appState.deleteIllnessEvent(r['event_id']),
-          rowBuilder: (r) => _TwoLine(
-            title:
-                '🤒 ${t('medical.illness.type.${r['illness_type']}', r['illness_type'] as String? ?? '')}',
-            meta:
-                '${r['start_date'] ?? ''} → ${r['end_date'] ?? t('flutter.ongoing', 'ongoing')}${r['notes'] != null ? ' · ${r['notes']}' : ''}',
-          ),
+          rowBuilder: (r) {
+            final ill = ref.illness(r['illness_type'] as String? ?? '');
+            final details =
+                IllnessDetails.decode(r['notes'] as String?);
+            final sev = details.severity;
+            final hasFlaggedMed = details.medIds.any(
+                (id) => (ref.med(id)?.risk ?? 'neutral') != 'neutral');
+            final title =
+                '${ill?.emoji ?? '🤒'} ${ill?.label ?? r['illness_type'] ?? ''}'
+                '${sev != null ? ' · ${t('flutter.illness.$sev', sev)}' : ''}'
+                '${hasFlaggedMed ? ' ⚠️' : ''}';
+            return _TwoLine(
+              title: title,
+              meta:
+                  '${r['start_date'] ?? ''} → ${r['end_date'] ?? t('flutter.ongoing', 'ongoing')}${details.freeText.isNotEmpty ? ' · ${details.freeText}' : ''}',
+            );
+          },
         ),
       ),
     );
