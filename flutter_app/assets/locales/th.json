@@ -499,6 +499,7 @@
  "flutter.share.no_child": "เพิ่มโปรไฟล์ลูกก่อน",
  "flutter.share.need_email": "กรอกอีเมลแพทย์หรือนักวิจัย",
  "flutter.sub.redeem_label": "รหัสเปิดใช้งาน",
+ "flutter.sub.redeem_toggle": "มีรหัสเปิดใช้งานไหม?",
  "flutter.sub.activate": "เปิดใช้งาน",
  "flutter.sub.activating": "กำลังเปิดใช้งาน…",
  "flutter.legal.title": "ช่วยเหลือและกฎหมาย",

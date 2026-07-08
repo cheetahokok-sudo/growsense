@@ -499,6 +499,7 @@
  "flutter.share.no_child": "请先添加孩子档案",
  "flutter.share.need_email": "请输入医生或研究者的邮箱",
  "flutter.sub.redeem_label": "激活码",
+ "flutter.sub.redeem_toggle": "有激活码？",
  "flutter.sub.activate": "激活",
  "flutter.sub.activating": "激活中…",
  "flutter.legal.title": "支持与法律",

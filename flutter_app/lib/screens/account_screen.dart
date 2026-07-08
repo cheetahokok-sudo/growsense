@@ -439,6 +439,10 @@ class _RedeemRowState extends State<_RedeemRow> {
   final _code = TextEditingController();
   bool _busy = false;
 
+  // Collapsed by default — redeeming a code happens maybe once a year,
+  // so it shouldn't take permanent space in the subscription card.
+  bool _expanded = false;
+
   @override
   void dispose() {
     _code.dispose();
@@ -450,8 +454,13 @@ class _RedeemRowState extends State<_RedeemRow> {
     final (msg, err) =
         await widget.appState.redeemActivationCode(_code.text);
     if (!mounted) return;
-    setState(() => _busy = false);
-    if (err == null) _code.clear();
+    setState(() {
+      _busy = false;
+      if (err == null) {
+        _code.clear();
+        _expanded = false; // job done — tuck it away again
+      }
+    });
     ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(err == null ? '🎉 $msg' : '⚠️ $err')));
   }
@@ -459,14 +468,40 @@ class _RedeemRowState extends State<_RedeemRow> {
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
-    // Stacked (not a Row): a TextField in a Row here blows up layout
-    // with "BoxConstraints forces an infinite width" inside the
-    // stretch-Column card on web — and full-width reads better anyway.
+    if (!_expanded) {
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: InkWell(
+          onTap: () => setState(() => _expanded = true),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🎟️', style: TextStyle(fontSize: 13)),
+                const SizedBox(width: 6),
+                Text(
+                    t('flutter.sub.redeem_toggle',
+                        'Have an activation code?'),
+                    style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: GsColors.accent)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    // Stacked (not a Row): the theme's ElevatedButton has an
+    // infinite-width minimumSize, which explodes inside a Row.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
           controller: _code,
+          autofocus: true,
           textCapitalization: TextCapitalization.characters,
           decoration: InputDecoration(
               labelText: t('flutter.sub.redeem_label', 'Activation code'),
@@ -474,13 +509,26 @@ class _RedeemRowState extends State<_RedeemRow> {
           style: const TextStyle(fontSize: 13, letterSpacing: 1),
         ),
         const SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: _busy ? null : _redeem,
-          child: Text(
-              _busy
-                  ? t('flutter.sub.activating', 'Activating…')
-                  : t('flutter.sub.activate', 'Activate'),
-              style: const TextStyle(fontSize: 12.5)),
+        Row(
+          children: [
+            TextButton(
+              onPressed: () => setState(() => _expanded = false),
+              child: Text(t('common.cancel', 'Cancel'),
+                  style: const TextStyle(
+                      fontSize: 12, color: GsColors.text3)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _busy ? null : _redeem,
+                child: Text(
+                    _busy
+                        ? t('flutter.sub.activating', 'Activating…')
+                        : t('flutter.sub.activate', 'Activate'),
+                    style: const TextStyle(fontSize: 12.5)),
+              ),
+            ),
+          ],
         ),
       ],
     );

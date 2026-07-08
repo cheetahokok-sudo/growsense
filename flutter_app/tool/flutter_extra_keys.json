@@ -261,6 +261,7 @@
   "flutter.share.no_child": { "en": "Add a child profile first", "th": "เพิ่มโปรไฟล์ลูกก่อน", "vi": "Hãy thêm hồ sơ trẻ trước", "ko": "먼저 자녀 프로필을 추가하세요", "zh": "请先添加孩子档案", "ar": "أضف ملف طفل أولًا" },
   "flutter.share.need_email": { "en": "Enter the doctor or researcher's email", "th": "กรอกอีเมลแพทย์หรือนักวิจัย", "vi": "Nhập email bác sĩ hoặc nhà nghiên cứu", "ko": "의사 또는 연구자의 이메일을 입력하세요", "zh": "请输入医生或研究者的邮箱", "ar": "أدخل بريد الطبيب أو الباحث" },
   "flutter.sub.redeem_label": { "en": "Activation code", "th": "รหัสเปิดใช้งาน", "vi": "Mã kích hoạt", "ko": "활성화 코드", "zh": "激活码", "ar": "رمز التفعيل" },
+  "flutter.sub.redeem_toggle": { "en": "Have an activation code?", "th": "มีรหัสเปิดใช้งานไหม?", "vi": "Có mã kích hoạt?", "ko": "활성화 코드가 있나요?", "zh": "有激活码？", "ar": "لديك رمز تفعيل؟" },
   "flutter.sub.activate": { "en": "Activate", "th": "เปิดใช้งาน", "vi": "Kích hoạt", "ko": "활성화", "zh": "激活", "ar": "تفعيل" },
   "flutter.sub.activating": { "en": "Activating…", "th": "กำลังเปิดใช้งาน…", "vi": "Đang kích hoạt…", "ko": "활성화 중…", "zh": "激活中…", "ar": "جارٍ التفعيل…" },
   "flutter.legal.title": { "en": "Support & legal", "th": "ช่วยเหลือและกฎหมาย", "vi": "Hỗ trợ & pháp lý", "ko": "지원 및 법적 고지", "zh": "支持与法律", "ar": "الدعم والشؤون القانونية" },

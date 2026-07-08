@@ -499,6 +499,7 @@
  "flutter.share.no_child": "Add a child profile first",
  "flutter.share.need_email": "Enter the doctor or researcher's email",
  "flutter.sub.redeem_label": "Activation code",
+ "flutter.sub.redeem_toggle": "Have an activation code?",
  "flutter.sub.activate": "Activate",
  "flutter.sub.activating": "Activating…",
  "flutter.legal.title": "Support & legal",
