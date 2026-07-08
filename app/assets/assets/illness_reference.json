@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "name": "Illness & medication growth-interference reference",
+    "created": "2026-07-08",
+    "note": "Powers the Development interference log. Common childhood illnesses with typical durations + the growth mechanism, and medications classified by growth-interference risk. Parent-friendly wording deliberately avoids alarm: the point is that PROLONGED / frequent / high-dose exposure matters, not a single short course. Citations only where web-verified, matching the project's no-fabrication rule.",
+    "risk_tiers": "high = documented growth-velocity suppression with prolonged/frequent use; moderate = plausible slowing (usually via appetite) or small effect; neutral = no direct hormonal growth effect."
+  },
+
+  "illnesses": [
+    { "id": "fever", "emoji": "🌡️", "label": "Fever (unspecified)", "durationDays": [1, 3], "growthNote": "Fever raises the body's energy demand and usually dips appetite for a few days. Brief episodes rarely touch the growth curve; it's repeated or prolonged fevers that are worth watching." },
+    { "id": "cold", "emoji": "🤧", "label": "Cold / upper respiratory", "durationDays": [7, 10], "growthNote": "A common cold is mild for growth — some appetite drop, quick recovery. No lasting effect on height in a well-nourished child." },
+    { "id": "flu", "emoji": "🤒", "label": "Influenza (flu)", "durationDays": [5, 10], "growthNote": "High metabolic demand — fever burns extra calories — combined with poor appetite. A single bout is temporary; frequent flu seasons with poor intake can show as a brief weight dip." },
+    { "id": "rsv", "emoji": "🫁", "label": "RSV / bronchiolitis", "durationDays": [5, 14], "growthNote": "The extra effort of breathing plus poor feeding, especially in infants, can cause a short weight drop. Weight usually recovers once breathing eases." },
+    { "id": "covid", "emoji": "🦠", "label": "COVID-19", "durationDays": [5, 10], "growthNote": "Variable — often mild in children, with an appetite and energy dip. Watch intake during the illness; effect on growth is usually short-lived." },
+    { "id": "gastroenteritis", "emoji": "🤢", "label": "Gastroenteritis (diarrhea/vomiting)", "durationDays": [3, 7], "growthNote": "The biggest acute growth risk on this list: diarrhea and vomiting cause nutrient malabsorption and real weight loss, and moderate-to-severe or repeated episodes can briefly stall height velocity too. Rehydration and rebuilding intake afterward matter." },
+    { "id": "hfmd", "emoji": "🖐️", "label": "Hand, foot & mouth (HFMD)", "durationDays": [7, 10], "growthNote": "Painful mouth sores lead children to refuse food and fluids, causing a rapid short-term weight drop. Soft, cool foods and hydration through the sore-throat days limit the dip." },
+    { "id": "strep", "emoji": "😣", "label": "Strep throat", "durationDays": [3, 5], "growthNote": "Painful swallowing restricts calorie intake for a few days. With antibiotics it resolves quickly and intake — and weight — bounce back." },
+    { "id": "asthma_flare", "emoji": "💨", "label": "Asthma flare-up", "durationDays": [3, 5], "growthNote": "The flare itself is short, but recurrent flares mean systemic inflammation and reliance on steroids — so the medication log below matters as much as the illness itself for growth." },
+    { "id": "ear", "emoji": "👂", "label": "Ear infection", "durationDays": [3, 7], "growthNote": "Pain and disrupted sleep can dampen appetite briefly. Minor for growth on its own; frequent recurrences are worth mentioning to a doctor." },
+    { "id": "skin", "emoji": "🩹", "label": "Skin / rash", "durationDays": [3, 10], "growthNote": "Most rashes have no growth effect. The exception is when a rash is treated with prolonged systemic steroids — track that in the medication log." },
+    { "id": "injury", "emoji": "🩼", "label": "Injury", "durationDays": [7, 42], "growthNote": "Most injuries don't affect growth. A growth-plate (physeal) fracture is the exception and needs orthopedic follow-up, since it can affect the length of that specific bone." },
+    { "id": "hospital", "emoji": "🏥", "label": "Hospitalization", "durationDays": [2, 14], "growthNote": "A hospital stay usually signals a more significant illness — the acute stress, reduced intake, and any medications together can produce a visible growth pause. Careful height tracking over the following 1–2 months shows whether catch-up is happening." },
+    { "id": "other", "emoji": "📋", "label": "Other", "durationDays": [1, 7], "growthNote": "Log the dates and any medications given. If growth stalls around this period on the chart, it's useful context for your pediatrician." }
+  ],
+
+  "medications": [
+    { "id": "oral_steroid", "name": "Oral steroid (Prednisolone / Prednisone)", "drugClass": "Systemic corticosteroid", "risk": "high",
+      "insight": "Systemic steroids are the medication class most clearly linked to slowed growth — they lower growth hormone and IGF-1 and slow the growth plates directly. The key nuance: a single short burst (under ~2 weeks) is generally low-risk. The concern is prolonged use (more than a few weeks), high doses, or many repeated short courses. If your child has had a longer or repeated course, log height carefully over the next 1–2 months.",
+      "citation": "PubMed — PMID/ID: 17675727 — \"Minimizing side effects of systemic corticosteroids in children\" — Indian J Dermatol Venereol Leprol — 2007", "citation_verified_date": "2026-07-08" },
+    { "id": "dexamethasone", "name": "Dexamethasone / Betamethasone", "drugClass": "Systemic corticosteroid (high potency)", "risk": "high",
+      "insight": "These are much stronger than prednisolone at suppressing growth — roughly 18 times the potency for the same effect — so even shorter courses deserve attention if they're repeated (for example, frequent croup or asthma treatment). Not a reason to skip a needed dose; a reason to track height and discuss frequency with your doctor.",
+      "citation": "PubMed — PMID/ID: 17675727 — \"Minimizing side effects of systemic corticosteroids in children\" — Indian J Dermatol Venereol Leprol — 2007", "citation_verified_date": "2026-07-08" },
+    { "id": "inhaled_steroid", "name": "Inhaled steroid (Fluticasone / Budesonide)", "drugClass": "Inhaled corticosteroid", "risk": "moderate",
+      "insight": "Daily inhaled steroids for asthma are largely safe and far lower-dose to the body than oral steroids. Long-term use is linked to a small reduction in adult height — on the order of 1 cm — which is non-progressive and generally outweighed by keeping the asthma controlled. Worth tracking, not worth stopping over.",
+      "citation": "PMC — PMID/ID: PMC3517799 — \"Effect of Inhaled Glucocorticoids in Childhood on Adult Height\" — N Engl J Med — 2012", "citation_verified_date": "2026-07-08" },
+    { "id": "adhd_stimulant", "name": "ADHD stimulant (Methylphenidate / Amphetamine)", "drugClass": "CNS stimulant", "risk": "moderate",
+      "insight": "Stimulants suppress appetite, so months-to-years of use can lower weight and then secondarily slow height velocity. The effect is dose-related and largely happens during treatment; final adult height appears little affected for most children. Taking the dose with meals, protein-rich snacks when appetite returns, and watching the growth chart usually let treatment continue safely.",
+      "citation": "PMC — PMID/ID: PMC9627528 — \"Effect of stimulants on final adult height\" — 2022", "citation_verified_date": "2026-07-08" },
+    { "id": "antibiotic", "name": "Antibiotic (Amoxicillin / Azithromycin)", "drugClass": "Antibiotic", "risk": "neutral",
+      "insight": "Antibiotics don't act on growth hormones, so a course to treat an infection is growth-neutral. The only indirect consideration is that very frequent courses can temporarily disturb the gut microbiome and nutrient absorption — so they're useful to track for the pattern, not because a single course affects height.",
+      "citation": null },
+    { "id": "other_med", "name": "Other medication", "drugClass": "Other", "risk": "neutral",
+      "insight": "Logged for your records. If a medication is taken for many weeks and growth slows around the same period on the chart, that timing is useful information for your pediatrician.",
+      "citation": null }
+  ]
+}
