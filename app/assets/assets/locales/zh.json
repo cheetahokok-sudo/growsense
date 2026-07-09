@@ -555,5 +555,7 @@
  "flutter.auth.new_password": "新密码",
  "flutter.auth.update_password": "保存新密码",
  "flutter.who.standards_0_5": "WHO儿童生长标准",
- "flutter.who.reference_5_19": "WHO 2007"
+ "flutter.who.reference_5_19": "WHO 2007",
+ "flutter.chart.all_years": "全部年份",
+ "flutter.chart.focus_recent": "聚焦"
 }

@@ -555,5 +555,7 @@
  "flutter.auth.new_password": "รหัสผ่านใหม่",
  "flutter.auth.update_password": "บันทึกรหัสผ่านใหม่",
  "flutter.who.standards_0_5": "มาตรฐานการเจริญเติบโตเด็ก WHO",
- "flutter.who.reference_5_19": "WHO 2007"
+ "flutter.who.reference_5_19": "WHO 2007",
+ "flutter.chart.all_years": "ทุกปี",
+ "flutter.chart.focus_recent": "โฟกัส"
 }
