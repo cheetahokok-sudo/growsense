@@ -557,5 +557,18 @@
  "flutter.who.standards_0_5": "WHO Child Growth Standards",
  "flutter.who.reference_5_19": "WHO 2007",
  "flutter.chart.all_years": "All years",
- "flutter.chart.focus_recent": "Focus"
+ "flutter.chart.focus_recent": "Focus",
+ "flutter.th.refine_toggle": "Refine with grandparents' heights",
+ "flutter.th.refine_intro": "If a parent's own height was limited by childhood undernutrition or illness, mid-parental height can underestimate — those effects are largely environmental, not inherited. Grandparents' heights give an exploratory second view.",
+ "flutter.th.exploratory": "EXPLORATORY",
+ "flutter.th.vs_parents": "vs parents-only",
+ "flutter.th.records_used": "{n} recorded",
+ "flutter.th.disclaimer": "Exploratory — there is no validated method for weighting grandparent heights. This blends the parents-only estimate (70%) with a sex-adjusted grandparent average (30%); the 70/30 ratio is an arbitrary choice, not a research constant. A \"what-if\", not a more accurate number.",
+ "flutter.th.citation": "Rationale: adult height is strongly shaped by early-life nutrition across generations — NCD-RisC, eLife 2016 (PMID 27458798).",
+ "flutter.th.save": "Save family heights",
+ "flutter.th.saved": "Family heights saved",
+ "flutter.family.maternal_grandmother": "Maternal grandmother",
+ "flutter.family.maternal_grandfather": "Maternal grandfather",
+ "flutter.family.paternal_grandmother": "Paternal grandmother",
+ "flutter.family.paternal_grandfather": "Paternal grandfather"
 }

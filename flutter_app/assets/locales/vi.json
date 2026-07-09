@@ -557,5 +557,18 @@
  "flutter.who.standards_0_5": "Chuẩn tăng trưởng trẻ em WHO",
  "flutter.who.reference_5_19": "WHO 2007",
  "flutter.chart.all_years": "Tất cả",
- "flutter.chart.focus_recent": "Tập trung"
+ "flutter.chart.focus_recent": "Tập trung",
+ "flutter.th.refine_toggle": "Tinh chỉnh bằng chiều cao ông bà",
+ "flutter.th.refine_intro": "Nếu chiều cao của cha/mẹ bị hạn chế do thiếu dinh dưỡng hoặc bệnh tật thời thơ ấu, chiều cao trung bình cha mẹ có thể bị thấp — những ảnh hưởng đó chủ yếu do môi trường, không di truyền. Chiều cao ông bà cho một góc nhìn thứ hai mang tính khám phá.",
+ "flutter.th.exploratory": "THĂM DÒ",
+ "flutter.th.vs_parents": "so với chỉ cha mẹ",
+ "flutter.th.records_used": "{n} đã ghi",
+ "flutter.th.disclaimer": "Thăm dò — không có phương pháp được kiểm chứng để tính trọng số chiều cao ông bà. Cách này trộn ước tính chỉ cha mẹ (70%) với trung bình ông bà điều chỉnh theo giới (30%); tỷ lệ 70/30 là lựa chọn tùy ý, không phải hằng số nghiên cứu. Là \"giả định\", không phải con số chính xác hơn.",
+ "flutter.th.citation": "Cơ sở: chiều cao người lớn chịu ảnh hưởng mạnh từ dinh dưỡng đầu đời qua các thế hệ — NCD-RisC, eLife 2016 (PMID 27458798).",
+ "flutter.th.save": "Lưu chiều cao gia đình",
+ "flutter.th.saved": "Đã lưu chiều cao gia đình",
+ "flutter.family.maternal_grandmother": "Bà ngoại",
+ "flutter.family.maternal_grandfather": "Ông ngoại",
+ "flutter.family.paternal_grandmother": "Bà nội",
+ "flutter.family.paternal_grandfather": "Ông nội"
 }

@@ -557,5 +557,18 @@
  "flutter.who.standards_0_5": "มาตรฐานการเจริญเติบโตเด็ก WHO",
  "flutter.who.reference_5_19": "WHO 2007",
  "flutter.chart.all_years": "ทุกปี",
- "flutter.chart.focus_recent": "โฟกัส"
+ "flutter.chart.focus_recent": "โฟกัส",
+ "flutter.th.refine_toggle": "ปรับด้วยส่วนสูงของปู่ย่าตายาย",
+ "flutter.th.refine_intro": "หากส่วนสูงของพ่อแม่ถูกจำกัดด้วยภาวะขาดสารอาหารหรือเจ็บป่วยในวัยเด็ก ค่ากึ่งกลางพ่อแม่อาจต่ำกว่าจริง — ผลเหล่านั้นมาจากสิ่งแวดล้อมเป็นหลัก ไม่ใช่พันธุกรรม ส่วนสูงของปู่ย่าตายายให้มุมมองที่สองแบบสำรวจ",
+ "flutter.th.exploratory": "เชิงสำรวจ",
+ "flutter.th.vs_parents": "เทียบกับพ่อแม่เท่านั้น",
+ "flutter.th.records_used": "บันทึก {n} คน",
+ "flutter.th.disclaimer": "เชิงสำรวจ — ยังไม่มีวิธีที่ผ่านการตรวจสอบสำหรับการถ่วงน้ำหนักส่วนสูงปู่ย่าตายาย นี่ผสมค่าประเมินจากพ่อแม่ (70%) กับค่าเฉลี่ยปู่ย่าตายายที่ปรับตามเพศ (30%) อัตรา 70/30 เป็นการเลือกโดยพลการ ไม่ใช่ค่าคงที่จากงานวิจัย เป็น \"สมมติว่า\" ไม่ใช่ตัวเลขที่แม่นยำกว่า",
+ "flutter.th.citation": "เหตุผล: ส่วนสูงผู้ใหญ่ได้รับอิทธิพลอย่างมากจากโภชนาการช่วงต้นชีวิตข้ามรุ่น — NCD-RisC, eLife 2016 (PMID 27458798)",
+ "flutter.th.save": "บันทึกส่วนสูงครอบครัว",
+ "flutter.th.saved": "บันทึกส่วนสูงครอบครัวแล้ว",
+ "flutter.family.maternal_grandmother": "ยาย",
+ "flutter.family.maternal_grandfather": "ตา",
+ "flutter.family.paternal_grandmother": "ย่า",
+ "flutter.family.paternal_grandfather": "ปู่"
 }

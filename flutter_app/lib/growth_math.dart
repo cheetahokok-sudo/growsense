@@ -299,6 +299,67 @@ TargetHeight? calculateTargetHeight({
       correctedZ, tanner);
 }
 
+class ExtendedTargetHeight {
+  final double targetHeightCm;
+  final double rangeLowCm;
+  final double rangeHighCm;
+  final int recordsUsed;
+  final double deltaVsParentsCm; // signed difference vs the validated result
+  ExtendedTargetHeight(this.targetHeightCm, this.rangeLowCm, this.rangeHighCm,
+      this.recordsUsed, this.deltaVsParentsCm);
+}
+
+/// EXPLORATORY extended-family estimate. There is NO peer-reviewed
+/// method for weighting grandparent heights into a child prediction —
+/// this blends the validated parents-only estimate (70%) with a
+/// sex-adjusted average of the recorded grandparents (30%). The 70/30
+/// ratio is a deliberate, arbitrary choice, not a researched constant.
+/// Its intended use is the specific case where a parent's own stature
+/// was suppressed by early-life undernutrition/illness (which is
+/// largely environmental and non-heritable — see NCD-RisC, eLife 2016,
+/// PMID 27458798), so mid-parental may underestimate a child raised in
+/// better conditions. Never present as more accurate than the
+/// parents-only result.
+ExtendedTargetHeight? calculateExtendedTargetHeight({
+  required double? motherHeightCm,
+  required double? fatherHeightCm,
+  int? motherAge,
+  int? fatherAge,
+  required String? childSex,
+  required List<({double heightCm, bool female})> grandparents,
+}) {
+  final base = calculateTargetHeight(
+    motherHeightCm: motherHeightCm,
+    fatherHeightCm: fatherHeightCm,
+    motherAge: motherAge,
+    fatherAge: fatherAge,
+    childSex: childSex,
+  );
+  if (base == null || grandparents.isEmpty) return null;
+  final sex = childSex == 'female' ? 'female' : 'male';
+
+  // Average sex-adjusted z of the recorded grandparents, then apply the
+  // same regression-to-the-mean shrinkage the parents-only method uses.
+  double gpZSum = 0;
+  for (final g in grandparents) {
+    final s = g.female ? 'female' : 'male';
+    gpZSum += (g.heightCm - adultMean[s]!) / adultSD[s]!;
+  }
+  final gpMeanZ = gpZSum / grandparents.length;
+  final gpCorrectedZ = 0.79 * gpMeanZ - 0.077;
+
+  final blendedZ = 0.70 * base.correctedZ + 0.30 * gpCorrectedZ;
+  final target = adultMean[sex]! + blendedZ * adultSD[sex]!;
+  final residualSD = sex == 'female' ? 4.2 : 4.5;
+  return ExtendedTargetHeight(
+    target,
+    target - residualSD,
+    target + residualSD,
+    grandparents.length,
+    target - base.targetHeightCm,
+  );
+}
+
 // ── Trajectory projection ───────────────────────────────────────────
 
 class ProjectionPoint {

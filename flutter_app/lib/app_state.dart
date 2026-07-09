@@ -795,6 +795,54 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // ── Extended-family heights (family_height_records) ─────────────────
+  // Grandparent heights for the EXPLORATORY target-height estimate.
+
+  Future<Map<String, double>> loadFamilyHeights() async {
+    final childId = activeChildId;
+    if (childId == null) return {};
+    try {
+      final rows = await sb
+          .from('family_height_records')
+          .select('relation, height_cm')
+          .eq('child_id', childId);
+      final out = <String, double>{};
+      for (final r in rows) {
+        final rel = r['relation'] as String?;
+        final h = (r['height_cm'] as num?)?.toDouble();
+        if (rel != null && h != null) out[rel] = h; // latest wins
+      }
+      return out;
+    } on PostgrestException {
+      return {};
+    }
+  }
+
+  /// Replace the stored height for one relation (delete-then-insert
+  /// keeps a single current value per relation). Pass null to clear.
+  Future<String?> setFamilyHeight(String relation, double? heightCm) async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    try {
+      await sb
+          .from('family_height_records')
+          .delete()
+          .eq('child_id', childId)
+          .eq('relation', relation);
+      if (heightCm != null) {
+        await sb.from('family_height_records').insert({
+          'child_id': childId,
+          'relation': relation,
+          'height_cm': heightCm,
+          'created_by': sb.auth.currentUser?.id,
+        });
+      }
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
   // ── Unit preference ('metric' | 'imperial'), display-level only ────
   String units = 'metric';
 
