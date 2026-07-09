@@ -553,5 +553,7 @@
  "flutter.auth.reset_sent": "أُرسل رابط إعادة التعيين — افتح البريد واضغط الرابط لاختيار كلمة مرور جديدة.",
  "flutter.auth.new_password_title": "اختر كلمة مرور جديدة",
  "flutter.auth.new_password": "كلمة مرور جديدة",
- "flutter.auth.update_password": "تعيين كلمة المرور الجديدة"
+ "flutter.auth.update_password": "تعيين كلمة المرور الجديدة",
+ "flutter.who.standards_0_5": "معايير نمو الطفل WHO",
+ "flutter.who.reference_5_19": "WHO 2007"
 }

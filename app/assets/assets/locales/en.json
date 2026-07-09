@@ -553,5 +553,7 @@
  "flutter.auth.reset_sent": "Reset link sent — open the email and tap the link to choose a new password.",
  "flutter.auth.new_password_title": "Choose a new password",
  "flutter.auth.new_password": "New password",
- "flutter.auth.update_password": "Set new password"
+ "flutter.auth.update_password": "Set new password",
+ "flutter.who.standards_0_5": "WHO Child Growth Standards",
+ "flutter.who.reference_5_19": "WHO 2007"
 }

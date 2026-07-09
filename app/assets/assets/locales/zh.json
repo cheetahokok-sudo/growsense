@@ -553,5 +553,7 @@
  "flutter.auth.reset_sent": "重置链接已发送——打开邮件并点击链接设置新密码。",
  "flutter.auth.new_password_title": "设置新密码",
  "flutter.auth.new_password": "新密码",
- "flutter.auth.update_password": "保存新密码"
+ "flutter.auth.update_password": "保存新密码",
+ "flutter.who.standards_0_5": "WHO儿童生长标准",
+ "flutter.who.reference_5_19": "WHO 2007"
 }

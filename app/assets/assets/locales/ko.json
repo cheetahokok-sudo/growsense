@@ -553,5 +553,7 @@
  "flutter.auth.reset_sent": "재설정 링크를 보냈습니다 — 이메일을 열고 링크를 눌러 새 비밀번호를 설정하세요.",
  "flutter.auth.new_password_title": "새 비밀번호 설정",
  "flutter.auth.new_password": "새 비밀번호",
- "flutter.auth.update_password": "새 비밀번호 저장"
+ "flutter.auth.update_password": "새 비밀번호 저장",
+ "flutter.who.standards_0_5": "WHO 아동 성장 표준",
+ "flutter.who.reference_5_19": "WHO 2007"
 }
