@@ -8,6 +8,7 @@ import '../app_state.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import '../units.dart';
 import 'bone_age_screen.dart';
 import 'medical_modules.dart';
 
@@ -95,7 +96,10 @@ class _MedicalScreenState extends State<MedicalScreen> {
                 readiness: _readiness,
                 i18n: widget.i18n),
             const SizedBox(height: 12),
-            _TargetHeightCard(child: child, i18n: widget.i18n),
+            _TargetHeightCard(
+                child: child,
+                i18n: widget.i18n,
+                units: widget.appState.units),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 2),
@@ -417,7 +421,7 @@ class _ChartCardState extends State<_ChartCard> {
         final bands = interpolateBands(heightTable, age * 12);
         final z = zFromHeight(bands, v);
         readout =
-            '${v.toStringAsFixed(1)} cm · ${age.toStringAsFixed(1)}y · P${zToPercentile(z).round()} ${t('flutter.percentile', 'percentile')} (z ${z >= 0 ? '+' : ''}${z.toStringAsFixed(2)})';
+            '${formatHeight(v, widget.appState.units)} · ${age.toStringAsFixed(1)}y · P${zToPercentile(z).round()} ${t('flutter.percentile', 'percentile')} (z ${z >= 0 ? '+' : ''}${z.toStringAsFixed(2)})';
         final target = calculateTargetHeight(
           motherHeightCm: (child['mother_height_cm'] as num?)?.toDouble(),
           fatherHeightCm: (child['father_height_cm'] as num?)?.toDouble(),
@@ -850,9 +854,11 @@ class _GrowthChartPainter extends CustomPainter {
 // ── Target height card ──────────────────────────────────────────────
 
 class _TargetHeightCard extends StatelessWidget {
-  const _TargetHeightCard({required this.child, required this.i18n});
+  const _TargetHeightCard(
+      {required this.child, required this.i18n, this.units = 'metric'});
   final Map<String, dynamic> child;
   final I18n i18n;
+  final String units;
 
   @override
   Widget build(BuildContext context) {
@@ -888,15 +894,15 @@ class _TargetHeightCard extends StatelessWidget {
                         color: GsColors.estimatedDark)),
                 const SizedBox(height: 6),
                 Text(
-                    '${target.targetHeightCm.toStringAsFixed(1)} cm '
-                    '(${t('flutter.range', 'range')} ${target.rangeLowCm.toStringAsFixed(1)}–${target.rangeHighCm.toStringAsFixed(1)})',
+                    '${formatHeight(target.targetHeightCm, units)} '
+                    '(${t('flutter.range', 'range')} ${formatHeight(target.rangeLowCm, units)}–${formatHeight(target.rangeHighCm, units)})',
                     style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: GsColors.estimatedDark)),
                 const SizedBox(height: 4),
                 Text(
-                    '${t('flutter.target_method')} ${target.tannerMidParentalCm.toStringAsFixed(1)} cm.',
+                    '${t('flutter.target_method')} ${formatHeight(target.tannerMidParentalCm, units)}.',
                     style: const TextStyle(
                         fontSize: 10.5, color: GsColors.estimatedDark)),
               ],
@@ -941,8 +947,10 @@ class _EntryCardState extends State<_EntryCard> {
       return;
     }
     setState(() => _busy = true);
-    final err = await widget.appState
-        .addMeasurement(date: _date, heightCm: h, weightKg: w);
+    // Entry values follow the display units; storage is always metric.
+    final u = widget.appState.units;
+    final err = await widget.appState.addMeasurement(
+        date: _date, heightCm: entryToCm(h, u), weightKg: entryToKg(w, u));
     if (!mounted) return;
     setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -1013,8 +1021,9 @@ class _EntryCardState extends State<_EntryCard> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                      labelText:
-                          widget.i18n.t('common.height_cm', 'Height (cm)'),
+                      labelText: widget.appState.units == 'imperial'
+                          ? '${widget.i18n.t('flutter.height', 'Height')} (in)'
+                          : widget.i18n.t('common.height_cm', 'Height (cm)'),
                       isDense: true),
                 ),
               ),
@@ -1025,8 +1034,9 @@ class _EntryCardState extends State<_EntryCard> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                      labelText:
-                          widget.i18n.t('common.weight_kg', 'Weight (kg)'),
+                      labelText: widget.appState.units == 'imperial'
+                          ? '${widget.i18n.t('flutter.weight', 'Weight')} (lb)'
+                          : widget.i18n.t('common.weight_kg', 'Weight (kg)'),
                       isDense: true),
                 ),
               ),
@@ -1099,8 +1109,8 @@ class _HistoryCard extends StatelessWidget {
                         style: const TextStyle(fontSize: 12.5)),
                   ),
                   Text(
-                    '${(m['stature_height_cm'] as num?)?.toStringAsFixed(1)} cm · '
-                    '${(m['mass_weight_kg'] as num?)?.toStringAsFixed(1)} kg',
+                    '${formatHeight((m['stature_height_cm'] as num?)?.toDouble() ?? 0, appState.units)} · '
+                    '${formatWeight((m['mass_weight_kg'] as num?)?.toDouble() ?? 0, appState.units)}',
                     style: const TextStyle(
                         fontSize: 12.5,
                         color: GsColors.text2,

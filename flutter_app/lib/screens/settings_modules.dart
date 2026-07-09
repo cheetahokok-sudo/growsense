@@ -6,6 +6,7 @@
 // ══════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app_state.dart';
 import '../i18n.dart';
@@ -439,6 +440,246 @@ class _ShareChildScreenState extends State<ShareChildScreen> {
             ),
         ],
       ),
+    );
+  }
+}
+
+// ── Reminders ───────────────────────────────────────────────────────
+// Preference storage only for now — actual notification delivery
+// needs the native iOS/Android build (flutter_local_notifications);
+// web cannot schedule background notifications. The screen says so
+// honestly rather than pretending pushes exist.
+
+class ReminderSettingsScreen extends StatefulWidget {
+  const ReminderSettingsScreen({super.key, required this.i18n});
+  final I18n i18n;
+
+  @override
+  State<ReminderSettingsScreen> createState() =>
+      _ReminderSettingsScreenState();
+}
+
+class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
+  bool _dailyLog = false;
+  TimeOfDay _dailyLogTime = const TimeOfDay(hour: 19, minute: 30);
+  bool _bedtime = false;
+  TimeOfDay _bedtimeTime = const TimeOfDay(hour: 20, minute: 45);
+  bool _weeklyMeasure = false;
+  int _measureDay = DateTime.sunday; // 1=Mon … 7=Sun
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final p = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _dailyLog = p.getBool('rem_daily_log') ?? false;
+      _dailyLogTime = _parseTime(p.getString('rem_daily_log_time')) ??
+          const TimeOfDay(hour: 19, minute: 30);
+      _bedtime = p.getBool('rem_bedtime') ?? false;
+      _bedtimeTime = _parseTime(p.getString('rem_bedtime_time')) ??
+          const TimeOfDay(hour: 20, minute: 45);
+      _weeklyMeasure = p.getBool('rem_weekly_measure') ?? false;
+      _measureDay = p.getInt('rem_measure_day') ?? DateTime.sunday;
+      _loaded = true;
+    });
+  }
+
+  TimeOfDay? _parseTime(String? s) {
+    if (s == null || !s.contains(':')) return null;
+    final parts = s.split(':');
+    return TimeOfDay(
+        hour: int.tryParse(parts[0]) ?? 0,
+        minute: int.tryParse(parts[1]) ?? 0);
+  }
+
+  String _fmt(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _saveAll() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('rem_daily_log', _dailyLog);
+    await p.setString('rem_daily_log_time', _fmt(_dailyLogTime));
+    await p.setBool('rem_bedtime', _bedtime);
+    await p.setString('rem_bedtime_time', _fmt(_bedtimeTime));
+    await p.setBool('rem_weekly_measure', _weeklyMeasure);
+    await p.setInt('rem_measure_day', _measureDay);
+  }
+
+  Future<void> _pickTime(
+      TimeOfDay current, ValueChanged<TimeOfDay> apply) async {
+    final picked = await showTimePicker(context: context, initialTime: current);
+    if (picked != null) {
+      setState(() => apply(picked));
+      await _saveAll();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(t('flutter.rem.title', 'Reminders'),
+            style:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      ),
+      body: !_loaded
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: GsColors.estimatedLight,
+                    borderRadius: BorderRadius.circular(GsRadius.sm),
+                  ),
+                  child: Text(
+                      t('flutter.rem.note',
+                          'Preferences are saved now — notification delivery switches on with the upcoming iOS/Android app. The web version cannot send reminders in the background.'),
+                      style: const TextStyle(
+                          fontSize: 11.5,
+                          color: GsColors.estimatedDark,
+                          height: 1.5)),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: GsColors.surface,
+                    borderRadius: BorderRadius.circular(GsRadius.md),
+                    border: Border.all(color: GsColors.border),
+                    boxShadow: gsShadow,
+                  ),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        value: _dailyLog,
+                        dense: true,
+                        activeThumbColor: GsColors.accent,
+                        title: Text(
+                            t('flutter.rem.daily', 'Daily log reminder'),
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                            '${t('flutter.rem.at', 'At')} ${_fmt(_dailyLogTime)}',
+                            style: const TextStyle(fontSize: 11)),
+                        onChanged: (v) async {
+                          setState(() => _dailyLog = v);
+                          await _saveAll();
+                        },
+                      ),
+                      if (_dailyLog)
+                        Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: TextButton(
+                            onPressed: () => _pickTime(
+                                _dailyLogTime, (v) => _dailyLogTime = v),
+                            child: Text(
+                                t('flutter.rem.change_time', 'Change time'),
+                                style: const TextStyle(fontSize: 11.5)),
+                          ),
+                        ),
+                      const Divider(height: 1, color: GsColors.border),
+                      SwitchListTile(
+                        value: _bedtime,
+                        dense: true,
+                        activeThumbColor: GsColors.accent,
+                        title: Text(
+                            t('flutter.rem.bedtime', 'Bedtime wind-down'),
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                            '${t('flutter.rem.at', 'At')} ${_fmt(_bedtimeTime)} · ${t('flutter.rem.bedtime_sub', '45 min before the 21:30 growth-sleep target')}',
+                            style: const TextStyle(fontSize: 11)),
+                        onChanged: (v) async {
+                          setState(() => _bedtime = v);
+                          await _saveAll();
+                        },
+                      ),
+                      if (_bedtime)
+                        Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: TextButton(
+                            onPressed: () => _pickTime(
+                                _bedtimeTime, (v) => _bedtimeTime = v),
+                            child: Text(
+                                t('flutter.rem.change_time', 'Change time'),
+                                style: const TextStyle(fontSize: 11.5)),
+                          ),
+                        ),
+                      const Divider(height: 1, color: GsColors.border),
+                      SwitchListTile(
+                        value: _weeklyMeasure,
+                        dense: true,
+                        activeThumbColor: GsColors.accent,
+                        title: Text(
+                            t('flutter.rem.weekly',
+                                'Weekly measurement day'),
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                            t('flutter.rem.day.${dayKeys[_measureDay - 1]}',
+                                const [
+                                  'Monday',
+                                  'Tuesday',
+                                  'Wednesday',
+                                  'Thursday',
+                                  'Friday',
+                                  'Saturday',
+                                  'Sunday'
+                                ][_measureDay - 1]),
+                            style: const TextStyle(fontSize: 11)),
+                        onChanged: (v) async {
+                          setState(() => _weeklyMeasure = v);
+                          await _saveAll();
+                        },
+                      ),
+                      if (_weeklyMeasure)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                          child: Wrap(
+                            spacing: 6,
+                            children: [
+                              for (var d = 1; d <= 7; d++)
+                                ChoiceChip(
+                                  label: Text(
+                                      t('flutter.rem.day_short.${dayKeys[d - 1]}',
+                                          const [
+                                            'Mon',
+                                            'Tue',
+                                            'Wed',
+                                            'Thu',
+                                            'Fri',
+                                            'Sat',
+                                            'Sun'
+                                          ][d - 1]),
+                                      style:
+                                          const TextStyle(fontSize: 11)),
+                                  selected: _measureDay == d,
+                                  onSelected: (_) async {
+                                    setState(() => _measureDay = d);
+                                    await _saveAll();
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

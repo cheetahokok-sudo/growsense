@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
+import '../export/download.dart';
 import '../i18n.dart';
 import '../theme.dart';
 import 'devices_screen.dart';
@@ -188,6 +189,33 @@ class AccountScreen extends StatelessWidget {
               const SizedBox(height: 12),
               InkWell(
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => ReminderSettingsScreen(i18n: i18n),
+                )),
+                child: _Card(
+                  children: [
+                    Row(
+                      children: [
+                        const Text('🔔', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(t('flutter.rem.title', 'Reminders'),
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: GsColors.accent)),
+                        ),
+                        const Icon(Icons.chevron_right,
+                            size: 18, color: GsColors.text3),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _ExportTile(appState: appState, i18n: i18n),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) =>
                       WelcomeScreen(i18n: i18n, aboutMode: true),
                 )),
@@ -251,6 +279,53 @@ class AccountScreen extends StatelessWidget {
                       color: GsColors.flag,
                       onTap: () => launchUrl(Uri.parse(
                           'mailto:cheetahokok@gmail.com?subject=GrowSense%20account%20deletion%20request'))),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _Card(
+                children: [
+                  Text(t('flutter.units.title', 'Units'),
+                      style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: GsColors.accent)),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final u in const [
+                        ('metric', 'cm · kg'),
+                        ('imperial', 'in · lb'),
+                      ])
+                        GestureDetector(
+                          onTap: () => appState.setUnits(u.$1),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: appState.units == u.$1
+                                  ? GsColors.accent
+                                  : GsColors.surface2,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                                '${t('flutter.units.${u.$1}', u.$1 == 'metric' ? 'Metric' : 'Imperial')} · ${u.$2}',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: appState.units == u.$1
+                                        ? Colors.white
+                                        : GsColors.text2)),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                      t('flutter.units.note',
+                          'Growth charts stay in WHO metric units.'),
+                      style: const TextStyle(
+                          fontSize: 10.5, color: GsColors.text3)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -531,6 +606,86 @@ class _RedeemRowState extends State<_RedeemRow> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Export the active child's data as CSV — assembled in AppState,
+/// downloaded through the platform helper (browser Blob on web).
+class _ExportTile extends StatefulWidget {
+  const _ExportTile({required this.appState, required this.i18n});
+  final AppState appState;
+  final I18n i18n;
+
+  @override
+  State<_ExportTile> createState() => _ExportTileState();
+}
+
+class _ExportTileState extends State<_ExportTile> {
+  bool _busy = false;
+
+  Future<void> _export() async {
+    final t = widget.i18n.t;
+    setState(() => _busy = true);
+    final (csv, err) = await widget.appState.buildExportCsv();
+    String? dlErr = err;
+    if (csv != null) {
+      final name = (widget.appState.activeChildRow?['name'] as String? ?? '')
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+      dlErr = await downloadTextFile(
+          'growsense-$name-${todayISO()}.csv', csv);
+    }
+    if (!mounted) return;
+    setState(() => _busy = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(dlErr == null
+            ? '✅ ${t('flutter.export.done', 'Export downloaded')}'
+            : '⚠️ $dlErr')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    return InkWell(
+      onTap: _busy ? null : _export,
+      child: _Card(
+        children: [
+          Row(
+            children: [
+              const Text('📄', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        _busy
+                            ? t('flutter.export.working', 'Preparing…')
+                            : t('flutter.export.title', 'Export data (CSV)'),
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: GsColors.accent)),
+                    Text(
+                        t('flutter.export.sub',
+                            'Growth, clinical records & 30-day logs for the active child'),
+                        style: const TextStyle(
+                            fontSize: 10.5, color: GsColors.text3)),
+                  ],
+                ),
+              ),
+              _busy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.download_outlined,
+                      size: 18, color: GsColors.text3),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

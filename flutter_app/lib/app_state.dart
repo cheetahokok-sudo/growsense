@@ -11,6 +11,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Downscale an X-ray to <=800px JPEG for AI vision analysis — same
@@ -625,6 +626,180 @@ class AppState extends ChangeNotifier {
         'notes': notes,
         'xray_storage_path': xrayStoragePath,
       }, boneAgeAssessments);
+
+  // ── Data export ─────────────────────────────────────────────────────
+
+  /// Assemble a CSV dossier for the active child: profile, growth
+  /// measurements, clinical records, and the last 30 days of daily
+  /// logs. Sections are stacked in one file with header rows — opens
+  /// cleanly in Excel/Sheets and is easy to email to a clinician.
+  Future<(String?, String?)> buildExportCsv() async {
+    final child = activeChildRow;
+    final childId = activeChildId;
+    if (child == null || childId == null) return (null, 'No child selected');
+
+    String cell(dynamic v) {
+      final s = (v ?? '').toString();
+      return s.contains(RegExp(r'[",\n]'))
+          ? '"${s.replaceAll('"', '""')}"'
+          : s;
+    }
+
+    String row(List<dynamic> cells) => cells.map(cell).join(',');
+
+    try {
+      await loadClinicalIfNeeded();
+      final since = localISO(DateTime.now().subtract(const Duration(days: 30)));
+      final results = await Future.wait([
+        sb
+            .from('daily_nutrition')
+            .select('log_date, total_protein_g, calcium_mg, fluids_ml')
+            .eq('child_id', childId)
+            .gte('log_date', since)
+            .order('log_date'),
+        sb
+            .from('daily_sleep')
+            .select('log_date, total_sleep_min, bedtime, wake_time,'
+                ' night_wakes')
+            .eq('child_id', childId)
+            .gte('log_date', since)
+            .order('log_date'),
+      ]);
+
+      final b = StringBuffer()
+        ..writeln('GrowSense data export,${todayISO()}')
+        ..writeln()
+        ..writeln('CHILD')
+        ..writeln(row(['name', 'date_of_birth', 'biological_sex']))
+        ..writeln(row([
+          child['name'],
+          child['date_of_birth'],
+          child['biological_sex'],
+        ]))
+        ..writeln()
+        ..writeln('GROWTH MEASUREMENTS')
+        ..writeln(row(['recorded_date', 'height_cm', 'weight_kg']));
+      for (final m in measurements.reversed) {
+        b.writeln(row([
+          m['recorded_date'],
+          m['stature_height_cm'],
+          m['mass_weight_kg'],
+        ]));
+      }
+
+      b
+        ..writeln()
+        ..writeln('BONE AGE ASSESSMENTS')
+        ..writeln(row([
+          'study_date',
+          'bone_age_months',
+          'chronological_age_months',
+          'method',
+          'report_doctor',
+        ]));
+      for (final r in boneAgeAssessments.reversed) {
+        b.writeln(row([
+          r['study_date'],
+          r['bone_age_months'],
+          r['chronological_age_months'],
+          r['method'],
+          r['report_doctor'],
+        ]));
+      }
+
+      b
+        ..writeln()
+        ..writeln('ILLNESS EVENTS')
+        ..writeln(row(['start_date', 'end_date', 'illness_type', 'notes']));
+      for (final e in illnessEvents.reversed) {
+        b.writeln(row([
+          e['start_date'],
+          e['end_date'],
+          e['illness_type'],
+          e['notes'],
+        ]));
+      }
+
+      b
+        ..writeln()
+        ..writeln('LAB RESULTS')
+        ..writeln(row([
+          'lab_date',
+          'analyte_name',
+          'result_value',
+          'unit',
+          'reference_low',
+          'reference_high',
+        ]));
+      for (final l in labResults.reversed) {
+        b.writeln(row([
+          l['lab_date'],
+          l['analyte_name'],
+          l['result_value'],
+          l['unit'],
+          l['reference_low'],
+          l['reference_high'],
+        ]));
+      }
+
+      b
+        ..writeln()
+        ..writeln('DAILY NUTRITION (last 30 days)')
+        ..writeln(
+            row(['log_date', 'total_protein_g', 'calcium_mg', 'fluids_ml']));
+      for (final n in results[0] as List) {
+        b.writeln(row([
+          n['log_date'],
+          n['total_protein_g'],
+          n['calcium_mg'],
+          n['fluids_ml'],
+        ]));
+      }
+
+      b
+        ..writeln()
+        ..writeln('DAILY SLEEP (last 30 days)')
+        ..writeln(row([
+          'log_date',
+          'total_sleep_min',
+          'bedtime',
+          'wake_time',
+          'night_wakes',
+        ]));
+      for (final s in results[1] as List) {
+        b.writeln(row([
+          s['log_date'],
+          s['total_sleep_min'],
+          s['bedtime'],
+          s['wake_time'],
+          s['night_wakes'],
+        ]));
+      }
+
+      return (b.toString(), null);
+    } on PostgrestException catch (e) {
+      return (null, e.message);
+    }
+  }
+
+  // ── Unit preference ('metric' | 'imperial'), display-level only ────
+  String units = 'metric';
+
+  Future<void> loadUnits() async {
+    final p = await SharedPreferences.getInstance();
+    final u = p.getString('units');
+    if (u != null && u != units) {
+      units = u;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setUnits(String u) async {
+    units = u;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    await p.setString('units', u);
+  }
 
   // ── Account / settings actions ─────────────────────────────────────
 

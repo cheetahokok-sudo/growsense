@@ -34,6 +34,7 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     widget.appState.loadChildren();
+    widget.appState.loadUnits();
   }
 
   void _push(Widget body, String title) {
