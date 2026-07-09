@@ -555,5 +555,7 @@
  "flutter.auth.new_password": "New password",
  "flutter.auth.update_password": "Set new password",
  "flutter.who.standards_0_5": "WHO Child Growth Standards",
- "flutter.who.reference_5_19": "WHO 2007"
+ "flutter.who.reference_5_19": "WHO 2007",
+ "flutter.chart.all_years": "All years",
+ "flutter.chart.focus_recent": "Focus"
 }

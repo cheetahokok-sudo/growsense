@@ -354,6 +354,10 @@ class _ChartCard extends StatefulWidget {
 class _ChartCardState extends State<_ChartCard> {
   String _mode = 'height'; // 'height' | 'bmi'
   bool _showIllness = true;
+  // Default view is focused on the recent window + projection so
+  // parents see the current picture in detail; toggle expands to the
+  // whole birth-to-date history.
+  bool _fullRange = false;
 
   @override
   Widget build(BuildContext context) {
@@ -549,8 +553,50 @@ class _ChartCardState extends State<_ChartCard> {
             ],
           ),
           const SizedBox(height: 4),
-          Text(readout,
-              style: const TextStyle(fontSize: 11.5, color: GsColors.text2)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(readout,
+                    style: const TextStyle(
+                        fontSize: 11.5, color: GsColors.text2)),
+              ),
+              const SizedBox(width: 8),
+              // Focus ↔ full-history zoom toggle.
+              GestureDetector(
+                onTap: () => setState(() => _fullRange = !_fullRange),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: GsColors.surface2,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: GsColors.border2),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                          _fullRange
+                              ? Icons.center_focus_strong
+                              : Icons.timeline,
+                          size: 12,
+                          color: GsColors.measured),
+                      const SizedBox(width: 4),
+                      Text(
+                          _fullRange
+                              ? t('flutter.chart.focus_recent', 'Focus')
+                              : t('flutter.chart.all_years', 'All years'),
+                          style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: GsColors.measured)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           SizedBox(
             height: 260,
@@ -562,6 +608,7 @@ class _ChartCardState extends State<_ChartCard> {
                 // painter still zooms to the data window for older kids.
                 ageMinYears: 0,
                 ageMaxYears: (isBmi ? bmiTable : heightTable).last[0] / 12,
+                focusRecent: !_fullRange,
                 measurements: meas,
                 projection: projection,
                 emptyLabel: t('flutter.no_measurements_chart',
@@ -602,9 +649,11 @@ class _GrowthChartPainter extends CustomPainter {
     required this.bandLabels,
     this.illnessSpans = const [],
     this.bmiZones = false,
+    this.focusRecent = true,
   });
   final List<double> Function(double ageMonths) bandsForAge;
   final double ageMinYears, ageMaxYears;
+  final bool focusRecent; // zoom to recent window + projection (default)
   final List<(double, double)> measurements; // (ageYears, value) asc
   final List<ProjectionPoint> projection;
   final String emptyLabel;
@@ -617,14 +666,23 @@ class _GrowthChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // X range: around the data if present, else the reference window
+    // X range. Focused (default): a tight window on the most recent
+    // measurements + the projection, so the current picture is legible.
+    // Full: the whole birth-to-date history. Both cap at the projection.
     double minAge = ageMinYears, maxAge = ageMaxYears;
     if (measurements.isNotEmpty) {
       final firstAge = measurements.first.$1;
       final lastAge = measurements.last.$1;
       final projEnd = projection.isEmpty ? lastAge + 2.0 : lastAge + 3.0;
-      minAge = math.max(ageMinYears, firstAge - 0.75);
       maxAge = math.min(ageMaxYears, math.max(projEnd, lastAge + 2.0));
+      if (focusRecent) {
+        // ~2.5y of recent history before the latest point; never wider
+        // than the full record.
+        final focusStart = math.max(firstAge - 0.5, lastAge - 2.5);
+        minAge = math.max(ageMinYears, focusStart);
+      } else {
+        minAge = math.max(ageMinYears, firstAge - 0.5);
+      }
     }
     final w = size.width - _padL - _padR;
     final h = size.height - _padT - _padB;
@@ -858,7 +916,8 @@ class _GrowthChartPainter extends CustomPainter {
       old.measurements != measurements ||
       old.projection != projection ||
       old.illnessSpans != illnessSpans ||
-      old.bmiZones != bmiZones;
+      old.bmiZones != bmiZones ||
+      old.focusRecent != focusRecent;
 }
 
 // ── Target height card ──────────────────────────────────────────────

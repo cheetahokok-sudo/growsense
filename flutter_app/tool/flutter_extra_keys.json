@@ -317,5 +317,7 @@
   "flutter.auth.new_password": { "en": "New password", "th": "รหัสผ่านใหม่", "vi": "Mật khẩu mới", "ko": "새 비밀번호", "zh": "新密码", "ar": "كلمة مرور جديدة" },
   "flutter.auth.update_password": { "en": "Set new password", "th": "บันทึกรหัสผ่านใหม่", "vi": "Đặt mật khẩu mới", "ko": "새 비밀번호 저장", "zh": "保存新密码", "ar": "تعيين كلمة المرور الجديدة" },
   "flutter.who.standards_0_5": { "en": "WHO Child Growth Standards", "th": "มาตรฐานการเจริญเติบโตเด็ก WHO", "vi": "Chuẩn tăng trưởng trẻ em WHO", "ko": "WHO 아동 성장 표준", "zh": "WHO儿童生长标准", "ar": "معايير نمو الطفل WHO" },
-  "flutter.who.reference_5_19": { "en": "WHO 2007", "th": "WHO 2007", "vi": "WHO 2007", "ko": "WHO 2007", "zh": "WHO 2007", "ar": "WHO 2007" }
+  "flutter.who.reference_5_19": { "en": "WHO 2007", "th": "WHO 2007", "vi": "WHO 2007", "ko": "WHO 2007", "zh": "WHO 2007", "ar": "WHO 2007" },
+  "flutter.chart.all_years": { "en": "All years", "th": "ทุกปี", "vi": "Tất cả", "ko": "전체 기간", "zh": "全部年份", "ar": "كل السنوات" },
+  "flutter.chart.focus_recent": { "en": "Focus", "th": "โฟกัส", "vi": "Tập trung", "ko": "최근", "zh": "聚焦", "ar": "تركيز" }
 }

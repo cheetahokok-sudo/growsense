@@ -555,5 +555,7 @@
  "flutter.auth.new_password": "Mật khẩu mới",
  "flutter.auth.update_password": "Đặt mật khẩu mới",
  "flutter.who.standards_0_5": "Chuẩn tăng trưởng trẻ em WHO",
- "flutter.who.reference_5_19": "WHO 2007"
+ "flutter.who.reference_5_19": "WHO 2007",
+ "flutter.chart.all_years": "Tất cả",
+ "flutter.chart.focus_recent": "Tập trung"
 }

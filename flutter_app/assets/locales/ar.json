@@ -555,5 +555,7 @@
  "flutter.auth.new_password": "كلمة مرور جديدة",
  "flutter.auth.update_password": "تعيين كلمة المرور الجديدة",
  "flutter.who.standards_0_5": "معايير نمو الطفل WHO",
- "flutter.who.reference_5_19": "WHO 2007"
+ "flutter.who.reference_5_19": "WHO 2007",
+ "flutter.chart.all_years": "كل السنوات",
+ "flutter.chart.focus_recent": "تركيز"
 }
