@@ -394,15 +394,17 @@ class _ChartCardState extends State<_ChartCard> {
       }
     }
 
+    // Age-aware bands: under 61 months uses the WHO Child Growth
+    // Standards (0–5y), above uses the WHO 2007 Reference (5–19y).
     List<double> bandsForAge(double ageMonths) {
       if (isBmi) {
-        final lms = interpolateLms(bmiTable, ageMonths);
+        final lms = widget.bmi.lmsForAge(sex, ageMonths);
         return [
           for (final z in [-2.0, -1.0, 0.0, 1.0, 2.0])
             bmiAtZ(z, lms.l, lms.m, lms.s)
         ];
       }
-      return interpolateBands(heightTable, ageMonths);
+      return widget.who.heightBands(sex, ageMonths);
     }
 
     // Readout for the latest measurement + (height only) projection.
@@ -412,13 +414,13 @@ class _ChartCardState extends State<_ChartCard> {
     if (meas.isNotEmpty) {
       final (age, v) = meas.last;
       if (isBmi) {
-        final lms = interpolateLms(bmiTable, age * 12);
+        final lms = widget.bmi.lmsForAge(sex, age * 12);
         final z = bmiToZ(v, lms.l, lms.m, lms.s);
         final cls = bmiClassification(z);
         readout =
             'BMI ${v.toStringAsFixed(1)} · ${age.toStringAsFixed(1)}y · P${zToPercentile(z).round()} · ${t('flutter.bmi.$cls', cls)}';
       } else {
-        final bands = interpolateBands(heightTable, age * 12);
+        final bands = widget.who.heightBands(sex, age * 12);
         final z = zFromHeight(bands, v);
         readout =
             '${formatHeight(v, widget.appState.units)} · ${age.toStringAsFixed(1)}y · P${zToPercentile(z).round()} ${t('flutter.percentile', 'percentile')} (z ${z >= 0 ? '+' : ''}${z.toStringAsFixed(2)})';
@@ -439,9 +441,15 @@ class _ChartCardState extends State<_ChartCard> {
       }
     }
 
+    // Which WHO source is on screen depends on the child's age: the
+    // Child Growth Standards under 5, the 2007 Reference from 5–19.
+    final latestAge = meas.isEmpty ? null : meas.last.$1;
+    final whoLabel = latestAge != null && latestAge < 5
+        ? t('flutter.who.standards_0_5', 'WHO Child Growth Standards')
+        : t('flutter.who.reference_5_19', 'WHO 2007');
     final title = isBmi
-        ? '${t('analytics.charts.bmi_for_age', 'BMI-for-age')} · WHO 2007'
-        : '${t('analytics.charts.height_for_age', 'Height-for-age')} · WHO 2007';
+        ? '${t('analytics.charts.bmi_for_age', 'BMI-for-age')} · $whoLabel'
+        : '${t('analytics.charts.height_for_age', 'Height-for-age')} · $whoLabel';
 
     return Container(
       decoration: BoxDecoration(
@@ -550,7 +558,9 @@ class _ChartCardState extends State<_ChartCard> {
             child: CustomPaint(
               painter: _GrowthChartPainter(
                 bandsForAge: bandsForAge,
-                ageMinYears: (isBmi ? bmiTable : heightTable).first[0] / 12,
+                // From birth now that the 0–5 standards are loaded; the
+                // painter still zooms to the data window for older kids.
+                ageMinYears: 0,
                 ageMaxYears: (isBmi ? bmiTable : heightTable).last[0] / 12,
                 measurements: meas,
                 projection: projection,

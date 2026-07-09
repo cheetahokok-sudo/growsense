@@ -315,5 +315,7 @@
   "flutter.auth.reset_sent": { "en": "Reset link sent — open the email and tap the link to choose a new password.", "th": "ส่งลิงก์รีเซ็ตแล้ว — เปิดอีเมลแล้วแตะลิงก์เพื่อตั้งรหัสผ่านใหม่", "vi": "Đã gửi liên kết đặt lại — mở email và bấm liên kết để chọn mật khẩu mới.", "ko": "재설정 링크를 보냈습니다 — 이메일을 열고 링크를 눌러 새 비밀번호를 설정하세요.", "zh": "重置链接已发送——打开邮件并点击链接设置新密码。", "ar": "أُرسل رابط إعادة التعيين — افتح البريد واضغط الرابط لاختيار كلمة مرور جديدة." },
   "flutter.auth.new_password_title": { "en": "Choose a new password", "th": "ตั้งรหัสผ่านใหม่", "vi": "Chọn mật khẩu mới", "ko": "새 비밀번호 설정", "zh": "设置新密码", "ar": "اختر كلمة مرور جديدة" },
   "flutter.auth.new_password": { "en": "New password", "th": "รหัสผ่านใหม่", "vi": "Mật khẩu mới", "ko": "새 비밀번호", "zh": "新密码", "ar": "كلمة مرور جديدة" },
-  "flutter.auth.update_password": { "en": "Set new password", "th": "บันทึกรหัสผ่านใหม่", "vi": "Đặt mật khẩu mới", "ko": "새 비밀번호 저장", "zh": "保存新密码", "ar": "تعيين كلمة المرور الجديدة" }
+  "flutter.auth.update_password": { "en": "Set new password", "th": "บันทึกรหัสผ่านใหม่", "vi": "Đặt mật khẩu mới", "ko": "새 비밀번호 저장", "zh": "保存新密码", "ar": "تعيين كلمة المرور الجديدة" },
+  "flutter.who.standards_0_5": { "en": "WHO Child Growth Standards", "th": "มาตรฐานการเจริญเติบโตเด็ก WHO", "vi": "Chuẩn tăng trưởng trẻ em WHO", "ko": "WHO 아동 성장 표준", "zh": "WHO儿童生长标准", "ar": "معايير نمو الطفل WHO" },
+  "flutter.who.reference_5_19": { "en": "WHO 2007", "th": "WHO 2007", "vi": "WHO 2007", "ko": "WHO 2007", "zh": "WHO 2007", "ar": "WHO 2007" }
 }

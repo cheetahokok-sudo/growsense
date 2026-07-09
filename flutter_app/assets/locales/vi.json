@@ -553,5 +553,7 @@
  "flutter.auth.reset_sent": "Đã gửi liên kết đặt lại — mở email và bấm liên kết để chọn mật khẩu mới.",
  "flutter.auth.new_password_title": "Chọn mật khẩu mới",
  "flutter.auth.new_password": "Mật khẩu mới",
- "flutter.auth.update_password": "Đặt mật khẩu mới"
+ "flutter.auth.update_password": "Đặt mật khẩu mới",
+ "flutter.who.standards_0_5": "Chuẩn tăng trưởng trẻ em WHO",
+ "flutter.who.reference_5_19": "WHO 2007"
 }

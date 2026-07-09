@@ -39,12 +39,34 @@ const percentileZ = {
 };
 
 class WhoReference {
-  final List<List<double>> hfaBoys; // rows: [months, p3, p15, p50, p85, p97]
+  // 5–19y: percentile rows [months, p3, p15, p50, p85, p97] (WHO 2007
+  // Growth Reference). 0–5y: LMS rows [months, L, M, S] (WHO Child
+  // Growth Standards, length/height-for-age) — a genuinely different
+  // underlying sample, so it's stored separately and converted to the
+  // same five bands via the Box-Cox LMS transform.
+  final List<List<double>> hfaBoys;
   final List<List<double>> hfaGirls;
-  WhoReference(this.hfaBoys, this.hfaGirls);
+  final List<List<double>> hfaBoys05;
+  final List<List<double>> hfaGirls05;
+  WhoReference(
+      this.hfaBoys, this.hfaGirls, this.hfaBoys05, this.hfaGirls05);
 
   List<List<double>> tableFor(String? sex) =>
       (sex ?? 'male').toLowerCase() == 'female' ? hfaGirls : hfaBoys;
+
+  /// Height-for-age percentile bands [p3,p15,p50,p85,p97] at any age,
+  /// bridging the 0–5 (LMS) and 5–19 (percentile) references at 61
+  /// months. The two are continuous there to within ~0.3 cm.
+  List<double> heightBands(String? sex, double ageMonths) {
+    if (ageMonths < 61) {
+      final table = (sex ?? 'male').toLowerCase() == 'female'
+          ? hfaGirls05
+          : hfaBoys05;
+      final lms = interpolateLms(table, ageMonths);
+      return [for (final z in _bandZs) bmiAtZ(z, lms.l, lms.m, lms.s)];
+    }
+    return interpolateBands(tableFor(sex), ageMonths);
+  }
 }
 
 WhoReference? _whoCache;
@@ -57,7 +79,12 @@ Future<WhoReference> loadWhoReference() async {
         for (final r in j[key] as List)
           [for (final v in r as List) (v as num).toDouble()],
       ];
-  _whoCache = WhoReference(rows('hfa_boys_5_19'), rows('hfa_girls_5_19'));
+  _whoCache = WhoReference(
+    rows('hfa_boys_5_19'),
+    rows('hfa_girls_5_19'),
+    rows('hfa_boys_0_5'),
+    rows('hfa_girls_0_5'),
+  );
   return _whoCache!;
 }
 
@@ -141,11 +168,24 @@ double heightAtZ(List<double> bands, double z) {
 // transform. Same method as the PWA's bmi-percentile.js.
 
 class WhoBmiReference {
-  final List<List<double>> boys; // rows: [months, L, M, S]
+  final List<List<double>> boys; // rows: [months, L, M, S] — 5–19y
   final List<List<double>> girls;
-  WhoBmiReference(this.boys, this.girls);
+  final List<List<double>> boys05; // 0–5y
+  final List<List<double>> girls05;
+  WhoBmiReference(this.boys, this.girls, this.boys05, this.girls05);
+
   List<List<double>> tableFor(String? sex) =>
       (sex ?? 'male').toLowerCase() == 'female' ? girls : boys;
+
+  /// Interpolated L/M/S at any age, using the 0–5 standard below 61
+  /// months and the 5–19 reference above.
+  ({double l, double m, double s}) lmsForAge(String? sex, double ageMonths) {
+    final female = (sex ?? 'male').toLowerCase() == 'female';
+    final table = ageMonths < 61
+        ? (female ? girls05 : boys05)
+        : (female ? girls : boys);
+    return interpolateLms(table, ageMonths);
+  }
 }
 
 WhoBmiReference? _bmiCache;
@@ -158,8 +198,12 @@ Future<WhoBmiReference> loadBmiReference() async {
         for (final r in j[key] as List)
           [for (final v in r as List) (v as num).toDouble()],
       ];
-  _bmiCache =
-      WhoBmiReference(rows('bmi_boys_5_19'), rows('bmi_girls_5_19'));
+  _bmiCache = WhoBmiReference(
+    rows('bmi_boys_5_19'),
+    rows('bmi_girls_5_19'),
+    rows('bmi_boys_0_5'),
+    rows('bmi_girls_0_5'),
+  );
   return _bmiCache!;
 }
 

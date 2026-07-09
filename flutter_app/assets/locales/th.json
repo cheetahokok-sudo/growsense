@@ -553,5 +553,7 @@
  "flutter.auth.reset_sent": "ส่งลิงก์รีเซ็ตแล้ว — เปิดอีเมลแล้วแตะลิงก์เพื่อตั้งรหัสผ่านใหม่",
  "flutter.auth.new_password_title": "ตั้งรหัสผ่านใหม่",
  "flutter.auth.new_password": "รหัสผ่านใหม่",
- "flutter.auth.update_password": "บันทึกรหัสผ่านใหม่"
+ "flutter.auth.update_password": "บันทึกรหัสผ่านใหม่",
+ "flutter.who.standards_0_5": "มาตรฐานการเจริญเติบโตเด็ก WHO",
+ "flutter.who.reference_5_19": "WHO 2007"
 }
