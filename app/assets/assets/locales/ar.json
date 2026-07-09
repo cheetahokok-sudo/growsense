@@ -557,5 +557,18 @@
  "flutter.who.standards_0_5": "معايير نمو الطفل WHO",
  "flutter.who.reference_5_19": "WHO 2007",
  "flutter.chart.all_years": "كل السنوات",
- "flutter.chart.focus_recent": "تركيز"
+ "flutter.chart.focus_recent": "تركيز",
+ "flutter.th.refine_toggle": "حسّن بأطوال الأجداد",
+ "flutter.th.refine_intro": "إذا كان طول أحد الوالدين محدودًا بسبب سوء التغذية أو المرض في الطفولة، فقد يقلل متوسط طول الوالدين من التقدير — فتلك التأثيرات بيئية غالبًا وليست وراثية. أطوال الأجداد تعطي رؤية ثانية استكشافية.",
+ "flutter.th.exploratory": "استكشافي",
+ "flutter.th.vs_parents": "مقابل الوالدين فقط",
+ "flutter.th.records_used": "{n} مُسجّل",
+ "flutter.th.disclaimer": "استكشافي — لا توجد طريقة موثّقة لترجيح أطوال الأجداد. هذا يمزج تقدير الوالدين فقط (70%) مع متوسط الأجداد المعدّل حسب الجنس (30%)؛ نسبة 70/30 اختيار اعتباطي وليست ثابتًا بحثيًا. إنه \"ماذا لو\"، وليس رقمًا أدق.",
+ "flutter.th.citation": "الأساس: يتأثر طول البالغين بقوة بتغذية مرحلة الطفولة عبر الأجيال — NCD-RisC، eLife 2016 (PMID 27458798).",
+ "flutter.th.save": "حفظ أطوال العائلة",
+ "flutter.th.saved": "تم حفظ أطوال العائلة",
+ "flutter.family.maternal_grandmother": "جدة لأم",
+ "flutter.family.maternal_grandfather": "جد لأم",
+ "flutter.family.paternal_grandmother": "جدة لأب",
+ "flutter.family.paternal_grandfather": "جد لأب"
 }
