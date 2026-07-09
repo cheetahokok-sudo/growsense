@@ -1,9 +1,166 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../analytics.dart';
 import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
+
+// ── Separated lever rings (7-day averages) ─────────────────────────
+
+class _LeverRings extends StatelessWidget {
+  const _LeverRings({required this.a, required this.i18n});
+  final WeeklyAnalytics a;
+  final I18n i18n;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = i18n.t;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      decoration: BoxDecoration(
+        color: GsColors.surface,
+        borderRadius: BorderRadius.circular(GsRadius.md),
+        border: Border.all(color: GsColors.border),
+        boxShadow: gsShadow,
+      ),
+      child: Row(
+        children: [
+          _MiniRing(
+              pct: a.avgNutPct ?? 0,
+              light: const Color(0xFF5FA87E),
+              full: GsColors.accent,
+              label: t('common.nutrition', 'Nutrition')),
+          _MiniRing(
+              pct: a.avgActPct ?? 0,
+              light: const Color(0xFF5B8FC0),
+              full: GsColors.measured,
+              label: t('common.activity', 'Activity')),
+          _MiniRing(
+              pct: a.avgSlpPct ?? 0,
+              light: const Color(0xFFC9A45E),
+              full: GsColors.estimated,
+              label: t('common.sleep', 'Sleep')),
+        ],
+      ),
+    );
+  }
+}
+
+/// One Bevel-style ring: single arc, % in the center, label below.
+/// Same gradient-as-data-layer treatment as the Today ring — the head
+/// deepens toward the full brand color as the average approaches 100%.
+class _MiniRing extends StatelessWidget {
+  const _MiniRing(
+      {required this.pct,
+      required this.light,
+      required this.full,
+      required this.label});
+  final double pct;
+  final Color light;
+  final Color full;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          TweenAnimationBuilder<double>(
+            key: ValueKey(pct),
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, anim, _) => SizedBox(
+              width: 74,
+              height: 74,
+              child: CustomPaint(
+                painter: _MiniRingPainter(
+                    pct: pct, anim: anim, light: light, full: full),
+                child: Center(
+                  child: Text('${(pct * 100 * anim).round()}%',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Color.lerp(
+                              light, full, 0.35 + 0.65 * pct))),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: GsColors.text2)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniRingPainter extends CustomPainter {
+  _MiniRingPainter(
+      {required this.pct,
+      required this.anim,
+      required this.light,
+      required this.full});
+  final double pct, anim;
+  final Color light, full;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final r = size.width / 2 - 5;
+    final rect = Rect.fromCircle(center: center, radius: r);
+    const stroke = 7.5;
+
+    canvas.drawCircle(
+        center,
+        r,
+        Paint()
+          ..color = GsColors.surface2
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke);
+
+    final p = (pct.clamp(0.0, 1.0)) * anim;
+    if (p <= 0.001) return;
+    const start = -math.pi / 2;
+    final sweep = 2 * math.pi * p;
+    final head = Color.lerp(light, full, 0.35 + 0.65 * pct.clamp(0.0, 1.0))!;
+
+    canvas.drawArc(
+        rect,
+        start,
+        sweep,
+        false,
+        Paint()
+          ..shader = SweepGradient(
+            endAngle: sweep,
+            colors: [light, head],
+            transform: const GradientRotation(-math.pi / 2),
+          ).createShader(rect)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke
+          ..strokeCap = StrokeCap.butt);
+
+    final endA = start + sweep;
+    canvas.drawCircle(
+        center + Offset(math.cos(start) * r, math.sin(start) * r),
+        stroke / 2,
+        Paint()..color = light);
+    canvas.drawCircle(
+        center + Offset(math.cos(endA) * r, math.sin(endA) * r),
+        stroke / 2,
+        Paint()..color = head);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniRingPainter old) =>
+      old.pct != pct || old.anim != anim;
+}
 
 /// Analytics tab — 7-day stat tiles and trend bars, port of the PWA's
 /// updateStats() view. Bars are plain widgets; a charting package can
@@ -70,6 +227,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
+                  // Separated lever rings — Bevel-style: one ring per
+                  // metric with the number inside, because Analytics is
+                  // about comparing levers (Today keeps the composite).
+                  if (a.avgNutPct != null)
+                    _LeverRings(a: a, i18n: widget.i18n),
+                  if (a.avgNutPct != null) const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(

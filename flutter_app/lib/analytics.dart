@@ -103,6 +103,13 @@ class WeeklyAnalytics {
   final double? velocityCmPerYear;
   final String velocityLabel; // 'on pace' | 'stable' | 'below range' | 'not enough data'
   final double? heightGain30dCm;
+
+  // 7-day lever averages (0..1, over logged days) — feed the
+  // separated mini-rings at the top of the Analytics screen, where
+  // comparing levers is the point (unlike Today's composite ring).
+  final double? avgNutPct;
+  final double? avgActPct;
+  final double? avgSlpPct;
   WeeklyAnalytics({
     required this.days,
     required this.avgScore,
@@ -110,6 +117,9 @@ class WeeklyAnalytics {
     required this.velocityCmPerYear,
     required this.velocityLabel,
     required this.heightGain30dCm,
+    required this.avgNutPct,
+    required this.avgActPct,
+    required this.avgSlpPct,
   });
 }
 
@@ -189,8 +199,9 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
   );
   final logged = days.where((d) => d.hasAnyLog).toList();
   double? avgScore;
+  double? avgNut, avgAct, avgSlp;
   if (logged.isNotEmpty) {
-    double total = 0;
+    double total = 0, nutSum = 0, actSum = 0, slpSum = 0;
     for (final d in logged) {
       final pR = ((d.proteinG ?? 0) / proteinTarget).clamp(0.0, 1.0);
       final cR = ((d.calciumMg ?? 0) / 1300).clamp(0.0, 1.0);
@@ -201,8 +212,14 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
       final effR = ((d.sleepEfficiency ?? 0) / 100).clamp(0.0, 1.0);
       final slpPct = durR * 0.6 + effR * 0.4;
       total += nutPct * 30 + actPct * 30 + slpPct * 40;
+      nutSum += nutPct;
+      actSum += actPct;
+      slpSum += slpPct;
     }
     avgScore = total / logged.length;
+    avgNut = nutSum / logged.length;
+    avgAct = actSum / logged.length;
+    avgSlp = slpSum / logged.length;
   }
 
   final sleepVals = [
@@ -247,5 +264,8 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     velocityCmPerYear: velocity,
     velocityLabel: velocityLabel,
     heightGain30dCm: gain,
+    avgNutPct: avgNut,
+    avgActPct: avgAct,
+    avgSlpPct: avgSlp,
   );
 }
