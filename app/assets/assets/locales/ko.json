@@ -538,5 +538,20 @@
  "flutter.rem.day_short.thu": "목",
  "flutter.rem.day_short.fri": "금",
  "flutter.rem.day_short.sat": "토",
- "flutter.rem.day_short.sun": "일"
+ "flutter.rem.day_short.sun": "일",
+ "flutter.auth.google": "Google로 계속하기",
+ "flutter.auth.apple": "Apple로 계속하기",
+ "flutter.auth.or": "또는",
+ "flutter.auth.create_btn": "계정 만들기",
+ "flutter.auth.creating": "계정 생성 중…",
+ "flutter.auth.have_account": "계정이 있나요? 로그인",
+ "flutter.auth.no_account": "처음이신가요? 계정 만들기",
+ "flutter.auth.forgot": "비밀번호를 잊으셨나요?",
+ "flutter.auth.password_min": "비밀번호는 8자 이상이어야 합니다",
+ "flutter.auth.check_inbox": "계정이 생성되었습니다 — 이메일을 확인하고 인증 후 로그인하세요.",
+ "flutter.auth.enter_email_first": "먼저 위에 이메일을 입력한 후 \"비밀번호를 잊으셨나요?\"를 다시 누르세요.",
+ "flutter.auth.reset_sent": "재설정 링크를 보냈습니다 — 이메일을 열고 링크를 눌러 새 비밀번호를 설정하세요.",
+ "flutter.auth.new_password_title": "새 비밀번호 설정",
+ "flutter.auth.new_password": "새 비밀번호",
+ "flutter.auth.update_password": "새 비밀번호 저장"
 }

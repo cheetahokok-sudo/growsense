@@ -538,5 +538,20 @@
  "flutter.rem.day_short.thu": "T5",
  "flutter.rem.day_short.fri": "T6",
  "flutter.rem.day_short.sat": "T7",
- "flutter.rem.day_short.sun": "CN"
+ "flutter.rem.day_short.sun": "CN",
+ "flutter.auth.google": "Tiếp tục với Google",
+ "flutter.auth.apple": "Tiếp tục với Apple",
+ "flutter.auth.or": "hoặc",
+ "flutter.auth.create_btn": "Tạo tài khoản",
+ "flutter.auth.creating": "Đang tạo tài khoản…",
+ "flutter.auth.have_account": "Đã có tài khoản? Đăng nhập",
+ "flutter.auth.no_account": "Mới dùng? Tạo tài khoản",
+ "flutter.auth.forgot": "Quên mật khẩu?",
+ "flutter.auth.password_min": "Mật khẩu phải có ít nhất 8 ký tự",
+ "flutter.auth.check_inbox": "Đã tạo tài khoản — kiểm tra email để xác nhận, sau đó đăng nhập.",
+ "flutter.auth.enter_email_first": "Nhập email ở trên trước, rồi bấm \"Quên mật khẩu?\" lần nữa.",
+ "flutter.auth.reset_sent": "Đã gửi liên kết đặt lại — mở email và bấm liên kết để chọn mật khẩu mới.",
+ "flutter.auth.new_password_title": "Chọn mật khẩu mới",
+ "flutter.auth.new_password": "Mật khẩu mới",
+ "flutter.auth.update_password": "Đặt mật khẩu mới"
 }

@@ -538,5 +538,20 @@
  "flutter.rem.day_short.thu": "Thu",
  "flutter.rem.day_short.fri": "Fri",
  "flutter.rem.day_short.sat": "Sat",
- "flutter.rem.day_short.sun": "Sun"
+ "flutter.rem.day_short.sun": "Sun",
+ "flutter.auth.google": "Continue with Google",
+ "flutter.auth.apple": "Continue with Apple",
+ "flutter.auth.or": "or",
+ "flutter.auth.create_btn": "Create account",
+ "flutter.auth.creating": "Creating account…",
+ "flutter.auth.have_account": "Have an account? Sign in",
+ "flutter.auth.no_account": "New here? Create account",
+ "flutter.auth.forgot": "Forgot password?",
+ "flutter.auth.password_min": "Password must be at least 8 characters",
+ "flutter.auth.check_inbox": "Account created — check your email to confirm, then sign in.",
+ "flutter.auth.enter_email_first": "Type your email above first, then tap \"Forgot password?\" again.",
+ "flutter.auth.reset_sent": "Reset link sent — open the email and tap the link to choose a new password.",
+ "flutter.auth.new_password_title": "Choose a new password",
+ "flutter.auth.new_password": "New password",
+ "flutter.auth.update_password": "Set new password"
 }
