@@ -798,28 +798,24 @@ class AppState extends ChangeNotifier {
   // ── Extended-family heights (family_height_records) ─────────────────
   // Grandparent heights for the EXPLORATORY target-height estimate.
 
-  Future<Map<String, double>> loadFamilyHeights() async {
+  /// All family height records for the active child (record_id,
+  /// relation, height_cm). Grandparents are single per relation; aunts/
+  /// uncles can be many.
+  Future<List<Map<String, dynamic>>> loadFamilyRecords() async {
     final childId = activeChildId;
-    if (childId == null) return {};
+    if (childId == null) return [];
     try {
       final rows = await sb
           .from('family_height_records')
-          .select('relation, height_cm')
+          .select('record_id, relation, height_cm')
           .eq('child_id', childId);
-      final out = <String, double>{};
-      for (final r in rows) {
-        final rel = r['relation'] as String?;
-        final h = (r['height_cm'] as num?)?.toDouble();
-        if (rel != null && h != null) out[rel] = h; // latest wins
-      }
-      return out;
+      return List<Map<String, dynamic>>.from(rows);
     } on PostgrestException {
-      return {};
+      return [];
     }
   }
 
-  /// Replace the stored height for one relation (delete-then-insert
-  /// keeps a single current value per relation). Pass null to clear.
+  /// Replace the single stored height for a relation (grandparents).
   Future<String?> setFamilyHeight(String relation, double? heightCm) async {
     final childId = activeChildId;
     if (childId == null) return 'No child selected';
@@ -840,6 +836,39 @@ class AppState extends ChangeNotifier {
       return null;
     } on PostgrestException catch (e) {
       return e.message;
+    }
+  }
+
+  /// Add one record (aunts/uncles — multiple allowed). Returns the new
+  /// row, or null on failure.
+  Future<Map<String, dynamic>?> addFamilyRecord(
+      String relation, double heightCm) async {
+    final childId = activeChildId;
+    if (childId == null) return null;
+    try {
+      return await sb
+          .from('family_height_records')
+          .insert({
+            'child_id': childId,
+            'relation': relation,
+            'height_cm': heightCm,
+            'created_by': sb.auth.currentUser?.id,
+          })
+          .select()
+          .single();
+    } on PostgrestException {
+      return null;
+    }
+  }
+
+  Future<void> deleteFamilyRecord(dynamic recordId) async {
+    try {
+      await sb
+          .from('family_height_records')
+          .delete()
+          .eq('record_id', recordId);
+    } on PostgrestException {
+      /* non-fatal */
     }
   }
 

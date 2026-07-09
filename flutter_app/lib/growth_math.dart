@@ -326,7 +326,7 @@ ExtendedTargetHeight? calculateExtendedTargetHeight({
   int? motherAge,
   int? fatherAge,
   required String? childSex,
-  required List<({double heightCm, bool female})> grandparents,
+  required List<({double heightCm, bool female})> relatives,
 }) {
   final base = calculateTargetHeight(
     motherHeightCm: motherHeightCm,
@@ -335,27 +335,29 @@ ExtendedTargetHeight? calculateExtendedTargetHeight({
     fatherAge: fatherAge,
     childSex: childSex,
   );
-  if (base == null || grandparents.isEmpty) return null;
+  if (base == null || relatives.isEmpty) return null;
   final sex = childSex == 'female' ? 'female' : 'male';
 
-  // Average sex-adjusted z of the recorded grandparents, then apply the
-  // same regression-to-the-mean shrinkage the parents-only method uses.
-  double gpZSum = 0;
-  for (final g in grandparents) {
-    final s = g.female ? 'female' : 'male';
-    gpZSum += (g.heightCm - adultMean[s]!) / adultSD[s]!;
+  // Sex-adjusted z of each recorded relative (grandparents + aunts/
+  // uncles — all coefficient-of-relationship 0.25, so an equal-weighted
+  // average is the correct pooled signal), then the same regression-to-
+  // the-mean shrinkage the parents-only method uses.
+  double zSum = 0;
+  for (final r in relatives) {
+    final s = r.female ? 'female' : 'male';
+    zSum += (r.heightCm - adultMean[s]!) / adultSD[s]!;
   }
-  final gpMeanZ = gpZSum / grandparents.length;
-  final gpCorrectedZ = 0.79 * gpMeanZ - 0.077;
+  final meanZ = zSum / relatives.length;
+  final correctedZ = 0.79 * meanZ - 0.077;
 
-  final blendedZ = 0.70 * base.correctedZ + 0.30 * gpCorrectedZ;
+  final blendedZ = 0.70 * base.correctedZ + 0.30 * correctedZ;
   final target = adultMean[sex]! + blendedZ * adultSD[sex]!;
   final residualSD = sex == 'female' ? 4.2 : 4.5;
   return ExtendedTargetHeight(
     target,
     target - residualSD,
     target + residualSD,
-    grandparents.length,
+    relatives.length,
     target - base.targetHeightCm,
   );
 }

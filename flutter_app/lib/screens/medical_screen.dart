@@ -922,14 +922,15 @@ class _GrowthChartPainter extends CustomPainter {
 }
 
 // ── Target height card ──────────────────────────────────────────────
+// The genetic-target card, with an expandable "wider family" refinement
+// organised by side of the family. The hook is a real scenario: a short
+// parent whose own siblings are tall is evidence their stature was held
+// down by environment, not genes — so the child's ceiling may be higher.
 
-// Grandparent relations feeding the exploratory estimate; the bool is
-// whether that person is female (for sex-adjusted z-scoring).
-const _grandparents = <(String, String, bool)>[
-  ('maternal_grandmother', 'Maternal grandmother', true),
-  ('maternal_grandfather', 'Maternal grandfather', false),
-  ('paternal_grandmother', 'Paternal grandmother', true),
-  ('paternal_grandfather', 'Paternal grandfather', false),
+// (sideKey, grandmotherRelation, grandfatherRelation)
+const _sides = <(String, String, String)>[
+  ('maternal', 'maternal_grandmother', 'maternal_grandfather'),
+  ('paternal', 'paternal_grandmother', 'paternal_grandfather'),
 ];
 
 class _TargetHeightCard extends StatefulWidget {
@@ -950,18 +951,34 @@ class _TargetHeightCard extends StatefulWidget {
 class _TargetHeightCardState extends State<_TargetHeightCard> {
   bool _expanded = false;
   bool _busy = false;
-  final _ctrls = {for (final g in _grandparents) g.$1: TextEditingController()};
+
+  final _gp = {
+    for (final r in [
+      'maternal_grandmother',
+      'maternal_grandfather',
+      'paternal_grandmother',
+      'paternal_grandfather'
+    ])
+      r: TextEditingController()
+  };
+  // Aunt/uncle rows: {record_id, relation, height_cm}. relation ends in
+  // _aunt (female) or _uncle (male).
+  final List<Map<String, dynamic>> _siblings = [];
 
   @override
   void initState() {
     super.initState();
-    widget.appState.loadFamilyHeights().then((m) {
+    widget.appState.loadFamilyRecords().then((rows) {
       if (!mounted) return;
       setState(() {
-        for (final e in m.entries) {
-          final c = _ctrls[e.key];
-          if (c != null) {
-            c.text = cmToEntry(e.value, widget.units).toStringAsFixed(0);
+        for (final r in rows) {
+          final rel = r['relation'] as String?;
+          final h = (r['height_cm'] as num?)?.toDouble();
+          if (rel == null || h == null) continue;
+          if (_gp.containsKey(rel)) {
+            _gp[rel]!.text = cmToEntry(h, widget.units).toStringAsFixed(0);
+          } else if (rel.endsWith('_aunt') || rel.endsWith('_uncle')) {
+            _siblings.add(r);
           }
         }
       });
@@ -970,47 +987,133 @@ class _TargetHeightCardState extends State<_TargetHeightCard> {
 
   @override
   void dispose() {
-    for (final c in _ctrls.values) {
+    for (final c in _gp.values) {
       c.dispose();
     }
     super.dispose();
   }
 
-  // Grandparents with a valid entered height, converted to cm.
-  List<({double heightCm, bool female})> get _enteredGrandparents => [
-        for (final g in _grandparents)
-          if ((double.tryParse(_ctrls[g.$1]!.text) ?? 0) > 0)
-            (
-              heightCm: entryToCm(double.parse(_ctrls[g.$1]!.text), widget.units),
-              female: g.$3,
-            ),
+  double? _entryCm(String rel) {
+    final v = double.tryParse(_gp[rel]!.text);
+    return (v != null && v > 0) ? entryToCm(v, widget.units) : null;
+  }
+
+  List<({double heightCm, bool female})> get _relatives => [
+        for (final rel in _gp.keys)
+          if (_entryCm(rel) != null)
+            (heightCm: _entryCm(rel)!, female: rel.endsWith('grandmother')),
+        for (final s in _siblings)
+          (
+            heightCm: (s['height_cm'] as num).toDouble(),
+            female: (s['relation'] as String).endsWith('_aunt'),
+          ),
       ];
 
-  Future<void> _save() async {
+  Future<void> _saveGrandparents() async {
     setState(() => _busy = true);
-    for (final g in _grandparents) {
-      final v = double.tryParse(_ctrls[g.$1]!.text);
-      await widget.appState.setFamilyHeight(
-          g.$1, (v != null && v > 0) ? entryToCm(v, widget.units) : null);
+    for (final rel in _gp.keys) {
+      await widget.appState.setFamilyHeight(rel, _entryCm(rel));
     }
     if (!mounted) return;
     setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(widget.i18n
-            .t('flutter.th.saved', 'Family heights saved'))));
+        content:
+            Text(widget.i18n.t('flutter.th.saved', 'Family heights saved'))));
+  }
+
+  Future<void> _addSibling(String side) async {
+    final t = widget.i18n.t;
+    final heightCtrl = TextEditingController();
+    bool female = true;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: Text(
+              side == 'maternal'
+                  ? t('flutter.th.add_m_sibling', "Mother's sibling")
+                  : t('flutter.th.add_f_sibling', "Father's sibling"),
+              style: const TextStyle(fontSize: 15)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: heightCtrl,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                    labelText:
+                        '${t('flutter.height', 'Height')} (${heightUnitLabel(widget.units)})',
+                    isDense: true),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                for (final f in [true, false])
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setDlg(() => female = f),
+                      child: Container(
+                        margin: EdgeInsets.only(right: f ? 8 : 0),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: female == f
+                              ? GsColors.accent
+                              : GsColors.surface2,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                            f
+                                ? t('flutter.th.sister', 'Sister')
+                                : t('flutter.th.brother', 'Brother'),
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: female == f
+                                    ? Colors.white
+                                    : GsColors.text2)),
+                      ),
+                    ),
+                  ),
+              ]),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(t('common.cancel', 'Cancel'))),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(t('common.add', 'Add'))),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    final v = double.tryParse(heightCtrl.text);
+    if (v == null || v <= 0) return;
+    final relation = '${side}_${female ? 'aunt' : 'uncle'}';
+    final row = await widget.appState
+        .addFamilyRecord(relation, entryToCm(v, widget.units));
+    if (row != null && mounted) setState(() => _siblings.add(row));
+  }
+
+  Future<void> _removeSibling(Map<String, dynamic> s) async {
+    await widget.appState.deleteFamilyRecord(s['record_id']);
+    if (mounted) setState(() => _siblings.remove(s));
   }
 
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
-    final child = widget.child;
     final units = widget.units;
     final target = calculateTargetHeight(
-      motherHeightCm: (child['mother_height_cm'] as num?)?.toDouble(),
-      fatherHeightCm: (child['father_height_cm'] as num?)?.toDouble(),
-      motherAge: (child['mother_current_age'] as num?)?.toInt(),
-      fatherAge: (child['father_current_age'] as num?)?.toInt(),
-      childSex: child['biological_sex'] as String?,
+      motherHeightCm: (widget.child['mother_height_cm'] as num?)?.toDouble(),
+      fatherHeightCm: (widget.child['father_height_cm'] as num?)?.toDouble(),
+      motherAge: (widget.child['mother_current_age'] as num?)?.toInt(),
+      fatherAge: (widget.child['father_current_age'] as num?)?.toInt(),
+      childSex: widget.child['biological_sex'] as String?,
     );
 
     return Container(
@@ -1031,46 +1134,47 @@ class _TargetHeightCardState extends State<_TargetHeightCard> {
                     t('flutter.genetic_target_title',
                         'Genetic target height (adult)'),
                     style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: GsColors.estimatedDark)),
-                const SizedBox(height: 4),
-                // Compact: the number big, the range on its own line.
-                Text(formatHeight(target.targetHeightCm, units),
-                    style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                        color: GsColors.estimatedDark)),
-                Text(
-                    '${t('flutter.range', 'range')} ${formatHeight(target.rangeLowCm, units)} – ${formatHeight(target.rangeHighCm, units)}',
-                    style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: GsColors.estimatedDark)),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(formatHeight(target.targetHeightCm, units),
+                        style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: GsColors.estimatedDark)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                          '${formatHeight(target.rangeLowCm, units)}–${formatHeight(target.rangeHighCm, units)}',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: GsColors.estimatedDark
+                                  .withValues(alpha: 0.7))),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
                 Text(
                     '${t('flutter.target_method')} ${formatHeight(target.tannerMidParentalCm, units)}.',
                     style: const TextStyle(
-                        fontSize: 10.5, color: GsColors.estimatedDark)),
+                        fontSize: 10, color: GsColors.estimatedDark)),
                 const SizedBox(height: 10),
-
-                // Expand toggle for the exploratory grandparent method.
                 InkWell(
                   onTap: () => setState(() => _expanded = !_expanded),
                   child: Row(
                     children: [
-                      Icon(
-                          _expanded
-                              ? Icons.expand_less
-                              : Icons.expand_more,
-                          size: 18,
-                          color: GsColors.estimatedDark),
+                      Icon(_expanded ? Icons.expand_less : Icons.expand_more,
+                          size: 18, color: GsColors.estimatedDark),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                             t('flutter.th.refine_toggle',
-                                "Refine with grandparents' heights"),
+                                'Refine with wider family heights'),
                             style: const TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
@@ -1088,90 +1192,34 @@ class _TargetHeightCardState extends State<_TargetHeightCard> {
   Widget _extendedSection(
       String Function(String, [String?, Map<String, String>?]) t,
       TargetHeight base) {
-    final units = widget.units;
-    final gps = _enteredGrandparents;
     final ext = calculateExtendedTargetHeight(
       motherHeightCm: (widget.child['mother_height_cm'] as num?)?.toDouble(),
       fatherHeightCm: (widget.child['father_height_cm'] as num?)?.toDouble(),
       motherAge: (widget.child['mother_current_age'] as num?)?.toInt(),
       fatherAge: (widget.child['father_current_age'] as num?)?.toInt(),
       childSex: widget.child['biological_sex'] as String?,
-      grandparents: gps,
+      relatives: _relatives,
     );
-    final unitLabel = heightUnitLabel(units);
     return Padding(
-      padding: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.only(top: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
               t('flutter.th.refine_intro',
-                  "If a parent's own height was limited by childhood undernutrition or illness, mid-parental height can underestimate — those effects are largely environmental, not inherited. Grandparents' heights give an exploratory second view."),
+                  'Some families carry more height than one parent shows. If a parent grew up with poor nutrition or illness, their own siblings and parents reveal the family’s real potential — a 156 cm mother whose sisters are 163–166 cm is a taller-genes family.'),
               style: const TextStyle(
-                  fontSize: 10.5, color: GsColors.estimatedDark, height: 1.45)),
-          const SizedBox(height: 10),
-          for (var i = 0; i < _grandparents.length; i += 2)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(children: [
-                Expanded(child: _gpField(_grandparents[i], unitLabel, t)),
-                const SizedBox(width: 8),
-                Expanded(child: _gpField(_grandparents[i + 1], unitLabel, t)),
-              ]),
-            ),
-          if (ext != null) ...[
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: GsColors.surface,
-                borderRadius: BorderRadius.circular(GsRadius.sm),
-                border: Border.all(color: GsColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                          color: GsColors.estimated.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4)),
-                      child: Text(
-                          t('flutter.th.exploratory', 'EXPLORATORY'),
-                          style: const TextStyle(
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                              color: GsColors.estimatedDark)),
-                    ),
-                    const Spacer(),
-                    Text(
-                        '${ext.deltaVsParentsCm >= 0 ? '+' : '−'}${formatHeight(ext.deltaVsParentsCm.abs(), units)} ${t('flutter.th.vs_parents', 'vs parents-only')}',
-                        style: const TextStyle(
-                            fontSize: 10, color: GsColors.text3)),
-                  ]),
-                  const SizedBox(height: 6),
-                  Text(formatHeight(ext.targetHeightCm, units),
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: GsColors.text)),
-                  Text(
-                      '${t('flutter.range', 'range')} ${formatHeight(ext.rangeLowCm, units)} – ${formatHeight(ext.rangeHighCm, units)} · ${t('flutter.th.records_used', '{n} recorded', {
-                            'n': '${ext.recordsUsed}'
-                          })}',
-                      style: const TextStyle(
-                          fontSize: 11, color: GsColors.text2)),
-                ],
-              ),
-            ),
-          ],
+                  fontSize: 10.5,
+                  color: GsColors.estimatedDark,
+                  height: 1.45)),
+          const SizedBox(height: 12),
+          for (final side in _sides) _sidePanel(t, side),
+          const SizedBox(height: 4),
+          if (ext != null) _resultBox(t, ext),
           const SizedBox(height: 8),
           Text(
               t('flutter.th.disclaimer',
-                  'Exploratory — there is no validated method for weighting grandparent heights. This blends the parents-only estimate (70%) with a sex-adjusted grandparent average (30%); the 70/30 ratio is an arbitrary choice, not a research constant. A "what-if", not a more accurate number.'),
+                  'Exploratory — no validated method exists for weighting extended-family heights. This blends the parents-only estimate (70%) with a sex-adjusted average of the relatives you enter (30%); the 70/30 ratio is an arbitrary choice. A "what-if", not a more accurate number.'),
               style: const TextStyle(
                   fontSize: 9.5,
                   color: GsColors.text3,
@@ -1183,36 +1231,182 @@ class _TargetHeightCardState extends State<_TargetHeightCard> {
                   'Rationale: adult height is strongly shaped by early-life nutrition across generations — NCD-RisC, eLife 2016 (PMID 27458798).'),
               style: const TextStyle(
                   fontSize: 9.5, color: GsColors.text3, height: 1.4)),
-          const SizedBox(height: 10),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: OutlinedButton(
-              onPressed: _busy ? null : _save,
-              child: Text(
-                  _busy
-                      ? t('flutter.saving', 'Saving…')
-                      : t('flutter.th.save', 'Save family heights'),
-                  style: const TextStyle(fontSize: 12)),
-            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sidePanel(
+      String Function(String, [String?, Map<String, String>?]) t,
+      (String, String, String) side) {
+    final isMaternal = side.$1 == 'maternal';
+    final parentH = (widget.child[
+            isMaternal ? 'mother_height_cm' : 'father_height_cm'] as num?)
+        ?.toDouble();
+    final sibs = _siblings
+        .where((s) => (s['relation'] as String).startsWith(side.$1))
+        .toList();
+    final unitLabel = heightUnitLabel(widget.units);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: GsColors.surface,
+        borderRadius: BorderRadius.circular(GsRadius.sm),
+        border: Border.all(color: GsColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                  isMaternal
+                      ? t('flutter.th.mothers_side', "Mother's side")
+                      : t('flutter.th.fathers_side', "Father's side"),
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w800)),
+              const Spacer(),
+              if (parentH != null)
+                Text(
+                    '${isMaternal ? t('common.mother', 'Mother') : t('common.father', 'Father')} ${formatHeight(parentH, widget.units)}',
+                    style: const TextStyle(
+                        fontSize: 10.5, color: GsColors.text3)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+                child: _gpField(side.$2,
+                    t('flutter.th.grandmother', 'Grandmother'), unitLabel)),
+            const SizedBox(width: 8),
+            Expanded(
+                child: _gpField(side.$3,
+                    t('flutter.th.grandfather', 'Grandfather'), unitLabel)),
+          ]),
+          const SizedBox(height: 8),
+          Text(
+              isMaternal
+                  ? t('flutter.th.m_siblings', "Mother's brothers & sisters")
+                  : t('flutter.th.f_siblings', "Father's brothers & sisters"),
+              style: const TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: GsColors.text2)),
+          const SizedBox(height: 5),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final s in sibs)
+                InputChip(
+                  label: Text(
+                      '${(s['relation'] as String).endsWith('_aunt') ? '♀' : '♂'} ${formatHeight((s['height_cm'] as num).toDouble(), widget.units)}',
+                      style: const TextStyle(fontSize: 11)),
+                  onDeleted: () => _removeSibling(s),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.add, size: 14),
+                label: Text(t('flutter.th.add', 'Add'),
+                    style: const TextStyle(fontSize: 11)),
+                onPressed: () => _addSibling(side.$1),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _gpField(
-      (String, String, bool) g,
-      String unitLabel,
-      String Function(String, [String?, Map<String, String>?]) t) {
+  Widget _gpField(String rel, String label, String unitLabel) {
     return TextField(
-      controller: _ctrls[g.$1],
+      controller: _gp[rel],
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: (_) => setState(() {}),
       style: const TextStyle(fontSize: 13),
       decoration: InputDecoration(
-        labelText: '${t('flutter.family.${g.$1}', g.$2)} ($unitLabel)',
-        labelStyle: const TextStyle(fontSize: 10.5),
+        labelText: '$label ($unitLabel)',
+        labelStyle: const TextStyle(fontSize: 10),
         isDense: true,
+      ),
+    );
+  }
+
+  Widget _resultBox(
+      String Function(String, [String?, Map<String, String>?]) t,
+      ExtendedTargetHeight ext) {
+    final units = widget.units;
+    final up = ext.deltaVsParentsCm >= 0;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: GsColors.surface,
+        borderRadius: BorderRadius.circular(GsRadius.sm),
+        border: Border.all(color: GsColors.estimated.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                  color: GsColors.estimated.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4)),
+              child: Text(t('flutter.th.exploratory', 'EXPLORATORY'),
+                  style: const TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                      color: GsColors.estimatedDark)),
+            ),
+            const Spacer(),
+            Text(
+                '${up ? '+' : '−'}${formatHeight(ext.deltaVsParentsCm.abs(), units)} ${t('flutter.th.vs_parents', 'vs parents-only')}',
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: up ? GsColors.accent : GsColors.text3)),
+          ]),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(formatHeight(ext.targetHeightCm, units),
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: GsColors.text)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                    '${formatHeight(ext.rangeLowCm, units)}–${formatHeight(ext.rangeHighCm, units)} · ${t('flutter.th.records_used', '{n} recorded', {
+                          'n': '${ext.recordsUsed}'
+                        })}',
+                    style:
+                        const TextStyle(fontSize: 11, color: GsColors.text2)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: OutlinedButton(
+              onPressed: _busy ? null : _saveGrandparents,
+              style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 34),
+                  visualDensity: VisualDensity.compact),
+              child: Text(
+                  _busy
+                      ? t('flutter.saving', 'Saving…')
+                      : t('flutter.th.save', 'Save'),
+                  style: const TextStyle(fontSize: 12)),
+            ),
+          ),
+        ],
       ),
     );
   }
