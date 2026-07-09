@@ -1,0 +1,1852 @@
+{
+  "_meta": {
+    "name": "GrowSense Coach — Food & Activity batch",
+    "phase": "batch-2-food-activity",
+    "created": "2026-07-09",
+    "note": "200 parent-facing Q&A covering every food category and dish in food-reference-data.js and every activity in activity_data.dart, so a parent who taps a food or activity can learn the growth science behind it. House style: plain language for parents, exact clinical term kept so it can be repeated to a doctor. CITATION RULE (identical to the pilot library): citation_source is populated ONLY where the claim was web-verified on 2026-07-09 to a real PubMed/PMC source; every other answer is deliberately left uncited rather than carry an unverified reference. Not medical advice. Migrates into the ai_coach_questions Supabase table after review.",
+    "verified_sources": [
+      "PMID 34063030 — Dietary Protein Requirements in Children — Nutrients 2021",
+      "PMC3231896 — Preventive zinc supplementation & linear growth — BMC Public Health 2011",
+      "PMID 11149479 — Jumping improves bone mass in prepubescent children (RCT) — J Bone Miner Res 2001",
+      "PMC6518138 — Dairy consumption, height & bone mineral content in children — Advances in Nutrition 2019",
+      "PMID 33239350 — WHO 2020 guidelines on physical activity & sedentary behaviour — Br J Sports Med 2020",
+      "PMID 11160596 — Iron deficiency & cognitive development in children — J Nutr 2001",
+      "PMID 23147022 — Bone health in endurance athletes (swimmers/cyclists) — Curr Sports Med Rep 2012",
+      "PMID 16980314 — Calcium supplementation & bone density in healthy children — BMJ 2006",
+      "PMID 8627466 — Physiology of growth hormone secretion during sleep — J Pediatr 1996"
+    ]
+  },
+  "questions": [
+    {
+      "category": "nutrition",
+      "question_text": "Why is protein the nutrient parents hear most about for height?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Protein supplies the amino-acid building blocks the body assembles into new bone, muscle and cartilage, and it drives the IGF-1 axis that stimulates the growth plates. Meeting the daily target consistently is what matters — the plate can only build with the materials it's given. What it does NOT do is push height past a child's genetic ceiling once the target is already met.",
+      "citation_source": "PubMed — PMID: 34063030 — \"Dietary Protein Requirements in Children: Methods for Consideration\" — Nutrients — 2021",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How much protein does my child actually need per day?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "It scales with body weight and age — very roughly around 1 g per kg of body weight per day for school-age children, a little higher in the toddler years per kilo. GrowSense sets a growth-optimized target for each child rather than a flat number. Spreading it across meals is more useful than one big protein hit.",
+      "citation_source": "PubMed — PMID: 34063030 — \"Dietary Protein Requirements in Children: Methods for Consideration\" — Nutrients — 2021",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "What is a 'complete' protein and does my child need it every meal?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "A complete protein contains all nine essential amino acids in usable amounts — animal foods (egg, dairy, meat, fish) are complete, and soy/tofu is the main complete plant one. Individual plant foods are often low in one amino acid, but eating a variety across the day (e.g. grains plus legumes) covers the gaps. It's the daily total and variety that count, not every single plate.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is the protein in eggs really 'better quality' than other foods?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Egg protein scores at or near the top of the digestibility scales (DIAAS/PDCAAS) that rate how well a food's amino acids match human needs — it's a common reference standard. That makes an egg an efficient, cheap growth food. Quality aside, total daily protein and overall variety still matter more than chasing the single highest-scoring food.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How many eggs a day is safe for a growing child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "For most healthy children one to two eggs a day fits comfortably into a balanced diet and is a nutrient-dense way to hit protein, choline and vitamin B12. Dietary cholesterol from eggs has far less effect on blood cholesterol than once thought. If your child has a diagnosed lipid disorder or egg allergy, follow your pediatrician's specific guidance.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "What's in an egg yolk versus the white?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "The white is almost pure protein, while the yolk carries most of the micronutrients — vitamin D, vitamin A, B12, choline, iron and the healthy fats. Giving whole eggs rather than whites-only means the child gets the growth-supporting vitamins too. Serve fully cooked for younger children to avoid salmonella risk.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is steamed egg custard a good food for young children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — steamed egg custard (Chinese zhēng shuǐ dàn, Vietnamese chả trứng, Korean gyeran-jjim) is soft, easy to chew and swallow, and delivers complete egg protein plus yolk micronutrients in a texture toddlers accept well. It's a gentle option during recovery from illness. Watch added salt or soy sauce for the youngest children.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are quail eggs more nutritious than chicken eggs for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Gram for gram quail eggs are similar to chicken eggs — good complete protein and yolk micronutrients — just smaller, so several equal one chicken egg. They're a fun, bite-sized way to add protein. Because they're small and round, supervise young children as they can be a choking size.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does milk really help children grow taller?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Milk is a compact package of protein, calcium and (often) vitamin D, and controlled trials show adding dairy reliably increases bone mineral content in childhood. The evidence that it directly adds final height is more mixed — it helps most in children who were short on those nutrients to begin with. It's a useful growth food, not a magic height potion.",
+      "citation_source": "PMC — PMC6518138 — \"Effects of Dairy Product Consumption on Height and Bone Mineral Content in Children: A Systematic Review of Controlled Trials\" — Advances in Nutrition — 2019",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How much milk should a child drink in a day?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Around two servings of dairy a day (roughly 400–500 ml of milk, or a mix of milk, yogurt and cheese) covers most children's calcium needs without crowding out other foods. Much more than that can fill a small stomach and displace iron-rich foods, sometimes contributing to iron deficiency. Balance dairy with meat, fish, legumes and vegetables.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is cheese like cheddar or gouda good for growing kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Hard cheeses such as cheddar, gouda and edam are concentrated calcium and protein and are handy, kid-friendly snacks. Because they're also higher in salt and saturated fat, use them as a portion (a matchbox-sized piece) rather than an unlimited food. String cheese and cheese cubes are convenient lunchbox versions.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does yogurt help my child besides calcium?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yogurt gives protein and calcium like milk, plus live cultures that support gut health, and its lower lactose makes it easier for some children to tolerate. Greek/strained yogurt and labneh are higher in protein per spoon. Choose plain or lightly sweetened versions — fruit-flavored tubs are often high in added sugar.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "My child seems lactose intolerant — how do they get calcium?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Many children with lactose intolerance still tolerate yogurt and hard cheese (which are lower in lactose), or lactose-free milk. Non-dairy calcium comes from tofu set with calcium, canned fish with soft bones, sesame/tahini, leafy greens and fortified plant milks. A pediatric dietitian can confirm the daily calcium target is met.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is labneh a healthy choice for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Labneh is strained yogurt, so it's rich in protein and calcium with a thick, spreadable texture kids enjoy on bread or with vegetables. It's a good breakfast or snack protein. As with other dairy, watch the salt if it's a heavily seasoned version.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is chicken breast a good everyday growth food?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Chicken breast is lean, high-quality complete protein with very little fat, making it an efficient way to hit the daily protein target. It also supplies B vitamins and some zinc. How it's cooked matters more than the meat itself — poached, grilled or baked keeps it lean, while battered and deep-fried adds a lot of fat and salt.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Which is better for my child: Khao Man Gai (poached chicken) or fried chicken?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Both deliver the same base chicken protein, but poached chicken over rice (khao man gai) keeps it lean, while Thai gai tod or Korean fried chicken add deep-fried batter, extra fat and salt. Poached or grilled versions are the better everyday choice; fried chicken is fine as an occasional treat. The protein value is similar — it's the cooking that differs.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is chicken congee good when my child is sick?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — chicken congee (rice porridge) is gentle, hydrating and easy to digest, and adding shredded chicken gives protein to support recovery without straining a sore stomach. It's a classic sick-day food across Asia for good reason. Once appetite returns, build back toward a normal varied diet.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are chicken nuggets a reasonable protein source?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Nuggets do contain chicken protein, but the commercial ones are usually breaded, deep-fried and higher in salt and additives, with less actual meat than a plain chicken piece. They're fine occasionally, especially oven-baked, but shouldn't be the main daily protein. Plain grilled or poached chicken is the better default.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Chicken Shawarma or Shish Tawook healthy for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Both are marinated grilled chicken, so they're a solid lean-protein choice — shish tawook is skewered grilled chicken and shawarma is spit-roasted. Served with salad and flatbread they make a balanced meal. Keep an eye on added creamy/garlic sauces and salt, and choose grilled over anything deep-fried.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Chicken Machboos a good growth meal?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Machboos pairs chicken (complete protein, zinc, B12) with spiced rice, making a satisfying, balanced main dish. Adding vegetables and keeping portions of rice reasonable rounds it out. It's a good example of a traditional dish that already fits growth needs well.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How does the iron in beef help my child grow?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Red meat like beef supplies heme iron, the form the body absorbs most easily, and iron carries oxygen to every growing tissue and supports brain development. Iron deficiency in childhood is linked to poorer cognition and attention, so a couple of servings of red meat (or other iron sources) a week is valuable. Beef also delivers zinc and B12 that the growth plates rely on.",
+      "citation_source": "PubMed — PMID: 11160596 — \"A review of studies on the effect of iron deficiency on cognitive development in children\" — J Nutr — 2001",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Beef Bulgogi a good choice for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Bulgogi is thin-sliced marinated beef, so it delivers heme iron, zinc and complete protein that support growth and brain development. The marinade can be sweet and salty, so serve modest portions with rice and vegetables. Grilled rather than pan-fried in lots of oil keeps it leaner.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Beef with Broccoli a balanced meal?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "It's a nicely balanced dish — beef brings heme iron, zinc and protein, and broccoli adds vitamin C (which boosts iron absorption), fibre and vitamin K. Pairing iron-rich meat with a vitamin-C vegetable in one dish is a smart growth combination. Go easy on salty sauce and serve with rice for energy.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is the beef in Pho a good protein for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "The sliced beef in pho is lean complete protein with iron and zinc, and the broth is comforting and hydrating. It's a wholesome meal, especially with the herbs and vegetables served alongside. Restaurant broth can be high in sodium, so at home you can control the salt.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are burger patties and meatballs okay for growing children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Plain beef patties, Swedish meatballs (köttbullar), lion's head meatballs and tteok-galbi are all ground beef/pork, so they carry protein, iron and zinc. The nutrition depends on what's added — homemade with modest salt is a good meal, while fast-food versions add more fat and sodium. Serve with vegetables and a sensible portion.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How often should children eat red meat?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "A few servings of red meat a week is a reliable way to cover iron and zinc needs during growth. There's no need to eat it daily — poultry, fish, eggs, tofu and legumes fill the other days. Keep processed/cured red meats (bacon, sausage, ham, hot dogs) occasional rather than everyday.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Why is salmon recommended for growing children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Salmon combines complete protein with omega-3 fats (DHA/EPA) that support brain and eye development, plus vitamin D that helps the body use calcium for bone. Two servings of oily fish a week is a common recommendation for children. Baked or grilled keeps it healthiest.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is grilled mackerel (Godeungeo) good for my child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Mackerel is one of the richest sources of omega-3 fats and vitamin D, alongside good protein, so it's an excellent growth and brain food. Its stronger flavor may take a few tries for children to accept. Grilling is a simple, healthy way to serve it.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Can children eat tuna, and is mercury a worry?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Tuna is good lean protein with some omega-3, but larger predatory fish like tuna carry more mercury, so it's kept to a limited amount for children (canned light tuna is lower than albacore/fresh). A serving or two a week is generally fine; check local pediatric guidance for exact limits by age. Lower-mercury fish like salmon, tilapia and mackerel can fill the other fish meals.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is white fish like tilapia or hammour good for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Mild white fish such as tilapia, cod and hammour/sea bream are lean, low-mercury protein with an approachable flavor and soft texture — a good starter fish for children. They have less omega-3 than oily fish, so pair them across the week with salmon or mackerel. Watch for small bones when serving young children.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Can my child eat raw fish or sushi?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Raw fish (sashimi, raw salmon) carries a higher risk of foodborne illness and parasites, and young children's immune systems handle it less well, so most pediatric guidance suggests waiting and serving fish cooked for the youngest. Older children who eat it should get it from a reputable source that handles fish safely. When in doubt, cooked fish gives the same protein and omega-3 without the risk.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are shrimp, crab and squid healthy for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Shellfish like shrimp, crab and squid are lean, high-protein and rich in zinc, iodine and selenium — all useful for growth and thyroid function. Cook thoroughly and introduce cautiously, as shellfish is a common allergen. Dishes like garlic shrimp or shrimp wonton are tasty ways to include them.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is roasted seaweed (Gim) actually nutritious or just a snack?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Roasted seaweed is genuinely useful — it's a natural source of iodine, which the thyroid needs to make the hormones that regulate growth, plus some minerals, all in a low-calorie snack children love. Salted versions add sodium, so choose lightly salted where possible. It's a nice complement to a fish-light week.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are Korean fish cakes (Eomuk) a good source of fish protein?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Fish cakes contain real fish paste and some protein, but they're a processed food with added starch, salt and sometimes sugar, so they're less nutrient-dense than a fillet of fish. They're fine as an occasional item in soup or stir-fry. For the omega-3 and full protein, whole fish like mackerel or salmon is better.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is tofu a good protein for a child who eats little meat?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — soy tofu is one of the few complete plant proteins, and calcium-set tofu also supplies calcium, making it a strong option for children who eat little meat. Soft tofu (soondubu), braised tofu and fried tofu all count. Pair it with iron-rich and vitamin-C foods across the day to cover the nutrients meat would provide.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does the way tofu is cooked change how healthy it is?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "The base tofu is the same nutritious complete protein whether it's soft, braised or fried — but deep-frying (as in fried tofu) soaks up oil and adds calories and fat. Steamed, braised or lightly pan-fried versions keep it leanest. Tofu with tomato sauce also adds a little vitamin C to help iron absorption.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are lentils and beans (like Lentil Soup or Baked Beans) good for growth?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Legumes such as lentils and beans provide plant protein, iron, fibre and folate, making them a valuable everyday food, especially in meat-light meals. Their iron is non-heme (less absorbable), so serving them with a vitamin-C food (tomato, citrus) boosts uptake. Baked beans in tomato sauce can be high in added sugar and salt, so check the label.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is hummus or falafel a healthy option for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Both are chickpea-based, giving plant protein, fibre and iron — hummus also has healthy fats from tahini and olive oil. Hummus with vegetable sticks or bread is a great snack. Falafel is nutritious but usually deep-fried, so baked versions or modest portions are better for everyday eating.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is peanut butter a good growth food?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Peanut butter offers protein, healthy fats and energy in a small amount, which helps children who need more calories to grow. Choose versions without added sugar or palm oil where possible, and spread thinly for younger children since it's sticky. Never give spoonfuls of thick peanut butter or whole peanuts to under-4s due to choking risk.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How does zinc help a child grow, and which foods have it?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Zinc is a co-factor for the enzymes that build new tissue and for the IGF-1 growth signal, and the growth plate is very zinc-hungry — in genuinely zinc-deficient children, supplementing produces a measurable gain in height. Good food sources are red meat, shellfish (oysters, shrimp, crab), seeds and legumes. A child already getting enough from food won't grow more from extra zinc.",
+      "citation_source": "PMC — PMC3231896 — \"Effect of preventive zinc supplementation on linear growth in children under 5 years of age in developing countries: a meta-analysis\" — BMC Public Health — 2011",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Should I give my child calcium supplements to grow taller?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "For a child already getting enough calcium from food, supplements add little — a meta-analysis of healthy children found calcium pills produced only a tiny, temporary bone-density change and no meaningful reduction in fracture risk, and calcium doesn't add height on its own. Food sources (dairy, tofu, small fish, greens) plus enough vitamin D and weight-bearing activity are what build strong bone. Save supplements for cases a doctor identifies as deficient.",
+      "citation_source": "PubMed — PMID: 16980314 — \"Effects of calcium supplementation on bone density in healthy children: meta-analysis of randomised controlled trials\" — BMJ — 2006",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Why does my child need vitamin D as well as calcium?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Calcium is the brick and vitamin D is what lets the body absorb and place it into bone — without enough vitamin D, dietary calcium is poorly used. Sunlight on skin makes vitamin D, and oily fish, egg yolk and fortified milk supply some; many children in low-sun or covered-skin settings need a supplement. Ask your pediatrician whether your child should take one.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "What foods give iron besides red meat?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Besides beef and pork, iron comes from poultry, fish, egg yolk, tofu, lentils, beans and fortified cereals. Plant (non-heme) iron absorbs better alongside a vitamin-C food like tomato, citrus or peppers, and less well with tea or lots of dairy at the same meal. Adequate iron matters for both growth and brain development.",
+      "citation_source": "PubMed — PMID: 11160596 — \"A review of studies on the effect of iron deficiency on cognitive development in children\" — J Nutr — 2001",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "What is DHA and why is oily fish good for the brain?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "DHA is an omega-3 fat that is a major structural component of the brain and retina, and oily fish (salmon, mackerel, sardines) is the richest food source. Including fish a couple of times a week supports neurodevelopment alongside growth. For children who won't eat fish, eggs and some fortified foods provide smaller amounts.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does my child get enough iodine, and why does it matter?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Iodine is needed to make thyroid hormones, which set the pace of growth and brain development, so a shortfall matters during childhood. Seafood, seaweed, dairy, eggs and iodized salt are the main sources. In most families using iodized salt and eating some of those foods, intake is adequate — ask your doctor if you're unsure.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Where does vitamin B12 come from for growing kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Vitamin B12 comes almost entirely from animal foods — meat, fish, eggs and dairy — and it's essential for making red blood cells and for the nervous system. Children eating those foods get plenty. A strictly vegan child needs a reliable B12 source (fortified foods or a supplement), which a dietitian should help arrange.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Char Siu (BBQ pork) an okay food for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Char siu is roast pork, so it does carry protein, iron and zinc, but the sweet glaze adds sugar and it's often salty, so it's best as part of a meal rather than a large portion. Serve with rice and vegetables to balance it. Leaner cuts and lighter glaze make it an everyday-friendlier version.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Moo Ping (grilled pork skewer) healthy for my child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Grilled pork skewers are a decent protein source with iron and zinc, and grilling keeps them leaner than frying. The marinade is often sweet and salty, and charred edges should be kept modest. Pair with rice and vegetables or a clear soup for a balanced Thai meal.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Minced Pork with Basil (Kra Prow) good for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "A mild pad kra prow gives good pork protein plus the vegetables and herbs stir-fried in, making it a balanced one-plate meal over rice. Order it mild for children and watch the salt from fish sauce and soy. A fried egg on top is a classic way to add extra protein.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is pork loin a lean choice like chicken breast?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Pork loin is one of the leaner cuts of pork and provides complete protein, thiamine, zinc and iron with modest fat when trimmed. Grilled, roasted or in a cutlet (baked rather than deep-fried) it's an everyday-friendly protein. Fattier cuts and cured pork are the ones to keep occasional.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How often can my child eat bacon or sausage?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Bacon, sausages (kun chiang, wiener, breakfast sausage), ham and hot dogs are processed meats — tasty but high in salt and sodium-nitrite preservatives, and health bodies classify processed meat as something to limit. Keep them to occasional rather than daily, and lean on fresh meat, fish, eggs and legumes for everyday protein. A weekly appearance is fine for most children.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is pork floss (Moo Yong) a good protein topping?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Pork floss is dried, shredded seasoned pork with some protein, but it's processed and often sweet and salty, so treat it as a flavor topping rather than a main protein. A sprinkle on congee or rice is fine. Fresh meat or egg gives more complete nutrition for the main meal.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are pork or shrimp dumplings and wontons nutritious?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Dumplings and wontons (jiaozi, shrimp wonton) wrap real meat or seafood protein in a wheat skin, so they contribute protein plus some energy from the wrapper. Steamed or boiled versions are lighter than deep-fried. Adding a vegetable side turns them into a balanced meal.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Caramelized Pork and Egg (Thit Kho) good for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Thit kho combines pork and egg, giving a double hit of complete protein, iron and zinc in a comforting braise. The caramel sauce adds sugar and salt, so serve modest portions of the meat with plenty of rice and vegetables. It's a nourishing family dish in balance.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Pork Schnitzel or Donkasu (cutlet) okay for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "The pork inside is good protein, but breaded and deep-fried cutlets (schnitzel, donkasu, tonkatsu) soak up oil and add salt, so they're a treat-leaning food. Oven-baked or air-fried versions keep the protein while cutting the fat. Serve with salad or vegetables rather than only rice.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Macaroni and Cheese a balanced meal for my child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Mac and cheese gives calcium and protein from cheese plus energy from pasta, but on its own it's low in vegetables and can be high in salt and fat. It's a fine base if you add a protein (chicken, tuna) and a vegetable on the side. As an occasional comfort food it's perfectly reasonable.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is pizza an acceptable food in a growing child's diet?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Pizza can contribute protein and calcium (cheese), some carbohydrate energy and, with toppings, vegetables — pepperoni versions add processed meat, salt and fat. A slice or two with a salad is a reasonable meal; it's the frequency and toppings that decide how healthy it is. Vegetable-topped, thinner-crust versions are the better everyday choice.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Bolognese meat sauce a good way to feed my child protein and vegetables?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — a bolognese made with beef/pork and a tomato base delivers protein, iron and zinc plus vitamin C and lycopene from the tomatoes, and it's an easy way to hide extra vegetables. Serve over pasta with a modest amount of sauce and cheese. Homemade lets you control the salt.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are fish sticks and fish fingers real fish?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Most fish fingers and fish sticks are made from real white fish (often cod) in breadcrumbs, so they do provide fish protein — but the coating adds fat and salt, and they have little of the omega-3 found in oily fish. Oven-baked, they're a convenient kid-friendly way to include fish. Rotate in oily fish like salmon or mackerel for the omega-3.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is turkey breast a healthy protein for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Turkey breast is very lean complete protein with B vitamins and some zinc, similar to chicken breast. Freshly roasted or as plain slices it's an everyday-friendly choice. Watch heavily processed deli versions for added salt.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Grilled Halloumi a good vegetarian-friendly protein?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Halloumi is a firm cheese, so it offers protein and calcium and holds up well grilled, making it a satisfying meat-free protein. It is quite salty, so keep portions modest and pair with vegetables or salad. It's a nice occasional change from meat.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Kofta Kebab or Shish Tawook a wholesome dinner for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Both are grilled skewered meats — kofta is spiced ground beef/lamb, shish tawook is chicken — giving protein, iron and zinc with the fat rendered off on the grill. Served with salad, flatbread and yogurt they make a balanced plate. Choose modest portions of the fattier kofta and grill rather than fry.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is canned tuna salad okay for a child's lunch?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Canned tuna is convenient lean protein with some omega-3; the salad version's healthiness depends on how much mayonnaise and salt are added. Made with a light dressing and served with vegetables or wholegrain bread, it's a good lunch. Use canned light tuna to keep mercury lower, in a serving or two a week.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is boiled pork belly (Thit Luoc) or ham a lean protein?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Boiled pork belly is protein-rich but also fatty, so it's best in modest slices as part of a balanced plate. Boiled ham (prosciutto cotto) is leaner but cured, so it carries more salt. Both are fine occasionally; leaner fresh cuts are the everyday choice.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is miso soup nutritious for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Miso is fermented soybean paste, so the soup carries a little plant protein and beneficial fermentation compounds, and with tofu and seaweed added it becomes a light source of protein, calcium and iodine. Its main downside is salt, so keep portions reasonable. It's a gentle, warming starter.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How big should my child's protein portion be at a meal?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "A simple guide is a portion of meat, fish or tofu about the size of the child's own palm, adjusted up as they grow. Spreading protein across breakfast, lunch and dinner is more effective for building tissue than one large serving. GrowSense's daily target helps you see whether the day added up.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does my child need protein at breakfast specifically?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Including some protein at breakfast (egg, milk, yogurt, cheese) helps spread the day's intake more evenly, which the body uses more efficiently for building tissue than a protein-heavy dinner alone. It also steadies energy and appetite through the morning. A protein-light, sugary breakfast is the common gap to fix.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "My child is a picky eater — how do I still cover growth nutrients?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Offer a small amount of a new food repeatedly without pressure — it can take many exposures before a child accepts it — and pair new foods with familiar favorites. Lean on the accepted protein and calcium foods you do have while slowly widening variety. If growth is faltering or the diet is very narrow, involve your pediatrician or a dietitian.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are sugary drinks a problem if my child still drinks milk?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Sugar-sweetened drinks add calories with no growth nutrients and can blunt appetite for nourishing food, as well as harm teeth. Milk and water are the better everyday drinks — milk actually contributes protein and calcium. Keep juice small and occasional, and treat sodas as a rare item.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How much salt is too much in these dishes?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Many tasty dishes here — cured meats, fish sauce, soy-based sauces, salty cheeses — are high in sodium, and children need much less salt than adults. You don't need to ban them, just balance a salty dish with unsalted foods the rest of the day and go easy on added sauces. Cooking at home lets you control the amount.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "What are the common food allergens I should introduce carefully?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "The most common childhood allergens are milk, egg, peanut, tree nuts, soy, wheat, fish and shellfish — several of which appear in these menus. Current guidance is to introduce allergenic foods early and one at a time, watching for reactions, rather than delaying them. If your child has a known allergy or a strong family history, follow your allergist's plan.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Which of these foods are choking hazards for young children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "For under-4s, watch whole nuts, thick spoonfuls of peanut butter, round items like whole quail eggs or meatballs, sausages/hot dogs cut in coins, and hard chunks of meat — cut them small, lengthwise, or serve softer textures. Supervise meals and keep children seated while eating. Congee, steamed egg and soft tofu are naturally low-risk textures.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Can a child grow well on a mostly vegetarian diet?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes, with planning — tofu, dairy, eggs, legumes, nuts and wholegrains can meet protein needs, and pairing plant iron with vitamin C improves absorption. The nutrients to watch are iron, zinc, vitamin B12, vitamin D and omega-3, which need reliable sources or a supplement. A pediatric dietitian can confirm the plan supports steady growth.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does frying food destroy its nutrition?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Frying doesn't destroy the protein or most minerals, but it soaks the food in oil, adding a lot of calories and fat and often salt from the batter. The occasional fried treat is fine; the issue is frequency. Grilling, steaming, baking and poaching keep the same protein with far less added fat.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How do I read whether a dish is a treat or an everyday food?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "A rough guide: everyday foods are grilled, steamed, baked or boiled with visible whole ingredients; treat-leaning foods are deep-fried, heavily cured/processed, or high in added sugar and salt. Most dishes here can be either depending on cooking — poached chicken versus fried, fresh pork versus sausage. Aim for mostly everyday foods with treats woven in occasionally.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Clear Soup (Gaeng Jued) or Seaweed Soup nutritious?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Clear broths with tofu, vegetables, egg or a little pork (gaeng jued) or seaweed and beef (miyeok-guk) are light but useful — they add hydration, some protein and, in the seaweed version, iodine. They're gentle sides that round out a meal. Home versions let you keep the salt reasonable.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does adding a fried egg to a meal really boost its value?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — an egg adds a serving of complete protein plus yolk micronutrients (vitamin D, B12, choline, iron) for very little cost, which is why it tops so many rice dishes. It's an easy way to lift the protein of an otherwise carbohydrate-heavy plate. Cook it fully for younger children.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are fortified foods (fortified milk, cereal) worth choosing?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Fortified foods add nutrients that are commonly short in children's diets — vitamin D and iron in particular — so they can be a helpful safety net. Choose ones without heavy added sugar. They complement, rather than replace, a varied diet of whole foods.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "What makes a balanced plate for a growing child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "A simple model is roughly half the plate vegetables and fruit, a quarter protein (meat, fish, egg, tofu or legumes), and a quarter wholegrain carbohydrate, with a serving of dairy nearby. This covers protein and the key growth minerals while providing energy and fibre. Variety across the week matters as much as any single plate.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Should I give protein shakes or supplements to help my child grow?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Healthy children almost never need protein powders — real food easily meets the target, and excess protein above needs is just used for energy or excreted, not turned into extra height. Marketing aimed at 'growth' supplements rarely reflects evidence. If a child genuinely can't eat enough, a pediatrician or dietitian should guide any supplement.",
+      "citation_source": "PubMed — PMID: 34063030 — \"Dietary Protein Requirements in Children: Methods for Consideration\" — Nutrients — 2021",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does eating late at night affect my child's growth?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "There's no strong evidence that a normal evening meal harms growth; what matters more is the total day's nutrition and getting enough sleep afterward. A very large, heavy or sugary snack right at bedtime can disturb sleep, which is when growth hormone peaks. A light protein-containing snack is fine if a child is genuinely hungry.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Rotisserie Chicken a healthy convenient option?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Rotisserie chicken is roasted whole chicken, so it's genuinely good protein and a convenient shortcut for busy nights — the leg and breast both work for children. Removing some skin trims fat and salt, and the seasoning can be salty. Pair with vegetables and a wholegrain for a balanced meal.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Chicken Cordon Bleu a good choice for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "It's chicken (protein) wrapped around ham and cheese (more protein and calcium), but it's typically breaded and fried and the ham adds cured-meat salt, making it treat-leaning. Baked versions with modest portions are better. Serve with vegetables to balance the plate.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How do I use the GrowSense food list to plan a growth-friendly week?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Aim to rotate protein sources across the week — poultry, red meat a few times, oily fish twice, eggs, tofu/legumes — so your child gets the full spread of protein, iron, zinc, omega-3 and calcium. Log meals so the app shows whether the daily protein and calcium targets are being met. Treat-leaning fried and processed items are best kept to a couple of appearances rather than daily.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Can exercise actually make my child taller?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Exercise won't push a child past their genetic height potential, but it protects that potential — weight-bearing and impact activity build denser, stronger bone during the years the skeleton is being 'banked', and good posture and muscle make a child stand to full height. Chronic inactivity, on the other hand, can hold growth and bone health back. So the honest message is: activity optimizes the height a child is meant to reach, not adds to the ceiling.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How does physical activity strengthen a child's bones?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Bone responds to the forces put through it — when muscles pull and feet land, the skeleton adapts by laying down more mineral (this is Wolff's law). Impact and weight-bearing loads are the strongest signal, which is why jumping and running build bone more than gentle movement. Childhood and adolescence are the prime window because the bone-building response is strongest then.",
+      "citation_source": "PubMed — PMID: 11149479 — \"Jumping improves hip and lumbar spine bone mass in prepubescent children: a randomized controlled trial\" — J Bone Miner Res — 2001",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "What does 'peak bone mass' mean and why does it matter now?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Most of the bone a person will ever have is deposited by the end of adolescence — this maximum is called peak bone mass, and it's like a bone 'bank' drawn down slowly in later life. Weight-bearing activity plus enough calcium, vitamin D and protein in childhood raises that peak. A higher peak means stronger bones for life and lower fracture risk decades later.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How much activity should my child get each day?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Health guidelines recommend children and teens average at least 60 minutes a day of moderate-to-vigorous physical activity across the week, including muscle- and bone-strengthening activity on at least three days. It doesn't have to be all at once — active play, sport and walking all count toward the total. More than 60 minutes brings additional benefit.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Which activities build bone the most?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "High-impact, weight-bearing activities that involve landing and quick loading build bone the most — jumping, hopscotch, basketball, volleyball, gymnastics, running and sprinting all send strong signals to the skeleton. Swimming and cycling are excellent for fitness but load the bones far less. A mix that includes some impact each week is ideal for the growing skeleton.",
+      "citation_source": "PubMed — PMID: 11149479 — \"Jumping improves hip and lumbar spine bone mass in prepubescent children: a randomized controlled trial\" — J Bone Miner Res — 2001",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Is jumping rope really that good for a growing child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — rope skipping is repeated impact loading through the legs and spine, exactly the kind of stimulus that builds bone density in childhood, and it also trains coordination and cardiovascular fitness. It's cheap, needs little space and packs a lot of 'bone signal' into a few minutes. A few minutes most days is a great habit.",
+      "citation_source": "PubMed — PMID: 11149479 — \"Jumping improves hip and lumbar spine bone mass in prepubescent children: a randomized controlled trial\" — J Bone Miner Res — 2001",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Are box jumps and vertical jumps safe and useful for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Controlled jumping like box jumps and vertical jumps is a potent bone-building stimulus and also develops power and coordination, and it's safe for children when the height is sensible and landings are taught softly. Start low, focus on a soft bent-knee landing, and keep volume modest. They're a good addition to varied active play rather than a heavy daily drill.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Does gymnastics help with growth and bone strength?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Gymnastics combines impact, landings and heavy loading of the arms and spine, and young gymnasts tend to have notably high bone density at those sites. It also builds strength, flexibility and body control. Good coaching and sensible training loads keep the growth plates safe while gaining the benefits.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is basketball or volleyball good for my child's height development?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Both involve repeated jumping and landing, which is excellent impact loading for building bone, plus running, coordination and teamwork. They won't make a child taller than their genes allow, but they help build a strong skeleton and good movement. They're among the better sports for the growing bone bank.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is football (soccer) a good activity for growing children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Football mixes running, sprinting, cutting and the occasional jump, so it's solid weight-bearing, bone-loading exercise plus great cardiovascular fitness and coordination. It also builds social skills and enjoyment, which keeps children active long-term. Sensible training loads and rest protect young joints and growth plates.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Are martial arts like Taekwondo or Karate good for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Martial arts (taekwondo, karate, judo, muay thai) build strength, balance, coordination and discipline, with plenty of weight-bearing movement and controlled impact. Reputable schools scale intensity to age and emphasize technique and safety. For growing children, focus on skill and conditioning rather than heavy full-contact sparring.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is Judo safe for a child's growing body?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Judo teaches falling safely, balance and whole-body strength, and good clubs coach breakfalls before any throwing, which lowers injury risk. It's weight-bearing and develops coordination well. As with any contact sport, matching by size/age and qualified coaching matter for protecting young joints.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Does sprinting or running help build bone?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — the ground forces from running, and especially sprinting, load the leg bones and hips enough to stimulate bone building, on top of excellent cardiovascular fitness. Short bursts of fast running add more impact than steady jogging. It's a simple, equipment-free way to hit both bone and heart benefits.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is dancing a worthwhile physical activity for growth?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Dance involves jumping, hopping and weight-bearing movement, so it loads bone while building coordination, rhythm, flexibility and enjoyment. Styles with more jumping give more bone stimulus. Because children stick with activities they like, a dance a child loves is genuinely valuable exercise.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is parkour too risky for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Parkour develops impressive strength, agility and body awareness through jumping, vaulting and landing — all good bone and motor stimulus — but it carries fall and impact risk if attempted beyond a child's level. In a coached class with progressions and soft surfaces it can be done safely. Uncontrolled copying of stunts is where injuries happen.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is hopscotch actually exercise or just play?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Hopscotch is genuinely useful — the hopping and single-leg landings are impact loading that helps build bone, and it trains balance and coordination, all disguised as fun. It's a great low-cost activity for younger children. Play that involves jumping counts toward the day's bone-strengthening minutes.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is plain running a good everyday activity?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Running is weight-bearing, loads the legs and hips, and builds cardiovascular fitness and endurance, making it a strong everyday activity. Chasing and tag games deliver the same benefits for younger children who won't run laps. Comfortable shoes and varied surfaces keep it enjoyable and joint-friendly.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Do tag and chase games count as real exercise?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Absolutely — tag and chase games involve bursts of running, dodging and stopping, which is weight-bearing, heart-raising activity that easily contributes to the daily 60 minutes. They also build agility and social skills. For young children, this kind of active play is often the best 'workout'.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Are racket sports like tennis and badminton good for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — the running, lunging and jumping in tennis and badminton is weight-bearing and loads the legs, and the one-armed play notably strengthens the bone in the racket arm. They build agility, reaction time and coordination too. They're a fun way to combine bone loading with cardiovascular fitness.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is a trampoline safe, and is it good exercise?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Bouncing is repeated impact that's good bone stimulus and great fun, but trampolines are a common source of childhood fractures and sprains, especially with more than one child jumping. Pediatric bodies advise one jumper at a time, adult supervision, safety netting and no risky flips. Used sensibly, it's beneficial; unsupervised multi-child bouncing is the risk.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Does climbing (playground or indoor) help my child develop?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Climbing builds upper-body and grip strength, core stability and problem-solving, and it's weight-bearing through the arms and legs. Indoor bouldering and playground climbing both count. Supervision and age-appropriate walls/heights keep it safe while children gain strength and confidence.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Are monkey bars good for anything besides fun?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Monkey bars are excellent for grip and upper-body strength, shoulder stability and coordination, and hanging and swinging load the arms in a useful way. They also build confidence and persistence. Soft ground underneath and supervision handle the fall risk.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is an obstacle course a good all-round activity?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Obstacle courses mix running, jumping, climbing and crawling, so they hit bone loading, strength, agility and coordination all at once, and children find them motivating. They're an easy way to pack varied movement into a short session. Set them up on safe surfaces and match challenges to the child's level.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Why is plain outdoor play so valued for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Unstructured outdoor play naturally includes running, jumping and climbing (bone and fitness benefits), sunlight that helps make vitamin D, and it tends to produce more total movement than indoor time. It also supports mood, sleep and social skills. Giving children time and space to play outside is one of the simplest ways to hit activity goals.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is swimming good for my child's growth and bones?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Swimming is superb for cardiovascular fitness, whole-body muscle, lung capacity and is easy on the joints — but because the water supports the body, it loads bone far less than land activities, and swimmers tend to have lower bone density than weight-bearing athletes. So swim for fitness and skill, but pair it with some impact activity (running, jumping, sport) during the week for the bones. It's a great activity, just not a bone-builder on its own.",
+      "citation_source": "PubMed — PMID: 23147022 — \"Bone health in endurance athletes: runners, cyclists, and swimmers\" — Curr Sports Med Rep — 2012",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Does cycling build bone like running does?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Cycling is excellent for the heart, legs and endurance and is gentle on joints, but like swimming it's largely non-weight-bearing, so it doesn't load the skeleton the way running or jumping does. Enjoy it for fitness and transport, and add some impact activity during the week for bone. The two together give a well-rounded program.",
+      "citation_source": "PubMed — PMID: 23147022 — \"Bone health in endurance athletes: runners, cyclists, and swimmers\" — Curr Sports Med Rep — 2012",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Does hanging from a bar make my child taller?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Bar hanging can briefly decompress the spine so a child measures a few millimeters taller for a short while, but that reverses within hours and does not add permanent height or lengthen bones. What it genuinely does is build grip and shoulder strength and stretch the upper body. Treat it as good strength/flexibility work, not a height treatment.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is yoga beneficial for a growing child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yoga builds flexibility, balance, core strength and body awareness, and the calming, breathing side can help with focus and sleep. It's gentle and low-injury when poses are age-appropriate. It complements, rather than replaces, the impact activity bones need, so mix it with some weight-bearing play.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Does stretching help my child grow or just prevent injury?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Stretching improves flexibility and range of motion and supports good posture, but it doesn't lengthen bones or increase final height. Its real value is keeping muscles supple, aiding recovery and reducing some injury risk around sport. A short stretch after active play is a good habit.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is daily walking enough activity for a child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Walking is weight-bearing and a great baseline habit — active transport to school and family walks add up — but on its own it's fairly low intensity for a child, so it works best combined with more vigorous play and some impact activity. Aim for walking plus running, sport or jumping across the week. Steps count, but variety and some higher intensity matter for bone and fitness.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How much screen time is too much, and why does it matter for growth?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Long sedentary screen time displaces active play, is linked with poorer sleep and weight gain, and health guidelines advise limiting recreational screen time and breaking up long sitting. Less screen time tends to free up movement that benefits bone, fitness and mood. Setting daily limits and screen-free zones (meals, bedtime) helps.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Can too much intense training harm my child's growth plates?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Growth plates are cartilage and can be injured by repetitive overload or a bad fall (Salter-Harris injuries), and very heavy, poorly supervised training or early single-sport specialization raises overuse-injury risk. Sensible loads, rest days, good coaching and variety keep the plates safe. Normal vigorous sport and play, with recovery, does not harm growth.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is strength training safe for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Age-appropriate strength work — bodyweight moves, light resistance and technique-focused training — is safe and beneficial for children when supervised, and it does not stunt growth (an old myth). What to avoid is maximal lifting, ego-loading and unsupervised heavy weights. Focus on form, control and fun rather than how much they can lift.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Should young children specialize in one sport?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Early single-sport specialization is linked with higher overuse injury and burnout, so most sports-medicine guidance favors varied activity and multiple sports through childhood. A broad movement base builds better all-round athletes and keeps children enjoying activity. Time to specialize can come later in adolescence.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How do activity and sleep work together for growth?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Daytime activity helps children fall asleep faster and sleep more deeply, and it's during deep (slow-wave) sleep that the biggest pulse of growth hormone is released. So active days support the very sleep that growth depends on. Balance the two — enough movement, and a protected, early enough bedtime.",
+      "citation_source": "PubMed — PMID: 8627466 — \"Physiology of growth hormone secretion during sleep\" — J Pediatr — 1996",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Does being active make my child eat better?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Regular activity tends to regulate appetite and can encourage children to eat more of the nourishing food that growth needs, and it pairs naturally with the protein and calcium the muscles and bones are using. Active children also often sleep better, closing the loop on growth. Activity and good nutrition reinforce each other.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "What activities suit a toddler or preschooler?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Young children thrive on active free play — running, jumping, hopscotch, climbing at the playground, dancing and ball games — rather than structured training. The goal is lots of varied movement spread through the day. Keeping it playful builds the habit and the motor skills that later sport draws on.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "What should I watch for to keep sport safe as my child grows?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Ensure warm-ups, hydration, proper footwear/protective gear, rest days, and that training load rises gradually rather than in sudden jumps. Persistent joint pain, limping or pain at a growth-plate area deserves a check rather than 'playing through it'. Good coaching and variety are the best injury insurance.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Why do experts stress bone-strengthening activity three times a week?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "On top of daily moderate activity, guidelines single out muscle- and bone-strengthening activity at least three days a week because impact and loading are what actually thicken bone during childhood. Jumping games, climbing, gymnastics, sport and running all qualify. Building this into the week raises peak bone mass for life.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "My child prefers swimming and cycling — is that a problem?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Not a problem at all — those are wonderful for fitness, and a child should do activities they enjoy so they stay active. Just add some weight-bearing impact during the week (a sport, running, jumping, playground time) so the bones also get the loading they need. It's about complementing, not replacing, what they love.",
+      "citation_source": "PubMed — PMID: 23147022 — \"Bone health in endurance athletes: runners, cyclists, and swimmers\" — Curr Sports Med Rep — 2012",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "How does outdoor activity help beyond fitness — like vitamin D?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Playing outside exposes skin to sunlight, which is how the body makes most of its vitamin D — the vitamin that lets bones use calcium — so outdoor activity supports bone in two ways at once (loading plus vitamin D). It also boosts mood and sleep. Balance sun exposure sensibly with sunburn protection.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is it okay if my child gets activity in short bursts through the day?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — activity doesn't need to be one continuous block; short bursts of active play, sport and walking all add toward the daily total, and children naturally move in bursts anyway. Breaking up long periods of sitting is itself beneficial. Focus on the day's overall movement rather than a single 'workout'.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "How do I motivate a reluctant child to be active?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Make it play rather than 'exercise', offer choices so they pick activities they enjoy, be active as a family, and keep it social with friends. Limiting screen time naturally opens space for movement. Enjoyment is what turns activity into a lifelong habit, which matters more than any single session.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Does rest and recovery matter for an active, growing child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — muscles and bones adapt and strengthen during recovery, not during the activity itself, and children need rest days and enough sleep to gain from training. Constant high-intensity training without recovery raises overuse-injury risk. Build easy days and good sleep into the weekly rhythm.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is competitive sport worth it for my child's development?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Team and competitive sport can build fitness, bone, coordination, discipline and social skills, and children who enjoy it tend to stay active for years. The key is that the environment stays positive and the training load is age-appropriate, with variety and rest. Fun and long-term participation matter more than early winning.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How does the GrowSense activity tier system relate to bone building?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "GrowSense weights activities by how much they load the growing skeleton — high-impact ones (jumping, sport, martial arts) count most, weight-bearing ones (running, climbing) next, then cardio (swimming, cycling) and flexibility (yoga, stretching) which help fitness and mobility more than bone. Aiming for a mix, with some high-impact each week, matches what the science says builds peak bone mass. The tiers are a simple way to make sure the bone-loading activities aren't missed.",
+      "citation_source": "PubMed — PMID: 11149479 — \"Jumping improves hip and lumbar spine bone mass in prepubescent children: a randomized controlled trial\" — J Bone Miner Res — 2001",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is duck a healthy meat for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Duck is rich complete protein with iron and B vitamins, but it is a fattier poultry than chicken, so remove some skin and serve modest portions. Roasted rather than served in a heavy sweet sauce keeps it lighter. It is a fine occasional protein in a varied week.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Stir-Fried Tomato and Egg a good dish for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "It is an excellent everyday combination — egg gives complete protein and yolk micronutrients while tomato adds vitamin C that helps the body absorb iron from the rest of the meal. It is soft, mild and quick, and most children accept it. Go easy on added salt and sugar.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are Pork Meatball Skewers (Look Chin) nutritious?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Commercial pork or fish balls (look chin) contain some protein but are processed with added starch and salt, so they are a snack-tier food rather than a main protein. Grilled and eaten occasionally they are fine. Fresh minced-pork dishes give more complete nutrition.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Garlic Shrimp (Kung Kratiam) a good meal?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — shrimp is lean, high-protein and rich in zinc, iodine and selenium, and a quick garlic stir-fry keeps it light. Serve with rice and vegetables for balance. Introduce shellfish cautiously as it is a common allergen, and cook thoroughly.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are Fish Sauce Fried Wings okay for my child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Chicken wings carry protein but are higher in skin and fat, and deep-frying plus a fish-sauce glaze adds oil, salt and sugar, so they are treat-leaning. Baked or air-fried versions with a lighter glaze are better. Balance with vegetables and keep portions modest.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are Vietnamese Tomato Meatballs (Xiu Mai) a balanced dish?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Xiu mai combines pork meatballs (protein, iron, zinc) with a tomato sauce that adds vitamin C, making a reasonably balanced dish over rice or in a banh mi. Homemade keeps the salt and fat sensible. Add vegetables to round it out.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Caramelized Shrimp (Tom Rim) good for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "The shrimp brings lean protein, zinc and iodine, though the caramel glaze adds sugar and salt, so serve a modest portion of the shrimp with plenty of rice and vegetables. It is a tasty way to include seafood. Cook thoroughly and watch for shellfish allergy.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Vietnamese Pork Sausage (Cha Lua) a good protein?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Cha lua is a processed pork sausage with some protein but added salt and starch, so it is best as an occasional item rather than the day's main protein. Sliced into a rice or noodle dish it adds flavor. Fresh meat, egg or tofu is the better everyday choice.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is a Rolled Omelette (Gyeran-mari) a good way to serve egg?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — a rolled omelette packs one or two eggs' worth of complete protein and yolk micronutrients into a soft, mild, sliceable form that children enjoy in lunchboxes. Adding chopped vegetables boosts it further. Keep added salt modest for young children.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Soft Tofu Stew (Soondubu) nutritious for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Soondubu is silky tofu in a savory broth, giving complete plant protein and, if calcium-set, calcium, in a gentle texture. Order it mild (not spicy) for children and watch the broth's salt. It is a good meat-free protein option.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Beef Seaweed Soup (Miyeok-guk) healthy?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "It is a nourishing combination — beef adds heme iron, zinc and protein while the seaweed contributes iodine and minerals, in a light broth. It is traditionally eaten for recovery and is gentle on the stomach. Home versions keep the salt in check.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Sweet Chinese Sausage (Kun Chiang) okay for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Kun chiang is a cured, sweet pork sausage — tasty but processed, salty and sugary, so it is a flavor accent rather than a main protein. A little sliced into fried rice is fine occasionally. Rely on fresh meat, egg or tofu for everyday protein.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Braised Tofu a good everyday dish?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Braised tofu keeps tofu's complete plant protein (and calcium if calcium-set) in a savory, kid-friendly form without the oil of deep-frying. It is a strong meat-free main. Watch the sauce's salt and pair with vegetables and rice.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Steamed Fish Fillet a good choice for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Very good — steaming keeps white fish lean and moist, delivering easy-to-digest protein with no added fat, ideal for younger children. Check carefully for small bones. Rotate with oily fish across the week for the omega-3.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Lion's Head Meatball nutritious?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "These large pork meatballs are a good protein source with iron and zinc, especially when braised with cabbage or greens that add vegetables to the dish. Homemade keeps fat and salt reasonable. Serve modest portions with rice and vegetables.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is Bacon a source of protein worth including?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Bacon has some protein but is a cured, processed meat that is high in salt and saturated fat, so it is a flavor item, not a growth staple. A rasher occasionally is fine. For breakfast protein, egg, yogurt or fresh meat are far better.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is a Beef Hot Dog okay for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Hot dogs are processed meat — high in salt and additives with modest real-meat content — so they are an occasional food, not everyday protein. Always slice them lengthwise (not into coins) for young children to reduce choking risk. Fresh beef or chicken is the better protein.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Why does vitamin C matter for a child who eats iron-rich foods?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Vitamin C sharply increases how much non-heme (plant) iron the body absorbs, so pairing beans, lentils or tofu with tomato, citrus or peppers gets more iron from the same meal. It also supports collagen, which is part of bone and cartilage. Little tricks like tomato with lentils genuinely add up.",
+      "citation_source": "PubMed — PMID: 11160596 — \"A review of studies on the effect of iron deficiency on cognitive development in children\" — J Nutr — 2001",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does my child need fibre, and where does it come from?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Fibre from wholegrains, fruit, vegetables and legumes keeps digestion regular and feeds a healthy gut, and it comes bundled with vitamins and minerals. Very low-fibre diets often mean too few of those foods. Aim for some plant food at each meal rather than a fibre supplement.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "What are good growth-supporting snacks between meals?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Reach for snacks that carry protein or calcium plus some nutrients — yogurt, cheese, a boiled egg, hummus with vegetables, milk, fruit with peanut butter — rather than sugary, salty packaged snacks. These support growth and steady energy. Keep portions snack-sized so they do not spoil the next meal.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How much water should my child drink each day?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Water should be the main between-meal drink, with milk at meals; needs rise with heat and activity, so encourage regular sips especially during sport. Pale-yellow urine is a simple sign of good hydration. Water and milk beat juice and soda for everyday drinking.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Do healthy fats matter for a growing child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — fats provide the concentrated energy young children need and carry the fat-soluble vitamins A, D, E and K, while omega-3 fats support the brain. Favor fats from fish, eggs, dairy, nuts and vegetable oils over fried and heavily processed sources. Children generally should not be on very low-fat diets.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is my child eating enough during a growth spurt?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Appetite naturally surges during growth spurts as the body demands more energy and protein, so it is normal for a child to eat noticeably more for a while. Offer nourishing, protein- and nutrient-rich foods rather than filling up on sweets. Following their hunger and fullness cues usually works well.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "What should catch-up growth nutrition look like?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "A child catching up after illness or undernutrition needs extra energy AND enough protein, plus the growth minerals zinc and iron and adequate vitamin D — nutrient-dense meals rather than empty calories. This is best guided by a pediatrician or dietitian to set the right targets. Small, frequent, protein-rich meals often help.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are fermented foods like yogurt and miso good for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Fermented foods (yogurt, labneh, miso) supply live cultures that support a healthy gut, alongside the protein or minerals of the base food. They are a pleasant everyday addition for most children. Choose lower-sugar, lower-salt versions where you can.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is selenium something I should think about?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Selenium supports thyroid function and antioxidant defenses, and seafood, eggs and meat easily supply it — the same foods that cover protein and other growth minerals. Deficiency is uncommon where those foods are eaten. No supplement is needed for a child with a varied diet.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Why is choline in eggs important?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Choline supports brain development and cell membranes, and egg yolk is one of the richest food sources, which is another reason whole eggs are a valuable growth food. Meat, fish and dairy add more. A child eating these foods gets plenty.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Do wholegrains help growth or just give energy?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Wholegrains supply the carbohydrate energy active, growing children need, plus fibre, B vitamins and some minerals like magnesium that bone uses. Choosing wholegrain rice, bread and noodles over refined versions adds nutrients for the same energy. They are the fuel that lets protein be used for building, not burning.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is too much fruit juice a problem?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Juice has vitamins but concentrates sugar without the fibre of whole fruit, and large amounts can crowd out milk and food and harm teeth. Keep it to a small glass occasionally and offer whole fruit and water instead. Whole fruit is the better everyday choice.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does magnesium or phosphorus matter for my child's bones?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Bone is built from calcium plus phosphorus and needs magnesium for the process, but these are widespread in everyday foods — dairy, meat, fish, wholegrains, nuts and legumes — so a varied diet covers them. They rarely need special attention or supplements. Focus on overall food variety plus calcium, vitamin D and protein.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "My child will not eat fish — how do they get omega-3?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "If fish is refused, smaller amounts of omega-3 come from eggs (especially omega-3-enriched ones), and ALA from walnuts, flax and canola oil, which the body partly converts. A fish-oil or algae-oil supplement is an option a pediatrician can advise on. Keep gently offering fish in different forms too.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How is protein for muscle different from protein for height?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "The same dietary protein supports both — it builds muscle tissue and supplies the material and IGF-1 signal for bone lengthening at the growth plates. Meeting the daily target covers both jobs; you do not feed them separately. Beyond the target, extra protein does not add more of either.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Should toddlers and school-age children have different portions?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — a toddler's stomach is small, so they eat less per meal and often need snacks, while a school-age child eats larger meals. A practical guide is portions scaled to the child's own hand size, adjusted up as they grow. Follow appetite rather than forcing a fixed amount.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does my child need probiotic supplements?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "For most healthy children, everyday fermented foods like yogurt provide beneficial cultures without needing a supplement. Specific probiotic products have particular uses a doctor may suggest (for example after certain antibiotics). A varied, fibre-rich diet is the best everyday gut support.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "How do I handle fast food when eating out with kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "You can steer toward the better options — grilled rather than fried, water or milk rather than soda, and add a fruit or vegetable side — so an occasional outing fits fine. It is frequency that matters, not a single meal. Cooking most meals at home keeps the week balanced.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is iodine a concern if we do not use iodized salt?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Where non-iodized salt is used and seafood and dairy are limited, iodine can fall short, which matters because the thyroid needs it for growth and brain development. Including seafood, seaweed, dairy and eggs, or using iodized salt, covers it. Ask your doctor if your family's intake seems low.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Does constipation relate to my child's diet?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Often yes — low fibre and low fluid are common contributors, so more water, fruit, vegetables and wholegrains usually help. Persistent constipation, pain or blood should be checked by a doctor. Keeping children active also supports regular digestion.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Why does my child need a warm-up before sport?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "A short warm-up raises muscle temperature and gets joints moving, which prepares the body for effort and lowers the chance of strains, and a cool-down helps recovery. For children this can be playful — light jogging, skipping and dynamic movements. It is a simple habit that protects growing joints.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How much should my child drink during activity, especially in the heat?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Children should sip water before, during and after activity, and more in hot, humid climates where they lose fluid quickly and overheat faster than adults. Encourage regular breaks and shade during midday heat. Water is enough for typical play; sports drinks are rarely needed for children.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Should my adolescent daughter train differently for bone health?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Adolescence is a peak bone-building window for girls, so weight-bearing and impact activity plus enough energy, calcium and vitamin D are especially valuable then. Watch for the warning pattern of very heavy training with under-eating and missed periods (called RED-S or the female athlete triad), which harms bone and needs medical attention. Balanced training with adequate fuelling builds bone; extreme dieting-plus-training undermines it.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How does puberty change what activity does for growth?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "The pubertal growth spurt is when bone is laid down fastest, so impact and weight-bearing activity during these years has an outsized effect on lifelong bone strength. Coordination can dip temporarily as limbs lengthen, which is normal. Keeping activity varied and consistent through puberty pays off for the skeleton.",
+      "citation_source": "PubMed — PMID: 11149479 — \"Jumping improves hip and lumbar spine bone mass in prepubescent children: a randomized controlled trial\" — J Bone Miner Res — 2001",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "What activity helps a child who is overweight?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Enjoyable, sustainable activity the child will keep doing matters most — active play, swimming, cycling, walking and sport all help, and swimming and cycling are gentle on joints for heavier children. Combine movement with dietary changes rather than exercise alone, and keep it positive and shame-free. The goal is healthy habits, guided by your pediatrician if BMI is a concern.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How does activity affect my child's mood and focus?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Regular physical activity is linked with better mood, lower anxiety, and improved attention and school performance, partly through better sleep and direct brain effects. Active breaks can help a restless or unfocused child settle. It is one of the most reliable, side-effect-free supports for wellbeing.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is walking or cycling to school worthwhile?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — active transport builds daily movement into the routine effortlessly and, being weight-bearing (walking) or good cardio (cycling), it contributes to fitness and, for walking, bone loading. It also fosters independence. Where safe, it is an easy win toward the daily activity total.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Is school PE enough activity on its own?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "PE helps but usually does not reach the daily 60-minute target on its own, and it happens only on some days, so children also need active play and movement outside school. Think of PE as one contributor among several. Encourage after-school and weekend activity to fill the gap.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "What indoor activities work on a rainy day?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Plenty count — dancing, an indoor obstacle course, jumping games, yoga, skipping, active video games and climbing at an indoor gym all keep children moving. Short bursts through the day add up. A little creativity keeps activity going when outdoor play is not possible.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Does grip and upper-body strength matter for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Grip and upper-body strength support climbing, hanging, sport and everyday tasks, and activities like monkey bars, climbing and hanging build them safely through bodyweight loading. They also improve posture and confidence. It is a useful complement to all the leg-focused running and jumping.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Are trampoline parks safe for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "They are fun and give good impact exercise, but trampoline parks are a notable source of childhood fractures and sprains, especially with many jumpers, double-bouncing and attempted flips. Supervision, one-at-a-time zones and avoiding risky tricks reduce the danger. Enjoy them in moderation with the safety rules followed.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Should I worry about heading the ball in football?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Repeated hard heading is an area of ongoing caution, and many youth programs now limit or delay heading for younger children. For growth and general development, the running and movement in football are the valuable parts. Follow your league's age guidance and prioritize technique and safety.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "What about concussion risk in contact sports?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Contact sports carry some head-injury risk, so any suspected concussion — confusion, headache, dizziness after a knock — means stopping play and seeing a doctor, with a gradual return only when cleared. When in doubt, sit them out. Good coaching, rules and protective gear reduce risk while children still gain the benefits of sport.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How do I progress my child's jumping safely?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Start with low, controlled jumps focusing on a soft, bent-knee landing, and only raise height or volume gradually as technique holds up. Quality landings matter more than how high they jump. This builds the bone benefit while protecting knees and ankles.",
+      "citation_source": "PubMed — PMID: 11149479 — \"Jumping improves hip and lumbar spine bone mass in prepubescent children: a randomized controlled trial\" — J Bone Miner Res — 2001",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Does activity help my child sleep, and does that help growth?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — active days help children fall asleep faster and reach more deep sleep, and the largest growth-hormone pulse is released during that deep sleep, so movement indirectly supports growth. Avoid very vigorous activity right at bedtime, which can be over-stimulating. Active day, calm evening, protected bedtime is the winning pattern.",
+      "citation_source": "PubMed — PMID: 8627466 — \"Physiology of growth hormone secretion during sleep\" — J Pediatr — 1996",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Is one team sport enough to meet activity needs?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "A single practice or game often does not cover every day, and it may lean toward one type of movement, so add active play and some impact activity on the other days. Variety also reduces overuse injury from repeating the same motion. Use the sport as a base and fill around it.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "How can I make activity a family habit?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Children copy what they see, so family walks, bike rides, games in the park and active weekends make movement normal and fun. Doing it together also builds the relationship. Habits set in childhood tend to carry into adult life.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is dance or gymnastics just as good for boys?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Absolutely — dance and gymnastics build impact-loaded bone strength, coordination, flexibility and body control that benefit any child regardless of gender. They are excellent athletic foundations that carry into other sports. Choose the activity by the child's interest, not by stereotype.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "What does martial-arts belt progression teach beyond fitness?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Alongside strength, balance and coordination, the belt system teaches goal-setting, patience, respect and self-discipline as a child earns each level. That structure keeps many children motivated and active for years. The life-skills side is a real part of the value.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Are short sprint bursts better than long slow running for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "For bone, the higher ground forces of sprinting give more stimulus than steady jogging, and children naturally move in bursts anyway, so sprint games and intervals suit them well. Both build fitness; sprinting adds a bit more bone loading. Mix them into play rather than making a child run long distances.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How do I keep a child who dislikes team sport active?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Lean into individual and playful options — swimming, cycling, martial arts, dance, climbing, running games, skateboarding or simply active outdoor play — so they can be active on their own terms. Enjoyment is what sustains the habit. The best activity is the one your child will actually keep doing.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Does good posture relate to activity and looking taller?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Core and back strength from activity, plus not slouching over screens, help a child hold their full height and move well — posture does not change bone length but it changes how tall they stand and carry themselves. Activities like swimming, yoga, gymnastics and general play build the supporting muscles. Limiting long hunched screen time helps too.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "How much sitting is too much for a child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Long unbroken sitting — long screen sessions in particular — is worth breaking up with movement, and guidelines advise limiting recreational sedentary time. Standing, stretching or a quick active burst every so often counters it. The aim is less prolonged sitting and more movement across the day.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Is swimming still worth it if it does not build much bone?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Definitely — swimming builds cardiovascular fitness, whole-body muscle, lung capacity and is a vital safety skill, and it is ideal for joints and for heavier children. The only caveat is that it loads bone little, so pair it with some weight-bearing activity during the week. It is a superb activity, just not a standalone bone-builder.",
+      "citation_source": "PubMed — PMID: 23147022 — \"Bone health in endurance athletes: runners, cyclists, and swimmers\" — Curr Sports Med Rep — 2012",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Does being active outdoors give a vitamin D bonus for bones?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — outdoor activity exposes skin to sunlight, the main way the body makes vitamin D, which bones need to use calcium, so outdoor play helps bone via loading AND vitamin D. Balance sensible sun time with sunburn protection. It is two bone benefits from one habit.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "What is a simple weekly activity plan for a growing child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Aim for about an hour of activity most days, made of active play plus a sport or two, and make sure some of it is impact or weight-bearing (running, jumping, sport) on at least three days for bone. Fold in walking or cycling for transport, and protect sleep. Variety and enjoyment keep it going long-term.",
+      "citation_source": "PubMed — PMID: 33239350 — \"World Health Organization 2020 guidelines on physical activity and sedentary behaviour\" — Br J Sports Med — 2020",
+      "citation_verified_date": "2026-07-09"
+    },
+    {
+      "category": "activity",
+      "question_text": "Do wearables and step counts help keep my child active?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Step or activity trackers can motivate some children by making movement visible and turning it into a game, and GrowSense logs activity to show whether the week included enough bone-loading types. They are a helper, not a requirement — the goal is enjoyable daily movement. Do not let a number replace fun.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Is it okay for my child to be active every single day?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Yes — daily movement is healthy and recommended, provided intensity varies and there are easier days rather than maximal training every day. Children's play is naturally intermittent, which builds in recovery. Consistent, varied, enjoyable activity beats occasional intense sessions.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is a Thai Omelette (Kai Jeow) a good quick meal for kids?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Kai jeow is a fluffy fried egg omelette that delivers complete egg protein and yolk micronutrients over rice, and it is fast, mild and well accepted by children. It is pan-fried in oil, so drain it and keep the portion sensible. Adding minced pork or vegetables makes it a more complete plate.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Is white rice or brown rice better for my growing child?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Both give the carbohydrate energy active children need; brown and other wholegrain rices add more fibre, B vitamins and minerals like magnesium for the same energy. A mix, or brown where the child accepts it, is ideal, but white rice is perfectly fine as the energy base alongside protein and vegetables. What sits on the rice matters more than the rice itself.",
+      "citation_source": null
+    },
+    {
+      "category": "nutrition",
+      "question_text": "Are soft or runny eggs safe for children?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Fully cooked eggs are safest for young children, since runny yolks and whites carry a small salmonella risk that little ones handle less well. Older children and pasteurized eggs lower that concern. When unsure, cook eggs through — the protein and nutrients are the same.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "What are the signs my child is doing too much sport?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "Warning signs of overtraining include lingering fatigue, dropping performance, frequent niggling injuries, joint pain (especially near a growth plate), poor sleep and loss of enthusiasm. The fix is more rest, variety and adequate fuelling, not pushing harder. Persistent pain or a limp deserves a medical check rather than playing through it.",
+      "citation_source": null
+    },
+    {
+      "category": "activity",
+      "question_text": "Do playground swings and slides count as exercise?",
+      "requires_data": [
+        "none"
+      ],
+      "answer_template": "They involve climbing, gripping, core control and bursts of movement, so unstructured playground time genuinely contributes to a young child's daily activity and motor development. Swinging builds core and coordination while ladders and slides add climbing. It is active play that counts toward the day's movement total.",
+      "citation_source": null
+    }
+  ]
+}

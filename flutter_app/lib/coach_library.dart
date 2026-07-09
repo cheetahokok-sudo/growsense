@@ -98,15 +98,20 @@ class CoachLibrary {
       // Fall through to asset-only if the table can't be read.
     }
 
-    try {
-      final raw = await rootBundle.loadString('assets/coach_library.json');
-      final j = jsonDecode(raw) as Map<String, dynamic>;
-      for (final e in j['questions'] as List) {
-        final q = CoachQuestion.fromDb(e as Map<String, dynamic>);
-        if (seen.add(q.text)) all.add(q);
+    for (final asset in const [
+      'assets/coach_library.json', // pilot batch
+      'assets/coach_library_food_activity.json', // 200 food+activity batch
+    ]) {
+      try {
+        final raw = await rootBundle.loadString(asset);
+        final j = jsonDecode(raw) as Map<String, dynamic>;
+        for (final e in j['questions'] as List) {
+          final q = CoachQuestion.fromDb(e as Map<String, dynamic>);
+          if (seen.add(q.text)) all.add(q);
+        }
+      } catch (_) {
+        // Asset optional.
       }
-    } catch (_) {
-      // Asset optional.
     }
 
     _cache = CoachLibrary(all);
