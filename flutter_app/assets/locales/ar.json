@@ -538,5 +538,20 @@
  "flutter.rem.day_short.thu": "خم",
  "flutter.rem.day_short.fri": "جم",
  "flutter.rem.day_short.sat": "سب",
- "flutter.rem.day_short.sun": "أح"
+ "flutter.rem.day_short.sun": "أح",
+ "flutter.auth.google": "المتابعة عبر Google",
+ "flutter.auth.apple": "المتابعة عبر Apple",
+ "flutter.auth.or": "أو",
+ "flutter.auth.create_btn": "إنشاء حساب",
+ "flutter.auth.creating": "جارٍ إنشاء الحساب…",
+ "flutter.auth.have_account": "لديك حساب؟ سجّل الدخول",
+ "flutter.auth.no_account": "جديد هنا؟ أنشئ حسابًا",
+ "flutter.auth.forgot": "نسيت كلمة المرور؟",
+ "flutter.auth.password_min": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
+ "flutter.auth.check_inbox": "تم إنشاء الحساب — تحقق من بريدك للتأكيد ثم سجّل الدخول.",
+ "flutter.auth.enter_email_first": "اكتب بريدك أعلاه أولًا، ثم اضغط \"نسيت كلمة المرور؟\" مرة أخرى.",
+ "flutter.auth.reset_sent": "أُرسل رابط إعادة التعيين — افتح البريد واضغط الرابط لاختيار كلمة مرور جديدة.",
+ "flutter.auth.new_password_title": "اختر كلمة مرور جديدة",
+ "flutter.auth.new_password": "كلمة مرور جديدة",
+ "flutter.auth.update_password": "تعيين كلمة المرور الجديدة"
 }

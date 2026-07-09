@@ -99,14 +99,27 @@ class AppState extends ChangeNotifier {
   String? get activeChildId => activeChildRow?['child_id'] as String?;
 
   Future<void> loadAccount() async {
-    final uid = sb.auth.currentUser?.id;
-    if (uid == null) return;
+    final user = sb.auth.currentUser;
+    if (user == null) return;
     try {
       account = await sb
           .from('user_accounts')
           .select()
-          .eq('user_id', uid)
+          .eq('user_id', user.id)
           .maybeSingle();
+      // First entry via Google/Apple OAuth (or a partial email
+      // signup): there is no DB trigger for user_accounts — the PWA
+      // inserts it client-side after signUp — so self-heal here.
+      // Flutter onboards parents; clinicians sign up in the web app.
+      account ??= await sb
+          .from('user_accounts')
+          .insert({
+            'user_id': user.id,
+            'email': user.email,
+            'account_role': 'parent',
+          })
+          .select()
+          .single();
       notifyListeners();
     } on PostgrestException {
       // Non-fatal — subscription card just shows defaults.

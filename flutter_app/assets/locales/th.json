@@ -538,5 +538,20 @@
  "flutter.rem.day_short.thu": "พฤ.",
  "flutter.rem.day_short.fri": "ศ.",
  "flutter.rem.day_short.sat": "ส.",
- "flutter.rem.day_short.sun": "อา."
+ "flutter.rem.day_short.sun": "อา.",
+ "flutter.auth.google": "ดำเนินการต่อด้วย Google",
+ "flutter.auth.apple": "ดำเนินการต่อด้วย Apple",
+ "flutter.auth.or": "หรือ",
+ "flutter.auth.create_btn": "สร้างบัญชี",
+ "flutter.auth.creating": "กำลังสร้างบัญชี…",
+ "flutter.auth.have_account": "มีบัญชีแล้ว? เข้าสู่ระบบ",
+ "flutter.auth.no_account": "ผู้ใช้ใหม่? สร้างบัญชี",
+ "flutter.auth.forgot": "ลืมรหัสผ่าน?",
+ "flutter.auth.password_min": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+ "flutter.auth.check_inbox": "สร้างบัญชีแล้ว — ตรวจสอบอีเมลเพื่อยืนยัน แล้วเข้าสู่ระบบ",
+ "flutter.auth.enter_email_first": "พิมพ์อีเมลด้านบนก่อน แล้วแตะ \"ลืมรหัสผ่าน?\" อีกครั้ง",
+ "flutter.auth.reset_sent": "ส่งลิงก์รีเซ็ตแล้ว — เปิดอีเมลแล้วแตะลิงก์เพื่อตั้งรหัสผ่านใหม่",
+ "flutter.auth.new_password_title": "ตั้งรหัสผ่านใหม่",
+ "flutter.auth.new_password": "รหัสผ่านใหม่",
+ "flutter.auth.update_password": "บันทึกรหัสผ่านใหม่"
 }

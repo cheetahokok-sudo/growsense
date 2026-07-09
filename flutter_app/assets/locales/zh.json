@@ -538,5 +538,20 @@
  "flutter.rem.day_short.thu": "四",
  "flutter.rem.day_short.fri": "五",
  "flutter.rem.day_short.sat": "六",
- "flutter.rem.day_short.sun": "日"
+ "flutter.rem.day_short.sun": "日",
+ "flutter.auth.google": "使用Google继续",
+ "flutter.auth.apple": "使用Apple继续",
+ "flutter.auth.or": "或",
+ "flutter.auth.create_btn": "创建账户",
+ "flutter.auth.creating": "创建账户中…",
+ "flutter.auth.have_account": "已有账户？登录",
+ "flutter.auth.no_account": "新用户？创建账户",
+ "flutter.auth.forgot": "忘记密码？",
+ "flutter.auth.password_min": "密码至少需要8个字符",
+ "flutter.auth.check_inbox": "账户已创建——请查收邮件确认后登录。",
+ "flutter.auth.enter_email_first": "请先在上方输入邮箱，然后再点\"忘记密码？\"。",
+ "flutter.auth.reset_sent": "重置链接已发送——打开邮件并点击链接设置新密码。",
+ "flutter.auth.new_password_title": "设置新密码",
+ "flutter.auth.new_password": "新密码",
+ "flutter.auth.update_password": "保存新密码"
 }

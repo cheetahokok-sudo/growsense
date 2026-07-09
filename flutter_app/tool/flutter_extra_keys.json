@@ -300,5 +300,20 @@
   "flutter.rem.day_short.thu": { "en": "Thu", "th": "พฤ.", "vi": "T5", "ko": "목", "zh": "四", "ar": "خم" },
   "flutter.rem.day_short.fri": { "en": "Fri", "th": "ศ.", "vi": "T6", "ko": "금", "zh": "五", "ar": "جم" },
   "flutter.rem.day_short.sat": { "en": "Sat", "th": "ส.", "vi": "T7", "ko": "토", "zh": "六", "ar": "سب" },
-  "flutter.rem.day_short.sun": { "en": "Sun", "th": "อา.", "vi": "CN", "ko": "일", "zh": "日", "ar": "أح" }
+  "flutter.rem.day_short.sun": { "en": "Sun", "th": "อา.", "vi": "CN", "ko": "일", "zh": "日", "ar": "أح" },
+  "flutter.auth.google": { "en": "Continue with Google", "th": "ดำเนินการต่อด้วย Google", "vi": "Tiếp tục với Google", "ko": "Google로 계속하기", "zh": "使用Google继续", "ar": "المتابعة عبر Google" },
+  "flutter.auth.apple": { "en": "Continue with Apple", "th": "ดำเนินการต่อด้วย Apple", "vi": "Tiếp tục với Apple", "ko": "Apple로 계속하기", "zh": "使用Apple继续", "ar": "المتابعة عبر Apple" },
+  "flutter.auth.or": { "en": "or", "th": "หรือ", "vi": "hoặc", "ko": "또는", "zh": "或", "ar": "أو" },
+  "flutter.auth.create_btn": { "en": "Create account", "th": "สร้างบัญชี", "vi": "Tạo tài khoản", "ko": "계정 만들기", "zh": "创建账户", "ar": "إنشاء حساب" },
+  "flutter.auth.creating": { "en": "Creating account…", "th": "กำลังสร้างบัญชี…", "vi": "Đang tạo tài khoản…", "ko": "계정 생성 중…", "zh": "创建账户中…", "ar": "جارٍ إنشاء الحساب…" },
+  "flutter.auth.have_account": { "en": "Have an account? Sign in", "th": "มีบัญชีแล้ว? เข้าสู่ระบบ", "vi": "Đã có tài khoản? Đăng nhập", "ko": "계정이 있나요? 로그인", "zh": "已有账户？登录", "ar": "لديك حساب؟ سجّل الدخول" },
+  "flutter.auth.no_account": { "en": "New here? Create account", "th": "ผู้ใช้ใหม่? สร้างบัญชี", "vi": "Mới dùng? Tạo tài khoản", "ko": "처음이신가요? 계정 만들기", "zh": "新用户？创建账户", "ar": "جديد هنا؟ أنشئ حسابًا" },
+  "flutter.auth.forgot": { "en": "Forgot password?", "th": "ลืมรหัสผ่าน?", "vi": "Quên mật khẩu?", "ko": "비밀번호를 잊으셨나요?", "zh": "忘记密码？", "ar": "نسيت كلمة المرور؟" },
+  "flutter.auth.password_min": { "en": "Password must be at least 8 characters", "th": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร", "vi": "Mật khẩu phải có ít nhất 8 ký tự", "ko": "비밀번호는 8자 이상이어야 합니다", "zh": "密码至少需要8个字符", "ar": "يجب أن تكون كلمة المرور 8 أحرف على الأقل" },
+  "flutter.auth.check_inbox": { "en": "Account created — check your email to confirm, then sign in.", "th": "สร้างบัญชีแล้ว — ตรวจสอบอีเมลเพื่อยืนยัน แล้วเข้าสู่ระบบ", "vi": "Đã tạo tài khoản — kiểm tra email để xác nhận, sau đó đăng nhập.", "ko": "계정이 생성되었습니다 — 이메일을 확인하고 인증 후 로그인하세요.", "zh": "账户已创建——请查收邮件确认后登录。", "ar": "تم إنشاء الحساب — تحقق من بريدك للتأكيد ثم سجّل الدخول." },
+  "flutter.auth.enter_email_first": { "en": "Type your email above first, then tap \"Forgot password?\" again.", "th": "พิมพ์อีเมลด้านบนก่อน แล้วแตะ \"ลืมรหัสผ่าน?\" อีกครั้ง", "vi": "Nhập email ở trên trước, rồi bấm \"Quên mật khẩu?\" lần nữa.", "ko": "먼저 위에 이메일을 입력한 후 \"비밀번호를 잊으셨나요?\"를 다시 누르세요.", "zh": "请先在上方输入邮箱，然后再点\"忘记密码？\"。", "ar": "اكتب بريدك أعلاه أولًا، ثم اضغط \"نسيت كلمة المرور؟\" مرة أخرى." },
+  "flutter.auth.reset_sent": { "en": "Reset link sent — open the email and tap the link to choose a new password.", "th": "ส่งลิงก์รีเซ็ตแล้ว — เปิดอีเมลแล้วแตะลิงก์เพื่อตั้งรหัสผ่านใหม่", "vi": "Đã gửi liên kết đặt lại — mở email và bấm liên kết để chọn mật khẩu mới.", "ko": "재설정 링크를 보냈습니다 — 이메일을 열고 링크를 눌러 새 비밀번호를 설정하세요.", "zh": "重置链接已发送——打开邮件并点击链接设置新密码。", "ar": "أُرسل رابط إعادة التعيين — افتح البريد واضغط الرابط لاختيار كلمة مرور جديدة." },
+  "flutter.auth.new_password_title": { "en": "Choose a new password", "th": "ตั้งรหัสผ่านใหม่", "vi": "Chọn mật khẩu mới", "ko": "새 비밀번호 설정", "zh": "设置新密码", "ar": "اختر كلمة مرور جديدة" },
+  "flutter.auth.new_password": { "en": "New password", "th": "รหัสผ่านใหม่", "vi": "Mật khẩu mới", "ko": "새 비밀번호", "zh": "新密码", "ar": "كلمة مرور جديدة" },
+  "flutter.auth.update_password": { "en": "Set new password", "th": "บันทึกรหัสผ่านใหม่", "vi": "Đặt mật khẩu mới", "ko": "새 비밀번호 저장", "zh": "保存新密码", "ar": "تعيين كلمة المرور الجديدة" }
 }

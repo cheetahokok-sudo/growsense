@@ -132,6 +132,13 @@ class _AuthGateState extends State<AuthGate> {
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
         final session = Supabase.instance.client.auth.currentSession;
+        // A password-recovery link landed back in the app: the session
+        // is a temporary one — ask for the new password before entering.
+        // The USER_UPDATED event after updateUser() moves us on.
+        if (session != null &&
+            snapshot.data?.event == AuthChangeEvent.passwordRecovery) {
+          return SetNewPasswordScreen(i18n: widget.i18n);
+        }
         if (session == null) {
           // Brand-colored blank while the pref loads (~1 frame) so
           // returning users never see a welcome flash.
