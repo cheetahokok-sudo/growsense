@@ -1299,6 +1299,7 @@ async function confirmLogActivity() {
 
   document.getElementById('activityLogModal').classList.add('hidden');
 
+  const actMeta = manualEntryMeta(APP.logDate);
   const { error } = await sb.from('daily_activity_items').insert({
     child_id:       activeChildId(),
     log_date:       APP.logDate,
@@ -1311,6 +1312,8 @@ async function confirmLogActivity() {
     unit,
     is_outdoor:     isOutdoor,
     is_custom:      act.isCustom || false,
+    estimation_method: actMeta.method,
+    confidence:        actMeta.confidence,
   });
 
   if (error) { showToast('⚠️', 'Could not save activity'); return; }
@@ -2417,6 +2420,28 @@ function calcProteinTargetG(dobStr, weightKg, biologicalSex) {
 
   const weightBased = weightKg ? Math.round(weightKg * perKgRate) : null;
   return weightBased !== null ? Math.max(weightBased, minimumG) : minimumG;
+}
+
+// ══════════════════════════════════════════
+// Recall Engine estimation ladder (mirror of the Flutter client's
+// manualEntryMeta in recall_engine.dart): manual entry always wins
+// over an AI estimate, and its trust tier is inferred from how far
+// back the day is — never asked. <=2 days: memory is reliable →
+// measured 1.0. 3-7 days: items hold up, portions blur → recalled
+// 0.85. Beyond: 0.7. Keeping the PWA's writes tiered means a day
+// estimated in the Flutter app and then edited here is correctly
+// promoted instead of staying gold forever.
+// ══════════════════════════════════════════
+function manualEntryMeta(logDateStr) {
+  const [y, m, d] = String(logDateStr).split('-').map(Number);
+  const today = new Date();
+  const gap = Math.round(
+    (new Date(today.getFullYear(), today.getMonth(), today.getDate()) -
+      new Date(y, m - 1, d)) / 86400000
+  );
+  if (gap <= 2) return { method: 'measured', confidence: 1.0 };
+  if (gap <= 7) return { method: 'recalled_manual', confidence: 0.85 };
+  return { method: 'recalled_manual', confidence: 0.7 };
 }
 
 // Growth-optimized protein target — ~1.26× standard RDA.
@@ -4128,6 +4153,9 @@ async function saveDay() {
   // real 'snack' tag for the detailed history.
   mealSums.dinner += mealSums.snack;
 
+  // Manual saves replace any recall-engine estimate for the day and
+  // carry the time-tiered trust (see manualEntryMeta).
+  const estMeta = manualEntryMeta(saveDate);
   const results = await Promise.allSettled([
     sb.from('daily_nutrition').upsert({
       child_id: childId,
@@ -4137,7 +4165,9 @@ async function saveDay() {
       protein_dinner_g: Math.round(mealSums.dinner * 10) / 10,
       calcium_mg: s.calcium,
       zinc_mg: s.zinc,
-      fluids_ml: s.water * 250  // 1 glass ≈ 250ml
+      fluids_ml: s.water * 250,  // 1 glass ≈ 250ml
+      estimation_method: estMeta.method,
+      confidence: estMeta.confidence
     }, { onConflict: 'child_id,log_date' }),
 
     sb.from('daily_sleep').upsert({
@@ -4148,7 +4178,9 @@ async function saveDay() {
       night_wakes: s.nightWakes,
       bedtime: s.bed,
       wake_time: s.wake,
-      data_source: 'manual'
+      data_source: 'manual',
+      estimation_method: estMeta.method,
+      confidence: estMeta.confidence
     }, { onConflict: 'child_id,log_date' })
     // Activity is now saved per-item in real-time via confirmLogActivity().
     // The daily_activity table (bar_hanging/box_jumps/yoga) is kept for
@@ -7149,6 +7181,20 @@ function buildAICoachContext() {
     ctx.latestWeightKg = latest.mass_weight_kg;
     ctx.latestMeasurementDate = latest.recorded_date;
   }
+
+  // Per-child protein targets for answer templates — computed from
+  // this child's age, sex and latest weight, never a fixed figure
+  // (the old hardcoded 44g was only right for a ~46kg 9-13yo).
+  ctx.proteinTargetG = calcProteinTargetG(
+    child.date_of_birth,
+    latest ? Number(latest.mass_weight_kg) || null : null,
+    child.biological_sex
+  );
+  ctx.proteinBoostTargetG = calcProteinBoostTargetG(
+    child.date_of_birth,
+    latest ? Number(latest.mass_weight_kg) || null : null,
+    child.biological_sex
+  );
 
   // Height velocity, if 2+ measurements exist.
   if (measurements.length >= 2) {

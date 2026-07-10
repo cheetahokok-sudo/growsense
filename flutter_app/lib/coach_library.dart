@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'analytics.dart' show calcProteinTargetG, calcProteinBoostTargetG;
 import 'app_state.dart';
 import 'growth_math.dart';
 
@@ -138,6 +139,17 @@ Map<String, dynamic> buildCoachContext(AppState appState, WhoReference? who) {
   }
 
   final meas = appState.measurements; // newest first
+
+  // Per-child protein targets (IOM 2005 DRI + the growth-optimized
+  // boost) — computed from THIS child's age, sex, and latest weight.
+  // Never a fixed figure: the old hardcoded 44 g was only correct for
+  // a ~46 kg 9-13-year-old (see calcProteinTargetG in app.js).
+  final weightKg = meas.isNotEmpty
+      ? (meas.first['mass_weight_kg'] as num?)?.toDouble()
+      : null;
+  ctx['proteinTargetG'] = calcProteinTargetG(dob, weightKg, sex);
+  ctx['proteinBoostTargetG'] = calcProteinBoostTargetG(dob, weightKg, sex);
+
   if (meas.isNotEmpty) {
     final latest = meas.first;
     final h = (latest['stature_height_cm'] as num?)?.toDouble();
