@@ -29,6 +29,7 @@ class GapFillCard extends StatefulWidget {
 class _GapFillCardState extends State<GapFillCard> {
   GapFillState? _state;
   String? _loadedChildId;
+  String? _lastLogDate;
   bool _busy = false;
   bool _dismissed = false;
 
@@ -227,14 +228,51 @@ class _GapFillCardState extends State<GapFillCard> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(err)));
     }
+    // If we just filled the date currently open in the editors (e.g.
+    // arrived here from the trust calendar), refresh the day view too.
+    if (date == widget.appState.logDate) {
+      await widget.appState.loadDay();
+    }
     await _reload();
+  }
+
+  /// Days between [date] and today (positive = past).
+  int _daysBack(String date) {
+    final p = date.split('-').map(int.parse).toList();
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day)
+        .difference(DateTime(p[0], p[1], p[2]))
+        .inDays;
+  }
+
+  /// The date currently open in the Today editors is a past day with
+  /// no nutrition data — the card should offer to fill exactly it.
+  bool get _selectedDayEmpty {
+    final a = widget.appState;
+    if (a.loadingDay) return false;
+    final n = a.nutrition;
+    double v(String c) => (n?[c] as num?)?.toDouble() ?? 0;
+    final hasRow = n != null &&
+        (v('total_protein_g') > 0 || v('calcium_mg') > 0 || v('fluids_ml') > 0);
+    return !hasRow && a.nutritionLogItems.isEmpty;
   }
 
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
+    // Arriving on a different date (date arrows or the trust
+    // calendar's "Log/Correct this day") is fresh intent — undo any
+    // earlier dismissal so the selected-date offer can show.
+    if (widget.appState.logDate != _lastLogDate) {
+      _lastLogDate = widget.appState.logDate;
+      _dismissed = false;
+    }
     final s = _state;
-    if (s == null || !s.hasAnything || _dismissed) {
+    // NOTE: do not gate on s.hasAnything here — the selected-date
+    // offer below must render even when there are no auto-detected
+    // recent gaps. The combined visibility check happens after it is
+    // computed.
+    if (s == null || _dismissed) {
       return const SizedBox.shrink();
     }
 
@@ -252,11 +290,28 @@ class _GapFillCardState extends State<GapFillCard> {
       (RecallChoice.muchMore, t('flutter.recall.much_more', 'Much more')),
     ];
 
+    // Selected-date fill: the parent navigated to a specific past day
+    // (date arrows or the trust calendar). Within the 7-day estimate
+    // cap the same fill sheet applies; beyond it, stay honest — no
+    // median fill, manual logging only (saved as recalled).
+    final selDate = widget.appState.logDate;
+    final selBack = _daysBack(selDate);
+    final selEmpty = selBack >= 1 && _selectedDayEmpty;
+    final selFillable =
+        selEmpty && selBack <= 7 && s.typicalFor(selDate) != null;
+    final selTooOld = selEmpty && selBack > 7;
+
     // Only offer pattern fill when there's enough history to compute a
     // typical day; otherwise the card stays honest and offers nothing.
-    final fillableGaps =
-        s.olderGaps.where((d) => s.typicalFor(d) != null).toList();
-    if (s.recallDate == null && fillableGaps.isEmpty) {
+    // The selected date gets its own row above, so keep it out of the
+    // generic gap list.
+    final fillableGaps = s.olderGaps
+        .where((d) => d != selDate && s.typicalFor(d) != null)
+        .toList();
+    if (s.recallDate == null &&
+        fillableGaps.isEmpty &&
+        !selFillable &&
+        !selTooOld) {
       return const SizedBox.shrink();
     }
 
@@ -292,8 +347,12 @@ class _GapFillCardState extends State<GapFillCard> {
                           s.recallDate != null
                               ? t('flutter.recall.forgot_yesterday',
                                   'Forgot to log yesterday?')
-                              : t('flutter.recall.missing_days',
-                                  'Some recent days are unlogged'),
+                              : (selFillable || selTooOld) &&
+                                      fillableGaps.isEmpty
+                                  ? t('flutter.recall.this_day_unlogged',
+                                      'This day is unlogged')
+                                  : t('flutter.recall.missing_days',
+                                      'Some recent days are unlogged'),
                           style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -306,6 +365,55 @@ class _GapFillCardState extends State<GapFillCard> {
                     ),
                   ],
                 ),
+                // The day currently open in the editors, front and
+                // centre — this is what the parent navigated to.
+                if (selFillable && selDate != s.recallDate) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: GsColors.estimatedLight,
+                      borderRadius: BorderRadius.circular(GsRadius.sm),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                              t('flutter.recall.selected_day_empty',
+                                  '{day} · {date} has no food log', {
+                                'day': _weekdayName(selDate),
+                                'date': selDate
+                              }),
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: GsColors.estimatedDark)),
+                        ),
+                        GestureDetector(
+                          onTap: () => _openFillSheet(selDate),
+                          child: Text(
+                              t('flutter.recall.fill_typical',
+                                  'Fill with a typical day'),
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: GsColors.accent)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (selTooOld) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                      t('flutter.recall.too_old',
+                          'This day is too far back for an estimate. Log what you remember below — it will be saved as a recalled day.'),
+                      style: const TextStyle(
+                          fontSize: 11.5,
+                          height: 1.4,
+                          color: GsColors.text2)),
+                ],
                 if (s.recallDate != null) ...[
                   const SizedBox(height: 2),
                   Padding(
