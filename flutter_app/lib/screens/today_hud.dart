@@ -248,23 +248,17 @@ class ReadinessCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: GsColors.surface2,
+                    color: GsColors.accentLight,
                     borderRadius: BorderRadius.circular(GsRadius.sm),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 3,
-                        height: 30,
-                        margin: const EdgeInsetsDirectional.only(end: 8),
-                        decoration: BoxDecoration(
-                          color: GsColors.accent,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
+                      const Icon(Icons.auto_awesome,
+                          size: 16, color: GsColors.accent),
+                      const SizedBox(width: 8),
                       Expanded(
-                        child: Text('✨ ${dailyInsight(i18n, s)}',
+                        child: Text(dailyInsight(i18n, s),
                             style: const TextStyle(
                                 fontSize: 11.5,
                                 color: GsColors.text2,
