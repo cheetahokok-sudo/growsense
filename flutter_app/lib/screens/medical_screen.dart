@@ -416,6 +416,8 @@ class _ChartCardState extends State<_ChartCard> {
     String readout = t('flutter.no_measurements_hint',
         'No measurements yet — add one below.');
     List<ProjectionPoint> projection = [];
+    List<ProjectionPoint> scenarioHigh = [];
+    List<ProjectionPoint> scenarioLow = [];
     if (meas.isNotEmpty) {
       final (age, v) = meas.last;
       if (isBmi) {
@@ -442,6 +444,25 @@ class _ChartCardState extends State<_ChartCard> {
           currentHeightCm: v,
           targetZ: target?.correctedZ,
           readinessScore: widget.readiness,
+        );
+        // Habit scenarios: the same projection at consistently strong
+        // vs consistently weak daily habits (readiness 90 vs 10). The
+        // nudge is capped at ±0.15 SD — habits bend the arc over
+        // years; genetics leads. This is the honest version of a
+        // "what if we do better" simulation.
+        scenarioHigh = projectGrowth(
+          table: heightTable,
+          currentAgeYears: age,
+          currentHeightCm: v,
+          targetZ: target?.correctedZ,
+          readinessScore: 90,
+        );
+        scenarioLow = projectGrowth(
+          table: heightTable,
+          currentAgeYears: age,
+          currentHeightCm: v,
+          targetZ: target?.correctedZ,
+          readinessScore: 10,
         );
       }
     }
@@ -620,9 +641,21 @@ class _ChartCardState extends State<_ChartCard> {
                     : const ['3', '15', '50', '85', '97'],
                 illnessSpans: spans,
                 bmiZones: isBmi,
+                scenarioHigh: scenarioHigh,
+                scenarioLow: scenarioLow,
               ),
             ),
           ),
+          if (!isBmi && scenarioHigh.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+                t('flutter.chart.scenario_caption',
+                    'Gold band: where consistently strong vs weak daily habits (nutrition, activity, sleep) could bend this arc. Habits shift growth over years, not weeks — genetics leads.'),
+                style: const TextStyle(
+                    fontSize: 10.5,
+                    height: 1.4,
+                    color: GsColors.estimatedDark)),
+          ],
           const SizedBox(height: 6),
           Text(
             isBmi ? t('flutter.chart.bmi_caption') : t('flutter.chart_caption'),
@@ -651,6 +684,8 @@ class _GrowthChartPainter extends CustomPainter {
     this.illnessSpans = const [],
     this.bmiZones = false,
     this.focusRecent = true,
+    this.scenarioHigh = const [],
+    this.scenarioLow = const [],
   });
   final List<double> Function(double ageMonths) bandsForAge;
   final double ageMinYears, ageMaxYears;
@@ -662,6 +697,13 @@ class _GrowthChartPainter extends CustomPainter {
   final List<String> bandLabels; // right-edge labels, low→high
   final List<(double, double)> illnessSpans; // (startAge, endAge)
   final bool bmiZones; // color the channels as BMI health zones
+
+  /// Habit-scenario envelope around the projection: the same
+  /// projectGrowth run at high/low readiness. Rendered as a soft gold
+  /// band — it widens over YEARS, which is the honest message about
+  /// how much daily habits can bend a growth trajectory.
+  final List<ProjectionPoint> scenarioHigh;
+  final List<ProjectionPoint> scenarioLow;
 
   static const _padL = 34.0, _padR = 8.0, _padT = 8.0, _padB = 22.0;
 
@@ -813,6 +855,32 @@ class _GrowthChartPainter extends CustomPainter {
     curve(bandPts[3], GsColors.text3.withValues(alpha: 0.6), 1.1);
     curve(bandPts[4], GsColors.text3.withValues(alpha: 0.5), 1.0);
 
+    // ── Habit-scenario band (soft gold fill between high/low) ──
+    final visHigh = [
+      for (final p in scenarioHigh)
+        if (p.ageYears >= minAge - 1e-9 && p.ageYears <= maxAge + 1e-9) p,
+    ];
+    final visLow = [
+      for (final p in scenarioLow)
+        if (p.ageYears >= minAge - 1e-9 && p.ageYears <= maxAge + 1e-9) p,
+    ];
+    if (visHigh.length >= 2 && visLow.length >= 2) {
+      // One closed polygon: along the high curve, back along the low.
+      // Quarter-year steps are dense enough that no spline is needed
+      // for a soft fill.
+      final band = Path()
+        ..moveTo(px(visHigh.first.ageYears), py(visHigh.first.heightCm));
+      for (final p in visHigh.skip(1)) {
+        band.lineTo(px(p.ageYears), py(p.heightCm));
+      }
+      for (final p in visLow.reversed) {
+        band.lineTo(px(p.ageYears), py(p.heightCm));
+      }
+      band.close();
+      canvas.drawPath(
+          band, Paint()..color = GsColors.estimated.withValues(alpha: 0.12));
+    }
+
     // ── Projection (dashed, estimated gold) ──
     if (visProj.length >= 2) {
       final projPts = [
@@ -918,7 +986,78 @@ class _GrowthChartPainter extends CustomPainter {
       old.projection != projection ||
       old.illnessSpans != illnessSpans ||
       old.bmiZones != bmiZones ||
-      old.focusRecent != focusRecent;
+      old.focusRecent != focusRecent ||
+      old.scenarioHigh != scenarioHigh ||
+      old.scenarioLow != scenarioLow;
+}
+
+/// Full-screen growth destination, opened from the Analytics growth
+/// strip. Reuses the Medical chart card (WHO bands, projection,
+/// habit-scenario band) — one chart, several entrances.
+class GrowthJourneyScreen extends StatefulWidget {
+  const GrowthJourneyScreen(
+      {super.key, required this.appState, required this.i18n});
+  final AppState appState;
+  final I18n i18n;
+
+  @override
+  State<GrowthJourneyScreen> createState() => _GrowthJourneyScreenState();
+}
+
+class _GrowthJourneyScreenState extends State<GrowthJourneyScreen> {
+  WhoReference? _who;
+  WhoBmiReference? _bmi;
+  double? _readiness;
+
+  @override
+  void initState() {
+    super.initState();
+    loadWhoReference().then((w) {
+      if (mounted) setState(() => _who = w);
+    });
+    loadBmiReference().then((b) {
+      if (mounted) setState(() => _bmi = b);
+    });
+    final child = widget.appState.activeChildRow;
+    if (child != null) {
+      loadWeeklyAnalytics(widget.appState.sb, child).then((a) {
+        if (mounted) setState(() => _readiness = a.avgScore);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    final child = widget.appState.activeChildRow;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(t('flutter.growth_journey', 'Growth journey'),
+            style:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      ),
+      body: child == null || _who == null || _bmi == null
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
+                _ChartCard(
+                    appState: widget.appState,
+                    child: child,
+                    who: _who!,
+                    bmi: _bmi!,
+                    readiness: _readiness,
+                    i18n: widget.i18n),
+                const SizedBox(height: 12),
+                _TargetHeightCard(
+                    appState: widget.appState,
+                    child: child,
+                    i18n: widget.i18n,
+                    units: widget.appState.units),
+              ],
+            ),
+    );
+  }
 }
 
 // ── Target height card ──────────────────────────────────────────────

@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../analytics.dart';
 import '../app_state.dart';
+import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'medical_screen.dart' show GrowthJourneyScreen;
 import 'trust_calendar.dart';
 
 // ── Separated lever rings (7-day averages) ─────────────────────────
@@ -427,6 +429,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(height: 12),
                     _InsightCard(insight: a.insight!, i18n: widget.i18n),
                   ],
+                  // Growth lives at the bottom on purpose: the tab is
+                  // ordered by rate of change (daily levers up top,
+                  // per-measurement growth below). The strip is the
+                  // summary; the full WHO chart is the drill-in.
+                  const SizedBox(height: 12),
+                  _GrowthStrip(
+                      appState: widget.appState, i18n: widget.i18n, a: a),
                 ],
               ),
             );
@@ -684,6 +693,130 @@ class _TrendCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Growth summary strip — bottom of Analytics because height changes
+/// per measurement (~monthly), not per week like the levers above it.
+/// One line of status; the full WHO chart is a tap away.
+class _GrowthStrip extends StatefulWidget {
+  const _GrowthStrip(
+      {required this.appState, required this.i18n, required this.a});
+  final AppState appState;
+  final I18n i18n;
+  final WeeklyAnalytics a;
+
+  @override
+  State<_GrowthStrip> createState() => _GrowthStripState();
+}
+
+class _GrowthStripState extends State<_GrowthStrip> {
+  String? _loadedChildId;
+  int? _percentile;
+  String? _latestDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _GrowthStrip old) {
+    super.didUpdateWidget(old);
+    _load();
+  }
+
+  Future<void> _load() async {
+    final child = widget.appState.activeChildRow;
+    if (child == null) return;
+    final id = child['child_id'] as String;
+    if (id == _loadedChildId) return;
+    _loadedChildId = id;
+    final rows = List<Map<String, dynamic>>.from(await widget.appState.sb
+        .from('measurements')
+        .select('recorded_date, stature_height_cm')
+        .eq('child_id', id)
+        .order('recorded_date', ascending: false)
+        .limit(5));
+    final dob = child['date_of_birth'] as String?;
+    if (!mounted || dob == null) return;
+    for (final r in rows) {
+      final h = (r['stature_height_cm'] as num?)?.toDouble();
+      final date = r['recorded_date'] as String?;
+      if (h == null || h <= 0 || date == null) continue;
+      final who = await loadWhoReference();
+      final bands = who.heightBands(
+          child['biological_sex'] as String?, ageYearsAt(dob, date) * 12);
+      if (!mounted) return;
+      setState(() {
+        _percentile = zToPercentile(zFromHeight(bands, h)).round();
+        _latestDate = date;
+      });
+      return;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    final a = widget.a;
+    final parts = <String>[
+      if (_percentile != null) 'P$_percentile',
+      if (a.velocityCmPerYear != null)
+        t('flutter.velocity.${a.velocityLabel.replaceAll(' ', '_')}',
+            a.velocityLabel),
+      if (a.heightGain30dCm != null)
+        '${a.heightGain30dCm! >= 0 ? '+' : ''}${a.heightGain30dCm!.toStringAsFixed(1)} cm · ${t('flutter.30d', '30d')}',
+    ];
+    final summary = parts.isEmpty
+        ? t('flutter.growth_strip.empty',
+            'Log a measurement to start the curve')
+        : parts.join(' · ');
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => GrowthJourneyScreen(
+              appState: widget.appState, i18n: widget.i18n))),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: GsColors.surface,
+          borderRadius: BorderRadius.circular(GsRadius.md),
+          border: Border.all(color: GsColors.border),
+          boxShadow: gsShadow,
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.show_chart, size: 18, color: GsColors.measured),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t('flutter.growth_strip.title', 'Growth'),
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: GsColors.measuredDark)),
+                  const SizedBox(height: 1),
+                  Text(summary,
+                      style: const TextStyle(
+                          fontSize: 11.5, color: GsColors.text2)),
+                  if (_latestDate != null)
+                    Text(
+                        t('flutter.growth_strip.measured_on',
+                            'Measured {date} · tap for the WHO curve',
+                            {'date': _latestDate!}),
+                        style: const TextStyle(
+                            fontSize: 10, color: GsColors.text3)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 18, color: GsColors.text3),
+          ],
+        ),
       ),
     );
   }
