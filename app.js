@@ -2483,6 +2483,26 @@ function activeChildNutritionTargets() {
 }
 
 // ══════════════════════════════════════════
+// Nutrition subscore (mirror of Flutter's nutritionSubscore) — see
+// FORMULAS.md. Evidence-weighted for LINEAR GROWTH: protein 40
+// (IGF-1/height, carries the food matrix), calcium 30, zinc 15
+// (meta-analytic linear-growth effect), water 15. A bounded balance
+// penalty (×0.80..1.00) discounts single-nutrient days up to 20% but
+// NEVER zeroes them, so a day with data still carries into analytics;
+// ε-smoothing keeps one legitimately-missing nutrient from
+// over-penalizing.
+function nutritionSubscore(rProtein, rCalcium, rZinc, rWater) {
+  const wP = 0.40, wCa = 0.30, wZn = 0.15, wW = 0.15;
+  const base = rProtein*wP + rCalcium*wCa + rZinc*wZn + rWater*wW;
+  const eps = 0.12, sm = r => (r + eps) / (1 + eps);
+  const sP = sm(rProtein), sCa = sm(rCalcium), sZn = sm(rZinc), sW = sm(rWater);
+  const geo = Math.pow(sP, wP) * Math.pow(sCa, wCa) * Math.pow(sZn, wZn) * Math.pow(sW, wW);
+  const arith = sP*wP + sCa*wCa + sZn*wZn + sW*wW;
+  const evenness = arith <= 0 ? 1 : Math.min(1, geo / arith);
+  return base * (0.80 + 0.20 * evenness);
+}
+
+// ══════════════════════════════════════════
 // Recall Engine estimation ladder (mirror of the Flutter client's
 // manualEntryMeta in recall_engine.dart): manual entry always wins
 // over an AI estimate, and its trust tier is inferred from how far
@@ -4084,14 +4104,13 @@ function updateHUD() {
   // calcium as the primary limiting nutrient for prepubertal bone accrual.
   const nutTargets = activeChildNutritionTargets();
   const cR = Math.min(s.calcium / nutTargets.calciumMg, 1);
+  const znR = Math.min((s.zinc || 0) / nutTargets.zincMg, 1);
   const wR = Math.min(s.water / nutTargets.waterGlasses, 1);
 
-  // Nutrition subscore: Calcium 50%, Protein 30%, Water 20%
-  // (was 40/40/20 — calcium raised relative to protein because calcium
-  // is the direct mineral substrate for hydroxyapatite crystal formation
-  // in the growth plate, while protein acts via the IGF-1 axis which
-  // has a ceiling effect above ~1.2 g/kg)
-  const nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
+  // Nutrition subscore: evidence-weighted (protein 40 / calcium 30 /
+  // zinc 15 / water 15) with a bounded balance penalty — see
+  // nutritionSubscore + FORMULAS.md.
+  const nutPct = nutritionSubscore(pR, cR, znR, wR);
 
   // ── Activity score — library-based weighted sum ───────────────
   // Each logged activity contributes duration × tier_weight.
@@ -4369,7 +4388,7 @@ async function updateStats() {
   const sinceDate = sevenDaysAgo.toISOString().split('T')[0];
 
   const [nutRes, sleepRes, actNewRes, actOldRes] = await Promise.all([
-    sb.from('daily_nutrition').select('log_date, total_protein_g, calcium_mg, fluids_ml').eq('child_id', childId).gte('log_date', sinceDate),
+    sb.from('daily_nutrition').select('log_date, total_protein_g, calcium_mg, zinc_mg, fluids_ml').eq('child_id', childId).gte('log_date', sinceDate),
     sb.from('daily_sleep').select('log_date, total_sleep_min, sleep_efficiency_score').eq('child_id', childId).gte('log_date', sinceDate),
     // New activity items — group by date in JS
     sb.from('daily_activity_items').select('log_date, tier, duration_min').eq('child_id', childId).gte('log_date', sinceDate),
@@ -4411,11 +4430,14 @@ async function updateStats() {
       const analyticProteinTarget = child
         ? calcProteinTargetG(child.date_of_birth, n?.mass_weight_kg || null, child.biological_sex)
         : 34;
+      const nt = activeChildNutritionTargets();
       const pR = n ? Math.min((n.total_protein_g||0) / analyticProteinTarget, 1) : 0;
-      const cR = n ? Math.min((n.calcium_mg||0)/activeChildNutritionTargets().calciumMg, 1) : 0;
-      const wR = n ? Math.min((n.fluids_ml||0)/2000, 1) : 0;
-      // Growth-velocity weights: Calcium 50%, Protein 30%, Water 20%
-      const nutPct = pR*0.30 + cR*0.50 + wR*0.20;
+      const cR = n ? Math.min((n.calcium_mg||0)/nt.calciumMg, 1) : 0;
+      const znR = n ? Math.min((n.zinc_mg||0)/nt.zincMg, 1) : 0;
+      const wR = n ? Math.min((n.fluids_ml||0)/(nt.waterGlasses*250), 1) : 0;
+      // Evidence-weighted nutrition subscore (protein 40 / calcium 30 /
+      // zinc 15 / water 15) with bounded balance penalty.
+      const nutPct = nutritionSubscore(pR, cR, znR, wR);
 
       // Activity: new system uses weighted minutes (60 min high-impact = 100%)
       const actWeightedMin = actByDate[date] || 0;

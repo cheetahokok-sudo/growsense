@@ -155,12 +155,33 @@ exceeding a target doesn't push the score past 100):
 
 ### Nutrition (35% of total)
 ```
-protein_ratio = min(protein_g / proteinTarget, 1)
+protein_ratio = min(protein_g / proteinTarget, 1)   # boost target
 calcium_ratio = min(calcium_mg / calciumTarget, 1)
+zinc_ratio    = min(zinc_mg / zincTarget, 1)
 water_ratio   = min(water_glasses / waterTarget, 1)
 
-nutrition_score = protein_ratio×0.4 + calcium_ratio×0.4 + water_ratio×0.2
+# Evidence-weighted for LINEAR GROWTH (rebalanced 2026-07-11):
+base     = 0.40·protein + 0.30·calcium + 0.15·zinc + 0.15·water
+# Bounded balance penalty — a single-nutrient day (e.g. calcium pill,
+# nothing else) is discounted up to 20% but never zeroed, so the day
+# still carries into analytics. ε=0.12 smoothing stops one legitimately
+# missing nutrient from over-penalizing.
+s(r)     = (r + 0.12) / 1.12
+evenness = weighted_geomean(s) / weighted_arithmean(s)   # 1 = balanced
+nutrition_score = base × (0.80 + 0.20·evenness)
 ```
+Weights track the linear-growth evidence hierarchy, not tradition
+(prior fixed weights were calcium 50 / protein 30 / water 20, zinc 0):
+- Protein 40 — strongest height/IGF-1 link; real protein food also
+  supplies zinc, calcium, B-vitamins (Project Viva; Danish milk-IGF-1
+  cohort). Boost target has a ~1.2 g/kg ceiling.
+- Calcium 30 — down from 50: Cochrane/BMJ meta-analyses show only a
+  small BMC effect (SMD +0.14) in healthy children and none at spine
+  or femoral neck; it is bone density, not linear height.
+- Zinc 15 — meta-analytic linear-growth effect (SMD +0.35, larger
+  ≥2y and in stunting; Brown et al. AJCN; school-age RCT PMID
+  29383221). Food-preset zinc coverage is 99%.
+- Water 15 — enabling hydration, least direct growth evidence.
 All three targets are personalized since 2026-07-10 (previously fixed
 44g / 1300mg / 8 glasses — only correct for a ~46kg 9-13yo):
 - proteinTarget: calcProteinTargetG — IOM 2005 DRI, per-kg rate ×

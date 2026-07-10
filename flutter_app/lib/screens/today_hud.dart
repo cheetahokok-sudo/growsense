@@ -21,11 +21,11 @@ import '../theme.dart';
 
 class HudScores {
   final double nutPct, actPct, slpPct; // 0..1
-  final double pR, cR, wR; // nutrition components, 0..1
+  final double pR, cR, znR, wR; // nutrition components, 0..1
   final int score; // 0..100
   final int proteinBoostTarget;
-  HudScores(this.nutPct, this.actPct, this.slpPct, this.pR, this.cR, this.wR,
-      this.score, this.proteinBoostTarget);
+  HudScores(this.nutPct, this.actPct, this.slpPct, this.pR, this.cR, this.znR,
+      this.wR, this.score, this.proteinBoostTarget);
 }
 
 HudScores computeHudScores(AppState appState) {
@@ -52,12 +52,15 @@ HudScores computeHudScores(AppState appState) {
           savedNum('protein_lunch_g') +
           savedNum('protein_dinner_g'));
   final calcium = math.max(itemsSum('calcium_mg'), savedNum('calcium_mg'));
+  final zinc = math.max(itemsSum('zinc_mg'), savedNum('zinc_mg'));
   final waterGlasses = savedNum('fluids_ml') / 250;
 
   // Age-banded DRI targets — a flat 1300 mg / 8 glasses over-asked
   // younger children and deflated their scores.
   final calciumTarget =
       calcCalciumTargetMg(child?['date_of_birth'] as String?);
+  final zincTarget = calcZincTargetMg(child?['date_of_birth'] as String?,
+      child?['biological_sex'] as String?);
   final waterTargetGlasses = calcWaterTargetMl(
         child?['date_of_birth'] as String?,
         child?['biological_sex'] as String?,
@@ -65,8 +68,9 @@ HudScores computeHudScores(AppState appState) {
       250;
   final pR = (protein / boost).clamp(0.0, 1.0);
   final cR = (calcium / calciumTarget).clamp(0.0, 1.0);
+  final znR = (zinc / zincTarget).clamp(0.0, 1.0);
   final wR = (waterGlasses / waterTargetGlasses).clamp(0.0, 1.0);
-  final nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
+  final nutPct = nutritionSubscore(pR, cR, znR, wR);
 
   double weightedMin = 0;
   for (final item in appState.activityItems) {
@@ -104,7 +108,8 @@ HudScores computeHudScores(AppState appState) {
   }
 
   final score = (nutPct * 30 + actPct * 30 + slpPct * 40).round();
-  return HudScores(nutPct, actPct, slpPct, pR, cR, wR, score, boost);
+  return HudScores(
+      nutPct, actPct, slpPct, pR, cR, znR, wR, score, boost);
 }
 
 /// One-line narrative under the ring — the "so what" of today's
@@ -238,6 +243,10 @@ class ReadinessCard extends StatelessWidget {
                     _MiniBar(
                         label: t('common.calcium', 'Calcium'),
                         pct: s.cR,
+                        color: GsColors.accent),
+                    _MiniBar(
+                        label: t('common.zinc', 'Zinc'),
+                        pct: s.znR,
                         color: GsColors.accent),
                     _MiniBar(
                         label: t('common.water', 'Water'),

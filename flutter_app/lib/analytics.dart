@@ -9,6 +9,8 @@
 // fallback the PWA still carries for pre-items historical data.
 // ══════════════════════════════════════════════════════════════════
 
+import 'dart:math' as math;
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'activity_data.dart';
@@ -102,6 +104,35 @@ int calcWaterTargetMl(String? dobStr, String? sex) {
   return isMale ? 2600 : 1800;
 }
 
+/// Nutrition subscore (0..1) — evidence-weighted components with a
+/// bounded balance penalty. Weights track the LINEAR-GROWTH evidence
+/// (see FORMULAS.md + PubMed refs): protein 40 (IGF-1/height, carries
+/// the food matrix), calcium 30, zinc 15 (meta-analytic linear-growth
+/// effect), water 15. The balance term multiplies by 0.80..1.00: a
+/// day dominated by a single nutrient (e.g. a calcium pill, nothing
+/// else) is discounted up to 20%, but NEVER zeroed — the day still
+/// carries into the analytics. ε-smoothing keeps one legitimately
+/// missing nutrient (patchy zinc coverage) from over-penalizing.
+double nutritionSubscore(num rProtein, num rCalcium, num rZinc, num rWater) {
+  const wP = 0.40, wCa = 0.30, wZn = 0.15, wW = 0.15;
+  final p = rProtein.toDouble(),
+      ca = rCalcium.toDouble(),
+      zn = rZinc.toDouble(),
+      w = rWater.toDouble();
+  final base = p * wP + ca * wCa + zn * wZn + w * wW;
+  const eps = 0.12;
+  double s(double r) => (r + eps) / (1 + eps);
+  final sP = s(p), sCa = s(ca), sZn = s(zn), sW = s(w);
+  final geo = (math.pow(sP, wP) *
+          math.pow(sCa, wCa) *
+          math.pow(sZn, wZn) *
+          math.pow(sW, wW))
+      .toDouble();
+  final arith = sP * wP + sCa * wCa + sZn * wZn + sW * wW;
+  final evenness = arith <= 0 ? 1.0 : (geo / arith).clamp(0.0, 1.0);
+  return base * (0.80 + 0.20 * evenness);
+}
+
 /// Zinc RDA by age/sex band (IOM 2001): 3mg 1-3y, 5mg 4-8y, 8mg
 /// 9-13y, 11mg boys / 9mg girls 14-18y. Display target only — zinc
 /// is not part of the readiness score.
@@ -139,6 +170,7 @@ class DayMetrics {
   final String date;
   double? proteinG;
   double? calciumMg;
+  double? zincMg;
   double? fluidsMl;
   double? sleepMin;
   double? sleepEfficiency;
@@ -236,15 +268,16 @@ class _Levers {
 }
 
 _Levers _computeLevers(List<DayMetrics> window, int proteinTarget,
-    int calciumTarget, int waterTargetMl, int sleepTargetMin) {
+    int calciumTarget, int zincTarget, int waterTargetMl, int sleepTargetMin) {
   final logged = window.where((d) => d.hasAnyLog).toList();
   if (logged.isEmpty) return _Levers(null, null, null, null);
   double total = 0, nutSum = 0, actSum = 0, slpSum = 0;
   for (final d in logged) {
     final pR = ((d.proteinG ?? 0) / proteinTarget).clamp(0.0, 1.0);
     final cR = ((d.calciumMg ?? 0) / calciumTarget).clamp(0.0, 1.0);
+    final znR = ((d.zincMg ?? 0) / zincTarget).clamp(0.0, 1.0);
     final wR = ((d.fluidsMl ?? 0) / waterTargetMl).clamp(0.0, 1.0);
-    final nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
+    final nutPct = nutritionSubscore(pR, cR, znR, wR);
     final actPct = (d.weightedActivityMin / 60).clamp(0.0, 1.0);
     final durR = ((d.sleepMin ?? 0) / sleepTargetMin).clamp(0.0, 1.0);
     final effR = ((d.sleepEfficiency ?? 0) / 100).clamp(0.0, 1.0);
@@ -358,7 +391,7 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     sb
         .from('daily_nutrition')
         .select(
-            'log_date, total_protein_g, calcium_mg, fluids_ml, estimation_method')
+            'log_date, total_protein_g, calcium_mg, zinc_mg, fluids_ml, estimation_method')
         .eq('child_id', childId)
         .gte('log_date', since),
     sb
@@ -401,6 +434,7 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     if (d == null) continue;
     d.proteinG = (r['total_protein_g'] as num?)?.toDouble();
     d.calciumMg = (r['calcium_mg'] as num?)?.toDouble();
+    d.zincMg = (r['zinc_mg'] as num?)?.toDouble();
     d.fluidsMl = (r['fluids_ml'] as num?)?.toDouble();
     // recalled_manual is parent data — only pure AI estimates
     // (relative_recall / pattern_fill / weekly_survey) render gold.
@@ -435,16 +469,16 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     null,
     child['biological_sex'] as String?,
   );
-  final calciumTarget =
-      calcCalciumTargetMg(child['date_of_birth'] as String?);
-  final waterTargetMl = calcWaterTargetMl(child['date_of_birth'] as String?,
-      child['biological_sex'] as String?);
-  final sleepTargetMin =
-      calcSleepTargetMin(child['date_of_birth'] as String?);
+  final dob = child['date_of_birth'] as String?;
+  final sex = child['biological_sex'] as String?;
+  final calciumTarget = calcCalciumTargetMg(dob);
+  final zincTarget = calcZincTargetMg(dob, sex);
+  final waterTargetMl = calcWaterTargetMl(dob, sex);
+  final sleepTargetMin = calcSleepTargetMin(dob);
   final cur = _computeLevers(currentWeek, proteinTarget, calciumTarget,
-      waterTargetMl, sleepTargetMin);
+      zincTarget, waterTargetMl, sleepTargetMin);
   final prior = _computeLevers(priorWeek, proteinTarget, calciumTarget,
-      waterTargetMl, sleepTargetMin);
+      zincTarget, waterTargetMl, sleepTargetMin);
   final avgScore = cur.score;
   final avgNut = cur.nut, avgAct = cur.act, avgSlp = cur.slp;
   double? delta(double? c, double? p) =>

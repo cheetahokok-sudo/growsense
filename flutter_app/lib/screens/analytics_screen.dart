@@ -431,6 +431,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                   const SizedBox(height: 12),
                   _TrendCard(
+                    title: t('common.zinc', 'Zinc'),
+                    unit: 'mg',
+                    color: GsColors.accent,
+                    days: a.days,
+                    valueOf: (d) => d.zincMg,
+                    i18n: widget.i18n,
+                    estimatedOf: (d) => d.nutritionEstimated,
+                    target: calcZincTargetMg(
+                            child['date_of_birth'] as String?,
+                            child['biological_sex'] as String?)
+                        .toDouble(),
+                  ),
+                  const SizedBox(height: 12),
+                  _TrendCard(
                     title: t('common.sleep', 'Sleep'),
                     unit: 'h',
                     color: GsColors.estimated,
