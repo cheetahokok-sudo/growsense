@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../analytics.dart' show calcCalciumTargetMg;
+import '../analytics.dart' show calcCalciumTargetMg, calcZincTargetMg;
 import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
@@ -327,8 +327,11 @@ class _NutritionEditorCardState extends State<NutritionEditorCard> {
               ),
               _StepperRow(
                 label: t('today.nutrition.zinc_label', 'Zinc total'),
-                sub: t('today.nutrition.zinc_sub',
-                    'Growth plate co-factor · target 8mg/day'),
+                sub: t('flutter.zinc_target_dynamic',
+                    'Growth plate co-factor · target {mg}mg/day (for age)', {
+                  'mg':
+                      '${calcZincTargetMg(widget.appState.activeChildRow?['date_of_birth'] as String?, widget.appState.activeChildRow?['biological_sex'] as String?)}'
+                }),
                 value: '${_fmt(_zinc!)} mg',
                 onMinus: _zinc! > 0
                     ? () => setState(

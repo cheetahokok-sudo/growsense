@@ -23,7 +23,9 @@ import 'analytics.dart'
         calcProteinTargetG,
         calcProteinBoostTargetG,
         calcCalciumTargetMg,
-        calcWaterTargetMl;
+        calcWaterTargetMl,
+        calcZincTargetMg,
+        calcSleepTargetMin;
 import 'app_state.dart';
 import 'growth_math.dart';
 
@@ -156,6 +158,8 @@ Map<String, dynamic> buildCoachContext(AppState appState, WhoReference? who) {
   ctx['proteinBoostTargetG'] = calcProteinBoostTargetG(dob, weightKg, sex);
   ctx['calciumTargetMg'] = calcCalciumTargetMg(dob);
   ctx['waterTargetGlasses'] = (calcWaterTargetMl(dob, sex) / 250).round();
+  ctx['zincTargetMg'] = calcZincTargetMg(dob, sex);
+  ctx['sleepTargetH'] = (calcSleepTargetMin(dob) / 60).toStringAsFixed(1);
 
   if (meas.isNotEmpty) {
     final latest = meas.first;

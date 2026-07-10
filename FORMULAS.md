@@ -182,7 +182,11 @@ activity_score = hanging_ratio×0.4 + jumps_ratio×0.4 + yoga_ratio×0.2
 
 ### Sleep (30% of total)
 ```
-duration_ratio = min(total_sleep_hours / 9.5, 1)
+duration_ratio = min(total_sleep_hours / sleepTarget, 1)
+# sleepTarget age-banded since 2026-07-11 (calcSleepTargetMin):
+# 12h under 3y, 11h 3-5y, 9.5h 6-12y (unchanged core), 8.5h 13-18y.
+# Zinc display target also age-banded (calcZincTargetMg, IOM 2001):
+# 3mg 1-3y, 5mg 4-8y, 8mg 9-13y, 11/9mg M/F 14-18y (not scored).
 
 on_time_ratio  = 1                                   if bedtime <= 21:30
                = max(0, 1 - (minutes_late / 120))     if bedtime > 21:30

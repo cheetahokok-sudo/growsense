@@ -102,6 +102,32 @@ int calcWaterTargetMl(String? dobStr, String? sex) {
   return isMale ? 2600 : 1800;
 }
 
+/// Zinc RDA by age/sex band (IOM 2001): 3mg 1-3y, 5mg 4-8y, 8mg
+/// 9-13y, 11mg boys / 9mg girls 14-18y. Display target only — zinc
+/// is not part of the readiness score.
+int calcZincTargetMg(String? dobStr, String? sex) {
+  final age = _ageYears(dobStr);
+  final isMale = (sex ?? 'male').toLowerCase() != 'female';
+  if (age == null) return 8;
+  if (age < 4) return 3;
+  if (age < 9) return 5;
+  if (age < 14) return 8;
+  return isMale ? 11 : 9;
+}
+
+/// Growth-oriented sleep target by age band, in minutes. Keeps the
+/// app's long-standing 9.5h for the core 6-12y demographic and bands
+/// the edges (AASM ranges: 1-2y 11-14h, 3-5y 10-13h, 6-12y 9-12h,
+/// 13-18y 8-10h).
+int calcSleepTargetMin(String? dobStr) {
+  final age = _ageYears(dobStr);
+  if (age == null) return (9.5 * 60).round();
+  if (age < 3) return 12 * 60;
+  if (age < 6) return 11 * 60;
+  if (age < 13) return (9.5 * 60).round();
+  return (8.5 * 60).round();
+}
+
 double? _ageYears(String? dobStr) {
   if (dobStr == null) return null;
   final dob = DateTime.tryParse(dobStr);
@@ -210,7 +236,7 @@ class _Levers {
 }
 
 _Levers _computeLevers(List<DayMetrics> window, int proteinTarget,
-    int calciumTarget, int waterTargetMl) {
+    int calciumTarget, int waterTargetMl, int sleepTargetMin) {
   final logged = window.where((d) => d.hasAnyLog).toList();
   if (logged.isEmpty) return _Levers(null, null, null, null);
   double total = 0, nutSum = 0, actSum = 0, slpSum = 0;
@@ -220,7 +246,7 @@ _Levers _computeLevers(List<DayMetrics> window, int proteinTarget,
     final wR = ((d.fluidsMl ?? 0) / waterTargetMl).clamp(0.0, 1.0);
     final nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
     final actPct = (d.weightedActivityMin / 60).clamp(0.0, 1.0);
-    final durR = ((d.sleepMin ?? 0) / (9.5 * 60)).clamp(0.0, 1.0);
+    final durR = ((d.sleepMin ?? 0) / sleepTargetMin).clamp(0.0, 1.0);
     final effR = ((d.sleepEfficiency ?? 0) / 100).clamp(0.0, 1.0);
     final slpPct = durR * 0.6 + effR * 0.4;
     total += nutPct * 30 + actPct * 30 + slpPct * 40;
@@ -413,10 +439,12 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
       calcCalciumTargetMg(child['date_of_birth'] as String?);
   final waterTargetMl = calcWaterTargetMl(child['date_of_birth'] as String?,
       child['biological_sex'] as String?);
-  final cur = _computeLevers(
-      currentWeek, proteinTarget, calciumTarget, waterTargetMl);
-  final prior =
-      _computeLevers(priorWeek, proteinTarget, calciumTarget, waterTargetMl);
+  final sleepTargetMin =
+      calcSleepTargetMin(child['date_of_birth'] as String?);
+  final cur = _computeLevers(currentWeek, proteinTarget, calciumTarget,
+      waterTargetMl, sleepTargetMin);
+  final prior = _computeLevers(priorWeek, proteinTarget, calciumTarget,
+      waterTargetMl, sleepTargetMin);
   final avgScore = cur.score;
   final avgNut = cur.nut, avgAct = cur.act, avgSlp = cur.slp;
   double? delta(double? c, double? p) =>

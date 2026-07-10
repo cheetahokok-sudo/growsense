@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../analytics.dart' show calcSleepTargetMin;
 import '../app_state.dart';
 import '../i18n.dart';
 import '../recall_engine.dart';
@@ -486,7 +487,9 @@ class _GapFillCardState extends State<GapFillCard> {
     if (multiplier == null || !mounted) return;
     setState(() => _busy = true);
     final err = await applySleepFill(
-        widget.appState.sb, childId, date, typical, multiplier);
+        widget.appState.sb, childId, date, typical, multiplier,
+        sleepTargetMin: calcSleepTargetMin(
+            widget.appState.activeChildRow?['date_of_birth'] as String?));
     if (!mounted) return;
     if (err != null) {
       ScaffoldMessenger.of(context)

@@ -551,7 +551,8 @@ Future<TypicalNight?> loadTypicalNight(
 /// Efficiency is recomputed with the same duration-adequacy rule as
 /// saveTodayData; never overwrites a measured (incl. wearable) row.
 Future<String?> applySleepFill(SupabaseClient sb, String childId, String date,
-    TypicalNight t, double multiplier) async {
+    TypicalNight t, double multiplier,
+    {int sleepTargetMin = 570}) async {
   try {
     final existing = await sb
         .from('daily_sleep')
@@ -570,7 +571,7 @@ Future<String?> applySleepFill(SupabaseClient sb, String childId, String date,
       'log_date': date,
       'total_sleep_min': total,
       'sleep_efficiency_score':
-          ((total / (9.5 * 60)) * 100).round().clamp(0, 100),
+          ((total / sleepTargetMin) * 100).round().clamp(0, 100),
       'data_source': 'manual',
       'estimation_method': kPatternFill,
       'confidence': multiplier == 1.0 ? 0.3 : 0.35,

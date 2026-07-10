@@ -4,7 +4,7 @@
 // verbatim:
 //   nutrition = protein/boost·30% + calcium/ageRDA·50% + water/ageAI·20%
 //   activity  = Σ(duration × tier weight) / 60 min, capped
-//   sleep     = duration/9.5h·35% + bedtime≤21:30·40% + wakes·25%
+//   sleep     = duration/ageTarget·35% + bedtime≤21:30·40% + wakes·25%
 //   overall   = nutrition·30 + activity·30 + sleep·40
 // Ring colors follow the design system: nutrition accent, activity
 // measured, sleep estimated.
@@ -86,7 +86,9 @@ HudScores computeHudScores(AppState appState) {
   final sleep = appState.sleep;
   if (sleep != null) {
     final totalMin = (sleep['total_sleep_min'] as num?)?.toDouble() ?? 0;
-    final durR = (totalMin / (9.5 * 60)).clamp(0.0, 1.0);
+    final durR = (totalMin /
+            calcSleepTargetMin(child?['date_of_birth'] as String?))
+        .clamp(0.0, 1.0);
     double onTimeR = 0;
     final bedtime = sleep['bedtime'] as String?;
     if (bedtime != null && bedtime.contains(':')) {

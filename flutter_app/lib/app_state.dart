@@ -14,6 +14,7 @@ import 'package:image/image.dart' as img;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'analytics.dart' show calcSleepTargetMin;
 import 'recall_engine.dart' show manualEntryMeta;
 
 /// Downscale an X-ray to <=800px JPEG for AI vision analysis — same
@@ -390,8 +391,12 @@ class AppState extends ChangeNotifier {
     var wakeMins = wake[0] * 60 + wake[1];
     if (bedMins > wakeMins) wakeMins += 1440;
     final totalSleepMin = wakeMins - bedMins;
-    final efficiency =
-        ((totalSleepMin / (9.5 * 60)) * 100).round().clamp(0, 100);
+    final efficiency = ((totalSleepMin /
+                calcSleepTargetMin(
+                    activeChildRow?['date_of_birth'] as String?)) *
+            100)
+        .round()
+        .clamp(0, 100);
     try {
       final meta = manualEntryMeta(logDate);
       await sb.from('daily_sleep').upsert({

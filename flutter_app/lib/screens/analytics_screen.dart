@@ -439,7 +439,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         d.sleepMin == null ? null : d.sleepMin! / 60,
                     i18n: widget.i18n,
                     estimatedOf: (d) => d.sleepEstimated,
-                    target: 9.5,
+                    target: calcSleepTargetMin(
+                            child['date_of_birth'] as String?) /
+                        60,
                   ),
                   const SizedBox(height: 12),
                   _TrendCard(

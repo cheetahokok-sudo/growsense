@@ -2114,6 +2114,7 @@ function loadChildIntoForm() {
   const elJ = document.getElementById('valJumps');   if (elJ) elJ.textContent = s.jumps + ' reps';
   document.getElementById('valNightWakes').textContent = s.nightWakes;
   document.getElementById('waterLbl').textContent = `(${s.water}/${activeChildNutritionTargets().waterGlasses} glasses)`;
+  { const z = document.getElementById('zincSubLbl'); if (z) z.textContent = `Growth plate co-factor · target ${activeChildNutritionTargets().zincMg}mg/day (for age)`; }
   document.getElementById('sleepBed').value = s.bed;
   document.getElementById('sleepWake').value = s.wake;
 
@@ -2448,11 +2449,36 @@ function calcWaterTargetGlasses(dobStr, biologicalSex) {
   return Math.round(ml / 250);
 }
 
+// Zinc RDA (IOM 2001): 3mg 1-3y, 5mg 4-8y, 8mg 9-13y, 11/9mg 14-18y
+// M/F. Display target only — zinc is not part of the readiness score.
+function calcZincTargetMg(dobStr, biologicalSex) {
+  const age = dobStr ? (new Date() - new Date(dobStr)) / (365.25 * 86400000) : null;
+  const isMale = (biologicalSex || 'male').toLowerCase() !== 'female';
+  if (age === null) return 8;
+  if (age < 4) return 3;
+  if (age < 9) return 5;
+  if (age < 14) return 8;
+  return isMale ? 11 : 9;
+}
+
+// Growth-oriented sleep target in minutes — keeps the long-standing
+// 9.5h for the core 6-12y demographic, bands the edges (AASM ranges).
+function calcSleepTargetMin(dobStr) {
+  const age = dobStr ? (new Date() - new Date(dobStr)) / (365.25 * 86400000) : null;
+  if (age === null) return 570;
+  if (age < 3) return 12 * 60;
+  if (age < 6) return 11 * 60;
+  if (age < 13) return 570; // 9.5h
+  return 510; // 8.5h
+}
+
 function activeChildNutritionTargets() {
   const child = APP.children[APP.activeChild] || {};
   return {
     calciumMg: calcCalciumTargetMg(child.date_of_birth),
     waterGlasses: calcWaterTargetGlasses(child.date_of_birth, child.biological_sex),
+    zincMg: calcZincTargetMg(child.date_of_birth, child.biological_sex),
+    sleepMin: calcSleepTargetMin(child.date_of_birth),
   };
 }
 
@@ -2973,6 +2999,7 @@ function adj(key, delta) {
   if (key === 'water') {
     updateWaterGrid();
     document.getElementById('waterLbl').textContent = `(${s.water}/${activeChildNutritionTargets().waterGlasses} glasses)`;
+  { const z = document.getElementById('zincSubLbl'); if (z) z.textContent = `Growth plate co-factor · target ${activeChildNutritionTargets().zincMg}mg/day (for age)`; }
   }
   if (key === 'nightWakes') renderSleepTimeline();
   updateHUD();
@@ -3956,6 +3983,7 @@ function buildWaterGrid() {
       st.water = (st.water === i) ? i-1 : i;
       updateWaterGrid();
       document.getElementById('waterLbl').textContent = `(${st.water}/${activeChildNutritionTargets().waterGlasses} glasses)`;
+      { const z = document.getElementById('zincSubLbl'); if (z) z.textContent = `Growth plate co-factor · target ${activeChildNutritionTargets().zincMg}mg/day (for age)`; }
       updateHUD();
     };
     g.appendChild(d);
@@ -4083,7 +4111,7 @@ function updateHUD() {
   const wake = document.getElementById('sleepWake').value.split(':').map(Number);
   let bedM = bed[0]*60+bed[1], wakeM = wake[0]*60+wake[1];
   if (bedM > wakeM) wakeM += 1440;
-  const durR = Math.min((wakeM-bedM)/60/9.5, 1);
+  const durR = Math.min((wakeM-bedM)/(activeChildNutritionTargets().sleepMin/60)/60, 1);
   // Bedtime on/before 21:30 protects the early GH-pulse window; each night
   // wake-up before midnight is treated as a partial disruption to that window.
   const onTimeR = (bedM <= (21*60+30)) ? 1 : Math.max(0, 1 - (bedM - (21*60+30))/120);
@@ -4159,7 +4187,7 @@ async function saveDay() {
   // sleep_efficiency_score now reflects actual sleep duration adequacy
   // only — night_wakes has its own real column (see migration), so this
   // no longer needs to double as a wake-up proxy.
-  const sleepEfficiency = Math.max(0, Math.min(100, Math.round((totalSleepMin / (9.5*60)) * 100)));
+  const sleepEfficiency = Math.max(0, Math.min(100, Math.round((totalSleepMin / activeChildNutritionTargets().sleepMin) * 100)));
 
   // Three independent writes — this app screen edits all three domains at
   // once, but each is its own table/concern (the split is deliberate, see
@@ -4393,7 +4421,7 @@ async function updateStats() {
       const actWeightedMin = actByDate[date] || 0;
       const actPct = Math.min(actWeightedMin / 60, 1.0);
 
-      const durR = sl ? Math.min((sl.total_sleep_min||0)/(9.5*60), 1) : 0;
+      const durR = sl ? Math.min((sl.total_sleep_min||0)/activeChildNutritionTargets().sleepMin, 1) : 0;
       const effR = sl ? (sl.sleep_efficiency_score||0)/100 : 0;
       const slpPct = durR*0.6 + effR*0.4;
 
@@ -5158,9 +5186,10 @@ function updateInsightCards() {
   // Sleep
   if (slp7.length) {
     const avgM = slp7.reduce((a,r)=>a+(r.total_sleep_min||0),0)/slp7.length;
-    const met  = slp7.filter(r=>(r.total_sleep_min||0)>=570).length;
+    const sleepGoalMin = activeChildNutritionTargets().sleepMin;
+    const met  = slp7.filter(r=>(r.total_sleep_min||0)>=sleepGoalMin).length;
     set('icSlpValue', `${Math.floor(avgM/60)}h ${Math.round(avgM%60)}m avg / night`);
-    set('icSlpSub',   `9.5h goal met ${met} of ${slp7.length} nights`);
+    set('icSlpSub',   `${(sleepGoalMin/60).toFixed(1)}h goal met ${met} of ${slp7.length} nights`);
   } else { set('icSlpValue','—'); set('icSlpSub','No sleep data this week'); }
 
   // Activity
@@ -5299,7 +5328,7 @@ function buildSleepSheet(period) {
   const rows = filterByPeriod(APP.sleepHistory, period);
   if (!rows.length) return '<div class="insight-empty">No sleep data for this period.<br>Start logging on the Today tab.</div>';
 
-  const GOAL = 570; // 9.5h in minutes
+  const GOAL = activeChildNutritionTargets().sleepMin; // age-banded, minutes
   const avg  = rows.reduce((a,r)=>a+(r.total_sleep_min||0),0)/rows.length;
   const met  = rows.filter(r=>(r.total_sleep_min||0)>=GOAL).length;
   const h = Math.floor(avg/60), m = Math.round(avg%60);
@@ -5308,7 +5337,7 @@ function buildSleepSheet(period) {
   const legend = `<div class="insight-chart-legend">
     <span><span class="ileg-dot" style="background:#2F6B4F;"></span>Goal met</span>
     <span><span class="ileg-dot" style="background:#9C7A3D;"></span>Missed</span>
-    <span style="opacity:.6">· 9.5h goal zone</span>
+    <span style="opacity:.6">· ${(GOAL/60).toFixed(1)}h goal zone</span>
   </div>`;
 
   const dayRows = [...rows].reverse().slice(0,14).map(r => {
@@ -5326,7 +5355,7 @@ function buildSleepSheet(period) {
 
   return `
     <div><span class="insight-big-num">${h}h ${m}m</span><span class="insight-big-unit">avg / night</span></div>
-    <div class="insight-big-sub">9.5h goal met ${met} of ${rows.length} nights</div>
+    <div class="insight-big-sub">${(GOAL/60).toFixed(1)}h goal met ${met} of ${rows.length} nights</div>
     <div class="insight-chart-wrap">${chart}${legend}</div>
     <div style="margin-top:6px;">${dayRows}</div>`;
 }
@@ -7233,6 +7262,8 @@ function buildAICoachContext() {
   );
   ctx.calciumTargetMg = calcCalciumTargetMg(child.date_of_birth);
   ctx.waterTargetGlasses = calcWaterTargetGlasses(child.date_of_birth, child.biological_sex);
+  ctx.zincTargetMg = calcZincTargetMg(child.date_of_birth, child.biological_sex);
+  ctx.sleepTargetH = (calcSleepTargetMin(child.date_of_birth) / 60).toFixed(1);
 
   // Height velocity, if 2+ measurements exist.
   if (measurements.length >= 2) {
@@ -7391,8 +7422,8 @@ async function askClaude(userMsg) {
     const slp7 = filterByPeriod(APP.sleepHistory || [], 'W');
     if (slp7.length >= 3) {
       const avgMin = Math.round(slp7.reduce((a,r) => a+(r.total_sleep_min||0),0) / slp7.length);
-      const goalMet = slp7.filter(r=>(r.total_sleep_min||0)>=570).length;
-      growthLines.push(`- 7-day sleep trend: avg ${Math.floor(avgMin/60)}h ${avgMin%60}m/night, 9.5h goal met ${goalMet}/${slp7.length} nights`);
+      const goalMet = slp7.filter(r=>(r.total_sleep_min||0)>=activeChildNutritionTargets().sleepMin).length;
+      growthLines.push(`- 7-day sleep trend: avg ${Math.floor(avgMin/60)}h ${avgMin%60}m/night, ${(activeChildNutritionTargets().sleepMin/60).toFixed(1)}h goal met ${goalMet}/${slp7.length} nights`);
     }
     const act7 = filterByPeriod(APP.activityHistory || [], 'W');
     if (act7.length >= 3) {
