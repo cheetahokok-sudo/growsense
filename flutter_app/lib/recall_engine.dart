@@ -232,6 +232,33 @@ Future<String?> applyRelativeRecall(SupabaseClient sb, String childId,
   }
 }
 
+/// Parent confirmed an estimated day as accurate ("Looks right" in the
+/// trust calendar). Confirmation is itself a recall, so it promotes to
+/// recalled_manual at the time-tiered confidence — NEVER to measured
+/// 1.0. Values are untouched; only provenance changes.
+Future<String?> confirmEstimate(
+    SupabaseClient sb, String childId, String date) async {
+  final parts = date.split('-').map(int.parse).toList();
+  final today = DateTime.now();
+  final gap = DateTime(today.year, today.month, today.day)
+      .difference(DateTime(parts[0], parts[1], parts[2]))
+      .inDays;
+  try {
+    await sb
+        .from('daily_nutrition')
+        .update({
+          'estimation_method': kRecalledManual,
+          'confidence': gap <= 7 ? 0.85 : 0.7,
+        })
+        .eq('child_id', childId)
+        .eq('log_date', date)
+        .neq('estimation_method', kMeasured); // measured rows are immutable here
+    return null;
+  } on PostgrestException catch (e) {
+    return e.message;
+  }
+}
+
 /// Typical-day pattern fill for an older gap day. [multiplier] is the
 /// parent's "compared with usual" adjustment — it scales the measured
 /// medians, so it stays anchored to real data (no estimate chaining).

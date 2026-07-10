@@ -6,13 +6,20 @@ import '../analytics.dart';
 import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'trust_calendar.dart';
 
 // ── Separated lever rings (7-day averages) ─────────────────────────
 
 class _LeverRings extends StatelessWidget {
-  const _LeverRings({required this.a, required this.i18n});
+  const _LeverRings(
+      {required this.a, required this.i18n, this.onOpenHistory});
   final WeeklyAnalytics a;
   final I18n i18n;
+
+  /// Opens the trust calendar (nutrition history). Only the nutrition
+  /// ring is wired for now — activity/sleep join in phase 2 once their
+  /// tables carry estimation columns.
+  final VoidCallback? onOpenHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -27,12 +34,20 @@ class _LeverRings extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _MiniRing(
-              pct: a.avgNutPct ?? 0,
-              delta: a.deltaNutPct,
-              light: const Color(0xFF5FA87E),
-              full: GsColors.accent,
-              label: t('common.nutrition', 'Nutrition')),
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onOpenHistory,
+              child: _MiniRing(
+                  pct: a.avgNutPct ?? 0,
+                  delta: a.deltaNutPct,
+                  expand: false,
+                  light: const Color(0xFF5FA87E),
+                  full: GsColors.accent,
+                  label: t('common.nutrition', 'Nutrition'),
+                  hint: t('flutter.trust.tap_history', 'tap for history')),
+            ),
+          ),
           _MiniRing(
               pct: a.avgActPct ?? 0,
               delta: a.deltaActPct,
@@ -60,12 +75,16 @@ class _MiniRing extends StatelessWidget {
       required this.light,
       required this.full,
       required this.label,
-      this.delta});
+      this.delta,
+      this.expand = true,
+      this.hint});
   final double pct;
   final Color light;
   final Color full;
   final String label;
   final double? delta; // week-over-week change as a signed fraction
+  final bool expand; // false when the caller supplies its own Expanded
+  final String? hint; // tiny affordance line under the label
 
   @override
   Widget build(BuildContext context) {
@@ -74,8 +93,7 @@ class _MiniRing extends StatelessWidget {
     final pts = ((delta ?? 0).abs() * 100).round();
     final showDelta = delta != null && pts > 0;
     final up = (delta ?? 0) >= 0;
-    return Expanded(
-      child: Column(
+    final column = Column(
         children: [
           TweenAnimationBuilder<double>(
             key: ValueKey(pct),
@@ -114,9 +132,16 @@ class _MiniRing extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: up ? GsColors.accent : GsColors.flag)),
             ),
+          if (hint != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(hint!,
+                  style: const TextStyle(
+                      fontSize: 9.5, color: GsColors.text3)),
+            ),
         ],
-      ),
-    );
+      );
+    return expand ? Expanded(child: column) : column;
   }
 }
 
@@ -186,9 +211,16 @@ class _MiniRingPainter extends CustomPainter {
 /// come later when the growth percentile curves are ported.
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen(
-      {super.key, required this.appState, required this.i18n});
+      {super.key,
+      required this.appState,
+      required this.i18n,
+      this.onCorrectDay});
   final AppState appState;
   final I18n i18n;
+
+  /// From home_shell: switch the log date and jump to the Today tab so
+  /// the parent can correct/log the tapped calendar day.
+  final void Function(String date)? onCorrectDay;
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -250,7 +282,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   // metric with the number inside, because Analytics is
                   // about comparing levers (Today keeps the composite).
                   if (a.avgNutPct != null)
-                    _LeverRings(a: a, i18n: widget.i18n),
+                    _LeverRings(
+                        a: a,
+                        i18n: widget.i18n,
+                        onOpenHistory: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => Scaffold(
+                                  appBar: AppBar(
+                                    title: Text(
+                                        t('flutter.trust.title',
+                                            'Nutrition history'),
+                                        style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700)),
+                                  ),
+                                  body: TrustCalendarScreen(
+                                    appState: widget.appState,
+                                    i18n: widget.i18n,
+                                    onCorrectDay: (date) {
+                                      Navigator.of(context).pop();
+                                      widget.onCorrectDay?.call(date);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            )),
                   if (a.avgNutPct != null) const SizedBox(height: 10),
                   Row(
                     children: [

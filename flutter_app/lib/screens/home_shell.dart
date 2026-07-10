@@ -187,7 +187,15 @@ class _HomeShellState extends State<HomeShell> {
           appState: widget.appState,
           i18n: widget.i18n,
           onQuickLog: _quickLog),
-      AnalyticsScreen(appState: widget.appState, i18n: widget.i18n),
+      AnalyticsScreen(
+          appState: widget.appState,
+          i18n: widget.i18n,
+          onCorrectDay: (date) {
+            // Trust calendar "Correct this day": open that date in the
+            // Today editors.
+            widget.appState.setLogDate(date);
+            setState(() => _tab = 0);
+          }),
       CoachScreen(appState: widget.appState, i18n: widget.i18n),
       MedicalScreen(appState: widget.appState, i18n: widget.i18n),
     ];
