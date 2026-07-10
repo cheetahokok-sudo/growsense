@@ -93,6 +93,12 @@ class DayMetrics {
   /// days keep trends continuous but render gold and are excluded
   /// from correlation insights.
   bool nutritionEstimated = false;
+
+  /// Phase 2: same flags for the other levers. Activity is true when
+  /// ANY of the day's items is an estimate (routine-confirmed items
+  /// carry typical durations).
+  bool activityEstimated = false;
+  bool sleepEstimated = false;
   DayMetrics(this.date);
 
   bool get hasAnyLog =>
@@ -206,13 +212,22 @@ SmartInsight? _pickInsight(
   double? dAct,
   double? dSlp,
   bool nutritionHasEstimates = false,
+  bool activityHasEstimates = false,
+  bool sleepHasEstimates = false,
 }) {
-  // Honesty rule: never make a nutrition claim off AI-estimated days —
+  // Honesty rule: never make a lever claim off AI-estimated days —
   // the recall engine must not manufacture its own "insights".
   if (nutritionHasEstimates) dNut = null;
+  if (activityHasEstimates) dAct = null;
+  if (sleepHasEstimates) dSlp = null;
   // (1) Sleep vs activity — split the week's sleep-logged days at their
   // own activity median and compare average sleep between halves.
-  final withSleep = week.where((d) => d.sleepMin != null).toList();
+  // Estimated sleep or activity days are excluded: a correlation built
+  // on typical-value fills would just rediscover the fill algorithm.
+  final withSleep = week
+      .where((d) =>
+          d.sleepMin != null && !d.sleepEstimated && !d.activityEstimated)
+      .toList();
   if (withSleep.length >= 4) {
     withSleep.sort(
         (a, b) => a.weightedActivityMin.compareTo(b.weightedActivityMin));
@@ -291,12 +306,13 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
         .gte('log_date', since),
     sb
         .from('daily_sleep')
-        .select('log_date, total_sleep_min, sleep_efficiency_score')
+        .select('log_date, total_sleep_min, sleep_efficiency_score, '
+            'estimation_method')
         .eq('child_id', childId)
         .gte('log_date', since),
     sb
         .from('daily_activity_items')
-        .select('log_date, tier, duration_min')
+        .select('log_date, tier, duration_min, estimation_method')
         .eq('child_id', childId)
         .gte('log_date', since),
     sb
@@ -334,11 +350,14 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     final method = r['estimation_method'] as String? ?? 'measured';
     d.nutritionEstimated = method != 'measured' && method != 'recalled_manual';
   }
+  bool isEstimate(dynamic method) =>
+      method != null && method != 'measured' && method != 'recalled_manual';
   for (final r in results[1] as List) {
     final d = byDate[r['log_date']];
     if (d == null) continue;
     d.sleepMin = (r['total_sleep_min'] as num?)?.toDouble();
     d.sleepEfficiency = (r['sleep_efficiency_score'] as num?)?.toDouble();
+    d.sleepEstimated = isEstimate(r['estimation_method']);
   }
   for (final r in results[2] as List) {
     final d = byDate[r['log_date']];
@@ -348,6 +367,7 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
             .weight;
     d.weightedActivityMin +=
         ((r['duration_min'] as num?)?.toDouble() ?? 0) * weight;
+    if (isEstimate(r['estimation_method'])) d.activityEstimated = true;
   }
 
   // Per-day readiness + lever averages over each week's logged days —
@@ -411,6 +431,8 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     dSlp: deltaSlp,
     nutritionHasEstimates:
         days.any((d) => d.nutritionEstimated), // both weeks feed deltas
+    activityHasEstimates: days.any((d) => d.activityEstimated),
+    sleepHasEstimates: days.any((d) => d.sleepEstimated),
   );
 
   return WeeklyAnalytics(

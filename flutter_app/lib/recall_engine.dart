@@ -25,6 +25,7 @@ const kMeasured = 'measured';
 const kRecalledManual = 'recalled_manual';
 const kRelativeRecall = 'relative_recall';
 const kPatternFill = 'pattern_fill';
+const kPatternSuggest = 'pattern_suggest';
 
 /// One-tap answer to "compared with `anchor day`, they ate…".
 enum RecallChoice { muchLess, slightlyLess, same, slightlyMore, muchMore }
@@ -36,6 +37,16 @@ const recallMultipliers = {
   RecallChoice.same: 1.0,
   RecallChoice.slightlyMore: 1.175,
   RecallChoice.muchMore: 1.35,
+};
+
+/// Sleep varies far less night-to-night than food intake does day to
+/// day, so its "vs usual" bands are gentler (±10/20% not ±17/35%).
+const sleepMultipliers = {
+  RecallChoice.muchLess: 0.8,
+  RecallChoice.slightlyLess: 0.9,
+  RecallChoice.same: 1.0,
+  RecallChoice.slightlyMore: 1.1,
+  RecallChoice.muchMore: 1.2,
 };
 
 /// Method + confidence for a manual save to [logDate], inferred from
@@ -283,6 +294,234 @@ Future<String?> applyPatternFill(
       'fluids_ml': (t.fluidsMl * m).roundToDouble(),
       'estimation_method': kPatternFill,
       'confidence': m == 1.0 ? 0.3 : 0.35,
+    }, onConflict: 'child_id,log_date');
+    return null;
+  } on PostgrestException catch (e) {
+    return e.message;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Phase 2 — Activity: routine recognition, not quantity estimation.
+// Parents remember EVENTS ("tennis class every Friday"), so the
+// engine mines the child's own measured history for weekday routines
+// and daily habits, and the parent confirms concrete items by
+// recognition. Occurrence is parent-verified; durations are the
+// routine's medians — hence pattern_suggest at 0.75, between
+// relative_recall and recalled_manual on the ladder.
+// ══════════════════════════════════════════════════════════════════
+
+class ActivitySuggestion {
+  final String? activityId;
+  final String displayName;
+  final String? category;
+  final String tier;
+  final String? unit;
+  final bool isOutdoor;
+  final double medianDurationMin;
+  final double medianValue;
+
+  /// True when this activity recurs on the target date's weekday
+  /// ("most Fridays"); false for everyday habits ("most days").
+  final bool isWeekdayRoutine;
+  final int occurrences;
+  ActivitySuggestion({
+    required this.activityId,
+    required this.displayName,
+    required this.category,
+    required this.tier,
+    required this.unit,
+    required this.isOutdoor,
+    required this.medianDurationMin,
+    required this.medianValue,
+    required this.isWeekdayRoutine,
+    required this.occurrences,
+  });
+}
+
+/// Mine the last 8 weeks of MEASURED activity items for what the
+/// child usually does on [date]'s weekday (at least half of those
+/// weekdays, seen at least twice) plus everyday habits (at least 40%
+/// of all logged days, seen at least 4 times). Weekday routines rank
+/// first. Estimated items never feed the miner — the engine must not
+/// learn from its own guesses.
+Future<List<ActivitySuggestion>> loadActivitySuggestions(
+    SupabaseClient sb, String childId, String date) async {
+  final since = localISO(DateTime.now().subtract(const Duration(days: 56)));
+  final rows = List<Map<String, dynamic>>.from(await sb
+      .from('daily_activity_items')
+      .select('log_date, activity_id, display_name, category, tier, '
+          'duration_min, duration_value, unit, is_outdoor, estimation_method')
+      .eq('child_id', childId)
+      .gte('log_date', since)
+      .lt('log_date', localISO(DateTime.now())));
+
+  final measured = rows
+      .where((r) =>
+          (r['estimation_method'] as String? ?? kMeasured) == kMeasured)
+      .toList();
+  if (measured.isEmpty) return [];
+
+  final targetWd = DateTime.parse(date).weekday;
+  final allDates = <String>{};
+  final wdDates = <String>{};
+  for (final r in measured) {
+    final d = r['log_date'] as String;
+    allDates.add(d);
+    if (DateTime.parse(d).weekday == targetWd) wdDates.add(d);
+  }
+
+  // Group by activity identity (preset id, falling back to name).
+  final groups = <String, List<Map<String, dynamic>>>{};
+  for (final r in measured) {
+    final key =
+        (r['activity_id'] as String?) ?? (r['display_name'] as String? ?? '?');
+    groups.putIfAbsent(key, () => []).add(r);
+  }
+
+  final routines = <ActivitySuggestion>[];
+  final habits = <ActivitySuggestion>[];
+  for (final items in groups.values) {
+    final first = items.first;
+    final datesWith = {for (final r in items) r['log_date'] as String};
+    final wdWith = datesWith.where(wdDates.contains).length;
+    final isRoutine = wdDates.length >= 2 &&
+        wdWith >= 2 &&
+        wdWith / wdDates.length >= 0.5;
+    final isHabit = !isRoutine &&
+        datesWith.length >= 4 &&
+        datesWith.length / allDates.length >= 0.4;
+    if (!isRoutine && !isHabit) continue;
+
+    // Duration medians from the same-weekday pool for routines (a
+    // Friday tennis class has a Friday-typical length), else overall.
+    final pool = isRoutine
+        ? items
+            .where((r) =>
+                DateTime.parse(r['log_date'] as String).weekday == targetWd)
+            .toList()
+        : items;
+    final suggestion = ActivitySuggestion(
+      activityId: first['activity_id'] as String?,
+      displayName: first['display_name'] as String? ?? '?',
+      category: first['category'] as String?,
+      tier: first['tier'] as String? ?? 'cardio',
+      unit: first['unit'] as String?,
+      isOutdoor: first['is_outdoor'] as bool? ?? false,
+      medianDurationMin: _median([
+        for (final r in pool) ((r['duration_min'] as num?)?.toDouble() ?? 0)
+      ]),
+      medianValue: _median([
+        for (final r in pool) ((r['duration_value'] as num?)?.toDouble() ?? 0)
+      ]),
+      isWeekdayRoutine: isRoutine,
+      occurrences: isRoutine ? wdWith : datesWith.length,
+    );
+    (isRoutine ? routines : habits).add(suggestion);
+  }
+
+  routines.sort((a, b) => b.occurrences.compareTo(a.occurrences));
+  habits.sort((a, b) => b.occurrences.compareTo(a.occurrences));
+  return [...routines, ...habits].take(5).toList();
+}
+
+/// Insert the parent-confirmed routine items for [date]. Only offered
+/// on days with no activity items; the guard re-checks to be safe.
+Future<String?> applyActivitySuggestions(SupabaseClient sb, String childId,
+    String date, List<ActivitySuggestion> confirmed) async {
+  if (confirmed.isEmpty) return null;
+  try {
+    final existing = await sb
+        .from('daily_activity_items')
+        .select('item_id')
+        .eq('child_id', childId)
+        .eq('log_date', date)
+        .limit(1);
+    if ((existing as List).isNotEmpty) {
+      return 'Day already has activity data';
+    }
+    await sb.from('daily_activity_items').insert([
+      for (final s in confirmed)
+        {
+          'child_id': childId,
+          'log_date': date,
+          'activity_id': s.activityId,
+          'display_name': s.displayName,
+          'category': s.category,
+          'tier': s.tier,
+          'duration_min': _r1(s.medianDurationMin),
+          'duration_value':
+              _r1(s.medianValue > 0 ? s.medianValue : s.medianDurationMin),
+          'unit': s.unit ?? 'min',
+          'is_outdoor': s.isOutdoor,
+          'is_custom': false,
+          'estimation_method': kPatternSuggest,
+          'confidence': 0.75,
+        }
+    ]);
+    return null;
+  } on PostgrestException catch (e) {
+    return e.message;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Phase 2 — Sleep: typical-night fill with gentle "vs usual" bands.
+// Wearable rows are device-measured and are never touched.
+// ══════════════════════════════════════════════════════════════════
+
+class TypicalNight {
+  final double totalSleepMin;
+  final int sampleNights;
+  TypicalNight({required this.totalSleepMin, required this.sampleNights});
+}
+
+/// Median measured night from the last 30 days; null under 3 nights.
+Future<TypicalNight?> loadTypicalNight(
+    SupabaseClient sb, String childId) async {
+  final since = localISO(DateTime.now().subtract(const Duration(days: 30)));
+  final rows = List<Map<String, dynamic>>.from(await sb
+      .from('daily_sleep')
+      .select('total_sleep_min, estimation_method')
+      .eq('child_id', childId)
+      .gte('log_date', since));
+  final mins = [
+    for (final r in rows)
+      if ((r['estimation_method'] as String? ?? kMeasured) == kMeasured)
+        ((r['total_sleep_min'] as num?)?.toDouble() ?? 0),
+  ]..removeWhere((v) => v <= 0);
+  if (mins.length < 3) return null;
+  return TypicalNight(
+      totalSleepMin: _median(mins), sampleNights: mins.length);
+}
+
+/// Fill [date]'s night as typical × the "vs usual" multiplier.
+/// Efficiency is recomputed with the same duration-adequacy rule as
+/// saveTodayData; never overwrites a measured (incl. wearable) row.
+Future<String?> applySleepFill(SupabaseClient sb, String childId, String date,
+    TypicalNight t, double multiplier) async {
+  try {
+    final existing = await sb
+        .from('daily_sleep')
+        .select('estimation_method')
+        .eq('child_id', childId)
+        .eq('log_date', date)
+        .maybeSingle();
+    if (existing != null &&
+        (existing['estimation_method'] as String? ?? kMeasured) ==
+            kMeasured) {
+      return 'Night already has measured data';
+    }
+    final total = (t.totalSleepMin * multiplier).round();
+    await sb.from('daily_sleep').upsert({
+      'child_id': childId,
+      'log_date': date,
+      'total_sleep_min': total,
+      'sleep_efficiency_score':
+          ((total / (9.5 * 60)) * 100).round().clamp(0, 100),
+      'data_source': 'manual',
+      'estimation_method': kPatternFill,
+      'confidence': multiplier == 1.0 ? 0.3 : 0.35,
     }, onConflict: 'child_id,log_date');
     return null;
   } on PostgrestException catch (e) {

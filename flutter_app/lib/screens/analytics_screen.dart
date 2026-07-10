@@ -379,7 +379,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     days: a.days,
                     valueOf: (d) => d.proteinG,
                     i18n: widget.i18n,
-                    markEstimated: true,
+                    estimatedOf: (d) => d.nutritionEstimated,
                     target: calcProteinTargetG(
                             child['date_of_birth'] as String?,
                             null,
@@ -394,7 +394,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     days: a.days,
                     valueOf: (d) => d.calciumMg,
                     i18n: widget.i18n,
-                    markEstimated: true,
+                    estimatedOf: (d) => d.nutritionEstimated,
                     target: 1300,
                   ),
                   const SizedBox(height: 12),
@@ -406,6 +406,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     valueOf: (d) =>
                         d.sleepMin == null ? null : d.sleepMin! / 60,
                     i18n: widget.i18n,
+                    estimatedOf: (d) => d.sleepEstimated,
                     target: 9.5,
                   ),
                   const SizedBox(height: 12),
@@ -419,6 +420,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ? null
                         : d.weightedActivityMin,
                     target: 60,
+                    estimatedOf: (d) => d.activityEstimated,
                     i18n: widget.i18n,
                   ),
                   if (a.insight != null) ...[
@@ -486,7 +488,7 @@ class _TrendCard extends StatelessWidget {
     required this.valueOf,
     required this.i18n,
     this.target,
-    this.markEstimated = false,
+    this.estimatedOf,
   });
   final String title;
   final String unit;
@@ -496,9 +498,9 @@ class _TrendCard extends StatelessWidget {
   final I18n i18n;
   final double? target; // per-day goal for the insight line + goal marker
 
-  /// Nutrition cards only: recall-engine estimated days render gold
-  /// with an "N of 7 estimated" note, never the measured colour.
-  final bool markEstimated;
+  /// Per-lever flag: recall-engine estimated days render gold with an
+  /// "N of 7 estimated" note, never the measured colour.
+  final bool Function(DayMetrics)? estimatedOf;
 
   static const _weekdayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -507,7 +509,7 @@ class _TrendCard extends StatelessWidget {
     final t = i18n.t;
     final values = [for (final d in days) valueOf(d)];
     final estimated = [
-      for (final d in days) markEstimated && d.nutritionEstimated
+      for (final d in days) estimatedOf?.call(d) ?? false
     ];
     final estCount =
         estimated.where((e) => e).length;

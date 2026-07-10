@@ -309,6 +309,9 @@ class AppState extends ChangeNotifier {
             'unit': unit,
             'is_outdoor': isOutdoor,
             'is_custom': false,
+            // Same manual-entry tiering as nutrition/sleep saves.
+            'estimation_method': manualEntryMeta(logDate).method,
+            'confidence': manualEntryMeta(logDate).confidence,
           })
           .select()
           .single();
@@ -390,6 +393,7 @@ class AppState extends ChangeNotifier {
     final efficiency =
         ((totalSleepMin / (9.5 * 60)) * 100).round().clamp(0, 100);
     try {
+      final meta = manualEntryMeta(logDate);
       await sb.from('daily_sleep').upsert({
         'child_id': childId,
         'log_date': logDate,
@@ -399,6 +403,10 @@ class AppState extends ChangeNotifier {
         'bedtime': bedtime,
         'wake_time': wakeTime,
         'data_source': 'manual',
+        // Manual entry always wins over an estimate; trust tier is
+        // inferred from how far back the night is.
+        'estimation_method': meta.method,
+        'confidence': meta.confidence,
       }, onConflict: 'child_id,log_date');
       await loadDay();
       loadWeekConsistency();

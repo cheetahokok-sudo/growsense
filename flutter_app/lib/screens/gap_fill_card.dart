@@ -257,6 +257,245 @@ class _GapFillCardState extends State<GapFillCard> {
     return !hasRow && a.nutritionLogItems.isEmpty;
   }
 
+  bool get _selectedActivityEmpty =>
+      !widget.appState.loadingDay && widget.appState.activityItems.isEmpty;
+
+  bool get _selectedSleepEmpty =>
+      !widget.appState.loadingDay && widget.appState.sleep == null;
+
+  /// Routine-recognition sheet: the engine mines what the child
+  /// usually does on this weekday ("tennis most Fridays") and the
+  /// parent confirms concrete items by recognition.
+  Future<void> _openActivitySheet(String date) async {
+    final t = widget.i18n.t;
+    final childId = widget.appState.activeChildId;
+    if (childId == null) return;
+    setState(() => _busy = true);
+    final suggestions =
+        await loadActivitySuggestions(widget.appState.sb, childId, date);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (suggestions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(t('flutter.recall.no_routine',
+              'No routine found yet — a few weeks of activity logs teach the engine.'))));
+      return;
+    }
+    final selected = {for (var i = 0; i < suggestions.length; i++) i};
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: GsColors.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  t('flutter.recall.activity_title',
+                      'What did {day} usually look like?',
+                      {'day': _weekdayName(date)}),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              Text(
+                  t('flutter.recall.activity_sub',
+                      'From the last 8 weeks of logs — untick anything that didn\'t happen.'),
+                  style:
+                      const TextStyle(fontSize: 12, color: GsColors.text2)),
+              const SizedBox(height: 10),
+              for (var i = 0; i < suggestions.length; i++)
+                CheckboxListTile(
+                  value: selected.contains(i),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: GsColors.measured,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  onChanged: (v) => setSheetState(() =>
+                      v == true ? selected.add(i) : selected.remove(i)),
+                  title: Text(suggestions[i].displayName,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                      '${suggestions[i].medianDurationMin.round()} ${t('flutter.min', 'min')} · ${suggestions[i].isWeekdayRoutine ? t('flutter.recall.most_weekday', 'most {day}s', {
+                          'day': _weekdayName(date)
+                        }) : t('flutter.recall.most_days', 'most days')}',
+                      style: const TextStyle(
+                          fontSize: 11, color: GsColors.text3)),
+                ),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                        backgroundColor: GsColors.measured),
+                    onPressed: selected.isEmpty
+                        ? null
+                        : () => Navigator.pop(context, true),
+                    child: Text(t('flutter.recall.log_n_activities',
+                        'Log {n} activities', {'n': '${selected.length}'})),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child:
+                        Text(t('flutter.recall.leave_empty', 'Leave empty')),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Text(
+                  t('flutter.recall.activity_note',
+                      'Saved as confirmed routine — durations are typical, so it counts as an estimate, not measured data.'),
+                  style: const TextStyle(
+                      fontSize: 10.5, color: GsColors.estimatedDark)),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busy = true);
+    final picked = [
+      for (var i = 0; i < suggestions.length; i++)
+        if (selected.contains(i)) suggestions[i]
+    ];
+    final err = await applyActivitySuggestions(
+        widget.appState.sb, childId, date, picked);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err)));
+    }
+    if (date == widget.appState.logDate) await widget.appState.loadDay();
+    await _reload();
+  }
+
+  /// Typical-night sheet with the gentler sleep "vs usual" bands.
+  Future<void> _openSleepSheet(String date) async {
+    final t = widget.i18n.t;
+    final childId = widget.appState.activeChildId;
+    if (childId == null) return;
+    setState(() => _busy = true);
+    final typical = await loadTypicalNight(widget.appState.sb, childId);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (typical == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(t('flutter.recall.no_sleep_history',
+              'Not enough sleep history yet to estimate a night.'))));
+      return;
+    }
+    final chips = <(RecallChoice, String)>[
+      (RecallChoice.muchLess, t('flutter.recall.much_less', 'Much less')),
+      (
+        RecallChoice.slightlyLess,
+        t('flutter.recall.slightly_less', 'A bit less')
+      ),
+      (RecallChoice.same, t('flutter.recall.same', 'About the same')),
+      (
+        RecallChoice.slightlyMore,
+        t('flutter.recall.slightly_more', 'A bit more')
+      ),
+      (RecallChoice.muchMore, t('flutter.recall.much_more', 'Much more')),
+    ];
+    var choice = RecallChoice.same;
+    double m() => sleepMultipliers[choice]!;
+    final multiplier = await showModalBottomSheet<double>(
+      context: context,
+      backgroundColor: GsColors.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  t('flutter.recall.sleep_title',
+                      'How was {day} night compared with usual?',
+                      {'day': _weekdayName(date)}),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              Text(
+                  t('flutter.recall.sleep_sub',
+                      'Usual night: {h} h over the last {n} logged nights', {
+                    'h': (typical.totalSleepMin / 60).toStringAsFixed(1),
+                    'n': '${typical.sampleNights}'
+                  }),
+                  style:
+                      const TextStyle(fontSize: 12, color: GsColors.text2)),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final (c, label) in chips)
+                    _RecallChip(
+                        label: label,
+                        highlight: c == choice,
+                        onTap: () => setSheetState(() => choice = c)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                  '~${(typical.totalSleepMin * m() / 60).toStringAsFixed(1)} ${t('flutter.hours', 'hours')}',
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: GsColors.estimatedDark)),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                        backgroundColor: GsColors.estimated),
+                    onPressed: () => Navigator.pop(context, m()),
+                    child:
+                        Text(t('flutter.recall.fill_night', 'Fill night')),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child:
+                        Text(t('flutter.recall.leave_empty', 'Leave empty')),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Text(
+                  t('flutter.recall.estimate_note',
+                      'Shown in gold as an estimate — never counted as measured data.'),
+                  style: const TextStyle(
+                      fontSize: 11, color: GsColors.estimatedDark)),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (multiplier == null || !mounted) return;
+    setState(() => _busy = true);
+    final err = await applySleepFill(
+        widget.appState.sb, childId, date, typical, multiplier);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err)));
+    }
+    if (date == widget.appState.logDate) await widget.appState.loadDay();
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
@@ -296,10 +535,15 @@ class _GapFillCardState extends State<GapFillCard> {
     // median fill, manual logging only (saved as recalled).
     final selDate = widget.appState.logDate;
     final selBack = _daysBack(selDate);
+    final selInWindow = selBack >= 1 && selBack <= 7;
     final selEmpty = selBack >= 1 && _selectedDayEmpty;
     final selFillable =
         selEmpty && selBack <= 7 && s.typicalFor(selDate) != null;
     final selTooOld = selEmpty && selBack > 7;
+    // Phase 2 levers, same window: activity via routine recognition,
+    // sleep via typical-night fill.
+    final selActivity = selInWindow && _selectedActivityEmpty;
+    final selSleep = selInWindow && _selectedSleepEmpty;
 
     // Only offer pattern fill when there's enough history to compute a
     // typical day; otherwise the card stays honest and offers nothing.
@@ -311,7 +555,9 @@ class _GapFillCardState extends State<GapFillCard> {
     if (s.recallDate == null &&
         fillableGaps.isEmpty &&
         !selFillable &&
-        !selTooOld) {
+        !selTooOld &&
+        !selActivity &&
+        !selSleep) {
       return const SizedBox.shrink();
     }
 
@@ -347,7 +593,10 @@ class _GapFillCardState extends State<GapFillCard> {
                           s.recallDate != null
                               ? t('flutter.recall.forgot_yesterday',
                                   'Forgot to log yesterday?')
-                              : (selFillable || selTooOld) &&
+                              : (selFillable ||
+                                          selTooOld ||
+                                          selActivity ||
+                                          selSleep) &&
                                       fillableGaps.isEmpty
                                   ? t('flutter.recall.this_day_unlogged',
                                       'This day is unlogged')
@@ -414,6 +663,56 @@ class _GapFillCardState extends State<GapFillCard> {
                           height: 1.4,
                           color: GsColors.text2)),
                 ],
+                if (selActivity)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                              t('flutter.recall.activity_unlogged',
+                                  'No activity logged'),
+                              style: const TextStyle(
+                                  fontSize: 12, color: GsColors.text2)),
+                        ),
+                        GestureDetector(
+                          onTap: () => _openActivitySheet(selDate),
+                          child: Text(
+                              t('flutter.recall.review_routine',
+                                  'Review the usual routine'),
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: GsColors.measured)),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (selSleep)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                              t('flutter.recall.sleep_unlogged',
+                                  'Sleep unlogged'),
+                              style: const TextStyle(
+                                  fontSize: 12, color: GsColors.text2)),
+                        ),
+                        GestureDetector(
+                          onTap: () => _openSleepSheet(selDate),
+                          child: Text(
+                              t('flutter.recall.fill_typical_night',
+                                  'Fill a typical night'),
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: GsColors.estimatedDark)),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (s.recallDate != null) ...[
                   const SizedBox(height: 2),
                   Padding(
