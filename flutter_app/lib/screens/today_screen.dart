@@ -2,7 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../analytics.dart' show calcCalciumTargetMg, calcZincTargetMg;
+import '../analytics.dart'
+    show calcCalciumTargetMg, calcZincTargetMg, calcWaterTargetMl;
 import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
@@ -341,6 +342,11 @@ class _NutritionEditorCardState extends State<NutritionEditorCard> {
               ),
               _StepperRow(
                 label: t('today.nutrition.hydration', 'Hydration'),
+                sub: t('flutter.water_target_dynamic',
+                    'Target: {n} glasses / day (for age)', {
+                  'n':
+                      '${(calcWaterTargetMl(widget.appState.activeChildRow?['date_of_birth'] as String?, widget.appState.activeChildRow?['biological_sex'] as String?) / 250).round()}'
+                }),
                 value:
                     '$_water ${t('flutter.glasses', 'glasses')} · ${_water! * 250} ml',
                 onMinus: _water! > 0
