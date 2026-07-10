@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'gap_fill_card.dart';
 import 'today_hud.dart';
 
 /// Today tab — read-only first pass: child switcher, date selector,
@@ -75,6 +76,7 @@ class TodayScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
+                GapFillCard(appState: appState, i18n: i18n),
                 ConsistencyCard(appState: appState, i18n: i18n),
                 const SizedBox(height: 12),
                 NutritionEditorCard(appState: appState, i18n: i18n),

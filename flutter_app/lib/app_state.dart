@@ -14,6 +14,8 @@ import 'package:image/image.dart' as img;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'recall_engine.dart' show manualEntryMeta;
+
 /// Downscale an X-ray to <=800px JPEG for AI vision analysis — same
 /// 800px/0.85 rule as the PWA's canvas downscale. Top-level so it can
 /// run through compute() off the UI thread (no-op isolate on web).
@@ -440,6 +442,10 @@ class AppState extends ChangeNotifier {
     mealSums['dinner'] = mealSums['dinner']! + mealSums['snack']!;
 
     double r1(double v) => (v * 10).roundToDouble() / 10;
+    // Manual entry always wins over any AI estimate; its trust tier is
+    // inferred from how far back the day is (recall_engine's ladder) —
+    // the parent is never asked "how sure are you?".
+    final meta = manualEntryMeta(logDate);
     try {
       await sb.from('daily_nutrition').upsert({
         'child_id': childId,
@@ -450,6 +456,8 @@ class AppState extends ChangeNotifier {
         'calcium_mg': calciumMg.round(),
         'zinc_mg': r1(zincMg),
         'fluids_ml': waterGlasses * 250, // 1 glass ≈ 250ml
+        'estimation_method': meta.method,
+        'confidence': meta.confidence,
       }, onConflict: 'child_id,log_date');
       await loadDay();
       loadWeekConsistency();
