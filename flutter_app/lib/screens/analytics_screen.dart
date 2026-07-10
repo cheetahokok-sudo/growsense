@@ -18,14 +18,38 @@ class _LeverRings extends StatelessWidget {
   final WeeklyAnalytics a;
   final I18n i18n;
 
-  /// Opens the trust calendar (nutrition history). Only the nutrition
-  /// ring is wired for now — activity/sleep join in phase 2 once their
-  /// tables carry estimation columns.
-  final VoidCallback? onOpenHistory;
+  /// Opens the trust calendar for the tapped lever ('nutrition' |
+  /// 'activity' | 'sleep').
+  final void Function(String lever)? onOpenHistory;
 
   @override
   Widget build(BuildContext context) {
     final t = i18n.t;
+    Widget ring({
+      required String lever,
+      required double pct,
+      required double? delta,
+      required Color light,
+      required Color full,
+      required String label,
+    }) =>
+        Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap:
+                onOpenHistory == null ? null : () => onOpenHistory!(lever),
+            child: _MiniRing(
+                pct: pct,
+                delta: delta,
+                expand: false,
+                light: light,
+                full: full,
+                label: label,
+                hint: onOpenHistory == null
+                    ? null
+                    : t('flutter.trust.tap_history', 'tap for history')),
+          ),
+        );
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
@@ -36,27 +60,22 @@ class _LeverRings extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onOpenHistory,
-              child: _MiniRing(
-                  pct: a.avgNutPct ?? 0,
-                  delta: a.deltaNutPct,
-                  expand: false,
-                  light: const Color(0xFF5FA87E),
-                  full: GsColors.accent,
-                  label: t('common.nutrition', 'Nutrition'),
-                  hint: t('flutter.trust.tap_history', 'tap for history')),
-            ),
-          ),
-          _MiniRing(
+          ring(
+              lever: 'nutrition',
+              pct: a.avgNutPct ?? 0,
+              delta: a.deltaNutPct,
+              light: const Color(0xFF5FA87E),
+              full: GsColors.accent,
+              label: t('common.nutrition', 'Nutrition')),
+          ring(
+              lever: 'activity',
               pct: a.avgActPct ?? 0,
               delta: a.deltaActPct,
               light: const Color(0xFF5B8FC0),
               full: GsColors.measured,
               label: t('common.activity', 'Activity')),
-          _MiniRing(
+          ring(
+              lever: 'sleep',
               pct: a.avgSlpPct ?? 0,
               delta: a.deltaSlpPct,
               light: const Color(0xFFC9A45E),
@@ -287,28 +306,37 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     _LeverRings(
                         a: a,
                         i18n: widget.i18n,
-                        onOpenHistory: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => Scaffold(
-                                  appBar: AppBar(
-                                    title: Text(
-                                        t('flutter.trust.title',
-                                            'Nutrition history'),
-                                        style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700)),
-                                  ),
-                                  body: TrustCalendarScreen(
-                                    appState: widget.appState,
-                                    i18n: widget.i18n,
-                                    onCorrectDay: (date) {
-                                      Navigator.of(context).pop();
-                                      widget.onCorrectDay?.call(date);
-                                    },
-                                  ),
+                        onOpenHistory: (lever) {
+                          final title = switch (lever) {
+                            'activity' => t('flutter.trust.title_activity',
+                                'Activity history'),
+                            'sleep' => t(
+                                'flutter.trust.title_sleep', 'Sleep history'),
+                            _ => t('flutter.trust.title',
+                                'Nutrition history'),
+                          };
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => Scaffold(
+                                appBar: AppBar(
+                                  title: Text(title,
+                                      style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700)),
+                                ),
+                                body: TrustCalendarScreen(
+                                  appState: widget.appState,
+                                  i18n: widget.i18n,
+                                  lever: lever,
+                                  onCorrectDay: (date) {
+                                    Navigator.of(context).pop();
+                                    widget.onCorrectDay?.call(date);
+                                  },
                                 ),
                               ),
-                            )),
+                            ),
+                          );
+                        }),
                   if (a.avgNutPct != null) const SizedBox(height: 10),
                   Row(
                     children: [

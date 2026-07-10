@@ -270,6 +270,58 @@ Future<String?> confirmEstimate(
   }
 }
 
+/// "Looks right" for an estimated night — same promotion rule as
+/// nutrition: recalled_manual at time-tiered confidence, never 1.0.
+Future<String?> confirmSleepEstimate(
+    SupabaseClient sb, String childId, String date) async {
+  final gap = _daysAgo(date);
+  try {
+    await sb
+        .from('daily_sleep')
+        .update({
+          'estimation_method': kRecalledManual,
+          'confidence': gap <= 7 ? 0.85 : 0.7,
+        })
+        .eq('child_id', childId)
+        .eq('log_date', date)
+        .neq('estimation_method', kMeasured);
+    return null;
+  } on PostgrestException catch (e) {
+    return e.message;
+  }
+}
+
+/// "Looks right" for a day of routine-confirmed activity items —
+/// promotes every AI-estimated item on the day; measured and already-
+/// recalled items are untouched.
+Future<String?> confirmActivityEstimates(
+    SupabaseClient sb, String childId, String date) async {
+  final gap = _daysAgo(date);
+  try {
+    await sb
+        .from('daily_activity_items')
+        .update({
+          'estimation_method': kRecalledManual,
+          'confidence': gap <= 7 ? 0.85 : 0.7,
+        })
+        .eq('child_id', childId)
+        .eq('log_date', date)
+        .neq('estimation_method', kMeasured)
+        .neq('estimation_method', kRecalledManual);
+    return null;
+  } on PostgrestException catch (e) {
+    return e.message;
+  }
+}
+
+int _daysAgo(String date) {
+  final p = date.split('-').map(int.parse).toList();
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day)
+      .difference(DateTime(p[0], p[1], p[2]))
+      .inDays;
+}
+
 /// Typical-day pattern fill for an older gap day. [multiplier] is the
 /// parent's "compared with usual" adjustment — it scales the measured
 /// medians, so it stays anchored to real data (no estimate chaining).

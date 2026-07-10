@@ -26,10 +26,16 @@ class TrustCalendarScreen extends StatefulWidget {
     super.key,
     required this.appState,
     required this.i18n,
+    this.lever = 'nutrition',
     this.onCorrectDay,
   });
   final AppState appState;
   final I18n i18n;
+
+  /// Which lever's provenance to show: 'nutrition' | 'activity' |
+  /// 'sleep'. Activity days aggregate their items — a day is only as
+  /// trustworthy as its least-trusted item.
+  final String lever;
   final void Function(String date)? onCorrectDay;
 
   @override
@@ -55,16 +61,65 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
     setState(() => _loading = true);
     final first = localISO(_month);
     final last = localISO(DateTime(_month.year, _month.month + 1, 0));
-    final rows = List<Map<String, dynamic>>.from(await widget.appState.sb
-        .from('daily_nutrition')
-        .select('log_date, total_protein_g, calcium_mg, fluids_ml, '
-            'estimation_method, confidence')
-        .eq('child_id', childId)
-        .gte('log_date', first)
-        .lte('log_date', last));
+    final sb = widget.appState.sb;
+    Map<String, Map<String, dynamic>> byDate;
+    switch (widget.lever) {
+      case 'sleep':
+        final rows = List<Map<String, dynamic>>.from(await sb
+            .from('daily_sleep')
+            .select('log_date, total_sleep_min, sleep_efficiency_score, '
+                'estimation_method, confidence')
+            .eq('child_id', childId)
+            .gte('log_date', first)
+            .lte('log_date', last));
+        byDate = {for (final r in rows) r['log_date'] as String: r};
+      case 'activity':
+        final items = List<Map<String, dynamic>>.from(await sb
+            .from('daily_activity_items')
+            .select('log_date, duration_min, estimation_method, confidence')
+            .eq('child_id', childId)
+            .gte('log_date', first)
+            .lte('log_date', last));
+        // Aggregate items into one row per day. Trust is conservative:
+        // any AI-estimated item makes the day estimated, and the day's
+        // confidence is its weakest item's.
+        byDate = {};
+        for (final r in items) {
+          final d = r['log_date'] as String;
+          final agg = byDate.putIfAbsent(
+              d,
+              () => {
+                    'count': 0,
+                    'total_min': 0.0,
+                    'estimation_method': kMeasured,
+                    'confidence': 1.0,
+                  });
+          agg['count'] = (agg['count'] as int) + 1;
+          agg['total_min'] = (agg['total_min'] as double) +
+              ((r['duration_min'] as num?)?.toDouble() ?? 0);
+          final m = r['estimation_method'] as String? ?? kMeasured;
+          final c = (r['confidence'] as num?)?.toDouble() ?? 1.0;
+          if (c < (agg['confidence'] as double)) agg['confidence'] = c;
+          final cur = agg['estimation_method'] as String;
+          if (m != kMeasured && m != kRecalledManual) {
+            agg['estimation_method'] = m; // AI estimate dominates
+          } else if (m == kRecalledManual && cur == kMeasured) {
+            agg['estimation_method'] = kRecalledManual;
+          }
+        }
+      default:
+        final rows = List<Map<String, dynamic>>.from(await sb
+            .from('daily_nutrition')
+            .select('log_date, total_protein_g, calcium_mg, fluids_ml, '
+                'estimation_method, confidence')
+            .eq('child_id', childId)
+            .gte('log_date', first)
+            .lte('log_date', last));
+        byDate = {for (final r in rows) r['log_date'] as String: r};
+    }
     if (!mounted) return;
     setState(() {
-      _rows = {for (final r in rows) r['log_date'] as String: r};
+      _rows = byDate;
       _loading = false;
     });
   }
@@ -76,10 +131,18 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
 
   double _num(dynamic v) => (v as num?)?.toDouble() ?? 0;
 
-  bool _hasValues(Map<String, dynamic> r) =>
-      _num(r['total_protein_g']) > 0 ||
-      _num(r['calcium_mg']) > 0 ||
-      _num(r['fluids_ml']) > 0;
+  bool _hasValues(Map<String, dynamic> r) {
+    switch (widget.lever) {
+      case 'sleep':
+        return _num(r['total_sleep_min']) > 0;
+      case 'activity':
+        return (r['count'] as int? ?? 0) > 0;
+      default:
+        return _num(r['total_protein_g']) > 0 ||
+            _num(r['calcium_mg']) > 0 ||
+            _num(r['fluids_ml']) > 0;
+    }
+  }
 
   _DayTrust _trustOf(String date) {
     final today = localISO(DateTime.now());
@@ -123,8 +186,14 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
         return t('flutter.trust.src_relative',
             'One-tap estimate vs the day before');
       case kPatternFill:
-        return t('flutter.trust.src_pattern',
-            "Filled from this child's typical days");
+        return widget.lever == 'sleep'
+            ? t('flutter.trust.src_pattern_sleep',
+                "Filled from this child's typical nights")
+            : t('flutter.trust.src_pattern',
+                "Filled from this child's typical days");
+      case kPatternSuggest:
+        return t('flutter.trust.src_routine',
+            'Confirmed from the usual routine — durations are typical');
       default:
         return t('flutter.trust.src_survey', 'Adjusted by weekly survey');
     }
@@ -164,18 +233,37 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
             if (r != null && _hasValues(r)) ...[
               const SizedBox(height: 12),
               Row(children: [
-                _Stat(
-                    label: t('common.protein', 'Protein'),
-                    value:
-                        '${isEstimate ? '~' : ''}${_num(r['total_protein_g']).round()} g'),
-                _Stat(
-                    label: t('common.calcium', 'Calcium'),
-                    value:
-                        '${isEstimate ? '~' : ''}${_num(r['calcium_mg']).round()} mg'),
-                _Stat(
-                    label: t('flutter.fluids', 'Fluids'),
-                    value:
-                        '${isEstimate ? '~' : ''}${(_num(r['fluids_ml']) / 1000).toStringAsFixed(1)} L'),
+                if (widget.lever == 'sleep') ...[
+                  _Stat(
+                      label: t('common.sleep', 'Sleep'),
+                      value:
+                          '${isEstimate ? '~' : ''}${(_num(r['total_sleep_min']) / 60).toStringAsFixed(1)} ${t('flutter.hours', 'hours')}'),
+                  _Stat(
+                      label: t('flutter.trust.efficiency', 'Efficiency'),
+                      value:
+                          '${_num(r['sleep_efficiency_score']).round()}%'),
+                ] else if (widget.lever == 'activity') ...[
+                  _Stat(
+                      label: t('common.activity', 'Activity'),
+                      value:
+                          '${isEstimate ? '~' : ''}${_num(r['total_min']).round()} ${t('flutter.min', 'min')}'),
+                  _Stat(
+                      label: t('flutter.trust.items', 'Items'),
+                      value: '${r['count']}'),
+                ] else ...[
+                  _Stat(
+                      label: t('common.protein', 'Protein'),
+                      value:
+                          '${isEstimate ? '~' : ''}${_num(r['total_protein_g']).round()} g'),
+                  _Stat(
+                      label: t('common.calcium', 'Calcium'),
+                      value:
+                          '${isEstimate ? '~' : ''}${_num(r['calcium_mg']).round()} mg'),
+                  _Stat(
+                      label: t('flutter.fluids', 'Fluids'),
+                      value:
+                          '${isEstimate ? '~' : ''}${(_num(r['fluids_ml']) / 1000).toStringAsFixed(1)} L'),
+                ],
               ]),
             ],
             if (isEstimate || trust == _DayTrust.missing) ...[
@@ -243,8 +331,13 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
     if (!mounted || action == null) return;
     final childId = widget.appState.activeChildId;
     if (action == 'confirm' && childId != null) {
-      final err =
-          await confirmEstimate(widget.appState.sb, childId, date);
+      final err = switch (widget.lever) {
+        'sleep' => await confirmSleepEstimate(
+            widget.appState.sb, childId, date),
+        'activity' => await confirmActivityEstimates(
+            widget.appState.sb, childId, date),
+        _ => await confirmEstimate(widget.appState.sb, childId, date),
+      };
       if (!mounted) return;
       if (err != null) {
         ScaffoldMessenger.of(context)
