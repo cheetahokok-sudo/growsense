@@ -29,16 +29,19 @@ class _LeverRings extends StatelessWidget {
         children: [
           _MiniRing(
               pct: a.avgNutPct ?? 0,
+              delta: a.deltaNutPct,
               light: const Color(0xFF5FA87E),
               full: GsColors.accent,
               label: t('common.nutrition', 'Nutrition')),
           _MiniRing(
               pct: a.avgActPct ?? 0,
+              delta: a.deltaActPct,
               light: const Color(0xFF5B8FC0),
               full: GsColors.measured,
               label: t('common.activity', 'Activity')),
           _MiniRing(
               pct: a.avgSlpPct ?? 0,
+              delta: a.deltaSlpPct,
               light: const Color(0xFFC9A45E),
               full: GsColors.estimated,
               label: t('common.sleep', 'Sleep')),
@@ -56,14 +59,21 @@ class _MiniRing extends StatelessWidget {
       {required this.pct,
       required this.light,
       required this.full,
-      required this.label});
+      required this.label,
+      this.delta});
   final double pct;
   final Color light;
   final Color full;
   final String label;
+  final double? delta; // week-over-week change as a signed fraction
 
   @override
   Widget build(BuildContext context) {
+    // Round to whole points; hide the chip when there's no prior week
+    // or the move is negligible (rounds to 0).
+    final pts = ((delta ?? 0).abs() * 100).round();
+    final showDelta = delta != null && pts > 0;
+    final up = (delta ?? 0) >= 0;
     return Expanded(
       child: Column(
         children: [
@@ -95,6 +105,15 @@ class _MiniRing extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: GsColors.text2)),
+          if (showDelta)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text('${up ? '▲' : '▼'} $pts',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: up ? GsColors.accent : GsColors.flag)),
+            ),
         ],
       ),
     );
@@ -304,6 +323,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     days: a.days,
                     valueOf: (d) => d.proteinG,
                     i18n: widget.i18n,
+                    markEstimated: true,
                     target: calcProteinTargetG(
                             child['date_of_birth'] as String?,
                             null,
@@ -318,6 +338,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     days: a.days,
                     valueOf: (d) => d.calciumMg,
                     i18n: widget.i18n,
+                    markEstimated: true,
                     target: 1300,
                   ),
                   const SizedBox(height: 12),
@@ -344,6 +365,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     target: 60,
                     i18n: widget.i18n,
                   ),
+                  if (a.insight != null) ...[
+                    const SizedBox(height: 12),
+                    _InsightCard(insight: a.insight!, i18n: widget.i18n),
+                  ],
                 ],
               ),
             );
@@ -405,6 +430,7 @@ class _TrendCard extends StatelessWidget {
     required this.valueOf,
     required this.i18n,
     this.target,
+    this.markEstimated = false,
   });
   final String title;
   final String unit;
@@ -414,12 +440,21 @@ class _TrendCard extends StatelessWidget {
   final I18n i18n;
   final double? target; // per-day goal for the insight line + goal marker
 
+  /// Nutrition cards only: recall-engine estimated days render gold
+  /// with an "N of 7 estimated" note, never the measured colour.
+  final bool markEstimated;
+
   static const _weekdayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   @override
   Widget build(BuildContext context) {
     final t = i18n.t;
     final values = [for (final d in days) valueOf(d)];
+    final estimated = [
+      for (final d in days) markEstimated && d.nutritionEstimated
+    ];
+    final estCount =
+        estimated.where((e) => e).length;
     final logged = values.whereType<double>().toList();
     final maxVal =
         logged.fold<double>(target ?? 0, (m, v) => v > m ? v : m);
@@ -437,6 +472,32 @@ class _TrendCard extends StatelessWidget {
       insightColor = onTrack ? GsColors.accent : GsColors.estimatedDark;
     } else if (avg != null) {
       insight = '${t('flutter.analytics.avg', 'avg')} ${_fmt(avg)} $unit';
+    }
+
+    // Direction: mean of the logged first half vs last half of the week.
+    // Finishes the intent noted above — a bare average hides whether the
+    // week is climbing or slipping.
+    String? trendLabel;
+    Color trendColor = GsColors.measured;
+    final firstHalf = <double>[];
+    final lastHalf = <double>[];
+    for (var i = 0; i < values.length; i++) {
+      final v = values[i];
+      if (v == null) continue;
+      (i < values.length / 2 ? firstHalf : lastHalf).add(v);
+    }
+    if (firstHalf.isNotEmpty && lastHalf.isNotEmpty) {
+      final f = firstHalf.reduce((a, b) => a + b) / firstHalf.length;
+      final l = lastHalf.reduce((a, b) => a + b) / lastHalf.length;
+      final rel = f == 0 ? (l > 0 ? 1.0 : 0.0) : (l - f) / f;
+      if (rel >= 0.1) {
+        trendLabel = '↗ ${t('flutter.analytics.trending_up', 'trending up')}';
+        trendColor = GsColors.measured;
+      } else if (rel <= -0.1) {
+        trendLabel =
+            '↘ ${t('flutter.analytics.trending_down', 'trending down')}';
+        trendColor = GsColors.estimatedDark;
+      }
     }
 
     return Container(
@@ -465,11 +526,31 @@ class _TrendCard extends StatelessWidget {
           if (insight != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Text(insight,
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: insightColor)),
+              child: Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(insight,
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: insightColor)),
+                  if (trendLabel != null)
+                    Text(trendLabel,
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: trendColor)),
+                  if (estCount > 0)
+                    Text(
+                        t('flutter.analytics.n_estimated',
+                            '{n} of 7 estimated', {'n': '$estCount'}),
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: GsColors.estimatedDark)),
+                ],
+              ),
             ),
           const SizedBox(height: 10),
           SizedBox(
@@ -510,13 +591,19 @@ class _TrendCard extends StatelessWidget {
                               builder: (context, h, _) => Container(
                                 height: h,
                                 decoration: BoxDecoration(
+                                  // Estimated days are gold, never the
+                                  // measured colour — same rule as the
+                                  // brand's measured/estimated split.
                                   color: values[i] == null
                                       ? GsColors.surface2
-                                      : (target != null &&
-                                              target! > 0 &&
-                                              values[i]! >= target!)
-                                          ? color
-                                          : color.withValues(alpha: 0.55),
+                                      : estimated[i]
+                                          ? GsColors.estimated
+                                              .withValues(alpha: 0.6)
+                                          : (target != null &&
+                                                  target! > 0 &&
+                                                  values[i]! >= target!)
+                                              ? color
+                                              : color.withValues(alpha: 0.55),
                                   borderRadius: BorderRadius.circular(3),
                                 ),
                               ),
@@ -535,6 +622,78 @@ class _TrendCard extends StatelessWidget {
                     ],
                   ],
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Cross-lever "smart insight" — one honest observation about the week,
+/// rendered from the structured SmartInsight so it stays translatable.
+class _InsightCard extends StatelessWidget {
+  const _InsightCard({required this.insight, required this.i18n});
+  final SmartInsight insight;
+  final I18n i18n;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = i18n.t;
+    final lever = insight.leverId.isEmpty
+        ? ''
+        : t('common.${insight.leverId}', insight.leverId);
+    final who = insight.name.isEmpty
+        ? t('flutter.analytics.insight_they', 'They')
+        : insight.name;
+    final String text;
+    switch (insight.kind) {
+      case InsightKind.sleepActivity:
+        text = t(
+            'flutter.analytics.insight_sleep_activity',
+            '{name} slept about {hours} h longer on the week’s more active days.',
+            {'name': who, 'hours': insight.hours});
+      case InsightKind.leverDown:
+        text = t(
+            'flutter.analytics.insight_lever_down',
+            '{lever} is the one lever trending down — off about {points} points from last week.',
+            {'lever': lever, 'points': '${insight.points}'});
+      case InsightKind.leverUp:
+        text = t(
+            'flutter.analytics.insight_lever_up',
+            '{lever} is up about {points} points from last week — nice momentum.',
+            {'lever': lever, 'points': '${insight.points}'});
+    }
+    final accent = insight.positive ? GsColors.accent : GsColors.estimatedDark;
+    final tint =
+        insight.positive ? GsColors.accentLight : GsColors.estimatedLight;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(GsRadius.md),
+        border: Border.all(color: accent.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(insight.positive ? Icons.lightbulb_outline : Icons.trending_down,
+              size: 18, color: accent),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t('flutter.analytics.smart_insight', 'Smart insight'),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: accent)),
+                const SizedBox(height: 2),
+                Text(text,
+                    style: const TextStyle(
+                        fontSize: 12, height: 1.45, color: GsColors.text)),
               ],
             ),
           ),

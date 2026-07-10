@@ -87,6 +87,12 @@ class DayMetrics {
   double? sleepMin;
   double? sleepEfficiency;
   double weightedActivityMin = 0;
+
+  /// True when the day's nutrition row is an AI estimate (recall
+  /// engine) rather than measured/recalled parent data. Estimated
+  /// days keep trends continuous but render gold and are excluded
+  /// from correlation insights.
+  bool nutritionEstimated = false;
   DayMetrics(this.date);
 
   bool get hasAnyLog =>
@@ -94,6 +100,28 @@ class DayMetrics {
       calciumMg != null ||
       sleepMin != null ||
       weightedActivityMin > 0;
+}
+
+/// A single computed cross-lever observation for the insight card.
+/// Deliberately structured (not a baked English string) so the widget
+/// layer can render it through i18n — this app is Thailand-first.
+enum InsightKind { sleepActivity, leverDown, leverUp }
+
+class SmartInsight {
+  final InsightKind kind;
+  final bool positive; // colours the card: green vs caution-gold
+  final String name; // child first name, may be empty
+  final String leverId; // 'nutrition' | 'activity' | 'sleep' | ''
+  final String hours; // formatted hours diff, for sleepActivity
+  final int points; // WoW delta magnitude in whole points
+  SmartInsight({
+    required this.kind,
+    required this.positive,
+    this.name = '',
+    this.leverId = '',
+    this.hours = '',
+    this.points = 0,
+  });
 }
 
 class WeeklyAnalytics {
@@ -110,6 +138,18 @@ class WeeklyAnalytics {
   final double? avgNutPct;
   final double? avgActPct;
   final double? avgSlpPct;
+
+  // Week-over-week change per lever (this 7d minus the prior 7d) as a
+  // signed fraction (−1..1); null when the prior week has no logged
+  // days to compare against. Drives the ▲/▼ deltas on the rings.
+  final double? deltaNutPct;
+  final double? deltaActPct;
+  final double? deltaSlpPct;
+
+  // One honest cross-lever observation, or null when the week doesn't
+  // have enough logged data to say anything true.
+  final SmartInsight? insight;
+
   WeeklyAnalytics({
     required this.days,
     required this.avgScore,
@@ -120,20 +160,133 @@ class WeeklyAnalytics {
     required this.avgNutPct,
     required this.avgActPct,
     required this.avgSlpPct,
+    required this.deltaNutPct,
+    required this.deltaActPct,
+    required this.deltaSlpPct,
+    required this.insight,
   });
+}
+
+/// Lever averages for one window (0..1, over logged days only).
+class _Levers {
+  final double? score, nut, act, slp;
+  _Levers(this.score, this.nut, this.act, this.slp);
+}
+
+_Levers _computeLevers(List<DayMetrics> window, int proteinTarget) {
+  final logged = window.where((d) => d.hasAnyLog).toList();
+  if (logged.isEmpty) return _Levers(null, null, null, null);
+  double total = 0, nutSum = 0, actSum = 0, slpSum = 0;
+  for (final d in logged) {
+    final pR = ((d.proteinG ?? 0) / proteinTarget).clamp(0.0, 1.0);
+    final cR = ((d.calciumMg ?? 0) / 1300).clamp(0.0, 1.0);
+    final wR = ((d.fluidsMl ?? 0) / 2000).clamp(0.0, 1.0);
+    final nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
+    final actPct = (d.weightedActivityMin / 60).clamp(0.0, 1.0);
+    final durR = ((d.sleepMin ?? 0) / (9.5 * 60)).clamp(0.0, 1.0);
+    final effR = ((d.sleepEfficiency ?? 0) / 100).clamp(0.0, 1.0);
+    final slpPct = durR * 0.6 + effR * 0.4;
+    total += nutPct * 30 + actPct * 30 + slpPct * 40;
+    nutSum += nutPct;
+    actSum += actPct;
+    slpSum += slpPct;
+  }
+  final n = logged.length;
+  return _Levers(total / n, nutSum / n, actSum / n, slpSum / n);
+}
+
+/// Pick the single most useful thing to say about the week. Priority:
+/// (1) a real sleep↔activity pattern within the week, (2) the lever
+/// most in decline vs last week, (3) the lever with the best momentum.
+/// Returns null rather than inventing an insight from thin data.
+SmartInsight? _pickInsight(
+  List<DayMetrics> week,
+  String firstName, {
+  double? dNut,
+  double? dAct,
+  double? dSlp,
+  bool nutritionHasEstimates = false,
+}) {
+  // Honesty rule: never make a nutrition claim off AI-estimated days —
+  // the recall engine must not manufacture its own "insights".
+  if (nutritionHasEstimates) dNut = null;
+  // (1) Sleep vs activity — split the week's sleep-logged days at their
+  // own activity median and compare average sleep between halves.
+  final withSleep = week.where((d) => d.sleepMin != null).toList();
+  if (withSleep.length >= 4) {
+    withSleep.sort(
+        (a, b) => a.weightedActivityMin.compareTo(b.weightedActivityMin));
+    final half = withSleep.length ~/ 2;
+    final low = withSleep.take(half).toList();
+    final high = withSleep.skip(withSleep.length - half).toList();
+    final lowAct =
+        low.fold<double>(0, (s, d) => s + d.weightedActivityMin) / low.length;
+    final highAct =
+        high.fold<double>(0, (s, d) => s + d.weightedActivityMin) / high.length;
+    final lowSleep =
+        low.fold<double>(0, (s, d) => s + d.sleepMin!) / low.length;
+    final highSleep =
+        high.fold<double>(0, (s, d) => s + d.sleepMin!) / high.length;
+    final diffH = (highSleep - lowSleep) / 60;
+    // Only claim a link when the halves actually differ in activity —
+    // a flat-activity week must not read as "more active days".
+    if (highAct - lowAct >= 10 && diffH >= 0.4) {
+      return SmartInsight(
+        kind: InsightKind.sleepActivity,
+        positive: true,
+        name: firstName,
+        hours: diffH.toStringAsFixed(1),
+      );
+    }
+  }
+
+  // (2) Lever most in decline this week (≥5 points down).
+  final downs = <String, double>{
+    if (dNut != null && dNut <= -0.05) 'nutrition': dNut,
+    if (dAct != null && dAct <= -0.05) 'activity': dAct,
+    if (dSlp != null && dSlp <= -0.05) 'sleep': dSlp,
+  };
+  if (downs.isNotEmpty) {
+    final worst = downs.entries.reduce((a, b) => a.value < b.value ? a : b);
+    return SmartInsight(
+      kind: InsightKind.leverDown,
+      positive: false,
+      leverId: worst.key,
+      points: (-worst.value * 100).round(),
+    );
+  }
+
+  // (3) Best momentum (≥5 points up).
+  final ups = <String, double>{
+    if (dNut != null && dNut >= 0.05) 'nutrition': dNut,
+    if (dAct != null && dAct >= 0.05) 'activity': dAct,
+    if (dSlp != null && dSlp >= 0.05) 'sleep': dSlp,
+  };
+  if (ups.isNotEmpty) {
+    final best = ups.entries.reduce((a, b) => a.value > b.value ? a : b);
+    return SmartInsight(
+      kind: InsightKind.leverUp,
+      positive: true,
+      leverId: best.key,
+      points: (best.value * 100).round(),
+    );
+  }
+
+  return null;
 }
 
 Future<WeeklyAnalytics> loadWeeklyAnalytics(
     SupabaseClient sb, Map<String, dynamic> child) async {
   final childId = child['child_id'] as String;
   final now = DateTime.now();
-  final since = localISO(now.subtract(const Duration(days: 6)));
+  final since = localISO(now.subtract(const Duration(days: 13)));
   final since30 = localISO(now.subtract(const Duration(days: 30)));
 
   final results = await Future.wait([
     sb
         .from('daily_nutrition')
-        .select('log_date, total_protein_g, calcium_mg, fluids_ml')
+        .select(
+            'log_date, total_protein_g, calcium_mg, fluids_ml, estimation_method')
         .eq('child_id', childId)
         .gte('log_date', since),
     sb
@@ -160,12 +313,15 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
         .order('recorded_date', ascending: false),
   ]);
 
-  // Seven day slots, oldest first
+  // Fourteen day slots, oldest first — the trailing 7 are "this week",
+  // the leading 7 are last week, for the week-over-week deltas.
   final days = [
-    for (var i = 6; i >= 0; i--)
+    for (var i = 13; i >= 0; i--)
       DayMetrics(localISO(now.subtract(Duration(days: i)))),
   ];
   final byDate = {for (final d in days) d.date: d};
+  final currentWeek = days.sublist(7);
+  final priorWeek = days.sublist(0, 7);
 
   for (final r in results[0] as List) {
     final d = byDate[r['log_date']];
@@ -173,6 +329,10 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     d.proteinG = (r['total_protein_g'] as num?)?.toDouble();
     d.calciumMg = (r['calcium_mg'] as num?)?.toDouble();
     d.fluidsMl = (r['fluids_ml'] as num?)?.toDouble();
+    // recalled_manual is parent data — only pure AI estimates
+    // (relative_recall / pattern_fill / weekly_survey) render gold.
+    final method = r['estimation_method'] as String? ?? 'measured';
+    d.nutritionEstimated = method != 'measured' && method != 'recalled_manual';
   }
   for (final r in results[1] as List) {
     final d = byDate[r['log_date']];
@@ -190,40 +350,26 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
         ((r['duration_min'] as num?)?.toDouble() ?? 0) * weight;
   }
 
-  // Per-day readiness score over days that have any log — the honest
-  // average, same as updateStats().
+  // Per-day readiness + lever averages over each week's logged days —
+  // the honest average, same as updateStats(). The prior week feeds
+  // the week-over-week deltas.
   final proteinTarget = calcProteinTargetG(
     child['date_of_birth'] as String?,
     null,
     child['biological_sex'] as String?,
   );
-  final logged = days.where((d) => d.hasAnyLog).toList();
-  double? avgScore;
-  double? avgNut, avgAct, avgSlp;
-  if (logged.isNotEmpty) {
-    double total = 0, nutSum = 0, actSum = 0, slpSum = 0;
-    for (final d in logged) {
-      final pR = ((d.proteinG ?? 0) / proteinTarget).clamp(0.0, 1.0);
-      final cR = ((d.calciumMg ?? 0) / 1300).clamp(0.0, 1.0);
-      final wR = ((d.fluidsMl ?? 0) / 2000).clamp(0.0, 1.0);
-      final nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
-      final actPct = (d.weightedActivityMin / 60).clamp(0.0, 1.0);
-      final durR = ((d.sleepMin ?? 0) / (9.5 * 60)).clamp(0.0, 1.0);
-      final effR = ((d.sleepEfficiency ?? 0) / 100).clamp(0.0, 1.0);
-      final slpPct = durR * 0.6 + effR * 0.4;
-      total += nutPct * 30 + actPct * 30 + slpPct * 40;
-      nutSum += nutPct;
-      actSum += actPct;
-      slpSum += slpPct;
-    }
-    avgScore = total / logged.length;
-    avgNut = nutSum / logged.length;
-    avgAct = actSum / logged.length;
-    avgSlp = slpSum / logged.length;
-  }
+  final cur = _computeLevers(currentWeek, proteinTarget);
+  final prior = _computeLevers(priorWeek, proteinTarget);
+  final avgScore = cur.score;
+  final avgNut = cur.nut, avgAct = cur.act, avgSlp = cur.slp;
+  double? delta(double? c, double? p) =>
+      (c != null && p != null) ? c - p : null;
+  final deltaNut = delta(cur.nut, prior.nut);
+  final deltaAct = delta(cur.act, prior.act);
+  final deltaSlp = delta(cur.slp, prior.slp);
 
   final sleepVals = [
-    for (final d in days)
+    for (final d in currentWeek)
       if (d.sleepMin != null) d.sleepMin!,
   ];
   final avgSleepHours = sleepVals.isEmpty
@@ -257,8 +403,18 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     if (newest != null && oldest != null) gain = newest - oldest;
   }
 
+  final insight = _pickInsight(
+    currentWeek,
+    ((child['name'] as String?) ?? '').split(' ').first,
+    dNut: deltaNut,
+    dAct: deltaAct,
+    dSlp: deltaSlp,
+    nutritionHasEstimates:
+        days.any((d) => d.nutritionEstimated), // both weeks feed deltas
+  );
+
   return WeeklyAnalytics(
-    days: days,
+    days: currentWeek,
     avgScore: avgScore,
     avgSleepHours: avgSleepHours,
     velocityCmPerYear: velocity,
@@ -267,5 +423,9 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     avgNutPct: avgNut,
     avgActPct: avgAct,
     avgSlpPct: avgSlp,
+    deltaNutPct: deltaNut,
+    deltaActPct: deltaAct,
+    deltaSlpPct: deltaSlp,
+    insight: insight,
   );
 }
