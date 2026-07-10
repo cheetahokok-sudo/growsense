@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../analytics.dart' show calcCalciumTargetMg;
 import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
@@ -312,8 +313,11 @@ class _NutritionEditorCardState extends State<NutritionEditorCard> {
               ),
               _StepperRow(
                 label: t('today.nutrition.calcium_label', 'Calcium total'),
-                sub: t('today.nutrition.calcium_target',
-                    'Target: 1300mg / day'),
+                sub: t('flutter.calcium_target_dynamic',
+                    'Target: {mg}mg / day (for age)', {
+                  'mg':
+                      '${calcCalciumTargetMg(widget.appState.activeChildRow?['date_of_birth'] as String?)}'
+                }),
                 value: '${_fmt(_calcium!)} mg',
                 onMinus: _calcium! > 0
                     ? () => setState(

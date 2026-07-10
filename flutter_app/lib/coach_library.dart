@@ -18,7 +18,12 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'analytics.dart' show calcProteinTargetG, calcProteinBoostTargetG;
+import 'analytics.dart'
+    show
+        calcProteinTargetG,
+        calcProteinBoostTargetG,
+        calcCalciumTargetMg,
+        calcWaterTargetMl;
 import 'app_state.dart';
 import 'growth_math.dart';
 
@@ -149,6 +154,8 @@ Map<String, dynamic> buildCoachContext(AppState appState, WhoReference? who) {
       : null;
   ctx['proteinTargetG'] = calcProteinTargetG(dob, weightKg, sex);
   ctx['proteinBoostTargetG'] = calcProteinBoostTargetG(dob, weightKg, sex);
+  ctx['calciumTargetMg'] = calcCalciumTargetMg(dob);
+  ctx['waterTargetGlasses'] = (calcWaterTargetMl(dob, sex) / 250).round();
 
   if (meas.isNotEmpty) {
     final latest = meas.first;

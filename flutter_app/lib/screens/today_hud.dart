@@ -2,7 +2,7 @@
 // Today-tab HUD widgets — port of the PWA's Growth Readiness HUD,
 // logging-consistency row, and sleep editor. Scoring is updateHUD()
 // verbatim:
-//   nutrition = protein/boost·30% + calcium/1300·50% + water/8·20%
+//   nutrition = protein/boost·30% + calcium/ageRDA·50% + water/ageAI·20%
 //   activity  = Σ(duration × tier weight) / 60 min, capped
 //   sleep     = duration/9.5h·35% + bedtime≤21:30·40% + wakes·25%
 //   overall   = nutrition·30 + activity·30 + sleep·40
@@ -54,9 +54,18 @@ HudScores computeHudScores(AppState appState) {
   final calcium = math.max(itemsSum('calcium_mg'), savedNum('calcium_mg'));
   final waterGlasses = savedNum('fluids_ml') / 250;
 
+  // Age-banded DRI targets — a flat 1300 mg / 8 glasses over-asked
+  // younger children and deflated their scores.
+  final calciumTarget =
+      calcCalciumTargetMg(child?['date_of_birth'] as String?);
+  final waterTargetGlasses = calcWaterTargetMl(
+        child?['date_of_birth'] as String?,
+        child?['biological_sex'] as String?,
+      ) /
+      250;
   final pR = (protein / boost).clamp(0.0, 1.0);
-  final cR = (calcium / 1300).clamp(0.0, 1.0);
-  final wR = (waterGlasses / 8).clamp(0.0, 1.0);
+  final cR = (calcium / calciumTarget).clamp(0.0, 1.0);
+  final wR = (waterGlasses / waterTargetGlasses).clamp(0.0, 1.0);
   final nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
 
   double weightedMin = 0;

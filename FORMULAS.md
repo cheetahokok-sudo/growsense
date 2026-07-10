@@ -155,14 +155,21 @@ exceeding a target doesn't push the score past 100):
 
 ### Nutrition (35% of total)
 ```
-protein_ratio = min(protein_g / 44, 1)
-calcium_ratio = min(calcium_mg / 1300, 1)
-water_ratio   = min(water_glasses / 8, 1)
+protein_ratio = min(protein_g / proteinTarget, 1)
+calcium_ratio = min(calcium_mg / calciumTarget, 1)
+water_ratio   = min(water_glasses / waterTarget, 1)
 
 nutrition_score = protein_ratio×0.4 + calcium_ratio×0.4 + water_ratio×0.2
 ```
-44g protein / 1300mg calcium are general pediatric daily targets, not
-personalized to the individual child's age/weight yet.
+All three targets are personalized since 2026-07-10 (previously fixed
+44g / 1300mg / 8 glasses — only correct for a ~46kg 9-13yo):
+- proteinTarget: calcProteinTargetG — IOM 2005 DRI, per-kg rate ×
+  latest weight, floored by age-group minimum (see its own section).
+- calciumTarget: calcCalciumTargetMg — IOM 2011 RDA by age band:
+  700mg 1-3y, 1000mg 4-8y, 1300mg 9-18y.
+- waterTarget: calcWaterTargetGlasses — IOM 2005 beverage-water AI
+  by age/sex band: 900ml 1-3y, 1200ml 4-8y, 1600/1800ml 9-13y (F/M),
+  1800/2600ml 14-18y (F/M); 1 glass = 250ml.
 
 ### Activity (35% of total)
 ```

@@ -425,7 +425,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     valueOf: (d) => d.calciumMg,
                     i18n: widget.i18n,
                     estimatedOf: (d) => d.nutritionEstimated,
-                    target: 1300,
+                    target: calcCalciumTargetMg(
+                            child['date_of_birth'] as String?)
+                        .toDouble(),
                   ),
                   const SizedBox(height: 12),
                   _TrendCard(

@@ -2113,7 +2113,7 @@ function loadChildIntoForm() {
   const elH = document.getElementById('valHanging'); if (elH) elH.textContent = s.hanging + ' sec';
   const elJ = document.getElementById('valJumps');   if (elJ) elJ.textContent = s.jumps + ' reps';
   document.getElementById('valNightWakes').textContent = s.nightWakes;
-  document.getElementById('waterLbl').textContent = `(${s.water}/8 glasses)`;
+  document.getElementById('waterLbl').textContent = `(${s.water}/${activeChildNutritionTargets().waterGlasses} glasses)`;
   document.getElementById('sleepBed').value = s.bed;
   document.getElementById('sleepWake').value = s.wake;
 
@@ -2420,6 +2420,40 @@ function calcProteinTargetG(dobStr, weightKg, biologicalSex) {
 
   const weightBased = weightKg ? Math.round(weightKg * perKgRate) : null;
   return weightBased !== null ? Math.max(weightBased, minimumG) : minimumG;
+}
+
+// ══════════════════════════════════════════
+// Age-banded calcium + water targets (mirror of the Flutter client).
+// Calcium RDA (IOM 2011): 700mg 1-3y, 1000mg 4-8y, 1300mg 9-18y —
+// the old flat 1300 was only right for 9-18s and over-asked younger
+// children, deflating their nutrition scores. Water beverage AI
+// (IOM 2005), 1 glass = 250ml.
+// ══════════════════════════════════════════
+function calcCalciumTargetMg(dobStr) {
+  const age = dobStr ? (new Date() - new Date(dobStr)) / (365.25 * 86400000) : null;
+  if (age === null || age >= 9) return 1300;
+  if (age >= 4) return 1000;
+  return 700;
+}
+
+function calcWaterTargetGlasses(dobStr, biologicalSex) {
+  const age = dobStr ? (new Date() - new Date(dobStr)) / (365.25 * 86400000) : null;
+  const isMale = (biologicalSex || 'male').toLowerCase() !== 'female';
+  let ml;
+  if (age === null) ml = 1800;
+  else if (age < 4) ml = 900;
+  else if (age < 9) ml = 1200;
+  else if (age < 14) ml = isMale ? 1800 : 1600;
+  else ml = isMale ? 2600 : 1800;
+  return Math.round(ml / 250);
+}
+
+function activeChildNutritionTargets() {
+  const child = APP.children[APP.activeChild] || {};
+  return {
+    calciumMg: calcCalciumTargetMg(child.date_of_birth),
+    waterGlasses: calcWaterTargetGlasses(child.date_of_birth, child.biological_sex),
+  };
 }
 
 // ══════════════════════════════════════════
@@ -2938,7 +2972,7 @@ function adj(key, delta) {
   if (el) el.textContent = s[key] + LABELS[key];
   if (key === 'water') {
     updateWaterGrid();
-    document.getElementById('waterLbl').textContent = `(${s.water}/8 glasses)`;
+    document.getElementById('waterLbl').textContent = `(${s.water}/${activeChildNutritionTargets().waterGlasses} glasses)`;
   }
   if (key === 'nightWakes') renderSleepTimeline();
   updateHUD();
@@ -3921,7 +3955,7 @@ function buildWaterGrid() {
       const st = currentState();
       st.water = (st.water === i) ? i-1 : i;
       updateWaterGrid();
-      document.getElementById('waterLbl').textContent = `(${st.water}/8 glasses)`;
+      document.getElementById('waterLbl').textContent = `(${st.water}/${activeChildNutritionTargets().waterGlasses} glasses)`;
       updateHUD();
     };
     g.appendChild(d);
@@ -4020,8 +4054,9 @@ function updateHUD() {
   // Calcium weight raised (50% of nutrition subscore) — rate-limiting
   // substrate for bone mineralization. Bonjour et al. (1991) established
   // calcium as the primary limiting nutrient for prepubertal bone accrual.
-  const cR = Math.min(s.calcium / 1300, 1);
-  const wR = Math.min(s.water / 8, 1);
+  const nutTargets = activeChildNutritionTargets();
+  const cR = Math.min(s.calcium / nutTargets.calciumMg, 1);
+  const wR = Math.min(s.water / nutTargets.waterGlasses, 1);
 
   // Nutrition subscore: Calcium 50%, Protein 30%, Water 20%
   // (was 40/40/20 — calcium raised relative to protein because calcium
@@ -4349,7 +4384,7 @@ async function updateStats() {
         ? calcProteinTargetG(child.date_of_birth, n?.mass_weight_kg || null, child.biological_sex)
         : 34;
       const pR = n ? Math.min((n.total_protein_g||0) / analyticProteinTarget, 1) : 0;
-      const cR = n ? Math.min((n.calcium_mg||0)/1300, 1) : 0;
+      const cR = n ? Math.min((n.calcium_mg||0)/activeChildNutritionTargets().calciumMg, 1) : 0;
       const wR = n ? Math.min((n.fluids_ml||0)/2000, 1) : 0;
       // Growth-velocity weights: Calcium 50%, Protein 30%, Water 20%
       const nutPct = pR*0.30 + cR*0.50 + wR*0.20;
@@ -5115,7 +5150,7 @@ function updateInsightCards() {
   if (nut7.length) {
     const avgP = Math.round(nut7.reduce((a,r)=>a+(r.total_protein_g||0),0)/nut7.length);
     const pct  = Math.round(avgP/boost*100);
-    const metC = nut7.filter(r=>(r.calcium_mg||0)>=1300).length;
+    const metC = nut7.filter(r=>(r.calcium_mg||0)>=activeChildNutritionTargets().calciumMg).length;
     set('icNutValue', `${avgP}g protein avg / day`);
     set('icNutSub',   `${pct}% of growth target · Ca goal ${metC}/${nut7.length} days`);
   } else { set('icNutValue','—'); set('icNutSub','No data logged this week'); }
@@ -5214,10 +5249,11 @@ function buildNutritionSheet(period) {
   const rows = filterByPeriod(APP.nutritionHistory, period);
   const sub  = APP._insightSubTab || 'protein';
 
+  const nutT = activeChildNutritionTargets();
   const cfg = {
     protein: { key:'total_protein_g', goal:pb,   color:'#2F6B4F', unit:'g',      goalLabel:`${pb}g growth target` },
-    calcium: { key:'calcium_mg',      goal:1300,  color:'#2A5C8A', unit:'mg',     goalLabel:'1300mg goal' },
-    water:   { key:'fluids_ml',       goal:2000,  color:'#2A5C8A', unit:'ml',     goalLabel:'2000ml (8 glasses)' },
+    calcium: { key:'calcium_mg',      goal:nutT.calciumMg, color:'#2A5C8A', unit:'mg', goalLabel:`${nutT.calciumMg}mg goal (for age)` },
+    water:   { key:'fluids_ml',       goal:nutT.waterGlasses*250, color:'#2A5C8A', unit:'ml', goalLabel:`${nutT.waterGlasses*250}ml (${nutT.waterGlasses} glasses)` },
   }[sub];
 
   const subTabs = `<div class="insight-sub-tabs">
@@ -7195,6 +7231,8 @@ function buildAICoachContext() {
     latest ? Number(latest.mass_weight_kg) || null : null,
     child.biological_sex
   );
+  ctx.calciumTargetMg = calcCalciumTargetMg(child.date_of_birth);
+  ctx.waterTargetGlasses = calcWaterTargetGlasses(child.date_of_birth, child.biological_sex);
 
   // Height velocity, if 2+ measurements exist.
   if (measurements.length >= 2) {
@@ -7347,8 +7385,8 @@ async function askClaude(userMsg) {
       const avgProt = Math.round(nut7.reduce((a,r) => a+(r.total_protein_g||0),0) / nut7.length);
       const avgCalc = Math.round(nut7.reduce((a,r) => a+(r.calcium_mg||0),0) / nut7.length);
       const protDays = nut7.filter(r=>(r.total_protein_g||0)>=pb).length;
-      const calcDays = nut7.filter(r=>(r.calcium_mg||0)>=1300).length;
-      growthLines.push(`- 7-day nutrition trend: protein avg ${avgProt}g/day (standard RDA ${ps}g, growth target ${pb}g, target met ${protDays}/${nut7.length} days); calcium avg ${avgCalc}mg/day (goal 1300mg, met ${calcDays}/${nut7.length} days)`);
+      const calcDays = nut7.filter(r=>(r.calcium_mg||0)>=activeChildNutritionTargets().calciumMg).length;
+      growthLines.push(`- 7-day nutrition trend: protein avg ${avgProt}g/day (standard RDA ${ps}g, growth target ${pb}g, target met ${protDays}/${nut7.length} days); calcium avg ${avgCalc}mg/day (goal ${activeChildNutritionTargets().calciumMg}mg, met ${calcDays}/${nut7.length} days)`);
     }
     const slp7 = filterByPeriod(APP.sleepHistory || [], 'W');
     if (slp7.length >= 3) {
@@ -7375,7 +7413,7 @@ ${growthLines.join('\n')}
 Today's readiness reading: ${grs}/100 (a same-day input score, not a diagnostic measure — single days carry little signal on their own)
 
 Today's logged inputs:
-- Protein: ${s.protein}g | Standard (WHO/DRI): ~${activeChildProteinTargets().standard}g · Growth-optimized: ~${activeChildProteinTargets().boost}g (1.2 g/kg, IAAO-method evidence: Hudson et al. Nutrients 2021) | Calcium: ${s.calcium}mg (target ~1300mg) | Water: ${s.water}/8 glasses
+- Protein: ${s.protein}g | Standard (WHO/DRI): ~${activeChildProteinTargets().standard}g · Growth-optimized: ~${activeChildProteinTargets().boost}g (1.2 g/kg, IAAO-method evidence: Hudson et al. Nutrients 2021) | Calcium: ${s.calcium}mg (target ~${activeChildNutritionTargets().calciumMg}mg) | Water: ${s.water}/${activeChildNutritionTargets().waterGlasses} glasses
 - Bar hanging: ${s.hanging}s | Box jumps: ${s.jumps} reps | Yoga/stretching: ${s.yogaMin} min
 - Bedtime: ${s.bed} | Wake: ${s.wake} | Total sleep: ${totalSleep} | Night wake-ups: ${s.nightWakes}
 - Corticosteroid use level: ${s.steroid} (0=none, 1=inhaled, 2=oral)

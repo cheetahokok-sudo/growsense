@@ -79,6 +79,36 @@ int calcProteinBoostTargetG(String? dobStr, double? weightKg, String? sex) {
   return floored < safeMax ? floored : safeMax;
 }
 
+/// Calcium RDA by age band (IOM 2011): 700 mg 1-3y, 1000 mg 4-8y,
+/// 1300 mg 9-18y. The old flat 1300 was only right for 9-18s and
+/// over-asked younger children (deflating their nutrition score).
+int calcCalciumTargetMg(String? dobStr) {
+  final age = _ageYears(dobStr);
+  if (age == null || age >= 9) return 1300;
+  if (age >= 4) return 1000;
+  return 700;
+}
+
+/// Beverage-water adequate intake by age/sex (IOM 2005), in ml.
+/// 1 glass = 250 ml. The old flat 2000 ml (8 glasses) was an adult
+/// figure.
+int calcWaterTargetMl(String? dobStr, String? sex) {
+  final age = _ageYears(dobStr);
+  final isMale = (sex ?? 'male').toLowerCase() != 'female';
+  if (age == null) return 1800;
+  if (age < 4) return 900;
+  if (age < 9) return 1200;
+  if (age < 14) return isMale ? 1800 : 1600;
+  return isMale ? 2600 : 1800;
+}
+
+double? _ageYears(String? dobStr) {
+  if (dobStr == null) return null;
+  final dob = DateTime.tryParse(dobStr);
+  if (dob == null) return null;
+  return DateTime.now().difference(dob).inDays / 365.25;
+}
+
 class DayMetrics {
   final String date;
   double? proteinG;
@@ -179,14 +209,15 @@ class _Levers {
   _Levers(this.score, this.nut, this.act, this.slp);
 }
 
-_Levers _computeLevers(List<DayMetrics> window, int proteinTarget) {
+_Levers _computeLevers(List<DayMetrics> window, int proteinTarget,
+    int calciumTarget, int waterTargetMl) {
   final logged = window.where((d) => d.hasAnyLog).toList();
   if (logged.isEmpty) return _Levers(null, null, null, null);
   double total = 0, nutSum = 0, actSum = 0, slpSum = 0;
   for (final d in logged) {
     final pR = ((d.proteinG ?? 0) / proteinTarget).clamp(0.0, 1.0);
-    final cR = ((d.calciumMg ?? 0) / 1300).clamp(0.0, 1.0);
-    final wR = ((d.fluidsMl ?? 0) / 2000).clamp(0.0, 1.0);
+    final cR = ((d.calciumMg ?? 0) / calciumTarget).clamp(0.0, 1.0);
+    final wR = ((d.fluidsMl ?? 0) / waterTargetMl).clamp(0.0, 1.0);
     final nutPct = pR * 0.30 + cR * 0.50 + wR * 0.20;
     final actPct = (d.weightedActivityMin / 60).clamp(0.0, 1.0);
     final durR = ((d.sleepMin ?? 0) / (9.5 * 60)).clamp(0.0, 1.0);
@@ -378,8 +409,14 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     null,
     child['biological_sex'] as String?,
   );
-  final cur = _computeLevers(currentWeek, proteinTarget);
-  final prior = _computeLevers(priorWeek, proteinTarget);
+  final calciumTarget =
+      calcCalciumTargetMg(child['date_of_birth'] as String?);
+  final waterTargetMl = calcWaterTargetMl(child['date_of_birth'] as String?,
+      child['biological_sex'] as String?);
+  final cur = _computeLevers(
+      currentWeek, proteinTarget, calciumTarget, waterTargetMl);
+  final prior =
+      _computeLevers(priorWeek, proteinTarget, calciumTarget, waterTargetMl);
   final avgScore = cur.score;
   final avgNut = cur.nut, avgAct = cur.act, avgSlp = cur.slp;
   double? delta(double? c, double? p) =>
