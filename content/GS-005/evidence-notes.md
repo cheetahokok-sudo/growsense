@@ -21,7 +21,14 @@ literature — never as a bare assertion.
 | 12 | Red flag: height outside the family mid-parental zone | 4, 11 |
 | 13 | Red flag: no breast development (girls) by 13, no testicular enlargement (boys) by 14 | 7 |
 | 14 | Red flag: slow growth + systemic symptoms (coeliac, thyroid, etc.); growth is sacrificed under systemic stress | 4 |
-| 15 | Lifestyle can't exceed the genetic ceiling but should remove obstacles (sleep / nutrition / weight-bearing activity) | 2, 5 |
+| 15 | Formal referral thresholds (≈ −3 SD, or two readings < ≈ −2.5 SD) | 15 |
+| 16 | Healthy children find a percentile channel and track along it; downward *crossing* is the concern | 4, 5, 12, 13 |
+| 17 | Medical causes rundown: GH deficiency, hypothyroidism, coeliac/chronic disease, Turner, skeletal dysplasia | 4, 5 |
+| 18 | Born SGA: most catch up by age 2; a recognised minority stay short | 16 |
+| 19 | Doctor visit work-up: history, plotting, exam, bone-age X-ray, bloods (CBC/TFT/coeliac/IGF-1), karyotype in girls | 4, 5, 2 |
+| 20 | GH therapy: real medicine for specific diagnoses; modest, variable gain in ISS; guidelines conservative; not a booster for healthy short kids | 1, 2, 3, 16 |
+| 21 | Psychosocial adjustment of shorter people largely indistinguishable from peers; stigma is the real risk, not height | 17 |
+| 22 | Lifestyle can't exceed the genetic ceiling but should remove obstacles (sleep / nutrition / weight-bearing activity) | 2, 5 |
 
 ## Framing guardrails honoured
 - **No "increases height" claim.** Section 8 is explicitly *remove obstacles*,
@@ -31,6 +38,16 @@ literature — never as a bare assertion.
   healthy" thesis rests on the review/guideline consensus (refs 1, 5).
 - **Percentiles are references, not verdicts** — stated in-text and in the
   closing disclaimer.
+
+## Section 13 (Myths) — deliberately not independently cited
+The myths box states general physiology (supplements don't raise a healthy
+child's final height; extra food adds weight not height; stretching improves
+posture not skeletal length). These follow from the growth-plate mechanism
+already established, and the supplement claim is **framed as a forward-reference
+to the dedicated Myths article (GS-051)** rather than asserting a specific RCT
+here. When GS-051 is written, its verified supplement/nutrition RCTs should be
+back-linked so this box inherits explicit sourcing. Do not add a citation to
+§13 that hasn't been individually verified.
 
 ## Two fabricated draft citations removed
 See `references.md` → "Cut during verification." The article makes **no** claim

@@ -64,6 +64,24 @@
 14. **Greulich WW, Pyle SI.** Radiographic Atlas of Skeletal Development of the
     Hand and Wrist. 2nd ed. Stanford, CA: Stanford University Press; 1959.
     *(Reference standard for reading bone age from a hand-wrist X-ray.)*
+15. **Grote FK, van Dommelen P, Oostdijk W, et al.** Developing evidence-based
+    guidelines for referral for short stature. *Arch Dis Child.*
+    2008;93(3):212–217. PMID: 17908714.
+    *(Formal referral thresholds: height ≈ −3 SD, or two readings below ≈ −2.5
+    SD — the objective basis for the "downward crossing" red flag.)*
+16. **Clayton PE, Cianfarani S, Czernichow P, et al.** Management of the child
+    born small for gestational age through to adulthood: a consensus statement
+    of the International Societies of Pediatric Endocrinology and the Growth
+    Hormone Research Society. *J Clin Endocrinol Metab.* 2007;92(3):804–810.
+    PMID: 17200164.
+    *(SGA/born-small children: most catch up by age 2; a recognised minority
+    stay short and are monitored/treated.)*
+17. **Sandberg DE, Voss LD.** The psychosocial consequences of short stature: a
+    review of the evidence. *Best Pract Res Clin Endocrinol Metab.*
+    2002;16(3):449–463. PMID: 12464228.
+    *(Psychological adjustment of shorter-than-average people is largely
+    indistinguishable from peers; stigma/juvenilisation is the real risk, not
+    height itself — basis for section 11.)*
 
 ## Cut during verification — do NOT reinstate without a real record
 
@@ -84,6 +102,11 @@ monitoring; Soliman "Nutrition and growth" 2014) were left out to keep the
 citation set tight and every reference load-bearing. They may be promoted later
 if a future revision makes a claim that needs them — after individual
 verification.
+
+The GH-treatment section (§10) rests on refs 1, 2, 3, and 16: the ISS
+consensus and PES guideline document GH's modest, variable effect on final
+height in idiopathic short stature and the deliberately conservative
+recommendation, and Clayton covers the SGA indication.
 
 ## Note for the editor — cross-article consistency
 
