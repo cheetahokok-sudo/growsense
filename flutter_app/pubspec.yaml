@@ -74,6 +74,7 @@ flutter:
     - assets/coach_library.json
     - assets/coach_library_food_activity.json
     - assets/illness_reference.json
+    - assets/release_notes.json
     - assets/locales/
     - assets/welcome/
 

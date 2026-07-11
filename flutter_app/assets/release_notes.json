@@ -1,0 +1,17 @@
+{
+  "releases": [
+    {
+      "version": "1.0.0",
+      "build": 1,
+      "date": "2026-07-11",
+      "title": "First production release",
+      "highlights": [
+        "Never lose a day — the recall engine rebuilds missed nutrition, activity, and sleep days from your child's own patterns, always marked as estimates.",
+        "Trust calendar — see exactly which days are measured vs estimated, and confirm or correct any of them.",
+        "Smarter analytics — week-over-week deltas, trend direction, a growth chart with a habit-scenario band, and a research-weighted readiness score personalized to your child.",
+        "Pediatric visit summary PDF — a clean, printable report for your doctor (Premium).",
+        "Sign in with Google or Apple, plus password reset."
+      ]
+    }
+  ]
+}

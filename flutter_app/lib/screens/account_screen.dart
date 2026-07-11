@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app_meta.dart';
 import '../app_state.dart';
 import '../export/download.dart';
 import '../export/visit_pdf.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'bug_report_screen.dart';
 import 'devices_screen.dart';
 import 'settings_modules.dart';
 import 'welcome_screen.dart';
+import 'whats_new_screen.dart';
 
 /// Account & settings — pushed from the top-bar avatar. Uses the same
 /// account.* locale keys as the PWA's account screen. Child editing
@@ -274,6 +277,13 @@ class AccountScreen extends StatelessWidget {
                           Uri.parse('https://www.growsense.life/terms'),
                           mode: LaunchMode.externalApplication)),
                   _LinkRow(
+                      icon: Icons.bug_report_outlined,
+                      label: t('flutter.legal.report_bug', 'Report a bug'),
+                      onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => BugReportScreen(
+                                  appState: appState, i18n: i18n)))),
+                  _LinkRow(
                       icon: Icons.delete_outline,
                       label: t('flutter.legal.delete',
                           'Request account deletion'),
@@ -371,21 +381,40 @@ class AccountScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              _Card(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(t('flutter.account.version', 'App version'),
-                          style: const TextStyle(
-                              fontSize: 12.5, color: GsColors.text2)),
-                      const Text('1.0.0 (prototype)',
-                          style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ],
+              InkWell(
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => WhatsNewScreen(i18n: i18n))),
+                child: _Card(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                  t('flutter.account.version', 'App version'),
+                                  style: const TextStyle(
+                                      fontSize: 12.5, color: GsColors.text2)),
+                              const SizedBox(height: 2),
+                              Text(versionStamp,
+                                  style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        Text(t('flutter.whatsnew.link', "What's new"),
+                            style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: GsColors.accent)),
+                        const Icon(Icons.chevron_right,
+                            size: 18, color: GsColors.text3),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               OutlinedButton(

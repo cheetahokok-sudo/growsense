@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'analytics.dart' show calcSleepTargetMin;
+import 'app_meta.dart';
 import 'recall_engine.dart' show manualEntryMeta;
 
 /// Downscale an X-ray to <=800px JPEG for AI vision analysis — same
@@ -492,6 +493,49 @@ class AppState extends ChangeNotifier {
       return null;
     } on PostgrestException catch (e) {
       return e.message;
+    }
+  }
+
+  /// File an in-app bug/feedback report into the bug_reports table.
+  /// Attaches version + an anonymized child snapshot (age/sex only) for
+  /// triage. Returns null on success, an error string otherwise.
+  Future<String?> submitBugReport({
+    required String category,
+    required String severity,
+    required String description,
+    required String locale,
+    String? activeScreen,
+  }) async {
+    final child = activeChildRow;
+    double? ageYears;
+    final dob = child?['date_of_birth'] as String?;
+    if (dob != null) {
+      final d = DateTime.tryParse(dob);
+      if (d != null) {
+        ageYears = double.parse(
+            (DateTime.now().difference(d).inDays / 365.25).toStringAsFixed(1));
+      }
+    }
+    try {
+      await sb.from('bug_reports').insert({
+        'user_id': sb.auth.currentUser?.id,
+        'app_version': kAppVersion,
+        'app_build': kAppBuild,
+        'channel': kAppChannel,
+        'locale': locale,
+        'category': category,
+        'severity': severity,
+        'description': description,
+        'child_age_years': ageYears,
+        'child_sex': child?['biological_sex'],
+        'context':
+            activeScreen == null ? {} : {'active_screen': activeScreen},
+      });
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    } catch (e) {
+      return e.toString();
     }
   }
 
