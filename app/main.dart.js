@@ -33009,16 +33009,16 @@ _.w=h},
 Ak:function Ak(a){this.a=a},
 bbD:function bbD(a){this.a=a},
 baE:function baE(){},
-oW(a){return a==null?"\u2014":B.l.aa(a,1)},
+oW(a){return a==null?"-":B.l.aa(a,1)},
 bID(a){var s,r
-if(a==null||B.p.ee(a).length===0)return"\u2014"
+if(a==null||B.p.ee(a).length===0)return"-"
 s=B.p.ee(a)
 r=A.cN(s,"_"," ")
 return r[0].toUpperCase()+B.p.cP(r,1)},
 bq0(a,b){var s,r,q,p,o,n
-if(a==null)return"\u2014"
+if(a==null)return"-"
 s=A.Ib(a)
-if(s==null)return"\u2014"
+if(s==null)return"-"
 if(b!=null){r=A.Ib(b)
 q=r==null?new A.bd(Date.now(),0,!1):r}else q=new A.bd(Date.now(),0,!1)
 p=(A.bg(q)-A.bg(s))*12+(A.bp(q)-A.bp(s))
@@ -33124,7 +33124,7 @@ b7=A.bBi(!0,null,B.bfc,!1,B.V7)
 b9=t.W
 c0=A.z(t.N,b9)
 c0.l(0,"/Author",new A.kH(A.aF8("GrowSense"),B.lS,!0))
-c0.l(0,"/Title",new A.kH(A.aF8("GrowSense visit summary \u2014 "+b0),B.lS,!0))
+c0.l(0,"/Title",new A.kH(A.aF8("GrowSense visit summary - "+b0),B.lS,!0))
 c0.l(0,"/Producer",new A.kH(A.aF8("https://github.com/DavBfr/dart_pdf"),B.lS,!0))
 c1=new A.bd(Date.now(),0,!1).agu()
 c0.l(0,"/CreationDate",new A.kH(A.aF8("D:"+B.p.dW(B.n.j(A.bg(c1)),4,"0")+B.p.dW(B.n.j(A.bp(c1)),2,"0")+B.p.dW(B.n.j(A.cH(c1)),2,"0")+B.p.dW(B.n.j(A.hL(c1)),2,"0")+B.p.dW(B.n.j(A.a5z(c1)),2,"0")+B.p.dW(B.n.j(A.a5A(c1)),2,"0")+"Z"),B.lS,!0))
@@ -33167,7 +33167,7 @@ o=A.WR(new A.vj(o,o,o,o),A.WM(8),B.qP)
 s=p.$2(e.$2("flutter.pdf.name","Child"),d)
 r=p.$2(e.$2("flutter.pdf.age","Age"),A.bq0(b,null))
 q=e.$2("flutter.pdf.dob","Date of birth")
-return A.XY(A.aIV(A.b([s,r,p.$2(q,b==null?"\u2014":b),p.$2(e.$2("flutter.pdf.sex","Sex"),n)],t.n_),B.nn,B.qB),o,B.a8N)},
+return A.XY(A.aIV(A.b([s,r,p.$2(q,b==null?"-":b),p.$2(e.$2("flutter.pdf.sex","Sex"),n)],t.n_),B.nn,B.qB),o,B.a8N)},
 bhi(a){var s,r=A.b([],t.n_)
 for(s=0;s<4;++s){if(s>0)r.push(new A.et(8,null,null))
 r.push(new A.IO(1,B.vC,a[s]))}return A.aIV(r,B.nn,B.qB)},
@@ -33202,15 +33202,15 @@ if(k==null)k=null
 n=l==null
 if(!n&&o&&m!=null){j=A.dw(b)
 i=A.dw(m)
-h="P"+B.l.ao(50*(1+A.bKo(A.VF(d.El(c,B.n.bn(i.b-j.b+1000*(i.a-j.a),864e8)/365.25*12),l)/Math.sqrt(2))))}else h="\u2014"
-g=m==null?"\u2014":m
+h="P"+B.l.ao(50*(1+A.bKo(A.VF(d.El(c,B.n.bn(i.b-j.b+1000*(i.a-j.a),864e8)/365.25*12),l)/Math.sqrt(2))))}else h="-"
+g=m==null?"-":m
 f=A.bq0(b,m)
-if(n)n="\u2014"
+if(n)n="-"
 else n=B.l.aa(l,1)
-if(k==null)e="\u2014"
+if(k==null)e="-"
 else e=B.l.aa(k,1)
 s.push(A.b([g,f,n,e,h],p))}return A.ba2(A.b([a0.$2("flutter.pdf.date","Date"),a0.$2("flutter.pdf.age","Age"),A.d(a0.$2("common.height","Height"))+" (cm)",A.d(a0.$2("common.weight","Weight"))+" (kg)",a0.$2("flutter.pdf.height_pct","Ht %ile")],p),s,A.b([3,2,2,2,2],t.t))},
-bH3(a,b){var s,r,q,p,o,n,m,l,k,j=null,i="flutter.pdf.date",h="count",g="\u2014",f=A.b([],t.n_)
+bH3(a,b){var s,r,q,p,o,n,m,l,k,j=null,i="flutter.pdf.date",h="count",g="-",f=A.b([],t.n_)
 if(a.Q.length!==0){f.push(new A.et(j,16,j))
 f.push(A.hR(b.$2("flutter.pdf.bone_age","Bone age history"),A.n4(j,B.hd,j,j,j,j,j,j,j,B.d0,j,j,13,j,B.dd,j,!0,j,j,j,j)))
 f.push(new A.et(j,6,j))
@@ -123278,7 +123278,7 @@ s.toString
 return new A.Ca(B.a8v,A.aIV(A.b([r,A.hR(q+" "+(B.m.fR(p.cx.cx,s)+1)+" / "+p.cx.cx.length,B.rx)],t.n_),B.nn,B.b8u))},
 $S:635}
 A.bb2.prototype={
-$1(a9){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0=this,a1=null,a2="\u2014",a3="flutter.pdf.target_short",a4="target",a5=a0.b,a6=A.WR(a1,A.WM(10),B.hd),a7=t.ov,a8=A.b([],a7)
+$1(a9){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0=this,a1=null,a2="-",a3="flutter.pdf.target_short",a4="target",a5=a0.b,a6=A.WR(a1,A.WM(10),B.hd),a7=t.ov,a8=A.b([],a7)
 new A.abL('<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#2F6B4F"/><path d="M4 16 L9 11 L13 15 L20 6" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="6" r="1.7" fill="#FFFFFF"/></svg>',B.u4,!0,!1,!0,!1,!1,!0,!1).aQ(0,new A.b97(new A.HQ(B.m.gaLm(a8))).gNR())
 a7=A.aQ8(A.b([],a7),t.hh)
 r=new A.abJ(a7)
@@ -123332,7 +123332,7 @@ f=a5.$2("flutter.pdf.target","Target height")
 e=a0.r
 d=e==null
 c=d?a2:A.oW(e.a)+" cm"
-f=A.nm(f,c,d?a5.$2("flutter.pdf.target_hint","add parent heights"):A.oW(e.b)+"\u2013"+A.oW(e.c)+" cm",B.UU)
+f=A.nm(f,c,d?a5.$2("flutter.pdf.target_hint","add parent heights"):A.oW(e.b)+" to "+A.oW(e.c)+" cm",B.UU)
 e=a5.$2("flutter.pdf.readiness","7-day readiness")
 d=g.a
 c=d==null
@@ -123343,7 +123343,7 @@ a=B.n.j(B.l.ao(a))}e=A.nm(e,a,(c?a1:d.b)==null?"":a5.$2("today.hud.score_suffix"
 a=a5.$2("analytics.stats.avg_sleep","Avg sleep")
 g=g.a
 g=(g==null?a1:g.c)==null?a2:A.oW(g.c)+" h"
-s=A.b([a6,new A.et(a1,14,a1),j,new A.et(a1,16,a1),i,new A.et(a1,8,a1),b,new A.et(a1,8,a1),A.bhi(A.b([h,f,e,A.nm(a,g,a5.$2("flutter.7d","7d"),B.UU)],l)),new A.et(a1,18,a1),A.hR(a5.$2("flutter.pdf.nutrition","Nutrition intake \xb7 30-day average"),A.n4(a1,B.hd,a1,a1,a1,a1,a1,a1,a1,B.d0,a1,a1,13,a1,B.dd,a1,!0,a1,a1,a1,a1)),new A.et(a1,8,a1)],l)
+s=A.b([a6,new A.et(a1,14,a1),j,new A.et(a1,16,a1),i,new A.et(a1,8,a1),b,new A.et(a1,8,a1),A.bhi(A.b([h,f,e,A.nm(a,g,a5.$2("flutter.7d","7d"),B.UU)],l)),new A.et(a1,18,a1),A.hR(a5.$2("flutter.pdf.nutrition","Nutrition intake - 30-day average"),A.n4(a1,B.hd,a1,a1,a1,a1,a1,a1,a1,B.d0,a1,a1,13,a1,B.dd,a1,!0,a1,a1,a1,a1)),new A.et(a1,8,a1)],l)
 a6=a0.w
 if(a6===0)J.dl(s,A.bql(a5.$2("flutter.pdf.no_nutrition","No nutrition logged in the last 30 days.")))
 else{j=a5.$2("common.protein","Protein")

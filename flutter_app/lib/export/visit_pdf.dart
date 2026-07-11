@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-// Pediatric visit summary (PDF) — a clean, branded one/two-page
+// Pediatric visit summary (PDF) - a clean, branded one/two-page
 // dossier a parent can hand to a pediatrician. Premium feature.
 // Built with the `pdf` package; downloaded via the web Blob helper.
 //
@@ -31,19 +31,19 @@ const _tint = PdfColor.fromInt(0xFFF2F6F4);
 const _white = PdfColor.fromInt(0xFFFFFFFF);
 
 String _fmt(num? v, {int dp = 1}) =>
-    v == null ? '—' : v.toDouble().toStringAsFixed(dp);
+    v == null ? '-' : v.toDouble().toStringAsFixed(dp);
 
 /// Turn a DB slug like "cold_respiratory" into "Cold respiratory".
 String _prettySlug(String? raw) {
-  if (raw == null || raw.trim().isEmpty) return '—';
+  if (raw == null || raw.trim().isEmpty) return '-';
   final s = raw.trim().replaceAll('_', ' ');
   return s[0].toUpperCase() + s.substring(1);
 }
 
 String _ageString(String? dobStr, [String? atDate]) {
-  if (dobStr == null) return '—';
+  if (dobStr == null) return '-';
   final dob = DateTime.tryParse(dobStr);
-  if (dob == null) return '—';
+  if (dob == null) return '-';
   final end = atDate != null ? DateTime.tryParse(atDate) ?? DateTime.now()
       : DateTime.now();
   var months = (end.year - dob.year) * 12 + (end.month - dob.month);
@@ -145,7 +145,7 @@ Future<(Uint8List?, String?)> buildVisitPdf(
     );
 
     final doc = pw.Document(
-        title: 'GrowSense visit summary — $name', author: 'GrowSense');
+        title: 'GrowSense visit summary - $name', author: 'GrowSense');
 
     doc.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
@@ -159,14 +159,14 @@ Future<(Uint8List?, String?)> buildVisitPdf(
         _sectionTitle(t('flutter.pdf.growth', 'Growth snapshot')),
         pw.SizedBox(height: 8),
         _statRow([
-          _stat(t('common.height', 'Height'), h == null ? '—' : '${_fmt(h)} cm',
+          _stat(t('common.height', 'Height'), h == null ? '-' : '${_fmt(h)} cm',
               measDate ?? '', _measured),
-          _stat(t('common.weight', 'Weight'), w == null ? '—' : '${_fmt(w)} kg',
+          _stat(t('common.weight', 'Weight'), w == null ? '-' : '${_fmt(w)} kg',
               '', _measured),
           _stat(t('flutter.pdf.bmi', 'BMI'), _fmt(bmi), '', _ink),
           _stat(
               t('flutter.percentile', 'Percentile'),
-              pct == null ? '—' : 'P$pct',
+              pct == null ? '-' : 'P$pct',
               z == null ? '' : 'z ${z >= 0 ? '+' : ''}${z.toStringAsFixed(2)}',
               _accent),
         ]),
@@ -175,7 +175,7 @@ Future<(Uint8List?, String?)> buildVisitPdf(
           _stat(
               t('analytics.insight.height_velocity', 'Height velocity'),
               weekly?.velocityCmPerYear == null
-                  ? '—'
+                  ? '-'
                   : '${_fmt(weekly!.velocityCmPerYear)} cm/yr',
               weekly?.velocityCmPerYear == null
                   ? t('flutter.velocity.not_enough', 'needs 2+ measurements')
@@ -183,29 +183,29 @@ Future<(Uint8List?, String?)> buildVisitPdf(
               _measured),
           _stat(
               t('flutter.pdf.target', 'Target height'),
-              th == null ? '—' : '${_fmt(th.targetHeightCm)} cm',
+              th == null ? '-' : '${_fmt(th.targetHeightCm)} cm',
               th == null
                   ? t('flutter.pdf.target_hint', 'add parent heights')
-                  : '${_fmt(th.rangeLowCm)}–${_fmt(th.rangeHighCm)} cm',
+                  : '${_fmt(th.rangeLowCm)} to ${_fmt(th.rangeHighCm)} cm',
               _gold),
           _stat(
               t('flutter.pdf.readiness', '7-day readiness'),
               weekly?.avgScore == null
-                  ? '—'
+                  ? '-'
                   : weekly!.avgScore!.round().toString(),
               weekly?.avgScore == null ? '' : t('today.hud.score_suffix', 'of 100'),
               _accent),
           _stat(
               t('analytics.stats.avg_sleep', 'Avg sleep'),
               weekly?.avgSleepHours == null
-                  ? '—'
+                  ? '-'
                   : '${_fmt(weekly!.avgSleepHours)} h',
               t('flutter.7d', '7d'),
               _gold),
         ]),
         pw.SizedBox(height: 18),
         _sectionTitle(
-            t('flutter.pdf.nutrition', 'Nutrition intake · 30-day average')),
+            t('flutter.pdf.nutrition', 'Nutrition intake - 30-day average')),
         pw.SizedBox(height: 8),
         if (nutDays == 0)
           _empty(t('flutter.pdf.no_nutrition',
@@ -214,23 +214,23 @@ Future<(Uint8List?, String?)> buildVisitPdf(
           _statRow([
             _stat(
                 t('common.protein', 'Protein'),
-                avgProtein == null ? '—' : '${_fmt(avgProtein)} g',
+                avgProtein == null ? '-' : '${_fmt(avgProtein)} g',
                 '${t('flutter.pdf.target_short', 'target')} $proteinTgt g',
                 _accent),
             _stat(
                 t('common.calcium', 'Calcium'),
-                avgCalcium == null ? '—' : '${avgCalcium.round()} mg',
+                avgCalcium == null ? '-' : '${avgCalcium.round()} mg',
                 '${t('flutter.pdf.target_short', 'target')} $calciumTgt mg',
                 _accent),
             _stat(
                 t('common.zinc', 'Zinc'),
-                avgZinc == null ? '—' : '${_fmt(avgZinc)} mg',
+                avgZinc == null ? '-' : '${_fmt(avgZinc)} mg',
                 '${t('flutter.pdf.target_short', 'target')} $zincTgt mg',
                 _accent),
             _stat(
                 t('flutter.fluids', 'Fluids'),
                 avgWaterMl == null
-                    ? '—'
+                    ? '-'
                     : '${_fmt(avgWaterMl / 1000)} L',
                 '$nutDays ${t('flutter.pdf.days_logged', 'days logged')}',
                 _measured),
@@ -321,7 +321,7 @@ pw.Widget _childCard(Map<String, dynamic> child, String? dob, String? sex,
     child: pw.Row(children: [
       field(t('flutter.pdf.name', 'Child'), name),
       field(t('flutter.pdf.age', 'Age'), _ageString(dob)),
-      field(t('flutter.pdf.dob', 'Date of birth'), dob ?? '—'),
+      field(t('flutter.pdf.dob', 'Date of birth'), dob ?? '-'),
       field(t('flutter.pdf.sex', 'Sex'), sexLabel),
     ]),
   );
@@ -404,16 +404,16 @@ pw.Widget _measTable(List<Map<String, dynamic>> meas, String? dob, String? sex,
     final date = m['recorded_date'] as String?;
     final h = (m['stature_height_cm'] as num?)?.toDouble();
     final w = (m['mass_weight_kg'] as num?)?.toDouble();
-    String p = '—';
+    String p = '-';
     if (h != null && dob != null && date != null) {
       final bands = who.heightBands(sex, ageYearsAt(dob, date) * 12);
       p = 'P${zToPercentile(zFromHeight(bands, h)).round()}';
     }
     rows.add([
-      date ?? '—',
+      date ?? '-',
       _ageString(dob, date),
-      h == null ? '—' : _fmt(h),
-      w == null ? '—' : _fmt(w),
+      h == null ? '-' : _fmt(h),
+      w == null ? '-' : _fmt(w),
       p,
     ]);
   }
@@ -443,10 +443,10 @@ List<pw.Widget> _clinicalSections(
       ], [
         for (final r in a.boneAgeAssessments.take(8))
           [
-            (r['study_date'] ?? '—').toString(),
-            (r['bone_age_months'] ?? '—').toString(),
-            (r['chronological_age_months'] ?? '—').toString(),
-            (r['method'] ?? '—').toString(),
+            (r['study_date'] ?? '-').toString(),
+            (r['bone_age_months'] ?? '-').toString(),
+            (r['chronological_age_months'] ?? '-').toString(),
+            (r['method'] ?? '-').toString(),
           ]
       ], flex: [3, 2, 2, 3]));
   }
@@ -463,9 +463,9 @@ List<pw.Widget> _clinicalSections(
       ], [
         for (final r in a.labResults.take(10))
           [
-            (r['lab_date'] ?? '—').toString(),
-            (r['analyte_name'] ?? '—').toString(),
-            '${r['result_value'] ?? '—'}${r['unit'] ?? ''}',
+            (r['lab_date'] ?? '-').toString(),
+            (r['analyte_name'] ?? '-').toString(),
+            '${r['result_value'] ?? '-'}${r['unit'] ?? ''}',
           ]
       ], flex: [3, 4, 3]));
   }
@@ -482,8 +482,8 @@ List<pw.Widget> _clinicalSections(
       ], [
         for (final e in a.illnessEvents.take(10))
           [
-            (e['start_date'] ?? '—').toString(),
-            (e['end_date'] ?? '—').toString(),
+            (e['start_date'] ?? '-').toString(),
+            (e['end_date'] ?? '-').toString(),
             _prettySlug((e['illness_type'])?.toString()),
           ]
       ], flex: [3, 3, 4]));
