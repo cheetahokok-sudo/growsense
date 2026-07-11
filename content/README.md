@@ -55,5 +55,5 @@ GS-00X/
 
 | ID | Title | Status |
 |----|-------|--------|
-| GS-001 | Why Do Some Children Grow Faster Than Others? (Height Velocity) | Published · /blog/why-children-grow-faster |
+| GS-001 | Why Do Some Children Grow Faster Than Others? (Height Velocity) | Published · /blog/why-children-grow-faster · TH: /blog/why-children-grow-faster.th |
 | GS-005 | Is My Child Too Short? When to Actually Worry | Published · /blog/is-my-child-too-short · 17 refs verified |
