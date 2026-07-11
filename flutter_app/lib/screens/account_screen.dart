@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
 import '../export/download.dart';
+import '../export/visit_pdf.dart';
 import '../i18n.dart';
 import '../theme.dart';
 import 'devices_screen.dart';
@@ -213,6 +214,8 @@ class AccountScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _ExportTile(appState: appState, i18n: i18n),
+              const SizedBox(height: 12),
+              _VisitPdfTile(appState: appState, i18n: i18n),
               const SizedBox(height: 12),
               InkWell(
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(
@@ -681,6 +684,120 @@ class _ExportTileState extends State<_ExportTile> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.download_outlined,
+                      size: 18, color: GsColors.text3),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Premium: a branded pediatric-visit summary as a PDF. Free users
+/// see the tile with a lock + upgrade hint (same place as CSV export).
+class _VisitPdfTile extends StatefulWidget {
+  const _VisitPdfTile({required this.appState, required this.i18n});
+  final AppState appState;
+  final I18n i18n;
+
+  @override
+  State<_VisitPdfTile> createState() => _VisitPdfTileState();
+}
+
+class _VisitPdfTileState extends State<_VisitPdfTile> {
+  bool _busy = false;
+
+  bool get _isPaid {
+    final tier =
+        (widget.appState.account?['subscription_tier'] as String?) ?? 'free';
+    return tier == 'premium' || tier == 'pro';
+  }
+
+  Future<void> _make() async {
+    final t = widget.i18n.t;
+    if (!_isPaid) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(t('flutter.pdf.premium_hint',
+              'The visit summary PDF is a Premium feature — upgrade to unlock it.'))));
+      return;
+    }
+    setState(() => _busy = true);
+    final (bytes, err) = await buildVisitPdf(widget.appState, widget.i18n);
+    String? dlErr = err;
+    if (bytes != null) {
+      final name = (widget.appState.activeChildRow?['name'] as String? ?? '')
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+      dlErr = await downloadBytesFile(
+          'growsense-visit-$name-${todayISO()}.pdf', bytes, 'application/pdf');
+    }
+    if (!mounted) return;
+    setState(() => _busy = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(dlErr == null
+            ? '✅ ${t('flutter.pdf.done', 'Visit summary downloaded')}'
+            : '⚠️ $dlErr')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    final paid = _isPaid;
+    return InkWell(
+      onTap: _busy ? null : _make,
+      child: _Card(
+        children: [
+          Row(
+            children: [
+              const Text('🩺', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                              _busy
+                                  ? t('flutter.pdf.working', 'Preparing…')
+                                  : t('flutter.pdf.tile',
+                                      'Visit summary (PDF)'),
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: GsColors.accent)),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: GsColors.estimatedLight,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(t('flutter.premium', 'Premium'),
+                              style: const TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: GsColors.estimatedDark)),
+                        ),
+                      ],
+                    ),
+                    Text(
+                        t('flutter.pdf.sub',
+                            'A clean, printable summary to hand your pediatrician'),
+                        style: const TextStyle(
+                            fontSize: 10.5, color: GsColors.text3)),
+                  ],
+                ),
+              ),
+              _busy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(paid ? Icons.download_outlined : Icons.lock_outline,
                       size: 18, color: GsColors.text3),
             ],
           ),
