@@ -255,7 +255,7 @@
             </div>
           </div>
           <div class="form-row">
-            <div><div class="form-lbl" data-i18n="today.nutrition.zinc_total" data-i18n="today.nutrition.zinc_label">Zinc total</div><div class="form-lbl-sub" data-i18n="today.nutrition.zinc_sub">Growth plate co-factor · target 8mg/day</div></div>
+            <div><div class="form-lbl" data-i18n="today.nutrition.zinc_total" data-i18n="today.nutrition.zinc_label">Zinc total</div><div class="form-lbl-sub" id="zincSubLbl" data-i18n="today.nutrition.zinc_sub">Growth plate co-factor · age-based daily target</div></div>
             <div class="stepper">
               <button class="step-btn" onclick="adj('zinc',-1)">−</button>
               <div class="step-val" id="valZinc">0 mg</div>
@@ -1162,21 +1162,51 @@
      favorites, add a new custom food. Favorites determine what shows
      on the main Nutrition grid (foodCardGrid) — this modal is purely
      for managing that selection, not for logging food directly. -->
-<div class="modal-overlay hidden" id="foodLibraryModal">
-  <div class="modal-sheet">
+<div class="modal-overlay hidden" id="foodLibraryModal" onclick="closeFoodLibraryModal(event)">
+  <div class="modal-sheet" style="max-height:88vh; display:flex; flex-direction:column;">
     <div class="modal-handle"></div>
-    <div class="modal-title" data-i18n="food_library.title">Food library</div>
+    <div class="insight-sheet-hdr" style="flex-shrink:0;">
+      <span data-i18n="food_library.title">Food library</span>
+      <button class="modal-close-btn" onclick="document.getElementById('foodLibraryModal').classList.add('hidden')">✕</button>
+    </div>
 
-    <div class="seg" id="foodLibraryTabs" style="margin-bottom:14px;">
+    <!-- top tabs: Browse / My foods / Add new — fixed, not scrollable -->
+    <div class="seg" id="foodLibraryTabs" style="margin-bottom:0; padding:0 16px 10px; flex-shrink:0;">
       <button class="seg-btn active" data-tab="browse" onclick="setFoodLibraryTab('browse', this)" data-i18n="food_library.browse_all">Browse all</button>
       <button class="seg-btn" data-tab="mine" onclick="setFoodLibraryTab('mine', this)" data-i18n="food_library.my_foods">My foods</button>
       <button class="seg-btn" data-tab="add" onclick="setFoodLibraryTab('add', this)" data-i18n="food_library.add_new">Add new</button>
     </div>
 
-    <!-- Browse all: every preset + custom food, with a star toggle -->
+    <!-- scrollable body -->
+    <div style="flex:1; overflow-y:auto; padding:0 16px 32px;">
+
+    <!-- Browse all: search + category tabs + grouped/filtered list -->
     <div id="foodLibraryBrowsePane">
-      <div class="setup-note" style="font-size:11px; margin-bottom:10px;">Tap the star to add or remove a food from the main grid. Your active cards show first.</div>
-      <div id="foodLibraryBrowseList" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <!-- Search -->
+      <input type="search" id="foodLibrarySearch" class="text-input"
+        placeholder="Search foods…"
+        oninput="onFoodLibrarySearch(this.value)"
+        style="margin-bottom:10px; width:100%; box-sizing:border-box;">
+      <!-- Category filter tabs — mirrors activity browser pattern -->
+      <div class="activity-browser-tabs" id="foodCatTabs" style="margin-bottom:8px;">
+        <button class="activity-browser-tab food-cat-tab active" onclick="setFoodCategoryFilter('all',this)">All</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('chicken',this)">🍗 Poultry</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('beef',this)">🥩 Beef</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('pork',this)">🐷 Pork</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('fish',this)">🐟 Fish</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('seafood',this)">🦐 Seafood</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('egg',this)">🥚 Eggs</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('dairy',this)">🧀 Dairy</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('plant',this)">🌱 Plant</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('composite',this)">🍲 Soups</button>
+      </div>
+      <!-- Group-by toggle — shown only on "All" tab -->
+      <div class="seg" id="foodGroupSeg" style="margin-bottom:10px;">
+        <button class="seg-btn active" onclick="setFoodGroupMode('type',this)">By type</button>
+        <button class="seg-btn" onclick="setFoodGroupMode('region',this)">By region</button>
+      </div>
+      <div class="setup-note" style="font-size:11px; margin-bottom:8px;">★ pins to your home grid &nbsp;·&nbsp; <strong>+</strong> logs one serving instantly</div>
+      <div id="foodLibraryBrowseList" style="display:flex; flex-direction:column;"></div>
     </div>
 
     <!-- My foods: just this child's custom foods, with delete -->
@@ -1215,7 +1245,7 @@
       <button class="btn-secondary" onclick="addCustomFood()" data-i18n="food_library.add_btn">Add this food</button>
     </div>
 
-    <button class="btn-ghost" style="width:100%; margin-top:14px;" onclick="closeFoodLibraryModal()" data-i18n="common.close">Close</button>
+    </div><!-- end scrollable body -->
   </div>
 </div>
 
