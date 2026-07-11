@@ -35,7 +35,7 @@ There is no single "height gene." Hundreds of genetic variants across at least 1
 - Boys: (mother's height + father's height + 13 cm) ÷ 2
 - Girls: (mother's height + father's height − 13 cm) ÷ 2
 
-This gives a **target zone of roughly ±5–7 cm**, not a guaranteed final height. Genetics sets the boundaries of potential; environment decides where within them a child lands.
+This gives a **target zone** — most children finish within roughly **±8.5 cm** of the centre (about two standard deviations), not a guaranteed final height. Genetics sets the boundaries of potential; environment decides where within them a child lands.
 
 ## 4. The biological accelerator: the GH–IGF-1 axis
 

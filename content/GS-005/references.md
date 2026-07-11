@@ -108,10 +108,9 @@ consensus and PES guideline document GH's modest, variable effect on final
 height in idiopathic short stature and the deliberately conservative
 recommendation, and Clayton covers the SGA indication.
 
-## Note for the editor — cross-article consistency
+## Note for the editor — cross-article consistency (RESOLVED 2026-07-11)
 
-GS-001 currently states the mid-parental target range as **±5–7 cm**; GS-005
-uses **±8.5 cm (≈2 SD)**. These describe different confidence bands (±1 SD vs
-±2 SD). Before both are widely promoted, align them so a reader moving between
-articles doesn't see a contradiction — recommended: standardise on **±8.5 cm
-(≈2 SD)** with a note that the centre is the single most likely outcome.
+The mid-parental target range is now standardised on **±8.5 cm (≈2 SD)** across
+GS-001 and GS-005 — article.md, the published HTML, the blog copies, and the
+GS-001 carousel/YouTube assets were all updated together. Any new article using
+the mid-parental method should use ±8.5 cm.

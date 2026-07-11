@@ -31,8 +31,8 @@ in **waves.**
 **[1:30 · GENETICS]**
 Sixty to eighty percent of height is inherited — and it's not one gene, it's
 hundreds. `[TEXT: 60–80% heritable · ref 3 · Lango Allen et al. Nature 2010 · ref 2]`
-There's a simple target-range formula — but notice it gives a *range*, plus or
-minus 5 to 7 centimeters, not a guarantee. `[VISUAL: mid-parental formula]`
+There's a simple target-range formula — but notice it gives a *range*, about
+plus or minus 8-and-a-half centimeters, not a guarantee. `[VISUAL: mid-parental formula]`
 
 **[2:30 · GH–IGF-1]**
 Genes are the blueprint; hormones are the construction crew. The pituitary

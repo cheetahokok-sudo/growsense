@@ -29,7 +29,7 @@ Genes set the boundaries — life decides where inside them.
 **Slide 5 — Target range**
 Boys: (mum + dad + 13) ÷ 2
 Girls: (mum + dad − 13) ÷ 2
-→ a **range of ±5–7 cm**, not a fixed number.
+→ a **range of ±8.5 cm** (≈2 SD), not a fixed number.
 
 **Slide 6 — Sleep**
 The biggest growth-hormone pulses happen in **deep sleep.** _(ref 1)_
