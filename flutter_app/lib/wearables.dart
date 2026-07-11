@@ -237,7 +237,7 @@ const bioStreamLabel = {
 const googleHealthClientId =
     '703084084864-g9vctf4sfaufjdqklmq4a11qsi3epk48.apps.googleusercontent.com';
 const googleHealthRedirectUri =
-    'https://cheetahokok-sudo.github.io/growsense/app/';
+    'https://www.growsense.life/app/';
 const googleHealthScopes =
     'openid email https://www.googleapis.com/auth/googlehealth.sleep.readonly';
 

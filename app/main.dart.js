@@ -125651,7 +125651,7 @@ h=j.c.gfm()
 if(h==null){s=1
 break}j=Date.now()
 l=B.Az.zN(0)
-m=A.dE("https://accounts.google.com/o/oauth2/v2/auth",0,null).pZ(A.Z(["client_id","703084084864-g9vctf4sfaufjdqklmq4a11qsi3epk48.apps.googleusercontent.com","redirect_uri","https://cheetahokok-sudo.github.io/growsense/app/","response_type","code","scope","openid email https://www.googleapis.com/auth/googlehealth.sleep.readonly","access_type","offline","prompt","consent","state",h+":"+(""+1000*j+"-"+l)],t.N,t.z))
+m=A.dE("https://accounts.google.com/o/oauth2/v2/auth",0,null).pZ(A.Z(["client_id","703084084864-g9vctf4sfaufjdqklmq4a11qsi3epk48.apps.googleusercontent.com","redirect_uri","https://www.growsense.life/app/","response_type","code","scope","openid email https://www.googleapis.com/auth/googlehealth.sleep.readonly","access_type","offline","prompt","consent","state",h+":"+(""+1000*j+"-"+l)],t.N,t.z))
 p=4
 s=7
 return A.n(A.zC(m,B.o9,"_self"),$async$Hb)

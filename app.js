@@ -406,7 +406,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 // ══════════════════════════════════════════════════════════════════
 
 const GOOGLE_HEALTH_CLIENT_ID = '703084084864-g9vctf4sfaufjdqklmq4a11qsi3epk48.apps.googleusercontent.com';
-const GOOGLE_HEALTH_REDIRECT_URI = 'https://cheetahokok-sudo.github.io/growsense/';
+const GOOGLE_HEALTH_REDIRECT_URI = 'https://www.growsense.life/app.html';
 const GOOGLE_HEALTH_SCOPES = [
   'openid',
   'email',
