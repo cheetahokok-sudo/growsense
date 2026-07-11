@@ -981,7 +981,7 @@ ${nut30Days > 0 ? `
 
 <!-- FOOTER -->
 <div style="margin-top:14px;padding-top:10px;border-top:1px solid ${BDR};display:flex;justify-content:space-between;font-size:8pt;color:${T3};">
-  <span>GrowSense · cheetahokok-sudo.github.io/growsense</span>
+  <span>GrowSense · growsense.life</span>
   <span>Generated ${exportDate}</span>
 </div>
 

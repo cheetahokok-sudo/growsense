@@ -123667,16 +123667,16 @@ A.ap0.prototype={
 $1(a){return new A.ue(this.a.d,!0,null,null)},
 $S:656}
 A.ape.prototype={
-$0(){return A.zC(A.dE("mailto:cheetahokok@gmail.com?subject=GrowSense%20support",0,null),B.o9,null)},
+$0(){return A.zC(A.dE("mailto:contact@growsense.life?subject=GrowSense%20support",0,null),B.o9,null)},
 $S:0}
 A.apf.prototype={
-$0(){return A.zC(A.dE("https://cheetahokok-sudo.github.io/growsense/#privacy",0,null),B.Ds,null)},
+$0(){return A.zC(A.dE("https://www.growsense.life/privacy",0,null),B.Ds,null)},
 $S:0}
 A.apg.prototype={
-$0(){return A.zC(A.dE("https://cheetahokok-sudo.github.io/growsense/#terms",0,null),B.Ds,null)},
+$0(){return A.zC(A.dE("https://www.growsense.life/terms",0,null),B.Ds,null)},
 $S:0}
 A.aph.prototype={
-$0(){return A.zC(A.dE("mailto:cheetahokok@gmail.com?subject=GrowSense%20account%20deletion%20request",0,null),B.o9,null)},
+$0(){return A.zC(A.dE("mailto:contact@growsense.life?subject=GrowSense%20account%20deletion%20request",0,null),B.o9,null)},
 $S:0}
 A.api.prototype={
 $0(){return this.a.c.AX(this.b.a)},

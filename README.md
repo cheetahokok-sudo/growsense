@@ -2,7 +2,7 @@
 
 Pediatric growth tracking app — single-file web app + Supabase backend.
 
-**Live app:** https://cheetahokok-sudo.github.io/growsense/
+**Live app:** https://www.growsense.life
 
 ## What's in this repo
 

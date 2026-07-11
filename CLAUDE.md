@@ -6,7 +6,7 @@
 
 Pediatric growth intelligence PWA + future Flutter app.
 
-Live at: https://cheetahokok-sudo.github.io/growsense
+Live at: https://www.growsense.life
 
 Repo: https://github.com/cheetahokok-sudo/growsense
 

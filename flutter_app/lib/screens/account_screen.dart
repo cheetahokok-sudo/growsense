@@ -259,21 +259,19 @@ class AccountScreen extends StatelessWidget {
                       icon: Icons.support_agent,
                       label: t('flutter.legal.support', 'Contact support'),
                       onTap: () => launchUrl(Uri.parse(
-                          'mailto:cheetahokok@gmail.com?subject=GrowSense%20support'))),
+                          'mailto:contact@growsense.life?subject=GrowSense%20support'))),
                   _LinkRow(
                       icon: Icons.privacy_tip_outlined,
                       label:
                           t('flutter.legal.privacy', 'Privacy policy'),
                       onTap: () => launchUrl(
-                          Uri.parse(
-                              'https://cheetahokok-sudo.github.io/growsense/#privacy'),
+                          Uri.parse('https://www.growsense.life/privacy'),
                           mode: LaunchMode.externalApplication)),
                   _LinkRow(
                       icon: Icons.description_outlined,
                       label: t('flutter.legal.terms', 'Terms of use'),
                       onTap: () => launchUrl(
-                          Uri.parse(
-                              'https://cheetahokok-sudo.github.io/growsense/#terms'),
+                          Uri.parse('https://www.growsense.life/terms'),
                           mode: LaunchMode.externalApplication)),
                   _LinkRow(
                       icon: Icons.delete_outline,
@@ -281,7 +279,7 @@ class AccountScreen extends StatelessWidget {
                           'Request account deletion'),
                       color: GsColors.flag,
                       onTap: () => launchUrl(Uri.parse(
-                          'mailto:cheetahokok@gmail.com?subject=GrowSense%20account%20deletion%20request'))),
+                          'mailto:contact@growsense.life?subject=GrowSense%20account%20deletion%20request'))),
                 ],
               ),
               const SizedBox(height: 12),
