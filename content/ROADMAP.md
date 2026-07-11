@@ -19,15 +19,24 @@ search compounds over several years.
    + evidence notes + assets) and the publishing gate in README.md.
 5. **Honesty is the differentiator.** The Myths cluster is un-copyable by
    supplement marketers — treat it as marquee, not filler.
+6. **GS-numbers are permanent IDs, not priority or length.** They file an
+   article into a cluster; every article gets the same depth and citation
+   rigor regardless of number. **Publish order is a separate axis** (driven by
+   search demand — see the launch table). Readers never see the GS-number:
+   public URLs are readable slugs (e.g. `/blog/is-my-child-too-short`), not
+   `/blog/gs-005`. Numbering blocks: foundation 001–010, hormones 011–020,
+   sleep 021–030, nutrition 031–040, activity 041–050, **myths 051–060**,
+   puberty 061–070, clinical 071–080.
 
 ## Clusters (organization) — [P] = pillar
 
 ### A. Reassurance & age norms — *highest volume + emotional intent*
-- Is my child too short? When to actually worry
-- Normal height &amp; weight by age **[P]**
+- Is my child too short? When to actually worry (GS-005) **[P]**
+  — *retitled from "When should parents worry about slow growth?"; absorbs the
+  "late bloomer" query as a section*
+- Normal height &amp; weight by age (GS-003) **[P]** — *absorbs "normal growth
+  velocity by age"*
 - Growth charts &amp; percentiles, honestly (GS-004) **[P]**
-- Is my child a late bloomer?
-- When should parents worry about slow growth? (GS-005)
 
 ### B. How tall will my child be? — *prediction; our differentiator*
 - How tall will my child be? (GS-002) **[P]**
@@ -38,7 +47,6 @@ search compounds over several years.
 
 ### C. Understanding growth — *foundation / authority*
 - Why do some children grow faster than others? (GS-001) ✅ **[P]** *(live)*
-- What is normal growth velocity by age? (GS-003)
 - How growth actually works: growth plates (GS-006, supporting)
 - The GH–IGF-1 axis (GS-011/012/013 merged) **[P]**
 
@@ -50,11 +58,11 @@ search compounds over several years.
 - Which sports support growth best? (GS-043/044/046/047 merged)
 
 ### E. Myths &amp; honest answers — *marquee: un-copyable, shareable*
-- Do height-growth supplements really work? **[P]**
-- Does milk make children taller?
-- Does coffee / caffeine stunt growth?
-- Does hanging, stretching, or jumping make you taller?
-- Do "growth booster" foods and drinks work?
+- Do height-growth supplements really work? (GS-051) **[P]**
+- Does milk make children taller? (GS-052)
+- Does coffee / caffeine stunt growth? (GS-053)
+- Does hanging, stretching, or jumping make you taller? (GS-054)
+- Do "growth booster" foods and drinks work? (GS-055)
 
 ### F. Puberty &amp; timing
 - Puberty &amp; the growth spurt (GS-016) **[P]**
@@ -71,20 +79,23 @@ search compounds over several years.
 
 ## Launch order — first 12 (by intent + differentiator)
 
-| # | Article | Cluster | Why first |
-|---|---------|---------|-----------|
-| 1 | Why some children grow faster (GS-001) ✅ | C | live — cornerstone |
-| 2 | Is my child too short? When to worry | A | massive reassurance intent |
-| 3 | Normal height &amp; weight by age | A | huge evergreen volume |
-| 4 | How tall will my child be? (GS-002) | B | prediction pillar = differentiator |
-| 5 | Growth charts &amp; percentiles (GS-004) | A | high intent, low competition done right |
-| 6 | Do height-growth supplements work? | E | un-copyable, viral, brand-defining |
-| 7 | Does sleep affect height? (GS-021) | D | sleep pillar, app tie-in |
-| 8 | Protein &amp; height (GS-032) | D | nutrition pillar, app tie-in |
-| 9 | Does milk make kids taller? | E | high-volume myth |
-| 10 | Can exercise make children taller? (GS-041) | D | activity pillar, honest angle |
-| 11 | When do children stop growing? | B | high volume, feeds prediction |
-| 12 | Early puberty &amp; adult height (GS-017) | F | rising-concern query |
+*Publish # = ship order (demand). GS-ID = permanent library ID (taxonomy).
+The two are intentionally decoupled.*
+
+| Publish # | GS-ID | Article | Cluster | Why this slot |
+|---|---|---------|---------|-----------|
+| 1 | GS-001 | Why some children grow faster ✅ | C | live — cornerstone |
+| 2 | GS-005 | Is my child too short? When to worry | A | massive reassurance intent |
+| 3 | GS-003 | Normal height &amp; weight by age | A | huge evergreen volume |
+| 4 | GS-002 | How tall will my child be? | B | prediction pillar = differentiator |
+| 5 | GS-004 | Growth charts &amp; percentiles | A | high intent, low competition done right |
+| 6 | GS-051 | Do height-growth supplements work? | E | un-copyable, viral, brand-defining |
+| 7 | GS-021 | Does sleep affect height? | D | sleep pillar, app tie-in |
+| 8 | GS-032 | Protein &amp; height | D | nutrition pillar, app tie-in |
+| 9 | GS-052 | Does milk make kids taller? | E | high-volume myth |
+| 10 | GS-041 | Can exercise make children taller? | D | activity pillar, honest angle |
+| 11 | GS-019 | When do children stop growing? | B | high volume, feeds prediction |
+| 12 | GS-017 | Early puberty &amp; adult height | F | rising-concern query |
 
 Then continue filling clusters A–D (demand-heavy) before F/G (authority-built).
 
