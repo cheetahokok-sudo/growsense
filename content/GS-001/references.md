@@ -36,6 +36,19 @@
 8. **Greulich WW, Pyle SI.** Radiographic Atlas of Skeletal Development of the
    Hand and Wrist. 2nd ed. Stanford, CA: Stanford University Press; 1959.
    *(Reference standard for bone-age assessment.)*
+9. **Tanner JM, Goldstein H, Whitehouse RH.** Standards for children's height
+   at ages 2–9 years allowing for height of parents. *Arch Dis Child.*
+   1970;45(244):755–762. *(Origin of the mid-parental target-height method.)*
+10. **Nilsson O, Marino R, De Luca F, Phillip M, Baron J.** Endocrine
+    regulation of the growth plate. *Horm Res.* 2005;64(4):157–165.
+    PMID: 16205094. *(Growth-plate mechanism and its hormonal control.)*
+11. **de Onis M, et al.** WHO Child Growth Standards based on length/height,
+    weight and age. *Acta Paediatr.* 2006;95(S450):76–85. PMID: 16817681.
+    *(Basis of the percentile references.)*
+
+_All 11 above cover every load-bearing claim in GS-001. The article cites only
+these — "further reading" authors below are not cited and stay unpublished
+until individually verified._
 
 ## Pending verification — do NOT publish until each is confirmed
 

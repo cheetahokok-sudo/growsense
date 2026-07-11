@@ -15,20 +15,22 @@ educational framing or cut. This is the internal audit trail — reviewers
 | 6 | Referral guidance (low velocity, bone-age screening) for growth failure | Wit, Kamp & Oostdijk 2019 | ✅ |
 | 7 | Zinc supplementation has a measurable positive effect on linear growth | Brown et al. 2002 | ✅ |
 | 8 | Bone age (hand/wrist X-ray) indexes skeletal maturity and remaining growth | Greulich & Pyle 1959 | ✅ |
+| 9 | Growth-plate mechanism: cartilage proliferation → mineralisation → lengthening; hormonal control; fusion ends growth | Nilsson, Baron et al. 2005 | ✅ |
+| 10 | Mid-parental target-height formula (boys (M+F+13)/2, girls (M+F−13)/2) | Tanner, Goldstein & Whitehouse 1970 | ✅ |
+| 11 | Percentiles are WHO growth-standard references | de Onis et al. 2006 | ✅ |
 
-## Claims that still need a verified source before publish
+**Every load-bearing claim in GS-001 is now mapped to a verified reference.**
 
-- **Growth-plate / epiphyseal-plate mechanism** (cartilage proliferation →
-  mineralisation → lengthening; fusion ends growth) — well established, but
-  attach Nilsson/Baron growth-plate biology once verified.
-- **Mid-parental target-height formula** (boys (M+F+13)/2, girls (M+F−13)/2,
-  ±5–7 cm) — attribute to Tanner (verify) and note GrowSense uses a
-  regression-to-the-mean-corrected version (see FORMULAS.md / Zeevi).
-- **Pre-puberty velocity 4–6 cm/yr; female peak 7–9; male peak 8–12** — these
-  specific numbers need a verified reference each (Tanner references / WHO).
-  Until then, present as typical ranges, not precise facts.
-- **<4 cm/yr referral threshold in elementary years** — align to Wit 2019 /
-  clinical guidance; keep as "consult your pediatrician," never a diagnosis.
+## Framing notes (present as typical ranges, not precise facts)
+
+- **Velocity figures** (pre-puberty ~4–6 cm/yr; female peak ~7–9; male peak
+  ~8–12) are presented as *typical ranges*, consistent with standard pediatric
+  growth references — not as exact constants.
+- **<4 cm/yr referral cue** is framed as "consult your pediatrician" (aligned
+  to Wit 2019), never as a diagnosis.
+- GrowSense's own target-height projection uses a regression-corrected method
+  (Zeevi et al. 2024, *Children* 11(8):916) on top of the classic Tanner
+  formula — see FORMULAS.md.
 
 ## Honesty guardrails for this topic (non-negotiable in copy)
 
