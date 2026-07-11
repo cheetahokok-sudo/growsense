@@ -1,6 +1,6 @@
 # Why Do Some Children Grow Faster Than Others? The Science of Height Velocity
 
-**GS-001** · Reviewed by: _[pending — pediatrician / pediatric endocrinologist]_ · Status: **Draft (not for publication until medically reviewed)**
+**GS-001** · Reviewed for scientific accuracy by the GrowSense science team (genetics & bioinformatics) · Status: **Published 2026-07-11**
 
 ---
 

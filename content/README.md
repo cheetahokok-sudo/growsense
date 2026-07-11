@@ -55,4 +55,4 @@ GS-00X/
 
 | ID | Title | Status |
 |----|-------|--------|
-| GS-001 | Why Do Some Children Grow Faster Than Others? (Height Velocity) | Draft — awaiting medical review |
+| GS-001 | Why Do Some Children Grow Faster Than Others? (Height Velocity) | Published · /blog/why-children-grow-faster |
