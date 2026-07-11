@@ -27,7 +27,33 @@ class AccountScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = i18n.t;
-    final email = Supabase.instance.client.auth.currentUser?.email ?? '—';
+    final user = Supabase.instance.client.auth.currentUser;
+    final email = user?.email ?? '—';
+
+    // Which sign-in method(s) this account uses — answers the common
+    // "did I sign up with Google or Apple?" question.
+    final providers = <String>{};
+    final pm = user?.appMetadata['providers'];
+    if (pm is List) providers.addAll(pm.map((e) => e.toString()));
+    final pOne = user?.appMetadata['provider'];
+    if (pOne is String) providers.add(pOne);
+    for (final id in user?.identities ?? const []) {
+      providers.add(id.provider);
+    }
+    String providerLabel(String p) => switch (p) {
+          'google' => 'Google',
+          'apple' => 'Apple',
+          'email' => t('flutter.auth.email_pw', 'Email & password'),
+          _ => p.isEmpty ? p : p[0].toUpperCase() + p.substring(1),
+        };
+    final signInVia = providers.isEmpty
+        ? null
+        : providers.map(providerLabel).join(' · ');
+    IconData providerIcon() {
+      if (providers.contains('google')) return Icons.g_mobiledata;
+      if (providers.contains('apple')) return Icons.apple;
+      return Icons.mail_outline;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -50,6 +76,23 @@ class AccountScreen extends StatelessWidget {
                   Text(email,
                       style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w600)),
+                  if (signInVia != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(providerIcon(),
+                            size: 15, color: GsColors.text2),
+                        const SizedBox(width: 5),
+                        Text(
+                            t('flutter.account.signin_via',
+                                'Signed in with {p}', {'p': signInVia}),
+                            style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: GsColors.text2)),
+                      ],
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 12),

@@ -17,6 +17,17 @@ new"), and add the full entry here.
 
 _Work in progress lands here before it's tagged._
 
+## [1.0.1] — 2026-07-11 · build 2
+
+### Added
+- Account now shows your **sign-in method** (Google / Apple / email) under
+  your address — so it's clear which one you used to register.
+- Admin dashboard: a **Bug reports** triage view (list, filter, and mark
+  triaged / fixed / won't-fix) reading the `bug_reports` table.
+
+### Fixed
+- Escaped user-submitted text in the admin bug view (stored-XSS hardening).
+
 ## [1.0.0] — 2026-07-11 · build 1
 
 First production release on **growsense.life**.

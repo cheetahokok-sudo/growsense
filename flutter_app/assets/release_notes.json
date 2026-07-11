@@ -1,6 +1,15 @@
 {
   "releases": [
     {
+      "version": "1.0.1",
+      "build": 2,
+      "date": "2026-07-11",
+      "title": "Small refinements",
+      "highlights": [
+        "Account now shows how you signed in — Google, Apple, or email — so you always know which one you used."
+      ]
+    },
+    {
       "version": "1.0.0",
       "build": 1,
       "date": "2026-07-11",
