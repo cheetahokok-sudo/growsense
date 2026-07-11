@@ -83,6 +83,10 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h2m4 0h4"/></svg>
         <span class="nav-label">Codes</span>
       </button>
+      <button class="admin-nav-item" data-section="bugs" data-tooltip="Bug reports" onclick="setAdminSection('bugs', this)">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="6" width="8" height="12" rx="4"/><path d="M12 2v2M5 9H3m18 0h-2M5 15H3m18 0h-2M8 6L6 4m10 2l2-2"/></svg>
+        <span class="nav-label">Bugs</span>
+      </button>
       <button class="admin-nav-item disabled" disabled>
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         <span class="nav-label">Billing</span>
@@ -153,6 +157,28 @@
           <div class="card-body">
             <div class="setup-note" style="margin-bottom:10px;">Every tier change, role change, and restore action is recorded here permanently.</div>
             <div id="adminAuditLogList" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUG REPORTS -->
+      <div class="admin-section" id="adminSectionBugs">
+        <div class="admin-stat-strip" style="margin-bottom:16px;">
+          <div class="admin-stat"><div class="admin-stat-num" style="color:var(--accent);" id="bugStatNew">—</div><div class="admin-stat-lbl">New</div></div>
+          <div class="admin-stat"><div class="admin-stat-num" id="bugStatTriaged">—</div><div class="admin-stat-lbl">Triaged</div></div>
+          <div class="admin-stat"><div class="admin-stat-num" style="color:var(--flag);" id="bugStatHigh">—</div><div class="admin-stat-lbl">High severity</div></div>
+          <div class="admin-stat"><div class="admin-stat-num" id="bugStatTotal">—</div><div class="admin-stat-lbl">Total</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">User bug reports</span>
+            <div class="seg" id="bugFilterSeg">
+              <button class="seg-btn active" onclick="setBugFilter('open', this)">Open</button>
+              <button class="seg-btn" onclick="setBugFilter('all', this)">All</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="bugReportsList" style="display:flex; flex-direction:column; gap:10px;"></div>
           </div>
         </div>
       </div>

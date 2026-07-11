@@ -310,6 +310,90 @@ function setAdminSection(section, btn) {
   if (sidebar.classList.contains('mobile-open')) toggleMobileSidebar();
   if (section === 'metrics') loadMetrics();
   if (section === 'codes')   loadCodesSection();
+  if (section === 'bugs')    loadBugReports();
+}
+
+// ══════════════════════════════════════════
+// BUG REPORTS — user-filed reports (bug_reports table). Readable here
+// only under a system_admin session via RLS. Descriptions are user
+// input, so everything rendered is HTML-escaped to prevent a report
+// from running script in the admin's browser (stored XSS).
+// ══════════════════════════════════════════
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+let _bugRows = [];
+let _bugFilter = 'open';
+
+async function loadBugReports() {
+  const { data, error } = await sb.from('bug_reports')
+    .select('*').order('created_at', { ascending: false }).limit(200);
+  _bugRows = (!error && data) ? data : [];
+  const nNew = _bugRows.filter(r => r.status === 'new').length;
+  const nTri = _bugRows.filter(r => r.status === 'triaged').length;
+  const nHigh = _bugRows.filter(r => r.severity === 'high' &&
+    (r.status === 'new' || r.status === 'triaged')).length;
+  document.getElementById('bugStatNew').textContent = nNew;
+  document.getElementById('bugStatTriaged').textContent = nTri;
+  document.getElementById('bugStatHigh').textContent = nHigh;
+  document.getElementById('bugStatTotal').textContent = _bugRows.length;
+  renderBugReports();
+}
+
+function setBugFilter(f, btn) {
+  _bugFilter = f;
+  document.querySelectorAll('#bugFilterSeg .seg-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderBugReports();
+}
+
+function renderBugReports() {
+  const el = document.getElementById('bugReportsList');
+  const rows = _bugFilter === 'open'
+    ? _bugRows.filter(r => r.status === 'new' || r.status === 'triaged')
+    : _bugRows;
+  if (rows.length === 0) {
+    el.innerHTML = '<div class="log-list-empty">No reports.</div>';
+    return;
+  }
+  const catLbl = { bug: 'Bug', data_wrong: 'Wrong number', confusing: 'Confusing', idea: 'Idea' };
+  const sevColor = { high: 'var(--flag)', medium: 'var(--accent)', low: 'var(--text3)' };
+  el.innerHTML = rows.map(r => {
+    const when = (r.created_at || '').replace('T', ' ').slice(0, 16);
+    const childCtx = r.child_age_years != null
+      ? ` · child ${escHtml(r.child_age_years)}y ${escHtml(r.child_sex || '')}` : '';
+    const screen = r.context && r.context.active_screen
+      ? ` · ${escHtml(r.context.active_screen)}` : '';
+    const done = r.status === 'fixed' || r.status === 'wontfix';
+    return `
+    <div class="card" style="padding:12px 14px; ${done ? 'opacity:.6;' : ''}">
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:6px;">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span style="font-weight:700; font-size:12px;">${escHtml(catLbl[r.category] || r.category)}</span>
+          <span style="font-size:10.5px; font-weight:700; color:${sevColor[r.severity] || 'var(--text3)'};">${escHtml((r.severity || '').toUpperCase())}</span>
+          <span style="font-size:10.5px; color:var(--text3);">v${escHtml(r.app_version)}+${escHtml(r.app_build)} · ${escHtml(r.channel || '')} · ${escHtml(r.locale || '')}</span>
+        </div>
+        <span style="font-size:10px; color:var(--text3); white-space:nowrap;">${escHtml(when)}</span>
+      </div>
+      <div style="font-size:12.5px; line-height:1.5; white-space:pre-wrap;">${escHtml(r.description)}</div>
+      <div style="font-size:10px; color:var(--text3); margin-top:6px;">status: ${escHtml(r.status)}${childCtx}${screen}</div>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn-link" onclick="updateBugStatus('${r.report_id}','triaged',this)">Triaged</button>
+        <button class="btn-link" onclick="updateBugStatus('${r.report_id}','fixed',this)">Fixed</button>
+        <button class="btn-link" style="color:var(--text3);" onclick="updateBugStatus('${r.report_id}','wontfix',this)">Won't fix</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateBugStatus(id, status, btn) {
+  if (btn) btn.disabled = true;
+  const { error } = await sb.from('bug_reports').update({ status }).eq('report_id', id);
+  if (error) { showToast('⚠️', 'Could not update: ' + error.message); if (btn) btn.disabled = false; return; }
+  await loadBugReports();
 }
 
 // ══════════════════════════════════════════

@@ -40,6 +40,19 @@ ALTER TABLE bug_reports ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "file own bug report" ON bug_reports
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Reports are triage-only: no SELECT/UPDATE policy for normal users,
--- so nobody can read anyone's reports through the anon/auth key.
--- Review them in the dashboard or via the service_role key.
+-- Normal users cannot read anyone's reports (no SELECT policy for
+-- them). Only system_admin accounts can read and triage — this is what
+-- lets admin.html list and update reports with the ordinary anon key
+-- under an admin session. The actual security boundary is this role
+-- check + auth, NOT which hostname serves the admin page.
+CREATE POLICY "admins read bug reports" ON bug_reports
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM user_accounts ua
+                WHERE ua.user_id = auth.uid()
+                  AND ua.account_role = 'system_admin'));
+
+CREATE POLICY "admins triage bug reports" ON bug_reports
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM user_accounts ua
+                WHERE ua.user_id = auth.uid()
+                  AND ua.account_role = 'system_admin'));
