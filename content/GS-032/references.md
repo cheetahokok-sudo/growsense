@@ -64,6 +64,31 @@
     *(Source of the RDA figures: ~0.95 g/kg/d in childhood, ~0.85 g/kg/d in late
     teens; ~19 g/d [4–8 y], ~34 g/d [9–13 y], ~46–52 g/d [14–18 y]. Same DRI the
     GrowSense app uses for its per-child protein target.)*
+12. **de Beer H.** Dairy products and physical stature: a systematic review and
+    meta-analysis of controlled trials. *Econ Hum Biol.* 2012;10(3):299–309.
+    PMID: 21890437. *(~0.4 cm/y extra growth per ~245 mL milk/d; effect largest
+    in shorter-for-age / undernourished children.)*
+13. **Michaelsen KF, Greer FR.** Protein needs early in life and long-term
+    health. *Am J Clin Nutr.* 2014;99(3):718S–722S. PMID: 24452233.
+    *(Breast milk ~5–8% energy from protein vs. higher in formula; mechanism
+    behind the early protein hypothesis.)*
+14. **Hoppe C, Mølgaard C, Michaelsen KF.** Cow's milk and linear growth in
+    industrialized and developing countries. *Annu Rev Nutr.* 2006;26:131–173.
+    PMID: 16848703. *(Milk → linear growth via IGF-1; strongest in
+    undernourished populations.)*
+15. **Semba RD, Shardell M, Sakr Ashour FA, et al.** Child stunting is
+    associated with low circulating essential amino acids. *EBioMedicine.*
+    2016;6:246–252. PMID: 27211567. *(Stunted children have lower levels of all
+    nine essential amino acids — quality/amino-acid adequacy, not just calories.)*
+16. **Bonjour JP.** Dietary protein: an essential nutrient for bone health. *J Am
+    Coll Nutr.* 2005;24(6 Suppl):526S–536S. PMID: 16373952.
+    *(Protein benefits bone via IGF-1, calcium absorption, muscle mass; refutes
+    the "protein acid-load harms bone" myth.)*
+17. **FAO.** Dietary protein quality evaluation in human nutrition: report of an
+    FAO Expert Consultation. FAO Food and Nutrition Paper 92. Rome: Food and
+    Agriculture Organization of the United Nations; 2013.
+    *(DIAAS replaces PDCAAS as the recommended protein-quality measure — basis
+    for the "quality scoreboard" and complete/incomplete framing.)*
 
 ## Corrected during verification — draft mislabels
 

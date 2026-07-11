@@ -18,6 +18,13 @@ reference in `references.md`.
 | 11 | RDA: ~19 g/d (4–8), ~34 g/d (9–13), ~46–52 g/d (14–18); ~0.95 g/kg/d childhood | 11 |
 | 12 | Whole foods deliver protein within a zinc/iron/calcium/B-vitamin matrix that aids bone mineralization | 3 (+ general nutrition science) |
 | 13 | Protein helps a child reach their genetic (mid-parental) target, not exceed it | 1, 5 (+ [[GS-001]]/[[GS-005]] mid-parental) |
+| 14 | Protein 101: 9 essential amino acids must come from diet; complete vs. incomplete; complementary proteins | 17 (+ [[GS-001]] biology) |
+| 15 | Protein quality scored by DIAAS (replaced PDCAAS); egg/milk/whey reference, soy strongest plant | 17 |
+| 16 | Stunted children have lower levels of all 9 essential amino acids → quality, not just calories | 15 |
+| 17 | Breast milk ~5–8% energy from protein vs. formula; mechanism of early protein hypothesis | 13 |
+| 18 | Milk adds ~0.4 cm/y per ~245 mL/d; effect largest in undernourished/shorter-for-age children | 12, 14 |
+| 19 | Protein benefits bone (IGF-1, Ca absorption, muscle); "acid-load harms bone" is a myth | 16 |
+| 20 | Well-fed children rarely protein-deficient; picky eaters usually adequate | 3, 11 |
 
 ## Framing guardrails honoured
 - **No "protein increases height" claim.** The thesis throughout is *fuel to
