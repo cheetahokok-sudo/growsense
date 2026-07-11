@@ -9,6 +9,7 @@
 // diagnosis.
 // ══════════════════════════════════════════════════════════════════
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
@@ -31,6 +32,13 @@ const _white = PdfColor.fromInt(0xFFFFFFFF);
 
 String _fmt(num? v, {int dp = 1}) =>
     v == null ? '—' : v.toDouble().toStringAsFixed(dp);
+
+/// Turn a DB slug like "cold_respiratory" into "Cold respiratory".
+String _prettySlug(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return '—';
+  final s = raw.trim().replaceAll('_', ' ');
+  return s[0].toUpperCase() + s.substring(1);
+}
 
 String _ageString(String? dobStr, [String? atDate]) {
   if (dobStr == null) return '—';
@@ -80,6 +88,11 @@ Future<(Uint8List?, String?)> buildVisitPdf(
       w = (m['mass_weight_kg'] as num?)?.toDouble();
       bmi = (m['calculated_bmi'] as num?)?.toDouble();
       measDate = m['recorded_date'] as String?;
+      // BMI: prefer the stored generated column; fall back to a direct
+      // calculation so the box is never blank.
+      if (bmi == null && h != null && w != null && h > 0) {
+        bmi = w / math.pow(h / 100, 2);
+      }
       if (h != null && dob != null && measDate != null) {
         final ageM = ageYearsAt(dob, measDate) * 12;
         final bands = who.heightBands(sex, ageM);
@@ -87,6 +100,41 @@ Future<(Uint8List?, String?)> buildVisitPdf(
         pct = zToPercentile(z).round();
       }
     }
+
+    // 30-day nutrition averages (over days that have data).
+    final since30 =
+        localISO(DateTime.now().subtract(const Duration(days: 30)));
+    List<Map<String, dynamic>> nutRows = [];
+    try {
+      nutRows = List<Map<String, dynamic>>.from(await sb
+          .from('daily_nutrition')
+          .select('total_protein_g, calcium_mg, zinc_mg, fluids_ml')
+          .eq('child_id', child['child_id'] as String)
+          .gte('log_date', since30));
+    } catch (_) {}
+    double? avgOf(String col) {
+      final vals = [
+        for (final r in nutRows)
+          if ((r[col] as num?) != null && (r[col] as num) > 0)
+            (r[col] as num).toDouble()
+      ];
+      if (vals.isEmpty) return null;
+      return vals.reduce((a, b) => a + b) / vals.length;
+    }
+
+    final nutDays = nutRows
+        .where((r) =>
+            ((r['total_protein_g'] as num?) ?? 0) > 0 ||
+            ((r['calcium_mg'] as num?) ?? 0) > 0 ||
+            ((r['fluids_ml'] as num?) ?? 0) > 0)
+        .length;
+    final avgProtein = avgOf('total_protein_g');
+    final avgCalcium = avgOf('calcium_mg');
+    final avgZinc = avgOf('zinc_mg');
+    final avgWaterMl = avgOf('fluids_ml');
+    final proteinTgt = calcProteinBoostTargetG(dob, w, sex);
+    final calciumTgt = calcCalciumTargetMg(dob);
+    final zincTgt = calcZincTargetMg(dob, sex);
 
     final th = calculateTargetHeight(
       motherHeightCm: (child['mother_height_cm'] as num?)?.toDouble(),
@@ -104,7 +152,7 @@ Future<(Uint8List?, String?)> buildVisitPdf(
       margin: const pw.EdgeInsets.fromLTRB(36, 34, 36, 42),
       footer: (ctx) => _footer(ctx, t),
       build: (ctx) => [
-        _brandHeader(name, t),
+        _brandHeader(t),
         pw.SizedBox(height: 14),
         _childCard(child, dob, sex, name, t),
         pw.SizedBox(height: 16),
@@ -156,6 +204,38 @@ Future<(Uint8List?, String?)> buildVisitPdf(
               _gold),
         ]),
         pw.SizedBox(height: 18),
+        _sectionTitle(
+            t('flutter.pdf.nutrition', 'Nutrition intake · 30-day average')),
+        pw.SizedBox(height: 8),
+        if (nutDays == 0)
+          _empty(t('flutter.pdf.no_nutrition',
+              'No nutrition logged in the last 30 days.'))
+        else
+          _statRow([
+            _stat(
+                t('common.protein', 'Protein'),
+                avgProtein == null ? '—' : '${_fmt(avgProtein)} g',
+                '${t('flutter.pdf.target_short', 'target')} $proteinTgt g',
+                _accent),
+            _stat(
+                t('common.calcium', 'Calcium'),
+                avgCalcium == null ? '—' : '${avgCalcium.round()} mg',
+                '${t('flutter.pdf.target_short', 'target')} $calciumTgt mg',
+                _accent),
+            _stat(
+                t('common.zinc', 'Zinc'),
+                avgZinc == null ? '—' : '${_fmt(avgZinc)} mg',
+                '${t('flutter.pdf.target_short', 'target')} $zincTgt mg',
+                _accent),
+            _stat(
+                t('flutter.fluids', 'Fluids'),
+                avgWaterMl == null
+                    ? '—'
+                    : '${_fmt(avgWaterMl / 1000)} L',
+                '$nutDays ${t('flutter.pdf.days_logged', 'days logged')}',
+                _measured),
+          ]),
+        pw.SizedBox(height: 18),
         _sectionTitle(t('flutter.pdf.history', 'Measurement history')),
         pw.SizedBox(height: 6),
         _measTable(meas, dob, sex, who, t),
@@ -171,7 +251,14 @@ Future<(Uint8List?, String?)> buildVisitPdf(
   }
 }
 
-pw.Widget _brandHeader(String name, String Function(String, [String?]) t) {
+const _logoSvg =
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+    '<rect width="24" height="24" rx="6" fill="#2F6B4F"/>'
+    '<path d="M4 16 L9 11 L13 15 L20 6" fill="none" stroke="#FFFFFF" '
+    'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
+    '<circle cx="20" cy="6" r="1.7" fill="#FFFFFF"/></svg>';
+
+pw.Widget _brandHeader(String Function(String, [String?]) t) {
   return pw.Container(
     padding: const pw.EdgeInsets.symmetric(horizontal: 18, vertical: 16),
     decoration: pw.BoxDecoration(
@@ -179,6 +266,8 @@ pw.Widget _brandHeader(String name, String Function(String, [String?]) t) {
     child: pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.center,
       children: [
+        pw.SvgImage(svg: _logoSvg, width: 30, height: 30),
+        pw.SizedBox(width: 12),
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
@@ -395,7 +484,7 @@ List<pw.Widget> _clinicalSections(
           [
             (e['start_date'] ?? '—').toString(),
             (e['end_date'] ?? '—').toString(),
-            (e['illness_type'] ?? '—').toString(),
+            _prettySlug((e['illness_type'])?.toString()),
           ]
       ], flex: [3, 3, 4]));
   }
