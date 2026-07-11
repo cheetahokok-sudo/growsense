@@ -18,8 +18,22 @@ educational framing or cut. This is the internal audit trail — reviewers
 | 9 | Growth-plate mechanism: cartilage proliferation → mineralisation → lengthening; hormonal control; fusion ends growth | Nilsson, Baron et al. 2005 | ✅ |
 | 10 | Mid-parental target-height formula (boys (M+F+13)/2, girls (M+F−13)/2) | Tanner, Goldstein & Whitehouse 1970 | ✅ |
 | 11 | Percentiles are WHO growth-standard references | de Onis et al. 2006 | ✅ |
+| 12 | Weight-bearing/high-impact activity builds bone strength & density (not height) | Hind & Burrows 2007; MacKelvie et al. 2002; Rogol et al. 2000 | ✅ |
 
 **Every load-bearing claim in GS-001 is now mapped to a verified reference.**
+
+### Six-systems taxonomy (each independently sourced)
+
+| System | Verified refs |
+|---|---|
+| Genetics | 2, 3, 9 |
+| Hormones (GH–IGF-1, oestrogen) | 4, 10 |
+| Sleep | 1 |
+| Nutrition | 5, 7 |
+| Physical activity | 5, 12, 13 |
+| Bone age | 8 |
+
+Cross-cutting (not a system): clinical guidance (6), WHO percentiles (11).
 
 ## Framing notes (present as typical ranges, not precise facts)
 

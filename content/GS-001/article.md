@@ -8,7 +8,7 @@ Have you ever lined up a group of eight-year-olds and wondered how they could po
 
 As parents, it's entirely natural to compare and, occasionally, to worry.
 
-The good news: these differences are usually completely normal. Human growth is not a simple linear march from toddlerhood to adulthood. It's a complex biological orchestra of genetics, hormone axes, sleep architecture, and nutrition. Here's what the science actually says — and what you can realistically do to support it.
+The good news: these differences are usually completely normal. Growth isn't a straight march from toddler to adult — it's shaped by **six key systems**: genetics, hormones, sleep, nutrition, physical activity, and bone maturity. Here's what the science actually says about each — and what you can realistically do to support it.
 
 ## 1. The metric that matters: height vs. growth velocity
 

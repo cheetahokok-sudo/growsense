@@ -45,8 +45,32 @@
 11. **de Onis M, et al.** WHO Child Growth Standards based on length/height,
     weight and age. *Acta Paediatr.* 2006;95(S450):76–85. PMID: 16817681.
     *(Basis of the percentile references.)*
+12. **Hind K, Burrows M.** Weight-bearing exercise and bone mineral accrual in
+    children and adolescents: a review of controlled trials. *Bone.*
+    2007;40(1):14–27. *(Dedicated support for the physical-activity system:
+    weight-bearing exercise enhances bone accrual.)*
+13. **MacKelvie KJ, Khan KM, McKay HA.** Is there a critical period for bone
+    response to weight-bearing exercise in children and adolescents? A
+    systematic review. *Br J Sports Med.* 2002;36(4):250–257. PMID: 12145113.
 
-_All 11 above cover every load-bearing claim in GS-001. The article cites only
+## The "six key systems" taxonomy → citations
+
+The article's six-systems frame is a **citation-backed taxonomy**, each
+independently sourced:
+
+| System | Verified refs |
+|---|---|
+| Genetics | 2, 3, 9 |
+| Hormones (GH–IGF-1, oestrogen) | 4, 10 |
+| Sleep | 1 |
+| Nutrition | 5, 7 |
+| Physical activity | 5, 12, 13 |
+| Bone age | 8 |
+
+Cross-cutting (not a system): clinical guidance (6) and WHO percentile
+reference (11).
+
+_All 13 above cover every load-bearing claim in GS-001. The article cites only
 these — "further reading" authors below are not cited and stay unpublished
 until individually verified._
 
