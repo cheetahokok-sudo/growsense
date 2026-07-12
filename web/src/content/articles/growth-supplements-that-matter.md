@@ -1,16 +1,16 @@
 ---
-title: "Calcium, Vitamin D, Zinc & Iron: Which Growth Supplements Actually Matter? — GrowSense"
-h1: "Calcium, vitamin D, zinc & iron: which growth supplements actually matter?"
-description: "An honest, sourced guide to the four 'growth nutrients' for children — what calcium, vitamin D, zinc and iron each do, what the evidence says about supplements and height, safe intakes by age, and how to tell a real deficiency from clever marketing. Educational, not medical advice."
+title: "Calcium, Vitamin D, Zinc & Iron: Which Growth Nutrition Co-factors Actually Matter? — GrowSense"
+h1: "Calcium, vitamin D, zinc & iron: which growth nutrition co-factors actually matter?"
+description: "An honest, sourced guide to the four 'growth nutrients' for children — what calcium, vitamin D, zinc and iron each do as co-factors for growth, what the evidence really shows about height, safe intakes by age, and how to tell a real deficiency from clever marketing. Educational, not medical advice."
 eyebrow: "Growth science · Nutrition"
 hero: "gs-051-hero.jpg"
-heroAlt: "A bright kitchen table set with whole foods rich in the four growth nutrients — milk and cheese, oily fish, eggs, red meat, beans and leafy greens — with a supplement bottle set to one side, closed."
+heroAlt: "A bright kitchen table set with whole foods rich in the four growth nutrients — oily fish, eggs, red meat, beans, nuts and leafy greens — the everyday sources of calcium, vitamin D, zinc and iron."
 lang: "en"
 disclaimer: "This article is educational and does not diagnose micronutrient deficiency or set an individual supplement dose. Children with poor growth, restrictive eating, chronic illness, suspected anaemia, bone symptoms, or other clinical concerns should be assessed by a qualified pediatric healthcare professional."
 card:
   cat: "Nutrition"
-  title: "Which growth supplements actually matter?"
-  blurb: "Calcium, vitamin D, zinc and iron all matter — but fixing a real deficiency is not the same as buying height. What the evidence says, safe intakes by age, and how to spot a supplement that's oversold."
+  title: "Which growth nutrition co-factors actually matter?"
+  blurb: "Calcium, vitamin D, zinc and iron all matter — but fixing a real deficiency is not the same as buying height. What the evidence says, safe intakes by age, and how to tell a genuine gap from clever marketing."
   order: 1
 references:
   - group: "A. How nutrients affect growth"
