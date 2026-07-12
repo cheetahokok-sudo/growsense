@@ -17,6 +17,29 @@ new"), and add the full entry here.
 
 _Work in progress lands here before it's tagged._
 
+## [1.1.0] — 2026-07-12 · build 3
+
+### Added
+- **Logging calendar (trust calendar v2)** — tap the date on Today to open
+  a month view of all three levers at once: each day shows nutrition,
+  activity and sleep as a trust-coloured dot plus a bar filled to % of that
+  day's target. Past days with anything missing get a soft gold outline
+  (red stays reserved for clinical flags), an attention counter with
+  "Fill next" walks the backlog oldest-first, and an enlarged sample cell
+  explains the rows so parents never guess. Sunday-first weeks per Thai
+  convention. Analytics rings open the same unified view.
+- **Unified day sheet** — all three levers together with provenance and
+  trust pills; one "✓ Looks right" confirms every estimated lever that
+  day; "Log / Correct this day" lands back on Today at that date.
+- **Trust calendar fully localized** — the whole flutter.trust.* string
+  set plus weekday and month names in all six languages (it previously ran
+  on English fallbacks).
+
+### Fixed
+- GitHub Pages deploys had been failing silently since 2026-07-11 — Jekyll
+  tried to parse Astro components' JS frontmatter as YAML and aborted the
+  whole site build. Added `.nojekyll` so Pages serves the repo verbatim.
+
 ## [1.0.1] — 2026-07-11 · build 2
 
 ### Added

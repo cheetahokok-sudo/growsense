@@ -122408,7 +122408,7 @@ h=h==null?null:J.m(h,"biological_sex")
 if(e==null){g=t.z
 g=A.z(g,g)}else{g=t.N
 g=A.Y(["active_screen",e],g,g)}s=7
-return A.n(j.j1(0,A.Y(["user_id",b,"app_version","1.0.1","app_build",2,"channel","web","locale",a3,"category",a1,"severity",a4,"description",a2,"child_age_years",i,"child_sex",h,"context",g],t.N,t.z)),$async$GA)
+return A.n(j.j1(0,A.Y(["user_id",b,"app_version","1.1.0","app_build",3,"channel","web","locale",a3,"category",a1,"severity",a4,"description",a2,"child_age_years",i,"child_sex",h,"context",g],t.N,t.z)),$async$GA)
 case 7:q=null
 s=1
 break
@@ -123825,7 +123825,7 @@ c=A.d(a0.$2("flutter.units."+f,c))
 f=r.fx===f?B.C:B.aC
 h.push(A.cB(a,A.ak(a,A.p(c+" \xb7 "+g.b,a,a,a,new A.q(!0,f,a,a,a,a,12,B.aJ,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a),a,a,a),B.G,a,a,new A.ah(e,a,a,new A.cn(d,d,d,d),a,a,B.O),a,a,a,B.a92,a,a,a),B.W,!1,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,new A.apk(s,g),a,a,a,a,a,a,!1,B.aD))}i=A.b([i,B.as,A.hX(B.cl,h,B.cU,0,8),B.cz,A.p(a0.$2("flutter.units.note","Growth charts stay in WHO metric units."),a,a,a,B.co,a,a,a)],a1)
 h=A.b([A.p(a0.$2("account.language","Language"),a,a,a,B.k3,a,a,a),B.as,new A.eO(new A.apl(s),a,q,a)],a1)
-f=A.f0(!1,a,!0,new A.iW(A.b([A.ag(A.b([A.aJ(A.aO(A.b([A.p(a0.$2("flutter.account.version","App version"),a,a,a,B.yQ,a,a,a),B.cP,A.p("1.0.1 (build 2) \xb7 2026-07-11",a,a,a,B.a0g,a,a,a)],a1),B.ao,B.w,B.z,0,B.Q),1),A.p(a0.$2("flutter.whatsnew.link","What's new"),a,a,a,B.yT,a,a,a),B.hW],a1),B.I,B.w,B.z,0,a,a)],a1),a),a,!0,a,a,a,a,a,a,a,a,a,a,new A.apm(s,a4),a,a,a,a,a,a,a)
+f=A.f0(!1,a,!0,new A.iW(A.b([A.ag(A.b([A.aJ(A.aO(A.b([A.p(a0.$2("flutter.account.version","App version"),a,a,a,B.yQ,a,a,a),B.cP,A.p("1.1.0 (build 3) \xb7 2026-07-12",a,a,a,B.a0g,a,a,a)],a1),B.ao,B.w,B.z,0,B.Q),1),A.p(a0.$2("flutter.whatsnew.link","What's new"),a,a,a,B.yT,a,a,a),B.hW],a1),B.I,B.w,B.z,0,a,a)],a1),a),a,!0,a,a,a,a,a,a,a,a,a,a,new A.apm(s,a4),a,a,a,a,a,a,a)
 e=A.Ll(a,a,a,a,a,a,a,a,a,B.b6,a,B.a_8,a,a,new A.dV(A.aS(12),B.a7),B.a2W,a,a,a,a)
 return A.hL(A.b([new A.iW(a2,a),B.ai,new A.iW(a3,a),B.ai,new A.akv(r,q,a),B.ai,p,B.ai,m,B.ai,l,B.ai,new A.QW(r,q,a),B.ai,new A.Ur(r,q,a),B.ai,k,B.ai,new A.iW(j,a),B.ai,new A.iW(i,a),B.ai,new A.iW(h,a),B.ai,f,B.a_f,A.Ca(A.p(a0.$2("account.sign_out_btn","Sign out"),a,a,a,B.rC,a,a,a),new A.apn(s,a4),e)],a1),B.dL,a,B.aF,!1)},
 $S:150}
@@ -125587,7 +125587,7 @@ Cb(a){return this.aCA(a)},
 aCA(a){var s=0,r=A.y(t.H),q=this
 var $async$Cb=A.u(function(b,c){if(b===1)return A.v(c,r)
 for(;;)switch(s){case 0:s=2
-return A.n(A.v1(A.dA("mailto:contact@growsense.life?subject="+A.zv(2,"GrowSense bug report (1.0.1+2)",B.b0,!1)+"&body="+A.zv(2,a+"\n\n---\nVersion: 1.0.1+2\nChannel: web\nCategory: "+q.e+"\nSeverity: "+q.f,B.b0,!1),0,null),B.lf,null),$async$Cb)
+return A.n(A.v1(A.dA("mailto:contact@growsense.life?subject="+A.zv(2,"GrowSense bug report (1.1.0+3)",B.b0,!1)+"&body="+A.zv(2,a+"\n\n---\nVersion: 1.1.0+3\nChannel: web\nCategory: "+q.e+"\nSeverity: "+q.f,B.b0,!1),0,null),B.lf,null),$async$Cb)
 case 2:return A.w(null,r)}})
 return A.x($async$Cb,r)},
 CK(){var s=0,r=A.y(t.H),q,p=this,o,n,m,l,k,j,i
@@ -125633,7 +125633,7 @@ break A}B.m.P(p,A.b([new A.Q_(n,o===j.f,new A.aTg(j,o),i),B.bO],d))}p=A.ag(p,B.I
 n=h.$2("flutter.bug.hint","What did you do, and what happened? The more detail, the faster we can fix it.")
 n=A.dX(i,B.aZ,!1,i,!0,B.T,i,A.e7(),j.d,i,i,i,i,i,2,A.di(i,new A.hf(4,A.aS(12),B.a7),i,i,i,i,i,i,!0,i,i,i,i,i,i,B.bI,!0,i,i,i,i,i,i,i,i,i,i,i,i,i,i,n,i,i,i,i,i,i,i,i,i,!0,!0,!1,i,i,i,i,i,i,i,i,i,i,i,i,i,i),B.W,!0,i,!0,i,!1,i,B.bc,i,i,i,i,i,i,i,i,6,4,i,!1,"\u2022",i,i,i,i,i,!1,i,i,!1,i,!0,i,B.bf,i,i,i,i,i,i,i,i,i,i,i,i,!0,B.av,i,B.bl9,i,i,i,i)
 m=t.N
-m=A.p(h.$3("flutter.bug.attached","Attached automatically: {v} \xb7 {ch}",A.Y(["v","1.0.1+2","ch","web"],m,m)),i,i,i,B.co,i,i,i)
+m=A.p(h.$3("flutter.bug.attached","Attached automatically: {v} \xb7 {ch}",A.Y(["v","1.1.0+3","ch","web"],m,m)),i,i,i,B.co,i,i,i)
 l=j.r?i:j.gaIV()
 k=A.vS(i,i,i,i,i,i,i,i,i,i,i,B.a_8,i,i,i,i,i,i,i,i)
 return A.hQ(g,i,A.hL(A.b([f,B.eo,e,B.aQ,c,B.ru,q,B.aQ,p,B.ru,n,B.as,m,B.eo,A.i8(A.p(j.r?h.$2("flutter.bug.sending","Sending\u2026"):h.$2("flutter.bug.send","Send report"),i,i,i,i,i,i,i),l,k),B.as,A.em(A.hB(A.p(h.$2("flutter.bug.email_instead","Or email us instead"),i,i,i,B.fd,i,i,i),new A.aTh(j),i),i,i)],d),B.a97,i,B.aF,!1),i)}}
@@ -129793,7 +129793,7 @@ A.aPJ.prototype={
 $2(a,b){var s,r,q=null,p=b.b
 if(p==null)return B.ez
 s=t.N
-s=A.b([A.p(this.a.$3("flutter.whatsnew.current","You are on {v}",A.Y(["v","1.0.1 (build 2) \xb7 2026-07-11"],s,s)),q,q,q,B.rI,q,q,q),B.ai],t.p)
+s=A.b([A.p(this.a.$3("flutter.whatsnew.current","You are on {v}",A.Y(["v","1.1.0 (build 3) \xb7 2026-07-12"],s,s)),q,q,q,B.rI,q,q,q),B.ai],t.p)
 for(p=J.bf(p),r=t.a;p.q();)s.push(new A.aiF(r.a(p.gN()),q))
 return A.hL(s,B.dL,q,B.aF,!1)},
 $S:729}

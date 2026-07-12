@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "1.1.0",
+      "build": 3,
+      "date": "2026-07-12",
+      "title": "The logging calendar",
+      "highlights": [
+        "Tap the date on Today to open a month calendar of your logging — every day shows nutrition, activity and sleep at a glance, with a bar for how close each got to its target.",
+        "Days that still need you are outlined in gold — \"Fill next\" walks through them oldest-first.",
+        "Tap any day to see where its numbers came from; one \"Looks right\" confirms all of that day's estimates together.",
+        "The calendar now speaks all six app languages, with Thai weekday and month names."
+      ]
+    },
+    {
       "version": "1.0.1",
       "build": 2,
       "date": "2026-07-11",
