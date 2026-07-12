@@ -307,27 +307,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         a: a,
                         i18n: widget.i18n,
                         onOpenHistory: (lever) {
-                          final title = switch (lever) {
-                            'activity' => t('flutter.trust.title_activity',
-                                'Activity history'),
-                            'sleep' => t(
-                                'flutter.trust.title_sleep', 'Sleep history'),
-                            _ => t('flutter.trust.title',
-                                'Nutrition history'),
-                          };
+                          // Unified calendar — every ring opens the same
+                          // 3-lever month view.
+                          final title = t('flutter.trust.title_all',
+                              'Logging history');
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => Scaffold(
+                              builder: (ctx) => Scaffold(
                                 appBar: AppBar(
                                   title: Text(title,
                                       style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700)),
+                                  actions: [
+                                    // Explicit way out, alongside back.
+                                    IconButton(
+                                      icon:
+                                          const Icon(Icons.close, size: 20),
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(),
+                                    ),
+                                  ],
                                 ),
                                 body: TrustCalendarScreen(
                                   appState: widget.appState,
                                   i18n: widget.i18n,
-                                  lever: lever,
                                   onCorrectDay: (date) {
                                     Navigator.of(context).pop();
                                     widget.onCorrectDay?.call(date);

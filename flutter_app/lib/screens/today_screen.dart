@@ -9,6 +9,7 @@ import '../i18n.dart';
 import '../theme.dart';
 import 'gap_fill_card.dart';
 import 'today_hud.dart';
+import 'trust_calendar.dart';
 
 /// Today tab — read-only first pass: child switcher, date selector,
 /// and the day's nutrition / sleep / activity as saved by the PWA.
@@ -169,6 +170,37 @@ class _DateSelector extends StatelessWidget {
   final AppState appState;
   final I18n i18n;
 
+  void _openCalendar(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => Scaffold(
+          appBar: AppBar(
+            title: Text(i18n.t('flutter.trust.title_all', 'Logging history'),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700)),
+            actions: [
+              // Explicit way out, alongside the back arrow.
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ],
+          ),
+          body: TrustCalendarScreen(
+            appState: appState,
+            i18n: i18n,
+            onCorrectDay: (date) {
+              // "Log / Correct this day" → land back on Today with that
+              // date open in the editors.
+              Navigator.of(context).pop();
+              appState.setLogDate(date);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isToday = appState.logDate == todayISO();
@@ -187,15 +219,37 @@ class _DateSelector extends StatelessWidget {
             onPressed: () => appState.shiftLogDate(-1),
           ),
           Expanded(
-            child: Center(
-              child: Text(
-                isToday
-                    ? '${i18n.t('nav.today', 'Today')} · ${appState.logDate}'
-                    : appState.logDate,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isToday ? GsColors.text : GsColors.estimated,
+            // Tapping the date opens the month calendar — the parent's
+            // triage view for backfilling ("which days need me?").
+            child: InkWell(
+              borderRadius: BorderRadius.circular(GsRadius.sm),
+              onTap: () => _openCalendar(context),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.calendar_month_outlined,
+                        size: 14,
+                        color:
+                            isToday ? GsColors.text2 : GsColors.estimated),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        isToday
+                            ? '${i18n.t('nav.today', 'Today')} · ${appState.logDate}'
+                            : appState.logDate,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color:
+                              isToday ? GsColors.text : GsColors.estimated,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

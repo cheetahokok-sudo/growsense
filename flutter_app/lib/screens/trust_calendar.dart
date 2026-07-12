@@ -1,41 +1,63 @@
 // ══════════════════════════════════════════════════════════════════
-// Trust calendar — month view of nutrition data provenance, opened by
-// tapping the Nutrition ring on Analytics. Answers exactly one
-// question: "which days can I trust?" Values live one tap deeper in
-// the day sheet.
+// Trust calendar — unified month view of all three levers, opened by
+// tapping the date on Today or a lever ring on Analytics. Answers the
+// backfilling parent's question in one glance: "which days need me?"
 //
-// Cell states map 1:1 to the estimation ladder: measured solid blue >
-// recalled light blue > estimated solid gold > rough fill pale gold >
-// missing dashed outline (never red — red is clinical-flag only).
-// "Looks right" promotes an estimate to recalled_manual at 0.85/0.7,
-// never 1.0; "Correct this day" jumps to the Today editors via the
-// onCorrectDay callback wired through home_shell.
+// Each day cell stacks three dot+bar rows in fixed order — nutrition,
+// activity, sleep. The DOT carries provenance (the estimation ladder:
+// measured solid blue > recalled light blue > estimated gold > rough
+// pale gold > missing hollow) and the BAR carries magnitude as % of
+// that lever's daily target, tinted with the same trust colour so no
+// new colours enter the system. Attention = a past day with any lever
+// missing → soft gold outline ("needs your memory"); red stays
+// reserved for clinical flags only, never missing data.
+//
+// Tap a day → day sheet with all three levers. "Looks right" promotes
+// every estimated lever that day to recalled_manual at 0.85/0.7,
+// never 1.0; "Log / Correct this day" jumps to the Today editors via
+// the onCorrectDay callback (home_shell tab-jump, or setLogDate+pop
+// when opened from the Today date selector).
 // ══════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
 
+import '../activity_data.dart';
+import '../analytics.dart' show calcProteinTargetG, calcSleepTargetMin;
 import '../app_state.dart';
 import '../i18n.dart';
 import '../recall_engine.dart';
 import '../theme.dart';
 
-enum _DayTrust { measured, recalled, estimated, rough, missing, future }
+// Future days carry no trust state — the grid renders them inert via
+// the cell's isFuture flag instead of a ladder rung.
+enum _DayTrust { measured, recalled, estimated, rough, missing }
+
+/// One lever's state for one day: provenance + % of daily target +
+/// the raw numbers the day sheet shows.
+class _LeverDay {
+  _DayTrust trust = _DayTrust.missing;
+  double pct = 0; // 0..1 of the lever's daily target
+  double confidence = 0;
+  String method = kMeasured;
+  Map<String, double> raw = {};
+}
+
+class _DayData {
+  final _LeverDay nut = _LeverDay();
+  final _LeverDay act = _LeverDay();
+  final _LeverDay slp = _LeverDay();
+  List<_LeverDay> get levers => [nut, act, slp];
+}
 
 class TrustCalendarScreen extends StatefulWidget {
   const TrustCalendarScreen({
     super.key,
     required this.appState,
     required this.i18n,
-    this.lever = 'nutrition',
     this.onCorrectDay,
   });
   final AppState appState;
   final I18n i18n;
-
-  /// Which lever's provenance to show: 'nutrition' | 'activity' |
-  /// 'sleep'. Activity days aggregate their items — a day is only as
-  /// trustworthy as its least-trusted item.
-  final String lever;
   final void Function(String date)? onCorrectDay;
 
   @override
@@ -44,7 +66,7 @@ class TrustCalendarScreen extends StatefulWidget {
 
 class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
   late DateTime _month; // first day of the shown month
-  Map<String, Map<String, dynamic>> _rows = {};
+  Map<String, _DayData> _days = {};
   bool _loading = true;
 
   @override
@@ -62,64 +84,107 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
     final first = localISO(_month);
     final last = localISO(DateTime(_month.year, _month.month + 1, 0));
     final sb = widget.appState.sb;
-    Map<String, Map<String, dynamic>> byDate;
-    switch (widget.lever) {
-      case 'sleep':
-        final rows = List<Map<String, dynamic>>.from(await sb
-            .from('daily_sleep')
-            .select('log_date, total_sleep_min, sleep_efficiency_score, '
-                'estimation_method, confidence')
-            .eq('child_id', childId)
-            .gte('log_date', first)
-            .lte('log_date', last));
-        byDate = {for (final r in rows) r['log_date'] as String: r};
-      case 'activity':
-        final items = List<Map<String, dynamic>>.from(await sb
-            .from('daily_activity_items')
-            .select('log_date, duration_min, estimation_method, confidence')
-            .eq('child_id', childId)
-            .gte('log_date', first)
-            .lte('log_date', last));
-        // Aggregate items into one row per day. Trust is conservative:
-        // any AI-estimated item makes the day estimated, and the day's
-        // confidence is its weakest item's.
-        byDate = {};
-        for (final r in items) {
-          final d = r['log_date'] as String;
-          final agg = byDate.putIfAbsent(
-              d,
-              () => {
-                    'count': 0,
-                    'total_min': 0.0,
-                    'estimation_method': kMeasured,
-                    'confidence': 1.0,
-                  });
-          agg['count'] = (agg['count'] as int) + 1;
-          agg['total_min'] = (agg['total_min'] as double) +
-              ((r['duration_min'] as num?)?.toDouble() ?? 0);
-          final m = r['estimation_method'] as String? ?? kMeasured;
-          final c = (r['confidence'] as num?)?.toDouble() ?? 1.0;
-          if (c < (agg['confidence'] as double)) agg['confidence'] = c;
-          final cur = agg['estimation_method'] as String;
-          if (m != kMeasured && m != kRecalledManual) {
-            agg['estimation_method'] = m; // AI estimate dominates
-          } else if (m == kRecalledManual && cur == kMeasured) {
-            agg['estimation_method'] = kRecalledManual;
-          }
-        }
-      default:
-        final rows = List<Map<String, dynamic>>.from(await sb
-            .from('daily_nutrition')
-            .select('log_date, total_protein_g, calcium_mg, fluids_ml, '
-                'estimation_method, confidence')
-            .eq('child_id', childId)
-            .gte('log_date', first)
-            .lte('log_date', last));
-        byDate = {for (final r in rows) r['log_date'] as String: r};
+
+    final results = await Future.wait([
+      sb
+          .from('daily_nutrition')
+          .select('log_date, total_protein_g, calcium_mg, fluids_ml, '
+              'estimation_method, confidence')
+          .eq('child_id', childId)
+          .gte('log_date', first)
+          .lte('log_date', last),
+      sb
+          .from('daily_activity_items')
+          .select('log_date, duration_min, tier, estimation_method, '
+              'confidence')
+          .eq('child_id', childId)
+          .gte('log_date', first)
+          .lte('log_date', last),
+      sb
+          .from('daily_sleep')
+          .select('log_date, total_sleep_min, sleep_efficiency_score, '
+              'estimation_method, confidence')
+          .eq('child_id', childId)
+          .gte('log_date', first)
+          .lte('log_date', last),
+    ]);
+
+    // Targets from the active child — same sources Analytics uses.
+    final child = widget.appState.activeChildRow;
+    final dob = child?['date_of_birth'] as String?;
+    final sex = child?['biological_sex'] as String?;
+    final proteinTarget = calcProteinTargetG(dob, null, sex).toDouble();
+    final sleepTarget = calcSleepTargetMin(dob).toDouble();
+
+    double numOf(dynamic v) => (v as num?)?.toDouble() ?? 0;
+    final days = <String, _DayData>{};
+    _DayData dayOf(String d) => days.putIfAbsent(d, _DayData.new);
+    _DayTrust ladder(String method, double conf) => switch (method) {
+          kMeasured => _DayTrust.measured,
+          kRecalledManual => _DayTrust.recalled,
+          _ => conf >= 0.35 ? _DayTrust.estimated : _DayTrust.rough,
+        };
+
+    for (final r in List<Map<String, dynamic>>.from(results[0])) {
+      final protein = numOf(r['total_protein_g']);
+      final calcium = numOf(r['calcium_mg']);
+      final fluids = numOf(r['fluids_ml']);
+      if (protein <= 0 && calcium <= 0 && fluids <= 0) continue;
+      final l = dayOf(r['log_date'] as String).nut;
+      l.method = r['estimation_method'] as String? ?? kMeasured;
+      l.confidence = numOf(r['confidence']);
+      l.trust = ladder(l.method, l.confidence);
+      l.pct = proteinTarget > 0 ? (protein / proteinTarget) : 0;
+      l.raw = {'protein': protein, 'calcium': calcium, 'fluids': fluids};
     }
+
+    // Activity aggregates its items — a day is only as trustworthy as
+    // its least-trusted item, and the bar is weighted minutes vs the
+    // 60-weighted-min day used across Analytics.
+    for (final r in List<Map<String, dynamic>>.from(results[1])) {
+      final l = dayOf(r['log_date'] as String).act;
+      final min = numOf(r['duration_min']);
+      final weight =
+          (activityTierConfig[r['tier']] ?? activityTierConfig['lifestyle']!)
+              .weight;
+      final m = r['estimation_method'] as String? ?? kMeasured;
+      final c = numOf(r['confidence']);
+      final firstItem = l.raw.isEmpty;
+      if (firstItem) {
+        l.confidence = c == 0 ? 1.0 : c;
+        l.method = m;
+      } else {
+        if (c < l.confidence) l.confidence = c;
+        if (m != kMeasured && m != kRecalledManual) {
+          l.method = m; // AI estimate dominates the day
+        } else if (m == kRecalledManual && l.method == kMeasured) {
+          l.method = kRecalledManual;
+        }
+      }
+      l.raw['count'] = (l.raw['count'] ?? 0) + 1;
+      l.raw['min'] = (l.raw['min'] ?? 0) + min;
+      l.raw['weighted'] = (l.raw['weighted'] ?? 0) + min * weight;
+      l.pct = (l.raw['weighted'] ?? 0) / 60;
+      l.trust = ladder(l.method, l.confidence);
+    }
+
+    for (final r in List<Map<String, dynamic>>.from(results[2])) {
+      final min = numOf(r['total_sleep_min']);
+      if (min <= 0) continue;
+      final l = dayOf(r['log_date'] as String).slp;
+      l.method = r['estimation_method'] as String? ?? kMeasured;
+      l.confidence = numOf(r['confidence']);
+      l.trust = ladder(l.method, l.confidence);
+      l.pct = sleepTarget > 0 ? min / sleepTarget : 0;
+      l.raw = {
+        'min': min,
+        'efficiency': numOf(r['sleep_efficiency_score']),
+      };
+    }
+
     if (!mounted) return;
     setState(() {
-      _rows = byDate;
+      _days = days;
       _loading = false;
     });
   }
@@ -129,68 +194,54 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
     _load();
   }
 
-  double _num(dynamic v) => (v as num?)?.toDouble() ?? 0;
+  _DayData _dataOf(String date) => _days[date] ?? _DayData();
 
-  bool _hasValues(Map<String, dynamic> r) {
-    switch (widget.lever) {
-      case 'sleep':
-        return _num(r['total_sleep_min']) > 0;
-      case 'activity':
-        return (r['count'] as int? ?? 0) > 0;
-      default:
-        return _num(r['total_protein_g']) > 0 ||
-            _num(r['calcium_mg']) > 0 ||
-            _num(r['fluids_ml']) > 0;
-    }
-  }
+  bool _isFuture(String date) => date.compareTo(localISO(DateTime.now())) > 0;
 
-  _DayTrust _trustOf(String date) {
+  /// Past days (not today — today is still in progress) with any lever
+  /// missing, oldest first: the backfill worklist.
+  List<String> _attentionDates() {
     final today = localISO(DateTime.now());
-    if (date.compareTo(today) > 0) return _DayTrust.future;
-    final r = _rows[date];
-    if (r == null || !_hasValues(r)) return _DayTrust.missing;
-    final method = r['estimation_method'] as String? ?? kMeasured;
-    final conf = _num(r['confidence']);
-    switch (method) {
-      case kMeasured:
-        return _DayTrust.measured;
-      case kRecalledManual:
-        return _DayTrust.recalled;
-      default:
-        return conf >= 0.35 ? _DayTrust.estimated : _DayTrust.rough;
+    final out = <String>[];
+    final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
+    for (var day = 1; day <= daysInMonth; day++) {
+      final date = localISO(DateTime(_month.year, _month.month, day));
+      if (date.compareTo(today) >= 0) break;
+      if (_dataOf(date).levers.any((l) => l.trust == _DayTrust.missing)) {
+        out.add(date);
+      }
     }
+    return out;
   }
 
-  /// Month data quality: mean confidence over days that have data.
+  /// Month data quality: mean confidence over lever-days that have data.
   int? _qualityPct() {
     final confs = <double>[
-      for (final r in _rows.values)
-        if (_hasValues(r)) _num(r['confidence']),
+      for (final d in _days.values)
+        for (final l in d.levers)
+          if (l.trust != _DayTrust.missing) l.confidence == 0 ? 1.0 : l.confidence,
     ];
     if (confs.isEmpty) return null;
     return (confs.reduce((a, b) => a + b) / confs.length * 100).round();
   }
 
-  String _provenance(Map<String, dynamic>? r) {
+  String _provenance(_LeverDay l) {
     final t = widget.i18n.t;
-    if (r == null || !_hasValues(r)) {
+    if (l.trust == _DayTrust.missing) {
       return t('flutter.trust.no_data', 'No data for this day');
     }
-    switch (r['estimation_method'] as String? ?? kMeasured) {
+    switch (l.method) {
       case kMeasured:
         return t('flutter.trust.src_measured', 'Logged on the day');
       case kRecalledManual:
-        return t('flutter.trust.src_recalled',
-            'Backfilled from memory by you');
+        return t(
+            'flutter.trust.src_recalled', 'Backfilled from memory by you');
       case kRelativeRecall:
         return t('flutter.trust.src_relative',
             'One-tap estimate vs the day before');
       case kPatternFill:
-        return widget.lever == 'sleep'
-            ? t('flutter.trust.src_pattern_sleep',
-                "Filled from this child's typical nights")
-            : t('flutter.trust.src_pattern',
-                "Filled from this child's typical days");
+        return t('flutter.trust.src_pattern',
+            "Filled from this child's typical days");
       case kPatternSuggest:
         return t('flutter.trust.src_routine',
             'Confirmed from the usual routine — durations are typical');
@@ -201,11 +252,23 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
 
   Future<void> _openDaySheet(String date) async {
     final t = widget.i18n.t;
-    final r = _rows[date];
-    final trust = _trustOf(date);
-    final conf = r == null ? 0.0 : _num(r['confidence']);
-    final isEstimate =
-        trust == _DayTrust.estimated || trust == _DayTrust.rough;
+    final d = _dataOf(date);
+    bool isEst(_LeverDay l) =>
+        l.trust == _DayTrust.estimated || l.trust == _DayTrust.rough;
+    final anyEstimate = d.levers.any(isEst);
+    final allMissing = d.levers.every((l) => l.trust == _DayTrust.missing);
+    final anyMissing = d.levers.any((l) => l.trust == _DayTrust.missing);
+
+    String nutValue() => d.nut.trust == _DayTrust.missing
+        ? '—'
+        : '${isEst(d.nut) ? '~' : ''}${(d.nut.raw['protein'] ?? 0).round()} g · ${(d.nut.pct * 100).round()}%';
+    String actValue() => d.act.trust == _DayTrust.missing
+        ? '—'
+        : '${isEst(d.act) ? '~' : ''}${(d.act.raw['min'] ?? 0).round()} ${t('flutter.min', 'min')} · ${(d.act.pct * 100).round()}%';
+    String slpValue() => d.slp.trust == _DayTrust.missing
+        ? '—'
+        : '${isEst(d.slp) ? '~' : ''}${((d.slp.raw['min'] ?? 0) / 60).toStringAsFixed(1)} ${t('flutter.hours', 'hours')} · ${(d.slp.pct * 100).round()}%';
+
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: GsColors.surface,
@@ -217,60 +280,33 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(_prettyDate(date),
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700)),
-                _TrustPill(trust: trust, confidence: conf, i18n: widget.i18n),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(_provenance(r),
-                style:
-                    const TextStyle(fontSize: 12, color: GsColors.text2)),
-            if (r != null && _hasValues(r)) ...[
-              const SizedBox(height: 12),
-              Row(children: [
-                if (widget.lever == 'sleep') ...[
-                  _Stat(
-                      label: t('common.sleep', 'Sleep'),
-                      value:
-                          '${isEstimate ? '~' : ''}${(_num(r['total_sleep_min']) / 60).toStringAsFixed(1)} ${t('flutter.hours', 'hours')}'),
-                  _Stat(
-                      label: t('flutter.trust.efficiency', 'Efficiency'),
-                      value:
-                          '${_num(r['sleep_efficiency_score']).round()}%'),
-                ] else if (widget.lever == 'activity') ...[
-                  _Stat(
-                      label: t('common.activity', 'Activity'),
-                      value:
-                          '${isEstimate ? '~' : ''}${_num(r['total_min']).round()} ${t('flutter.min', 'min')}'),
-                  _Stat(
-                      label: t('flutter.trust.items', 'Items'),
-                      value: '${r['count']}'),
-                ] else ...[
-                  _Stat(
-                      label: t('common.protein', 'Protein'),
-                      value:
-                          '${isEstimate ? '~' : ''}${_num(r['total_protein_g']).round()} g'),
-                  _Stat(
-                      label: t('common.calcium', 'Calcium'),
-                      value:
-                          '${isEstimate ? '~' : ''}${_num(r['calcium_mg']).round()} mg'),
-                  _Stat(
-                      label: t('flutter.fluids', 'Fluids'),
-                      value:
-                          '${isEstimate ? '~' : ''}${(_num(r['fluids_ml']) / 1000).toStringAsFixed(1)} L'),
-                ],
-              ]),
-            ],
-            if (isEstimate || trust == _DayTrust.missing) ...[
-              const SizedBox(height: 12),
+            Text(_prettyDate(date),
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
+            _LeverSheetRow(
+                label: t('common.protein', 'Protein'),
+                value: nutValue(),
+                sub: _provenance(d.nut),
+                lever: d.nut,
+                i18n: widget.i18n),
+            _LeverSheetRow(
+                label: t('common.activity', 'Activity'),
+                value: actValue(),
+                sub: _provenance(d.act),
+                lever: d.act,
+                i18n: widget.i18n),
+            _LeverSheetRow(
+                label: t('common.sleep', 'Sleep'),
+                value: slpValue(),
+                sub: _provenance(d.slp),
+                lever: d.slp,
+                i18n: widget.i18n),
+            if (anyEstimate || anyMissing) ...[
+              const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: GsColors.bg,
                   borderRadius: BorderRadius.circular(GsRadius.sm),
@@ -296,33 +332,33 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
             ],
             const SizedBox(height: 14),
             Row(children: [
-              if (isEstimate)
+              if (anyEstimate)
                 Expanded(
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                         backgroundColor: GsColors.accent),
                     onPressed: () => Navigator.pop(context, 'confirm'),
-                    child: Text(
-                        t('flutter.trust.looks_right', '✓ Looks right')),
+                    child:
+                        Text(t('flutter.trust.looks_right', '✓ Looks right')),
                   ),
                 ),
-              if (isEstimate) const SizedBox(width: 10),
+              if (anyEstimate) const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context, 'correct'),
-                  child: Text(trust == _DayTrust.missing
+                  child: Text(allMissing
                       ? t('flutter.trust.log_day', 'Log this day')
                       : t('flutter.trust.correct_day', 'Correct this day')),
                 ),
               ),
             ]),
-            if (isEstimate) ...[
+            if (anyEstimate) ...[
               const SizedBox(height: 8),
               Text(
-                  t('flutter.trust.promote_note',
-                      '"Looks right" upgrades this to a recalled day. Corrections reopen the day\'s editor.'),
-                  style: const TextStyle(
-                      fontSize: 10.5, color: GsColors.text3)),
+                  t('flutter.trust.promote_note_all',
+                      '"Looks right" upgrades every estimated lever this day to recalled. Corrections reopen the day\'s editor.'),
+                  style:
+                      const TextStyle(fontSize: 10.5, color: GsColors.text3)),
             ],
           ],
         ),
@@ -331,17 +367,25 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
     if (!mounted || action == null) return;
     final childId = widget.appState.activeChildId;
     if (action == 'confirm' && childId != null) {
-      final err = switch (widget.lever) {
-        'sleep' => await confirmSleepEstimate(
-            widget.appState.sb, childId, date),
-        'activity' => await confirmActivityEstimates(
-            widget.appState.sb, childId, date),
-        _ => await confirmEstimate(widget.appState.sb, childId, date),
-      };
+      final errs = <String>[];
+      if (isEst(d.nut)) {
+        final e = await confirmEstimate(widget.appState.sb, childId, date);
+        if (e != null) errs.add(e);
+      }
+      if (isEst(d.act)) {
+        final e =
+            await confirmActivityEstimates(widget.appState.sb, childId, date);
+        if (e != null) errs.add(e);
+      }
+      if (isEst(d.slp)) {
+        final e =
+            await confirmSleepEstimate(widget.appState.sb, childId, date);
+        if (e != null) errs.add(e);
+      }
       if (!mounted) return;
-      if (err != null) {
+      if (errs.isNotEmpty) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(err)));
+            .showSnackBar(SnackBar(content: Text(errs.first)));
       }
       await _load();
     } else if (action == 'correct') {
@@ -364,13 +408,16 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
     final quality = _qualityPct();
+    final attention = _attentionDates();
     final monthLabel =
         '${t('flutter.month.${_month.month}', _monthFallback(_month.month))} ${_month.year}';
-    final firstWeekday = _month.weekday; // 1 = Monday
+    // Sunday-first week — Thai calendars start on Sunday.
+    final leadingBlanks = _month.weekday % 7; // Sun=7 → 0 blanks
+    const weekOrder = [7, 1, 2, 3, 4, 5, 6];
     final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
     final today = localISO(DateTime.now());
-    final canGoForward = DateTime(_month.year, _month.month + 1, 1)
-        .isBefore(DateTime.now());
+    final canGoForward =
+        DateTime(_month.year, _month.month + 1, 1).isBefore(DateTime.now());
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -417,7 +464,11 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
+              // Close-up sample cell — teaches which row is which lever
+              // so parents never have to guess.
+              _LegendSample(i18n: widget.i18n),
+              const SizedBox(height: 10),
               if (_loading)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 40),
@@ -430,8 +481,9 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   mainAxisSpacing: 5,
                   crossAxisSpacing: 5,
+                  childAspectRatio: 0.78,
                   children: [
-                    for (var w = 1; w <= 7; w++)
+                    for (final w in weekOrder)
                       Center(
                         child: Text(
                             t('flutter.weekday_short.$w',
@@ -441,18 +493,22 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
                                 fontWeight: FontWeight.w600,
                                 color: GsColors.text3)),
                       ),
-                    for (var i = 1; i < firstWeekday; i++)
+                    for (var i = 0; i < leadingBlanks; i++)
                       const SizedBox.shrink(),
                     for (var day = 1; day <= daysInMonth; day++)
                       _DayCell(
                         day: day,
-                        date: localISO(
-                            DateTime(_month.year, _month.month, day)),
-                        trust: _trustOf(localISO(
+                        date:
+                            localISO(DateTime(_month.year, _month.month, day)),
+                        data: _dataOf(localISO(
                             DateTime(_month.year, _month.month, day))),
-                        isToday: localISO(DateTime(
-                                _month.year, _month.month, day)) ==
+                        isToday: localISO(
+                                DateTime(_month.year, _month.month, day)) ==
                             today,
+                        isFuture: _isFuture(localISO(
+                            DateTime(_month.year, _month.month, day))),
+                        attention: attention.contains(localISO(
+                            DateTime(_month.year, _month.month, day))),
                         onTap: _openDaySheet,
                       ),
                   ],
@@ -460,6 +516,37 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
             ],
           ),
         ),
+        if (!_loading && attention.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+            decoration: BoxDecoration(
+              color: GsColors.estimatedLight,
+              borderRadius: BorderRadius.circular(GsRadius.sm),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                      t('flutter.trust.attention_n',
+                          '{n} days need attention', {'n': '${attention.length}'}),
+                      style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: GsColors.estimatedDark)),
+                ),
+                TextButton(
+                  onPressed: () => _openDaySheet(attention.first),
+                  child: Text(t('flutter.trust.fill_next', 'Fill next →'),
+                      style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: GsColors.estimatedDark)),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 10),
         Wrap(
           spacing: 6,
@@ -503,59 +590,298 @@ class _TrustCalendarScreenState extends State<TrustCalendarScreen> {
       ][m - 1];
 }
 
+// ── Legend sample ───────────────────────────────────────────────────
+
+/// Enlarged mock day cell with a label pointing at each row — the
+/// "how to read this" key parents see before the real grid.
+class _LegendSample extends StatelessWidget {
+  const _LegendSample({required this.i18n});
+  final I18n i18n;
+
+  Widget _sampleRow(Color dot, double pct) => SizedBox(
+        height: 14,
+        child: Row(
+          children: [
+            Container(
+                width: 7,
+                height: 7,
+                decoration:
+                    BoxDecoration(shape: BoxShape.circle, color: dot)),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: GsColors.border.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: pct,
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: dot, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _label(String name, String detail) => SizedBox(
+        height: 14,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                  text: '— $name',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, color: GsColors.text2)),
+              TextSpan(
+                  text: ' · $detail',
+                  style: const TextStyle(color: GsColors.text3)),
+            ]),
+            style: const TextStyle(fontSize: 10.5),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final t = i18n.t;
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 80,
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
+              decoration: BoxDecoration(
+                color: GsColors.bg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: GsColors.border),
+              ),
+              child: Column(
+                children: [
+                  const Text('17',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: GsColors.text2)),
+                  const SizedBox(height: 2),
+                  _sampleRow(GsColors.measured, 0.85),
+                  _sampleRow(GsColors.measured, 0.45),
+                  _sampleRow(GsColors.estimated, 0.7),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 19),
+                  _label(t('common.nutrition', 'Nutrition'),
+                      t('flutter.trust.key_nut', 'protein vs daily target')),
+                  _label(t('common.activity', 'Activity'),
+                      t('flutter.trust.key_act', 'exercise vs daily goal')),
+                  _label(t('common.sleep', 'Sleep'),
+                      t('flutter.trust.key_slp', 'hours vs age target')),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // Full-width reading key — how far the bar fills and what the
+        // dot colour means, so the grid needs no guessing at all.
+        SizedBox(
+          width: double.infinity,
+          child: Text(
+              t('flutter.trust.bar_note',
+                  'Bar fills toward 100% of that day\'s target · dot colour = how the data was logged — blue measured, gold estimated, hollow missing.'),
+              style: const TextStyle(
+                  fontSize: 10, height: 1.4, color: GsColors.text3)),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Cell ────────────────────────────────────────────────────────────
+
+Color _trustColor(_DayTrust t) => switch (t) {
+      _DayTrust.measured => GsColors.measured,
+      _DayTrust.recalled => GsColors.measuredLight,
+      _DayTrust.estimated => GsColors.estimated,
+      _DayTrust.rough => GsColors.estimatedLight,
+      _ => GsColors.border2,
+    };
+
 class _DayCell extends StatelessWidget {
   const _DayCell(
       {required this.day,
       required this.date,
-      required this.trust,
+      required this.data,
       required this.isToday,
+      required this.isFuture,
+      required this.attention,
       required this.onTap});
   final int day;
   final String date;
-  final _DayTrust trust;
+  final _DayData data;
   final bool isToday;
+  final bool isFuture;
+  final bool attention;
   final void Function(String date) onTap;
+
+  Widget _leverRow(_LeverDay l) {
+    final missing = l.trust == _DayTrust.missing;
+    final c = _trustColor(l.trust);
+    return Row(
+      children: [
+        Container(
+          width: 5,
+          height: 5,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: missing ? Colors.transparent : c,
+            border:
+                missing ? Border.all(color: GsColors.border2, width: 1) : null,
+          ),
+        ),
+        const SizedBox(width: 3),
+        Expanded(
+          child: Container(
+            height: 3,
+            // Faint track — missing days must read as absence, and a
+            // filled bar's % must contrast clearly against it.
+            decoration: BoxDecoration(
+              color: GsColors.border.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            alignment: Alignment.centerLeft,
+            child: missing
+                ? null
+                : FractionallySizedBox(
+                    widthFactor: l.pct.clamp(0.06, 1.0),
+                    child: Container(
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: c,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    Color bg, fg;
-    switch (trust) {
-      case _DayTrust.measured:
-        bg = GsColors.measured;
-        fg = Colors.white;
-      case _DayTrust.recalled:
-        bg = GsColors.measuredLight;
-        fg = GsColors.measuredDark;
-      case _DayTrust.estimated:
-        bg = GsColors.estimated;
-        fg = Colors.white;
-      case _DayTrust.rough:
-        bg = GsColors.estimatedLight;
-        fg = GsColors.estimatedDark;
-      case _DayTrust.missing:
-        bg = Colors.transparent;
-        fg = GsColors.text3;
-      case _DayTrust.future:
-        bg = Colors.transparent;
-        fg = GsColors.text3.withValues(alpha: 0.35);
-    }
     final cell = Container(
+      padding: const EdgeInsets.fromLTRB(5, 3, 5, 4),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-        border: trust == _DayTrust.missing
-            ? Border.all(color: GsColors.border2, width: 1.2)
+        // Today gets an accent-tinted fill on top of its border so it
+        // jumps out of the grid at a glance.
+        color: isFuture
+            ? Colors.transparent
             : isToday
-                ? Border.all(color: GsColors.accent, width: 1.5)
+                ? GsColors.accent.withValues(alpha: 0.14)
+                : GsColors.bg,
+        borderRadius: BorderRadius.circular(8),
+        border: isToday
+            ? Border.all(color: GsColors.accent, width: 1.5)
+            : attention
+                ? Border.all(color: GsColors.estimated, width: 1.2)
                 : null,
       ),
-      alignment: Alignment.center,
-      child: Text('$day',
-          style: TextStyle(
-              fontSize: 11.5, fontWeight: FontWeight.w600, color: fg)),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Text('$day',
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: isToday
+                      ? GsColors.accent
+                      : isFuture
+                          ? GsColors.text3.withValues(alpha: 0.35)
+                          : GsColors.text2)),
+          if (!isFuture) ...[
+            const SizedBox(height: 3),
+            _leverRow(data.nut),
+            const SizedBox(height: 2.5),
+            _leverRow(data.act),
+            const SizedBox(height: 2.5),
+            _leverRow(data.slp),
+          ],
+        ],
+      ),
     );
-    if (trust == _DayTrust.future) return cell;
+    if (isFuture) return cell;
     return GestureDetector(onTap: () => onTap(date), child: cell);
+  }
+}
+
+// ── Day-sheet pieces ────────────────────────────────────────────────
+
+class _LeverSheetRow extends StatelessWidget {
+  const _LeverSheetRow(
+      {required this.label,
+      required this.value,
+      required this.sub,
+      required this.lever,
+      required this.i18n});
+  final String label;
+  final String value;
+  final String sub;
+  final _LeverDay lever;
+  final I18n i18n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 74,
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: GsColors.text2)),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: GsColors.text)),
+                Text(sub,
+                    style: const TextStyle(
+                        fontSize: 10.5, color: GsColors.text3)),
+              ],
+            ),
+          ),
+          _TrustPill(
+              trust: lever.trust, confidence: lever.confidence, i18n: i18n),
+        ],
+      ),
+    );
   }
 }
 
@@ -594,8 +920,8 @@ class _TrustPill extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-          color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
       child: Text(label,
           style: TextStyle(
               fontSize: 10.5, fontWeight: FontWeight.w600, color: fg)),
@@ -625,34 +951,6 @@ class _LegendPill extends StatelessWidget {
       child: Text(label,
           style: TextStyle(
               fontSize: 10.5, fontWeight: FontWeight.w600, color: fg)),
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: GsColors.text2)),
-          const SizedBox(height: 2),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: GsColors.text)),
-        ],
-      ),
     );
   }
 }
