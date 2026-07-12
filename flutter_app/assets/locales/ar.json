@@ -657,5 +657,13 @@
  "flutter.food.custom_need_serving": "أدخل حجم حصة صحيحًا",
  "flutter.food.custom_need_protein": "أدخل البروتين لهذه الحصة",
  "flutter.food.cat_custom": "⭐ خاصتي",
- "flutter.food.custom_empty": "تظهر الأطعمة التي تضيفها هنا — اضغط ＋ في الأعلى لإنشاء أول واحدة. مناسبة لعلامة مفضّلة أو وصفة منزلية أو مكمّل."
+ "flutter.food.custom_empty": "تظهر الأطعمة التي تضيفها هنا — اضغط ＋ في الأعلى لإنشاء أول واحدة. مناسبة لعلامة مفضّلة أو وصفة منزلية أو مكمّل.",
+ "flutter.food.custom_edit_title": "تعديل الطعام المخصّص",
+ "flutter.food.custom_save_changes": "حفظ التغييرات",
+ "flutter.food.custom_delete": "إزالة",
+ "flutter.food.custom_delete_q": "إزالة هذا الطعام؟",
+ "flutter.food.custom_delete_note": "الأيام المسجّلة تحتفظ بقيمها — تُزال البطاقة القابلة لإعادة الاستخدام فقط.",
+ "flutter.food.custom_saved": "تم تحديث الطعام",
+ "flutter.food.custom_deleted": "تمت إزالة الطعام",
+ "common.cancel": "إلغاء"
 }

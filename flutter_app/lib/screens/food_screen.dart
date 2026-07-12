@@ -42,6 +42,7 @@ class _FoodScreenState extends State<FoodScreen> {
       }
     });
     widget.appState.loadCustomFoods();
+    widget.appState.loadFoodFrequency();
   }
 
   Future<void> _dismissExplainer() async {
@@ -117,27 +118,42 @@ class _FoodScreenState extends State<FoodScreen> {
     );
   }
 
-  Future<void> _openCustomFoodSheet() async {
-    final saved = await showModalBottomSheet<bool>(
+  /// The custom_foods row backing a merged ⭐ FoodItem, by its list id.
+  Map<String, dynamic>? _customRowFor(String itemId) {
+    for (final r in widget.appState.customFoods) {
+      if ('custom_${r['custom_food_id']}' == itemId) return r;
+    }
+    return null;
+  }
+
+  Future<void> _openCustomFoodSheet({Map<String, dynamic>? existing}) async {
+    final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: GsColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(GsRadius.lg)),
       ),
-      builder: (context) =>
-          _CustomFoodSheet(appState: widget.appState, i18n: widget.i18n),
+      builder: (context) => _CustomFoodSheet(
+        appState: widget.appState,
+        i18n: widget.i18n,
+        existing: existing,
+      ),
     );
-    if (saved == true && mounted) {
-      final t = widget.i18n.t;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 2),
-          backgroundColor: GsColors.accentDark,
-          content: Text(t('flutter.food.custom_added', 'Custom food added')),
-        ),
-      );
-    }
+    if (result == null || !mounted) return;
+    final t = widget.i18n.t;
+    final msg = switch (result) {
+      'deleted' => t('flutter.food.custom_deleted', 'Custom food removed'),
+      'saved' => t('flutter.food.custom_saved', 'Custom food updated'),
+      _ => t('flutter.food.custom_added', 'Custom food added'),
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 2),
+        backgroundColor: GsColors.accentDark,
+        content: Text(msg),
+      ),
+    );
   }
 
   @override
@@ -147,17 +163,29 @@ class _FoodScreenState extends State<FoodScreen> {
     return ListenableBuilder(
       listenable: appState,
       builder: (context, _) {
-        // Keep custom foods in sync with the active child.
+        // Keep custom foods + frequency in sync with the active child.
         if (_loadedChildId != appState.activeChildId) {
           _loadedChildId = appState.activeChildId;
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => appState.loadCustomFoods(),
-          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            appState.loadCustomFoods();
+            appState.loadFoodFrequency();
+          });
         }
         final custom = [
           for (final r in appState.customFoods) _customToFoodItem(r),
         ];
-        final all = [...custom, ..._reference];
+        // Frequency boost: often-logged foods float up. Stable sort —
+        // ties keep the curated order (customs first) — and the counts
+        // refresh at most once a day, so nothing jumps mid-session.
+        final counts = appState.foodLogCounts;
+        final indexed = [...custom, ..._reference].asMap().entries.toList()
+          ..sort((a, b) {
+            final ca = counts[a.value.id] ?? 0;
+            final cb = counts[b.value.id] ?? 0;
+            if (ca != cb) return cb - ca;
+            return a.key - b.key;
+          });
+        final all = [for (final e in indexed) e.value];
         final filtered = _filtered(all);
         return Column(
           children: [
@@ -231,10 +259,16 @@ class _FoodScreenState extends State<FoodScreen> {
                         if (filtered.isEmpty) {
                           return _CustomEmptyHint(i18n: widget.i18n);
                         }
+                        final f = filtered[i - 1];
                         return _FoodRow(
-                          food: filtered[i - 1],
+                          food: f,
                           onLog: _log,
                           i18n: widget.i18n,
+                          onTapCard: f.category == 'custom'
+                              ? () => _openCustomFoodSheet(
+                                  existing: _customRowFor(f.id),
+                                )
+                              : null,
                         );
                       },
                     )
@@ -249,10 +283,16 @@ class _FoodScreenState extends State<FoodScreen> {
                             onTap: _openCustomFoodSheet,
                           );
                         }
+                        final f = filtered[i];
                         return _FoodRow(
-                          food: filtered[i],
+                          food: f,
                           onLog: _log,
                           i18n: widget.i18n,
+                          onTapCard: f.category == 'custom'
+                              ? () => _openCustomFoodSheet(
+                                  existing: _customRowFor(f.id),
+                                )
+                              : null,
                         );
                       },
                     ),
@@ -438,14 +478,22 @@ class _MealSlotBar extends StatelessWidget {
 }
 
 class _FoodRow extends StatelessWidget {
-  const _FoodRow({required this.food, required this.onLog, required this.i18n});
+  const _FoodRow({
+    required this.food,
+    required this.onLog,
+    required this.i18n,
+    this.onTapCard,
+  });
   final FoodItem food;
   final void Function(FoodItem) onLog;
   final I18n i18n;
 
+  /// Custom foods: tapping the card body (not Log) opens edit/delete.
+  final VoidCallback? onTapCard;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: GsColors.surface,
@@ -524,6 +572,8 @@ class _FoodRow extends StatelessWidget {
         ],
       ),
     );
+    if (onTapCard == null) return card;
+    return GestureDetector(onTap: onTapCard, child: card);
   }
 }
 
@@ -616,13 +666,20 @@ class _AddCustomTile extends StatelessWidget {
   }
 }
 
-/// Add-a-custom-food sheet — mirror of the PWA's addCustomFood: name +
-/// serving grams + protein are required; zinc / calcium optional. Values
-/// are for one serving as written on the label.
+/// Add / edit custom-food sheet — mirror of the PWA's addCustomFood:
+/// name + serving grams + protein are required; zinc / calcium optional.
+/// Values are for one serving as written on the label. With [existing]
+/// it opens prefilled in edit mode with Save changes + Delete; deleting
+/// never touches history (log items snapshot values at log time).
 class _CustomFoodSheet extends StatefulWidget {
-  const _CustomFoodSheet({required this.appState, required this.i18n});
+  const _CustomFoodSheet({
+    required this.appState,
+    required this.i18n,
+    this.existing,
+  });
   final AppState appState;
   final I18n i18n;
+  final Map<String, dynamic>? existing;
 
   @override
   State<_CustomFoodSheet> createState() => _CustomFoodSheetState();
@@ -638,12 +695,82 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
   bool _saving = false;
   String? _error;
 
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    if (e != null) {
+      String fmtNum(dynamic v) {
+        final d = (v as num?)?.toDouble();
+        if (d == null) return '';
+        return d == d.roundToDouble() ? d.toInt().toString() : '$d';
+      }
+
+      _name.text = e['name'] as String? ?? '';
+      _grams.text = fmtNum(e['serving_grams']);
+      _desc.text = e['serving_description'] as String? ?? '';
+      _protein.text = fmtNum(e['protein_g']);
+      _zinc.text = fmtNum(e['zinc_mg']);
+      _calcium.text = fmtNum(e['calcium_mg']);
+    }
+  }
+
   @override
   void dispose() {
     for (final c in [_name, _grams, _desc, _protein, _zinc, _calcium]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _delete() async {
+    final t = widget.i18n.t;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: GsColors.surface,
+        title: Text(
+          t('flutter.food.custom_delete_q', 'Remove this food?'),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          t(
+            'flutter.food.custom_delete_note',
+            'Days you already logged keep their values — only the reusable card is removed.',
+          ),
+          style: const TextStyle(fontSize: 12.5, color: GsColors.text2),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t('common.cancel', 'Cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              t('flutter.food.custom_delete', 'Remove'),
+              style: const TextStyle(color: GsColors.flag),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _saving = true);
+    final err = await widget.appState.deleteCustomFood(
+      widget.existing!['custom_food_id'],
+    );
+    if (!mounted) return;
+    if (err != null) {
+      setState(() {
+        _saving = false;
+        _error = err;
+      });
+      return;
+    }
+    Navigator.pop(context, 'deleted');
   }
 
   Future<void> _save() async {
@@ -679,14 +806,24 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
       _saving = true;
       _error = null;
     });
-    final err = await widget.appState.addCustomFood(
-      name: name,
-      servingGrams: grams,
-      description: _desc.text.trim().isEmpty ? null : _desc.text.trim(),
-      proteinG: protein,
-      zincMg: double.tryParse(_zinc.text.trim()),
-      calciumMg: double.tryParse(_calcium.text.trim()),
-    );
+    final err = _isEdit
+        ? await widget.appState.updateCustomFood(
+            widget.existing!['custom_food_id'],
+            name: name,
+            servingGrams: grams,
+            description: _desc.text.trim().isEmpty ? null : _desc.text.trim(),
+            proteinG: protein,
+            zincMg: double.tryParse(_zinc.text.trim()),
+            calciumMg: double.tryParse(_calcium.text.trim()),
+          )
+        : await widget.appState.addCustomFood(
+            name: name,
+            servingGrams: grams,
+            description: _desc.text.trim().isEmpty ? null : _desc.text.trim(),
+            proteinG: protein,
+            zincMg: double.tryParse(_zinc.text.trim()),
+            calciumMg: double.tryParse(_calcium.text.trim()),
+          );
     if (!mounted) return;
     if (err != null) {
       setState(() {
@@ -695,7 +832,7 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
       });
       return;
     }
-    Navigator.pop(context, true);
+    Navigator.pop(context, _isEdit ? 'saved' : 'added');
   }
 
   @override
@@ -713,7 +850,9 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            t('flutter.food.custom_title', 'Add a custom food'),
+            _isEdit
+                ? t('flutter.food.custom_edit_title', 'Edit custom food')
+                : t('flutter.food.custom_title', 'Add a custom food'),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 2),
@@ -785,9 +924,25 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
             child: Text(
               _saving
                   ? t('flutter.saving', 'Saving…')
+                  : _isEdit
+                  ? t('flutter.food.custom_save_changes', 'Save changes')
                   : t('flutter.food.custom_save', 'Save food'),
             ),
           ),
+          if (_isEdit) ...[
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _saving ? null : _delete,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: GsColors.flag,
+                side: BorderSide(color: GsColors.flag.withValues(alpha: 0.45)),
+              ),
+              child: Text(
+                t('flutter.food.custom_delete', 'Remove'),
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+          ],
         ],
       ),
     );

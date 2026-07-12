@@ -657,5 +657,13 @@
  "flutter.food.custom_need_serving": "Enter a valid serving size",
  "flutter.food.custom_need_protein": "Enter the protein for this serving",
  "flutter.food.cat_custom": "⭐ Mine",
- "flutter.food.custom_empty": "Foods you add appear here — tap ＋ above to create your first one. Great for a favourite brand, a home recipe, or a supplement."
+ "flutter.food.custom_empty": "Foods you add appear here — tap ＋ above to create your first one. Great for a favourite brand, a home recipe, or a supplement.",
+ "flutter.food.custom_edit_title": "Edit custom food",
+ "flutter.food.custom_save_changes": "Save changes",
+ "flutter.food.custom_delete": "Remove",
+ "flutter.food.custom_delete_q": "Remove this food?",
+ "flutter.food.custom_delete_note": "Days you already logged keep their values — only the reusable card is removed.",
+ "flutter.food.custom_saved": "Custom food updated",
+ "flutter.food.custom_deleted": "Custom food removed",
+ "common.cancel": "Cancel"
 }

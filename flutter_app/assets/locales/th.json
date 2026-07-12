@@ -657,5 +657,13 @@
  "flutter.food.custom_need_serving": "กรุณากรอกขนาดหน่วยบริโภคให้ถูกต้อง",
  "flutter.food.custom_need_protein": "กรุณากรอกปริมาณโปรตีนของหน่วยบริโภคนี้",
  "flutter.food.cat_custom": "⭐ ของฉัน",
- "flutter.food.custom_empty": "อาหารที่คุณเพิ่มจะแสดงที่นี่ — แตะ ＋ ด้านบนเพื่อสร้างรายการแรก เหมาะสำหรับยี่ห้อโปรด เมนูทำเอง หรืออาหารเสริม"
+ "flutter.food.custom_empty": "อาหารที่คุณเพิ่มจะแสดงที่นี่ — แตะ ＋ ด้านบนเพื่อสร้างรายการแรก เหมาะสำหรับยี่ห้อโปรด เมนูทำเอง หรืออาหารเสริม",
+ "flutter.food.custom_edit_title": "แก้ไขอาหารกำหนดเอง",
+ "flutter.food.custom_save_changes": "บันทึกการแก้ไข",
+ "flutter.food.custom_delete": "ลบออก",
+ "flutter.food.custom_delete_q": "ลบอาหารนี้ไหม",
+ "flutter.food.custom_delete_note": "วันที่บันทึกไปแล้วยังคงค่าเดิม — ลบเฉพาะการ์ดที่ใช้ซ้ำเท่านั้น",
+ "flutter.food.custom_saved": "อัปเดตอาหารแล้ว",
+ "flutter.food.custom_deleted": "ลบอาหารแล้ว",
+ "common.cancel": "ยกเลิก"
 }

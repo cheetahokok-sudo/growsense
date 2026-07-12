@@ -657,5 +657,13 @@
  "flutter.food.custom_need_serving": "올바른 제공량을 입력하세요",
  "flutter.food.custom_need_protein": "이 제공량의 단백질을 입력하세요",
  "flutter.food.cat_custom": "⭐ 내 음식",
- "flutter.food.custom_empty": "추가한 음식이 여기에 표시됩니다 — 위의 ＋를 눌러 첫 음식을 만드세요. 좋아하는 브랜드, 집밥 레시피, 보충제에 적합해요."
+ "flutter.food.custom_empty": "추가한 음식이 여기에 표시됩니다 — 위의 ＋를 눌러 첫 음식을 만드세요. 좋아하는 브랜드, 집밥 레시피, 보충제에 적합해요.",
+ "flutter.food.custom_edit_title": "맞춤 음식 수정",
+ "flutter.food.custom_save_changes": "변경 사항 저장",
+ "flutter.food.custom_delete": "삭제",
+ "flutter.food.custom_delete_q": "이 음식을 삭제할까요?",
+ "flutter.food.custom_delete_note": "이미 기록한 날의 값은 유지됩니다 — 재사용 카드만 삭제돼요.",
+ "flutter.food.custom_saved": "맞춤 음식이 수정됨",
+ "flutter.food.custom_deleted": "맞춤 음식이 삭제됨",
+ "common.cancel": "취소"
 }

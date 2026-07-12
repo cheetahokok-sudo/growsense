@@ -657,5 +657,13 @@
  "flutter.food.custom_need_serving": "请输入有效的份量",
  "flutter.food.custom_need_protein": "请输入该份量的蛋白质",
  "flutter.food.cat_custom": "⭐ 我的",
- "flutter.food.custom_empty": "您添加的食物会显示在这里——点按上方的 ＋ 创建第一个。适合喜欢的品牌、家常菜或补充剂。"
+ "flutter.food.custom_empty": "您添加的食物会显示在这里——点按上方的 ＋ 创建第一个。适合喜欢的品牌、家常菜或补充剂。",
+ "flutter.food.custom_edit_title": "编辑自定义食物",
+ "flutter.food.custom_save_changes": "保存更改",
+ "flutter.food.custom_delete": "移除",
+ "flutter.food.custom_delete_q": "移除这个食物？",
+ "flutter.food.custom_delete_note": "已记录的日期保留其数值——只移除可重复使用的卡片。",
+ "flutter.food.custom_saved": "已更新自定义食物",
+ "flutter.food.custom_deleted": "已移除自定义食物",
+ "common.cancel": "取消"
 }

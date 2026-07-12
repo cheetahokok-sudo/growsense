@@ -307,6 +307,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Custom-food cap: keeps "Mine" curated and blocks garbage growth.
+  /// Storage is a non-issue (~200 bytes/row) — this is a UX/abuse cap
+  /// and a natural free/premium boundary, mirroring addChild's gating.
+  int get customFoodLimit =>
+      ((account?['subscription_tier'] as String?) ?? 'free') == 'free' ? 5 : 50;
+
   Future<String?> addCustomFood({
     required String name,
     required double servingGrams,
@@ -317,6 +323,13 @@ class AppState extends ChangeNotifier {
   }) async {
     final childId = activeChildId;
     if (childId == null) return 'No child selected';
+    final limit = customFoodLimit;
+    if (customFoods.length >= limit) {
+      final tier = (account?['subscription_tier'] as String?) ?? 'free';
+      return tier == 'free'
+          ? 'Free plan supports up to $limit custom foods — remove one or upgrade'
+          : 'Your plan supports up to $limit custom foods — remove one first';
+    }
     try {
       final row = await sb
           .from('custom_foods')
@@ -337,6 +350,89 @@ class AppState extends ChangeNotifier {
       return null;
     } on PostgrestException catch (e) {
       return e.message;
+    }
+  }
+
+  Future<String?> updateCustomFood(
+    dynamic customFoodId, {
+    required String name,
+    required double servingGrams,
+    String? description,
+    required double proteinG,
+    double? zincMg,
+    double? calciumMg,
+  }) async {
+    try {
+      final row = await sb
+          .from('custom_foods')
+          .update({
+            'name': name,
+            'serving_grams': servingGrams,
+            'serving_description': description,
+            'protein_g': proteinG,
+            'zinc_mg': zincMg,
+            'calcium_mg': calciumMg,
+          })
+          .eq('custom_food_id', customFoodId)
+          .select()
+          .single();
+      customFoods = [
+        for (final r in customFoods)
+          r['custom_food_id'] == customFoodId ? row : r,
+      ];
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// Deleting a custom food never touches history — nutrition_log_items
+  /// snapshot their values at log time, so past days stay intact.
+  Future<String?> deleteCustomFood(dynamic customFoodId) async {
+    try {
+      await sb.from('custom_foods').delete().eq('custom_food_id', customFoodId);
+      customFoods = [
+        for (final r in customFoods)
+          if (r['custom_food_id'] != customFoodId) r,
+      ];
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  // ── Food frequency — "the app learns me" ordering signal. Counts of
+  // each food_id logged in the last 60 days. Recomputed at most once
+  // per day per child (key includes today's date), so the list order
+  // is stable within a day and never reshuffles mid-session.
+  Map<String, int> foodLogCounts = {};
+  String? _freqLoadedKey; // '<childId>|<date>'
+
+  Future<void> loadFoodFrequency() async {
+    final childId = activeChildId;
+    if (childId == null) return;
+    final key = '$childId|${todayISO()}';
+    if (_freqLoadedKey == key) return;
+    try {
+      final since = localISO(DateTime.now().subtract(const Duration(days: 60)));
+      final rows = await sb
+          .from('nutrition_log_items')
+          .select('food_id')
+          .eq('child_id', childId)
+          .gte('log_date', since)
+          .limit(2000);
+      final counts = <String, int>{};
+      for (final r in rows) {
+        final id = r['food_id'] as String?;
+        if (id != null) counts[id] = (counts[id] ?? 0) + 1;
+      }
+      foodLogCounts = counts;
+      _freqLoadedKey = key;
+      notifyListeners();
+    } catch (_) {
+      // Non-fatal — list falls back to curated order.
     }
   }
 
