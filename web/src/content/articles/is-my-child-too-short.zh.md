@@ -11,6 +11,11 @@ langAlts:
   - { code: "en", href: "https://www.growsense.life/blog/is-my-child-too-short.html", label: "EN" }
   - { code: "th", href: "https://www.growsense.life/blog/is-my-child-too-short.th.html", label: "ไทย" }
 disclaimer: "本文仅供科普，不构成医学诊断或治疗建议。百分位与目标身高区间为统计参考，而非承诺。如对孩子的生长有疑虑，请务必咨询儿科医生或小儿内分泌科医生。"
+card:
+  cat: "安心"
+  title: "我的孩子是不是太矮了？"
+  blurb: "大多数矮个子孩子都很健康。如何看增长速度、百分位和骨龄，真正的危险信号，以及关于生长激素治疗的诚实真相。"
+  order: 3
 references:
   - items:
       - "Allen DB, Cuttler L. Short stature in childhood — challenges and choices. <em>N Engl J Med.</em> 2013;368(13):1220–1228. PMID: 23534561."

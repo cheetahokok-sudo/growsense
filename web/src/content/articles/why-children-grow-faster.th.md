@@ -11,6 +11,11 @@ langAlts:
   - { code: "en", href: "https://www.growsense.life/blog/why-children-grow-faster.html", label: "EN" }
   - { code: "zh", href: "https://www.growsense.life/blog/why-children-grow-faster.zh.html", label: "中文" }
 disclaimer: "บทความนี้มีวัตถุประสงค์เพื่อให้ความรู้ ไม่ใช่การวินิจฉัยหรือการรักษาทางการแพทย์ ค่าเปอร์เซ็นไทล์เป็นค่าอ้างอิงมาตรฐาน (WHO) และช่วงเป้าหมายส่วนสูงเป็นเพียงการประมาณการ ไม่ใช่การรับประกัน หากมีข้อกังวลเกี่ยวกับการเจริญเติบโตของบุตรหลาน ควรปรึกษากุมารแพทย์หรือกุมารแพทย์เฉพาะทางด้านต่อมไร้ท่อเสมอ"
+card:
+  cat: "ความเร็วการเจริญเติบโต"
+  title: "ทำไมเด็กบางคนถึงโตเร็วกว่าคนอื่น?"
+  blurb: "วิทยาศาสตร์ของความเร็วในการเจริญเติบโต และหกระบบ (พันธุกรรม ฮอร์โมน การนอน สารอาหาร กิจกรรม อายุกระดูก) ที่กำหนดการเติบโตของลูก"
+  order: 4
 references:
   - items:
       - "Van Cauter E, Plat L. Physiology of growth hormone secretion during sleep. <em>J Pediatr.</em> 1996;128(5 Pt 2):S32–S37. PMID: 8627466."

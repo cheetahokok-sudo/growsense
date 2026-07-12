@@ -21,6 +21,9 @@ const ui = UI[data.lang] ?? UI.en;
 const allLangs = [{ code: data.lang, href: canonical }, ...(data.langAlts ?? [])];
 const enHref = (allLangs.find((l) => l.code === 'en') ?? allLangs[0]).href;
 const hasAlts = (data.langAlts ?? []).length > 0;
+const locales = { en: 'en_US', th: 'th_TH', zh: 'zh_CN' };
+const selfLocale = locales[data.lang] ?? 'en_US';
+const altLocales = (data.langAlts ?? []).map((a) => locales[a.code]).filter(Boolean);
 
 // Flatten references into continuously-numbered groups (ids stay stable).
 let counter = 0;
@@ -51,6 +54,8 @@ const refGroups = (data.references ?? []).map((g) => {
   <meta property="og:description" content={data.description} />
   <meta property="og:image" content={ogImage} />
   <meta property="og:url" content={canonical} />
+  <meta property="og:locale" content={selfLocale} />
+  {altLocales.map((loc) => <meta property="og:locale:alternate" content={loc} />)}
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={data.title} />

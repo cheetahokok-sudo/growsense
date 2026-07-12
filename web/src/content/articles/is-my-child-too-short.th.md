@@ -11,6 +11,11 @@ langAlts:
   - { code: "en", href: "https://www.growsense.life/blog/is-my-child-too-short.html", label: "EN" }
   - { code: "zh", href: "https://www.growsense.life/blog/is-my-child-too-short.zh.html", label: "中文" }
 disclaimer: "บทความนี้มีวัตถุประสงค์เพื่อให้ความรู้ ไม่ใช่การวินิจฉัยหรือการรักษาทางการแพทย์ ค่าเปอร์เซ็นไทล์และช่วงเป้าหมายส่วนสูงเป็นค่าอ้างอิงทางสถิติ ไม่ใช่คำสัญญา หากมีข้อกังวลเกี่ยวกับการเจริญเติบโตของบุตรหลาน ควรปรึกษากุมารแพทย์หรือกุมารแพทย์เฉพาะทางด้านต่อมไร้ท่อเสมอ"
+card:
+  cat: "ความอุ่นใจ"
+  title: "ลูกเราตัวเตี้ยไปไหม? เมื่อไรที่ควรกังวลจริง ๆ"
+  blurb: "เด็กเตี้ยส่วนใหญ่แข็งแรงดี วิธีอ่านความเร็ว เปอร์เซ็นไทล์ และอายุกระดูก สัญญาณเตือนจริง ๆ และความจริงเรื่องการรักษาด้วยโกรทฮอร์โมน"
+  order: 3
 references:
   - items:
       - "Allen DB, Cuttler L. Short stature in childhood — challenges and choices. <em>N Engl J Med.</em> 2013;368(13):1220–1228. PMID: 23534561."

@@ -1,0 +1,151 @@
+---
+import { getCollection } from 'astro:content';
+
+// The Growth Science hub, generated once per language. Cards come from the
+// article collection filtered by language, so translating an article and
+// giving it a `card` makes it appear on that language's hub automatically.
+const { lang } = Astro.props;
+
+const blogBase = 'https://www.growsense.life/blog/';
+const hubs = {
+  en: { url: blogBase, label: 'EN', locale: 'en_US' },
+  th: { url: blogBase + 'index.th.html', label: 'ไทย', locale: 'th_TH' },
+  zh: { url: blogBase + 'index.zh.html', label: '中文', locale: 'zh_CN' },
+};
+const UI = {
+  en: {
+    title: 'Growth science — GrowSense',
+    desc: 'Honest, sourced answers about how children grow — velocity, percentiles, sleep, nutrition, bone age, and more. Every claim backed by peer-reviewed research.',
+    eyebrow: 'Growth science', h1: "Understand your child's growth",
+    sub: 'Calm, honest answers to the questions parents actually ask — every claim backed by peer-reviewed research, no fear and no false promises.',
+    home: '← Home', more: 'More growth-science guides coming soon.', read: 'Read the article →',
+  },
+  th: {
+    title: 'วิทยาศาสตร์การเจริญเติบโต — GrowSense',
+    desc: 'คำตอบที่ตรงไปตรงมาและมีงานวิจัยรองรับ เกี่ยวกับการเจริญเติบโตของเด็ก — ความเร็ว เปอร์เซ็นไทล์ การนอน สารอาหาร อายุกระดูก และอื่น ๆ ทุกข้อมูลอ้างอิงงานวิจัยที่ผ่านการตรวจสอบ',
+    eyebrow: 'วิทยาศาสตร์การเจริญเติบโต', h1: 'เข้าใจการเจริญเติบโตของลูก',
+    sub: 'คำตอบที่ใจเย็นและตรงไปตรงมาสำหรับคำถามที่พ่อแม่ถามจริง ๆ — ทุกข้อมูลอ้างอิงงานวิจัยที่ผ่านการตรวจสอบ ไม่สร้างความกลัว และไม่มีคำสัญญาเกินจริง',
+    home: '← หน้าแรก', more: 'บทความวิทยาศาสตร์การเจริญเติบโตเพิ่มเติมเร็ว ๆ นี้', read: 'อ่านบทความ →',
+  },
+  zh: {
+    title: '成长科学 — GrowSense',
+    desc: '关于孩子如何成长的诚实、有据可依的答案——增长速度、百分位、睡眠、营养、骨龄等。每条论述都有同行评审研究支撑。',
+    eyebrow: '成长科学', h1: '读懂孩子的成长',
+    sub: '用冷静、诚实的方式回答父母真正会问的问题——每条论述都有同行评审研究支撑，不制造焦虑，也不做空洞承诺。',
+    home: '← 首页', more: '更多成长科学文章即将上线', read: '阅读文章 →',
+  },
+};
+const t = UI[lang] ?? UI.en;
+const self = hubs[lang];
+const alts = Object.entries(hubs).filter(([c]) => c !== lang).map(([c, v]) => ({ code: c, ...v }));
+const ogImage = blogBase + 'gs-001-hero.jpg';
+
+const cards = (await getCollection('articles'))
+  .filter((a) => a.data.card && (a.data.lang ?? 'en') === lang)
+  .sort((a, b) => a.data.card.order - b.data.card.order);
+---
+<!doctype html>
+<html lang={lang}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{t.title}</title>
+  <meta name="description" content={t.desc} />
+  <link rel="canonical" href={self.url} />
+  <link rel="alternate" hreflang={lang} href={self.url} />
+  {alts.map((a) => <link rel="alternate" hreflang={a.code} href={a.url} />)}
+  <link rel="alternate" hreflang="x-default" href={hubs.en.url} />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="GrowSense" />
+  <meta property="og:title" content={t.title} />
+  <meta property="og:description" content={t.desc} />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:url" content={self.url} />
+  <meta property="og:locale" content={self.locale} />
+  {alts.map((a) => <meta property="og:locale:alternate" content={a.locale} />)}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={t.title} />
+  <meta name="twitter:description" content={t.desc} />
+  <meta name="twitter:image" content={ogImage} />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style is:global>
+    :root{--deep:#0E2A20;--accent:#2F6B4F;--accent-dark:#1B4632;--ink:#1a2420;--text2:#43504a;--muted:#8a938c;--line:#e6eae7;--bg:#ffffff;--tint:#f4f8f6}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,'Sarabun',sans-serif;font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased}
+    .gs-topbar{background:var(--deep);color:#fff;padding:12px 22px;display:flex;align-items:center;gap:12px}
+    .gs-topbar .brand{display:flex;align-items:center;gap:9px;color:#fff;text-decoration:none;font-weight:700;font-size:16px}
+    .gs-topbar .mark{width:26px;height:26px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+    .gs-topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+    .gs-topbar .lang{display:flex;gap:4px}
+    .gs-topbar .lang a{color:rgba(255,255,255,.65);text-decoration:none;font-size:13px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap}
+    .gs-topbar .lang a.on{background:var(--accent);color:#fff}
+    .gs-topbar .home{color:rgba(255,255,255,.85);text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap}
+    .gs-topbar .home:hover{color:#fff}
+    .hub-hero{background:var(--deep);color:#eaf3ed;padding:52px 22px 46px;text-align:center}
+    .hub-hero .eyebrow{color:#8fd3ae;font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 12px}
+    .hub-hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:40px;line-height:1.1;margin:0 0 12px;color:#fff}
+    .hub-hero p{max-width:580px;margin:0 auto;color:#b7cfc1;font-size:17px}
+    .wrap{max-width:900px;margin:0 auto;padding:36px 22px 20px}
+    .grid{display:grid;grid-template-columns:1fr;gap:20px}
+    @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+    .card{display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;text-decoration:none;color:inherit;transition:.15s;box-shadow:0 1px 2px rgba(20,30,25,.04)}
+    .card:hover{border-color:var(--accent);box-shadow:0 6px 18px rgba(20,30,25,.08)}
+    .card .thumb{aspect-ratio:16/9;background:var(--deep);overflow:hidden}
+    .card .thumb img{display:block;width:100%;height:100%;object-fit:cover}
+    .card .body{padding:16px 18px}
+    .card .cat{color:var(--accent);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin:0 0 6px}
+    .card h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;line-height:1.25;margin:0 0 8px;color:var(--deep)}
+    .card p{margin:0 0 10px;color:var(--text2);font-size:14.5px;line-height:1.55}
+    .card .read{color:var(--accent);font-weight:600;font-size:14px}
+    .hub-note{text-align:center;color:var(--muted);font-size:13.5px;margin:28px 0 0}
+    footer{background:var(--deep);color:rgba(255,255,255,.55);text-align:center;font-size:13px;padding:28px 22px;margin-top:36px}
+    footer a{color:rgba(255,255,255,.8);text-decoration:none;margin:0 8px}
+    @media(max-width:560px){.hub-hero h1{font-size:31px}}
+  </style>
+</head>
+<body>
+  <nav class="gs-topbar">
+    <a href="https://www.growsense.life" class="brand">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg></span>
+      GrowSense
+    </a>
+    <span class="right">
+      <span class="lang">
+        <a class="on" href={self.url}>{self.label}</a>
+        {alts.map((a) => <a href={a.url}>{a.label}</a>)}
+      </span>
+      <a href="https://www.growsense.life" class="home">{t.home}</a>
+    </span>
+  </nav>
+
+  <header class="hub-hero">
+    <p class="eyebrow">{t.eyebrow}</p>
+    <h1>{t.h1}</h1>
+    <p>{t.sub}</p>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      {cards.map((a) => (
+        <a class="card" href={`${a.slug}.html`}>
+          <div class="thumb"><img src={a.data.hero} alt={a.data.card.title} loading="lazy" onerror="this.style.display='none';this.closest('.thumb').style.minHeight='0'" /></div>
+          <div class="body">
+            <p class="cat">{a.data.card.cat}</p>
+            <h2>{a.data.card.title}</h2>
+            <p>{a.data.card.blurb}</p>
+            <span class="read">{t.read}</span>
+          </div>
+        </a>
+      ))}
+    </div>
+    <p class="hub-note">{t.more}</p>
+  </div>
+
+  <footer>
+    © 2026 GrowSense · Pediatric growth intelligence
+    <div><a href="https://www.growsense.life">Home</a>·<a href="https://www.growsense.life/privacy">Privacy</a>·<a href="https://www.growsense.life/support">Support</a></div>
+  </footer>
+</body>
+</html>

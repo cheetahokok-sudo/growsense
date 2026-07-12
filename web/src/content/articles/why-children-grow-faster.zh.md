@@ -11,6 +11,11 @@ langAlts:
   - { code: "en", href: "https://www.growsense.life/blog/why-children-grow-faster.html", label: "EN" }
   - { code: "th", href: "https://www.growsense.life/blog/why-children-grow-faster.th.html", label: "ไทย" }
 disclaimer: "本文仅供科普，不构成医学诊断或治疗建议。百分位为 WHO 参考值示意，目标身高区间为预测范围而非承诺。生长涉及个体医学因素——如有疑虑，请务必咨询儿科医生或小儿内分泌科医生。"
+card:
+  cat: "身高与增长速度"
+  title: "为什么有些孩子长得比别人快？"
+  blurb: "身高增长速度的科学，以及塑造孩子成长的六大系统：基因、激素、睡眠、营养、运动、骨龄。"
+  order: 4
 references:
   - items:
       - "Van Cauter E, Plat L. Physiology of growth hormone secretion during sleep. <em>J Pediatr.</em> 1996;128(5 Pt 2):S32–S37. PMID: 8627466."
