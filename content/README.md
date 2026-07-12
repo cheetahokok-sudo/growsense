@@ -62,3 +62,4 @@ GS-00X/
 | GS-021 | Does Sleep Affect Height? Deep Sleep, GH & the Real Signal | Published · /blog/does-sleep-affect-height · 22 refs verified |
 | GS-041 | Can Exercise Make Children Taller? | Published · /blog/can-exercise-make-children-taller · 22 refs verified · Astro-built |
 | GS-052 | Does Milk Make Kids Taller? What Dairy Really Does for Growth | Published · /blog/does-milk-make-kids-taller · 13 refs verified (draft list clean; 1 label fix) · Astro |
+| GS-051 | Calcium, Vitamin D, Zinc & Iron: Which Growth Supplements Actually Matter? | Published · /blog/growth-supplements-that-matter · 11 PMIDs + 5 fact sheets verified (draft had none) · pillar · Astro |
