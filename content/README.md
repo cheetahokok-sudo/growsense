@@ -59,3 +59,4 @@ GS-00X/
 | GS-005 | Is My Child Too Short? When to Actually Worry | Published · /blog/is-my-child-too-short · 17 refs verified |
 | GS-032 | Protein & Height: Does Protein Really Help Children Grow Taller? | Published · /blog/protein-and-height · 17 refs verified |
 | GS-021 | Does Sleep Affect Height? Deep Sleep, GH & the Real Signal | Published · /blog/does-sleep-affect-height · 22 refs verified |
+| GS-041 | Can Exercise Make Children Taller? | Published · /blog/can-exercise-make-children-taller · 22 refs verified · Astro-built |
