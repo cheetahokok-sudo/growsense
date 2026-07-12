@@ -655,5 +655,7 @@
  "flutter.food.custom_added": "เพิ่มอาหารแล้ว",
  "flutter.food.custom_need_name": "กรุณากรอกชื่ออาหาร",
  "flutter.food.custom_need_serving": "กรุณากรอกขนาดหน่วยบริโภคให้ถูกต้อง",
- "flutter.food.custom_need_protein": "กรุณากรอกปริมาณโปรตีนของหน่วยบริโภคนี้"
+ "flutter.food.custom_need_protein": "กรุณากรอกปริมาณโปรตีนของหน่วยบริโภคนี้",
+ "flutter.food.cat_custom": "⭐ ของฉัน",
+ "flutter.food.custom_empty": "อาหารที่คุณเพิ่มจะแสดงที่นี่ — แตะ ＋ ด้านบนเพื่อสร้างรายการแรก เหมาะสำหรับยี่ห้อโปรด เมนูทำเอง หรืออาหารเสริม"
 }

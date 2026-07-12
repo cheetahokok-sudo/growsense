@@ -655,5 +655,7 @@
  "flutter.food.custom_added": "맞춤 음식이 추가됨",
  "flutter.food.custom_need_name": "음식 이름을 입력하세요",
  "flutter.food.custom_need_serving": "올바른 제공량을 입력하세요",
- "flutter.food.custom_need_protein": "이 제공량의 단백질을 입력하세요"
+ "flutter.food.custom_need_protein": "이 제공량의 단백질을 입력하세요",
+ "flutter.food.cat_custom": "⭐ 내 음식",
+ "flutter.food.custom_empty": "추가한 음식이 여기에 표시됩니다 — 위의 ＋를 눌러 첫 음식을 만드세요. 좋아하는 브랜드, 집밥 레시피, 보충제에 적합해요."
 }

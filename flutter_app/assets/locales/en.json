@@ -655,5 +655,7 @@
  "flutter.food.custom_added": "Custom food added",
  "flutter.food.custom_need_name": "Enter a food name",
  "flutter.food.custom_need_serving": "Enter a valid serving size",
- "flutter.food.custom_need_protein": "Enter the protein for this serving"
+ "flutter.food.custom_need_protein": "Enter the protein for this serving",
+ "flutter.food.cat_custom": "⭐ Mine",
+ "flutter.food.custom_empty": "Foods you add appear here — tap ＋ above to create your first one. Great for a favourite brand, a home recipe, or a supplement."
 }

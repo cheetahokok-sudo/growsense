@@ -655,5 +655,7 @@
  "flutter.food.custom_added": "已添加自定义食物",
  "flutter.food.custom_need_name": "请输入食物名称",
  "flutter.food.custom_need_serving": "请输入有效的份量",
- "flutter.food.custom_need_protein": "请输入该份量的蛋白质"
+ "flutter.food.custom_need_protein": "请输入该份量的蛋白质",
+ "flutter.food.cat_custom": "⭐ 我的",
+ "flutter.food.custom_empty": "您添加的食物会显示在这里——点按上方的 ＋ 创建第一个。适合喜欢的品牌、家常菜或补充剂。"
 }

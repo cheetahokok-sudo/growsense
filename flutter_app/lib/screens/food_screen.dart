@@ -192,6 +192,13 @@ class _FoodScreenState extends State<FoodScreen> {
                     selected: _category == null,
                     onTap: () => setState(() => _category = null),
                   ),
+                  // "Mine" sits right next to All so parents discover
+                  // (and can start) their own foods without hunting.
+                  _CategoryChip(
+                    label: t('flutter.food.cat_custom', '⭐ Mine'),
+                    selected: _category == 'custom',
+                    onTap: () => setState(() => _category = 'custom'),
+                  ),
                   for (final c in foodCategories)
                     _CategoryChip(
                       label: t('flutter.cat.$c', c),
@@ -206,6 +213,31 @@ class _FoodScreenState extends State<FoodScreen> {
             Expanded(
               child: _reference.isEmpty
                   ? const Center(child: CircularProgressIndicator())
+                  : _category == 'custom'
+                  // "Mine" view: the add button leads, then this
+                  // child's own foods (or a hint when there are none
+                  // yet) — so creating one is the obvious first step.
+                  ? ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                      itemCount: 1 + (filtered.isEmpty ? 1 : filtered.length),
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) {
+                        if (i == 0) {
+                          return _AddCustomTile(
+                            i18n: widget.i18n,
+                            onTap: _openCustomFoodSheet,
+                          );
+                        }
+                        if (filtered.isEmpty) {
+                          return _CustomEmptyHint(i18n: widget.i18n);
+                        }
+                        return _FoodRow(
+                          food: filtered[i - 1],
+                          onLog: _log,
+                          i18n: widget.i18n,
+                        );
+                      },
+                    )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                       itemCount: filtered.length + 1,
@@ -516,6 +548,32 @@ class _SaltyChip extends StatelessWidget {
           fontWeight: FontWeight.w700,
           letterSpacing: 0.2,
           color: GsColors.estimatedDark,
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown in the "Mine" tab when the parent hasn't added any food yet —
+/// turns an empty list into a gentle prompt instead of a blank screen.
+class _CustomEmptyHint extends StatelessWidget {
+  const _CustomEmptyHint({required this.i18n});
+  final I18n i18n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 20),
+      child: Text(
+        i18n.t(
+          'flutter.food.custom_empty',
+          'Foods you add appear here — tap ＋ above to create your first one. Great for a favourite brand, a home recipe, or a supplement.',
+        ),
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 12.5,
+          height: 1.5,
+          color: GsColors.text3,
         ),
       ),
     );

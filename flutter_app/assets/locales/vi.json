@@ -655,5 +655,7 @@
  "flutter.food.custom_added": "Đã thêm món",
  "flutter.food.custom_need_name": "Nhập tên món",
  "flutter.food.custom_need_serving": "Nhập khẩu phần hợp lệ",
- "flutter.food.custom_need_protein": "Nhập lượng protein cho khẩu phần này"
+ "flutter.food.custom_need_protein": "Nhập lượng protein cho khẩu phần này",
+ "flutter.food.cat_custom": "⭐ Của tôi",
+ "flutter.food.custom_empty": "Món bạn thêm sẽ hiện ở đây — chạm ＋ phía trên để tạo món đầu tiên. Hợp cho thương hiệu ưa thích, món tự nấu hoặc thực phẩm bổ sung."
 }

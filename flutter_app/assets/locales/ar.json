@@ -655,5 +655,7 @@
  "flutter.food.custom_added": "تمت إضافة الطعام",
  "flutter.food.custom_need_name": "أدخل اسم الطعام",
  "flutter.food.custom_need_serving": "أدخل حجم حصة صحيحًا",
- "flutter.food.custom_need_protein": "أدخل البروتين لهذه الحصة"
+ "flutter.food.custom_need_protein": "أدخل البروتين لهذه الحصة",
+ "flutter.food.cat_custom": "⭐ خاصتي",
+ "flutter.food.custom_empty": "تظهر الأطعمة التي تضيفها هنا — اضغط ＋ في الأعلى لإنشاء أول واحدة. مناسبة لعلامة مفضّلة أو وصفة منزلية أو مكمّل."
 }
