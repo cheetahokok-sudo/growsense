@@ -144,10 +144,13 @@ function renderLanguageSelector() {
 // research. Tier drives the readiness score weight and the visual
 // badge colour on every activity card.
 //
-// Evidence basis:
-//   high_impact    1.0 — direct growth plate stimulation; gymnastics,
-//                         basketball, martial arts confirmed in RCTs;
-//                         plyometric training → GH +12%, IGF-1 +8%
+// Evidence basis (weights rank OSTEOGENIC LOADING — bone strength, not
+// added height; exercise builds stronger bone, not longer bone. See
+// the GS-041 article "Can exercise make children taller?"):
+//   high_impact    1.0 — highest peak ground-reaction force; gymnastics,
+//                         basketball, martial arts show superior BMD in
+//                         RCTs. Loading strengthens bone; it does not
+//                         lengthen it.
 //   weight_bearing 0.65 — osteogenic via gravity + muscle tension but
 //                          lower peak GRF than Tier 1
 //   cardio         0.35 — excellent GH release via large-muscle
@@ -165,12 +168,12 @@ const ACTIVITY_LIBRARY = [
   { id:'gymnastics',        tier:'high_impact',   category:'gymnastics',   emoji:'🤸', displayName:'Gymnastics',
     note:'Highest osteogenic evidence — 10.4× body weight impacts per session (Daly et al. 1999)' },
 
-  // Jumping — direct growth plate loading
+  // Jumping — high peak-force bone loading
   { id:'box_jumps',         tier:'high_impact',   category:'jumping',      emoji:'📦', displayName:'Box Jumps',        unit:'reps',
-    note:'Direct growth plate stimulation. 24-week study: +4.32 cm vs +1.93 cm controls (BMC Pediatrics 2025)' },
+    note:'One of the strongest bone-loading drills. A small 24-week trial in short-stature children saw faster short-term growth velocity — that reflects bone and velocity, not proven adult height (BMC Pediatrics 2025).' },
   { id:'vertical_jumps',    tier:'high_impact',   category:'jumping',      emoji:'⬆️', displayName:'Vertical Jumps',   unit:'reps' },
   { id:'jump_rope',         tier:'high_impact',   category:'jumping',      emoji:'🪢', displayName:'Jump Rope',
-    note:'Moderate growth plate pressure confirmed. Interval > continuous for GH release' },
+    note:'Repeated moderate-impact loading — builds bone strength. Convenient, low-cost, and easy to do daily.' },
 
   // Ball sports
   { id:'basketball',        tier:'high_impact',   category:'sports',       emoji:'🏀', displayName:'Basketball',
@@ -189,7 +192,7 @@ const ACTIVITY_LIBRARY = [
 
   // Sprint / plyometric
   { id:'sprinting',         tier:'high_impact',   category:'running',      emoji:'💨', displayName:'Sprint Training',
-    note:'Plyometric training: GH +12%, IGF-1 +8% vs controls in 12-week RCT (ASJSM 2024)' },
+    note:'Sprint/plyometric work raised bone density and GH/IGF-1 markers in a small adolescent trial — signs of a healthy loading response, not a proven height gain (ASJSM 2024).' },
 
   // Multi-directional high-impact
   { id:'dance',             tier:'high_impact',   category:'dance',        emoji:'💃', displayName:'Dance',

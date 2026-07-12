@@ -255,6 +255,8 @@
  "flutter.night_wakes": "الاستيقاظ ليلًا",
  "flutter.efficiency_score": "درجة الكفاءة",
  "flutter.search_foods": "ابحث في {n} طعامًا…",
+ "flutter.search_activities": "ابحث في {n} نشاطًا…",
+ "flutter.no_activity_match": "لا توجد أنشطة مطابقة.",
  "flutter.all": "الكل",
  "flutter.cat.chicken": "🍗 دجاج",
  "flutter.cat.beef": "🥩 لحم بقري",

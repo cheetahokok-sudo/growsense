@@ -1,8 +1,9 @@
 // ══════════════════════════════════════════════════════════════════
 // Activity library — Dart port of ACTIVITY_LIBRARY in app.js (the
 // source of truth; keep in sync when it changes there). Tier weights
-// and the evidence notes come from the same mechanotransduction /
-// GH-IGF-1 research basis documented in app.js.
+// rank OSTEOGENIC LOADING (bone strength), not added height — exercise
+// builds stronger bone, not longer bone. Notes follow the honest voice
+// of the GS-041 article "Can exercise make children taller?".
 // ══════════════════════════════════════════════════════════════════
 
 class Activity {
@@ -59,14 +60,14 @@ const activityLibrary = <Activity>[
   Activity(
       id: 'box_jumps', tier: 'high_impact', category: 'jumping',
       emoji: '📦', displayName: 'Box Jumps', unit: 'reps',
-      note: 'Direct growth plate stimulation. 24-week study: +4.32 cm vs +1.93 cm controls (BMC Pediatrics 2025)'),
+      note: 'One of the strongest bone-loading drills. A small 24-week trial in short-stature children saw faster short-term growth velocity — that reflects bone and velocity, not proven adult height (BMC Pediatrics 2025).'),
   Activity(
       id: 'vertical_jumps', tier: 'high_impact', category: 'jumping',
       emoji: '⬆️', displayName: 'Vertical Jumps', unit: 'reps'),
   Activity(
       id: 'jump_rope', tier: 'high_impact', category: 'jumping',
       emoji: '🪢', displayName: 'Jump Rope',
-      note: 'Moderate growth plate pressure confirmed. Interval > continuous for GH release'),
+      note: 'Repeated moderate-impact loading — builds bone strength. Convenient, low-cost, and easy to do daily.'),
   Activity(
       id: 'basketball', tier: 'high_impact', category: 'sports',
       emoji: '🏀', displayName: 'Basketball',
@@ -95,7 +96,7 @@ const activityLibrary = <Activity>[
   Activity(
       id: 'sprinting', tier: 'high_impact', category: 'running',
       emoji: '💨', displayName: 'Sprint Training',
-      note: 'Plyometric training: GH +12%, IGF-1 +8% vs controls in 12-week RCT (ASJSM 2024)'),
+      note: 'Sprint/plyometric work raised bone density and GH/IGF-1 markers in a small adolescent trial — signs of a healthy loading response, not a proven height gain (ASJSM 2024).'),
   Activity(
       id: 'dance', tier: 'high_impact', category: 'dance',
       emoji: '💃', displayName: 'Dance',

@@ -255,6 +255,8 @@
  "flutter.night_wakes": "Thức giấc ban đêm",
  "flutter.efficiency_score": "Điểm hiệu quả",
  "flutter.search_foods": "Tìm {n} món…",
+ "flutter.search_activities": "Tìm {n} hoạt động…",
+ "flutter.no_activity_match": "Không có hoạt động phù hợp.",
  "flutter.all": "Tất cả",
  "flutter.cat.chicken": "🍗 Gà",
  "flutter.cat.beef": "🥩 Bò",

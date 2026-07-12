@@ -255,6 +255,8 @@
  "flutter.night_wakes": "ตื่นกลางดึก",
  "flutter.efficiency_score": "คะแนนประสิทธิภาพ",
  "flutter.search_foods": "ค้นหาอาหาร {n} รายการ…",
+ "flutter.search_activities": "ค้นหากิจกรรม {n} รายการ…",
+ "flutter.no_activity_match": "ไม่พบกิจกรรมที่ตรงกัน",
  "flutter.all": "ทั้งหมด",
  "flutter.cat.chicken": "🍗 ไก่",
  "flutter.cat.beef": "🥩 เนื้อวัว",

@@ -255,6 +255,8 @@
  "flutter.night_wakes": "夜醒次数",
  "flutter.efficiency_score": "效率分数",
  "flutter.search_foods": "搜索 {n} 种食物…",
+ "flutter.search_activities": "搜索 {n} 项活动…",
+ "flutter.no_activity_match": "没有匹配的活动。",
  "flutter.all": "全部",
  "flutter.cat.chicken": "🍗 鸡肉",
  "flutter.cat.beef": "🥩 牛肉",

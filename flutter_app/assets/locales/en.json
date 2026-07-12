@@ -255,6 +255,8 @@
  "flutter.night_wakes": "Night wakes",
  "flutter.efficiency_score": "Efficiency score",
  "flutter.search_foods": "Search {n} foods…",
+ "flutter.search_activities": "Search {n} activities…",
+ "flutter.no_activity_match": "No activities match.",
  "flutter.all": "All",
  "flutter.cat.chicken": "🍗 Chicken",
  "flutter.cat.beef": "🥩 Beef",

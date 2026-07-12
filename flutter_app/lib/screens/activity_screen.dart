@@ -10,8 +10,7 @@ import '../theme.dart';
 /// bottom sheet (modal-sheet equivalent) with duration presets and
 /// an outdoor toggle, then inserts a daily_activity_items row.
 class ActivityScreen extends StatefulWidget {
-  const ActivityScreen(
-      {super.key, required this.appState, required this.i18n});
+  const ActivityScreen({super.key, required this.appState, required this.i18n});
   final AppState appState;
   final I18n i18n;
 
@@ -21,6 +20,7 @@ class ActivityScreen extends StatefulWidget {
 
 class _ActivityScreenState extends State<ActivityScreen> {
   String? _tier; // null = all
+  String _query = '';
 
   static const tierColors = {
     'high_impact': GsColors.flag,
@@ -30,15 +30,22 @@ class _ActivityScreenState extends State<ActivityScreen> {
     'lifestyle': GsColors.estimated,
   };
 
-  List<Activity> get _filtered => [
-        for (final a in activityLibrary)
-          if (_tier == null ||
-              a.tier == _tier ||
-              // FLEX filter folds lifestyle in, same as the PWA's
-              // badge config mapping lifestyle → flex styling.
-              (_tier == 'flexibility' && a.tier == 'lifestyle'))
-            a,
-      ];
+  List<Activity> get _filtered {
+    final q = _query.trim().toLowerCase();
+    return [
+      for (final a in activityLibrary)
+        if ((_tier == null ||
+                a.tier == _tier ||
+                // FLEX filter folds lifestyle in, same as the PWA's
+                // badge config mapping lifestyle → flex styling.
+                (_tier == 'flexibility' && a.tier == 'lifestyle')) &&
+            (q.isEmpty ||
+                a.displayName.toLowerCase().contains(q) ||
+                a.category.toLowerCase().contains(q) ||
+                (a.note ?? '').toLowerCase().contains(q)))
+          a,
+    ];
+  }
 
   Future<void> _openLogSheet(Activity act) async {
     final result = await showModalBottomSheet<({int value, bool outdoor})>(
@@ -47,8 +54,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(GsRadius.lg)),
       ),
-      builder: (context) =>
-          _ActivityLogSheet(activity: act, i18n: widget.i18n),
+      builder: (context) => _ActivityLogSheet(activity: act, i18n: widget.i18n),
     );
     if (result == null || !mounted) return;
 
@@ -66,13 +72,17 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final unitLabel = act.unit == 'reps'
         ? t('flutter.reps', 'reps')
         : t('flutter.min', 'min');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      duration: const Duration(seconds: 2),
-      backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
-      content: Text(err == null
-          ? '${act.emoji} ${act.displayName} · ${result.value} $unitLabel${result.outdoor ? ' ☀️' : ''}'
-          : '${t('flutter.could_not_save_activity', 'Could not save activity')}: $err'),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 2),
+        backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
+        content: Text(
+          err == null
+              ? '${act.emoji} ${act.displayName} · ${result.value} $unitLabel${result.outdoor ? ' ☀️' : ''}'
+              : '${t('flutter.could_not_save_activity', 'Could not save activity')}: $err',
+        ),
+      ),
+    );
   }
 
   @override
@@ -80,7 +90,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final t = widget.i18n.t;
     return Column(
       children: [
-        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: TextField(
+            onChanged: (v) => setState(() => _query = v),
+            decoration: InputDecoration(
+              hintText: t(
+                'flutter.search_activities',
+                'Search {n} activities…',
+                {'n': '${activityLibrary.length}'},
+              ),
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 20,
+                color: GsColors.text3,
+              ),
+              isDense: true,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         SizedBox(
           height: 36,
           child: ListView(
@@ -97,11 +126,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 'high_impact',
                 'weight_bearing',
                 'cardio',
-                'flexibility'
+                'flexibility',
               ])
                 _TierChip(
-                  label: t('flutter.tier_short.$tier',
-                      activityTierConfig[tier]!.shortLabel),
+                  label: t(
+                    'flutter.tier_short.$tier',
+                    activityTierConfig[tier]!.shortLabel,
+                  ),
                   color: tierColors[tier]!,
                   selected: _tier == tier,
                   onTap: () => setState(() => _tier = tier),
@@ -111,72 +142,97 @@ class _ActivityScreenState extends State<ActivityScreen> {
         ),
         const SizedBox(height: 8),
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            itemCount: _filtered.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final act = _filtered[i];
-              final tierLabel = t('flutter.tier.${act.tier}',
-                  activityTierConfig[act.tier]!.label);
-              final color = tierColors[act.tier]!;
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: GsColors.surface,
-                  borderRadius: BorderRadius.circular(GsRadius.md),
-                  border: Border.all(color: GsColors.border),
-                ),
-                child: Row(
-                  children: [
-                    Text(act.emoji, style: const TextStyle(fontSize: 24)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+          child: _filtered.isEmpty
+              ? Center(
+                  child: Text(
+                    t('flutter.no_activity_match', 'No activities match.'),
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      color: GsColors.text3,
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  itemCount: _filtered.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, i) {
+                    final act = _filtered[i];
+                    final tierLabel = t(
+                      'flutter.tier.${act.tier}',
+                      activityTierConfig[act.tier]!.label,
+                    );
+                    final color = tierColors[act.tier]!;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: GsColors.surface,
+                        borderRadius: BorderRadius.circular(GsRadius.md),
+                        border: Border.all(color: GsColors.border),
+                      ),
+                      child: Row(
                         children: [
-                          Text(act.displayName,
-                              style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 3),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(4),
+                          Text(act.emoji, style: const TextStyle(fontSize: 24)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  act.displayName,
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 1.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    tierLabel,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.4,
+                                      color: color,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            child: Text(tierLabel,
-                                style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.4,
-                                    color: color)),
+                          ),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            height: 32,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(52, 32),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                              ),
+                              onPressed: () => _openLogSheet(act),
+                              child: Text(
+                                t('flutter.log_btn', 'Log'),
+                                style: const TextStyle(fontSize: 12.5),
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    SizedBox(
-                      height: 32,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(52, 32),
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                        onPressed: () => _openLogSheet(act),
-                        child: Text(t('flutter.log_btn', 'Log'),
-                            style: const TextStyle(fontSize: 12.5)),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
@@ -184,11 +240,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
 }
 
 class _TierChip extends StatelessWidget {
-  const _TierChip(
-      {required this.label,
-      required this.color,
-      required this.selected,
-      required this.onTap});
+  const _TierChip({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
   final String label;
   final Color color;
   final bool selected;
@@ -238,10 +295,10 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
   late bool _outdoor;
 
   List<int> get _presets => switch (widget.activity.presets) {
-        'reps' => durationPresetsReps,
-        'small_min' => durationPresetsSmallMin,
-        _ => durationPresetsMin,
-      };
+    'reps' => durationPresetsReps,
+    'small_min' => durationPresetsSmallMin,
+    _ => durationPresetsMin,
+  };
 
   @override
   void initState() {
@@ -258,8 +315,10 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
     final act = widget.activity;
-    final tierLabel =
-        t('flutter.tier.${act.tier}', activityTierConfig[act.tier]!.label);
+    final tierLabel = t(
+      'flutter.tier.${act.tier}',
+      activityTierConfig[act.tier]!.label,
+    );
     final color = _ActivityScreenState.tierColors[act.tier]!;
     final unitLabel = act.unit == 'reps'
         ? t('flutter.reps', 'reps')
@@ -280,16 +339,23 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(act.displayName,
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700)),
+                      Text(
+                        act.displayName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text(tierLabel,
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
-                              color: color)),
+                      Text(
+                        tierLabel,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                          color: color,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -297,9 +363,10 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
             ),
             if (act.note != null) ...[
               const SizedBox(height: 10),
-              Text(act.note!,
-                  style:
-                      const TextStyle(fontSize: 11.5, color: GsColors.text2)),
+              Text(
+                act.note!,
+                style: const TextStyle(fontSize: 11.5, color: GsColors.text2),
+              ),
             ],
             const SizedBox(height: 14),
             Wrap(
@@ -318,22 +385,30 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
                             : GsColors.surface2,
                         borderRadius: BorderRadius.circular(GsRadius.sm),
                         border: Border.all(
-                            color: _value == p
-                                ? GsColors.accent
-                                : Colors.transparent),
+                          color: _value == p
+                              ? GsColors.accent
+                              : Colors.transparent,
+                        ),
                       ),
                       child: Column(
                         children: [
-                          Text('$p',
-                              style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: _value == p
-                                      ? GsColors.accentDark
-                                      : GsColors.text)),
-                          Text(unitLabel,
-                              style: const TextStyle(
-                                  fontSize: 10, color: GsColors.text3)),
+                          Text(
+                            '$p',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: _value == p
+                                  ? GsColors.accentDark
+                                  : GsColors.text,
+                            ),
+                          ),
+                          Text(
+                            unitLabel,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: GsColors.text3,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -345,12 +420,14 @@ class _ActivityLogSheetState extends State<_ActivityLogSheet> {
               contentPadding: EdgeInsets.zero,
               dense: true,
               activeThumbColor: GsColors.accent,
-              title: Text(t('flutter.outdoor', 'Outdoor ☀️'),
-                  style: const TextStyle(fontSize: 13)),
+              title: Text(
+                t('flutter.outdoor', 'Outdoor ☀️'),
+                style: const TextStyle(fontSize: 13),
+              ),
               subtitle: Text(
-                  t('flutter.outdoor_sub', 'Sunlight → vitamin D synthesis'),
-                  style:
-                      const TextStyle(fontSize: 11, color: GsColors.text3)),
+                t('flutter.outdoor_sub', 'Sunlight → vitamin D synthesis'),
+                style: const TextStyle(fontSize: 11, color: GsColors.text3),
+              ),
               value: _outdoor,
               onChanged: (v) => setState(() => _outdoor = v),
             ),

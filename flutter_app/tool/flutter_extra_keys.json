@@ -17,6 +17,8 @@
   "flutter.night_wakes": { "en": "Night wakes", "th": "ตื่นกลางดึก", "vi": "Thức giấc ban đêm", "ko": "야간 각성", "zh": "夜醒次数", "ar": "الاستيقاظ ليلًا" },
   "flutter.efficiency_score": { "en": "Efficiency score", "th": "คะแนนประสิทธิภาพ", "vi": "Điểm hiệu quả", "ko": "효율 점수", "zh": "效率分数", "ar": "درجة الكفاءة" },
   "flutter.search_foods": { "en": "Search {n} foods…", "th": "ค้นหาอาหาร {n} รายการ…", "vi": "Tìm {n} món…", "ko": "{n}개 음식 검색…", "zh": "搜索 {n} 种食物…", "ar": "ابحث في {n} طعامًا…" },
+  "flutter.search_activities": { "en": "Search {n} activities…", "th": "ค้นหากิจกรรม {n} รายการ…", "vi": "Tìm {n} hoạt động…", "ko": "{n}개 활동 검색…", "zh": "搜索 {n} 项活动…", "ar": "ابحث في {n} نشاطًا…" },
+  "flutter.no_activity_match": { "en": "No activities match.", "th": "ไม่พบกิจกรรมที่ตรงกัน", "vi": "Không có hoạt động phù hợp.", "ko": "일치하는 활동이 없습니다.", "zh": "没有匹配的活动。", "ar": "لا توجد أنشطة مطابقة." },
   "flutter.all": { "en": "All", "th": "ทั้งหมด", "vi": "Tất cả", "ko": "전체", "zh": "全部", "ar": "الكل" },
   "flutter.cat.chicken": { "en": "🍗 Chicken", "th": "🍗 ไก่", "vi": "🍗 Gà", "ko": "🍗 닭고기", "zh": "🍗 鸡肉", "ar": "🍗 دجاج" },
   "flutter.cat.beef": { "en": "🥩 Beef", "th": "🥩 เนื้อวัว", "vi": "🥩 Bò", "ko": "🥩 소고기", "zh": "🥩 牛肉", "ar": "🥩 لحم بقري" },
