@@ -61,3 +61,4 @@ GS-00X/
 | GS-032 | Protein & Height: Does Protein Really Help Children Grow Taller? | Published · /blog/protein-and-height · 17 refs verified |
 | GS-021 | Does Sleep Affect Height? Deep Sleep, GH & the Real Signal | Published · /blog/does-sleep-affect-height · 22 refs verified |
 | GS-041 | Can Exercise Make Children Taller? | Published · /blog/can-exercise-make-children-taller · 22 refs verified · Astro-built |
+| GS-052 | Does Milk Make Kids Taller? What Dairy Really Does for Growth | Published · /blog/does-milk-make-kids-taller · 13 refs verified (draft list clean; 1 label fix) · Astro |
