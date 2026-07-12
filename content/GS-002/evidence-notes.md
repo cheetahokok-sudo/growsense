@@ -11,7 +11,13 @@ is in `references.md`.)
 | 3 | No single gene; >12,000 variants (700→3k→12k, 2014→2018→2022) | 4, 5, 6 |
 | 4 | Genes set a range, not a fixed number | 1, 2 |
 | 5 | Mid-parental height formula (+13 / −13, ÷2) | 7 |
-| 6 | ±8.5 cm range around the MPH target | 7, 8 |
+| 6 | Raw MPH runs ~2.7 cm low / explains 36% variance; 3 corrections → 40% | 23 |
+| 6b | Parents shrink with age (~3 cm men / 5 cm women by 70) → age-correct before averaging | 24 |
+| 6c | Sex gap grows with height → multiplicative correction, not flat ±13 cm | 23 |
+| 6d | Regression to the mean (tall parents' kids shorter, short parents' kids taller) | 25 |
+| 6e | Corrected target spread: ~68% within ±4.5 cm, ~95% within ±9 cm | 23 |
+| 6f | A parent stunted by early illness/undernutrition → MPH lowballs; widen to family | 22 |
+| 6g | Extended-family estimate: relatedness weighting, EXPLORATORY/unvalidated | (app; textbook quantitative genetics — no clinical peer-reviewed method exists, stated as such) |
 | 7 | Bone age vs chronological age; more/less runway | 13 |
 | 8 | Same percentile + different bone age = different story; late bloomer (CDGP) | 13, 20 |
 | 9 | Left hand-wrist X-ray; Greulich-Pyle vs Tanner-Whitehouse | 12, 13 |

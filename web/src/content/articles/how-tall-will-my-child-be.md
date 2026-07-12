@@ -47,6 +47,11 @@ references:
   - group: "F. Secular trends in height"
     items:
       - "NCD Risk Factor Collaboration (NCD-RisC). A century of trends in adult human height. <em>eLife.</em> 2016;5:e13410. PMID: 27458798."
+  - group: "G. Improved & extended target-height method"
+    items:
+      - "Zeevi D, Ben Yehuda A, Nathan D, Zangen D, Kruglyak L. Accurate prediction of children's target height from their mid-parental height. <em>Children (Basel).</em> 2024;11(8):916. PMID: 39201851."
+      - "Sorkin JD, Muller DC, Andres R. Longitudinal change in height of men and women… the Baltimore Longitudinal Study of Aging. <em>Am J Epidemiol.</em> 1999;150(9):969–977. PMID: 10547143."
+      - "Galton F. Regression towards mediocrity in hereditary stature. <em>J Anthropol Inst.</em> 1886;15:246–263. (The origin of regression to the mean.)"
 ---
 
 <p class="lede">Perhaps no question makes parents more anxious than this one: <em>how tall will my child be?</em> Will my son reach 175 cm? Will my daughter be taller than me? Should I worry that she's shorter than her classmates?</p>
@@ -63,17 +68,31 @@ The single biggest contributor to adult height is genetics. Twin studies across 
 
 <div class="callout"><strong>Genes set a range, not a number.</strong> A common misunderstanding is that genes fix an exact height. They don't — they create a <em>window</em> of possibility (say, 168–177 cm). Where inside that window a child lands is shaped by nutrition, sleep, health, and more. <strong>Genetics loads the potential; environment decides how fully it's expressed.</strong></div>
 
-## 3. Mid-parental height: medicine's oldest prediction tool
+## 3. Mid-parental height — and how to do better than the 50-year-old formula
 
-The most widely used estimate of a child's genetic height potential is the **mid-parental height (MPH)**:<sup><a href="#r7">[7]</a></sup>
+Start with the classic. The **mid-parental height (MPH)** is the standard first estimate of a child's genetic potential:<sup><a href="#r7">[7]</a></sup>
 
 <div class="formula"><strong>Mid-parental target height</strong><br>
 Boys: (father's height + mother's height + 13 cm) ÷ 2<br>
 Girls: (father's height + mother's height − 13 cm) ÷ 2</div>
 
-**Worked example.** Father 173 cm, mother 156 cm → predicted **son ≈ 171 cm**, predicted **daughter ≈ 158 cm**. But the number is the *centre* of a wide band: most healthy children finish within about **±8.5 cm** of it.<sup><a href="#r8">[8]</a></sup> So a prediction of 171 cm really means *roughly 162–180 cm is biologically plausible* — a fact that surprises many parents.
+Father 173 cm, mother 156 cm → son ≈ 171 cm, daughter ≈ 158 cm. Useful — but this formula is over fifty years old, and a 2024 study of 23 very large families (about 11 adult children each) showed it has real, fixable flaws: children averaged **2.7 cm taller** than their MPH predicted, and the raw formula explained only ~36% of the variance in adult height.<sup><a href="#r23">[23]</a></sup> Three corrections fix most of it — and GrowSense applies all three:
 
-**MPH is a starting point, not a ceiling.** Parents often read it as a hard limit ("if the estimate is 171, my child can't reach 176"). Not true. The parents themselves may have grown up with illness, under-nutrition, or hardship that held them below their own potential — which is exactly why populations have grown taller as living conditions improved (more on that below). Treat MPH as *a conversation starter, not a biological cap.*
+- **Parents shrink with age.** Adult height starts declining around age 30 and accelerates — roughly 3 cm (men) and 5 cm (women) lost by age 70.<sup><a href="#r24">[24]</a></sup> Using a 55-year-old parent's *current* height under-reads what they passed on; GrowSense adds the estimated loss back before averaging.
+- **The sex gap isn't a flat 13 cm.** The male–female difference actually grows with height (smaller in shorter families, larger in taller ones). A **multiplicative** correction — comparing each parent to their own sex's distribution — beats the traditional ±13 cm constant.<sup><a href="#r23">[23]</a></sup>
+- **Regression to the mean.** Very tall parents tend to have children a little shorter than the naive average predicts; very short parents, a little taller — a statistical pull toward the population mean, known since **Galton in 1886**<sup><a href="#r25">[25]</a></sup> and still ignored in routine clinical practice.
+
+With these corrections the estimate comes with a *realistic* spread: about **68% of children finish within ±4.5 cm** of the corrected target, and ~95% within roughly ±9 cm.<sup><a href="#r23">[23]</a></sup> GrowSense shows the classic Tanner number and the corrected one **side by side**, so you see exactly what changed — nothing is silently swapped.
+
+## When a parent was stunted: the extended-family view
+
+Here's a subtle trap you spotted correctly. What if a parent never reached *their own* genetic height — because *they* grew up with under-nutrition or childhood illness? Then their measured height under-represents the family's true potential, and MPH lowballs the child. This is real: the century-long **secular trend** — whole populations gaining 15–20 cm as conditions improved — is largely environmental, not genetic.<sup><a href="#r22">[22]</a></sup>
+
+The instinct is to look wider — at **grandparents, aunts and uncles, and the child's siblings** — whose heights, pooled, sketch the family's genetic ceiling more reliably than one possibly-stunted parent. GrowSense offers exactly this as an **exploratory** estimate: it weights each recorded relative by genetic relatedness (parents ½; grandparents and aunts/uncles ¼; siblings ½) and blends it with the validated parents-only result.
+
+<div class="callout"><strong>Why we call it "exploratory," honestly.</strong> There is <em>no</em> peer-reviewed method for folding partial extended-family data into a clinical height prediction — so GrowSense labels this estimate unvalidated, keeps the parents-only (validated) number dominant, and never shows the family-weighted figure as more accurate. It's a transparent attempt at a real question, not borrowed certainty. And it deliberately does <strong>not</strong> "auto-correct" a genuinely short parent — ordinary height variation within a family is normal, not an error to overwrite.</div>
+
+**Bottom line:** MPH is a starting point, not a ceiling. GrowSense sharpens the starting point with validated corrections, and — where a parent's own growth may have been held back — lets you widen the lens to the family, clearly flagged for what it is.
 
 ## 4. Bone age: the skeletal clock
 

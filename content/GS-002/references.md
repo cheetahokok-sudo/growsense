@@ -63,6 +63,19 @@ added per request.
 ### F. Secular trends in height
 22. NCD Risk Factor Collaboration (NCD-RisC). A century of trends in adult human height. *eLife.* 2016;5:e13410. PMID: 27458798. *(18.6M people; some populations +15–20 cm/century.)*
 
+### G. Improved & extended target-height method (matches the app)
+23. Zeevi D, Ben Yehuda A, Nathan D, Zangen D, Kruglyak L. Accurate prediction of children's target height from their mid-parental height. *Children (Basel).* 2024;11(8):916. PMID: 39201851. *(23 large families; raw MPH runs ~2.7 cm low, explains 36% variance; three corrections — nonlinear parental age, multiplicative sex, regression to the mean — raise it to 40%; real residual SD ≈4.5 cm sons / 4.2 cm daughters. This is the method `target-height.js` / `growth_math.dart` implement.)*
+24. Sorkin JD, Muller DC, Andres R. Longitudinal change in height of men and women: … the Baltimore Longitudinal Study of Aging. *Am J Epidemiol.* 1999;150(9):969–977. PMID: 10547143. *(Age-shrinkage: begins ~30; 30→70 ≈ 3 cm men / 5 cm women; by 80 ≈ 5/8 cm.)*
+25. Galton F. Regression towards mediocrity in hereditary stature. *J Anthropol Inst.* 1886;15:246–263. *(Classic origin of regression to the mean.)*
+
+**App note:** the article's §3 describes GrowSense's *actual* target-height
+feature — the validated Zeevi corrections (parents-only) plus the **exploratory,
+clearly-labelled** extended-family estimate (grandparents/aunts/uncles/siblings
+weighted by coefficient of relationship, blended 70/30 with the validated
+result). The naive "3-generation auto-substitution of short parents" was
+deliberately **rejected** in the code and is NOT claimed in the article — ordinary
+family height variation is normal, not an error to overwrite.
+
 ## Corrections carried into the article
 - **"12,000 genetic variants"** now correctly attributed to Yengo 2022 (ref 6),
   with the 2014→2018→2022 progression shown (refs 4–6).
