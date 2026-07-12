@@ -6,6 +6,9 @@ eyebrow: "Growth science"
 hero: "gs-005-hero.jpg"
 heroAlt: "A shorter child standing confidently beside taller peers, with a growth chart showing a steady percentile line — calm and reassuring."
 lang: "en"
+langAlts:
+  - { code: "th", href: "https://www.growsense.life/blog/is-my-child-too-short.th.html", label: "ไทย" }
+  - { code: "zh", href: "https://www.growsense.life/blog/is-my-child-too-short.zh.html", label: "中文" }
 disclaimer: "This article is educational and does not provide medical diagnosis or treatment. Percentiles and target-height ranges are statistical references, not promises. If you have concerns about your child's growth, always consult a qualified pediatrician or pediatric endocrinologist."
 card:
   cat: "Reassurance"

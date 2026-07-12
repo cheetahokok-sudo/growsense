@@ -7,7 +7,9 @@ hero: "gs-001-hero.jpg"
 heroAlt: "เด็กสามคนที่มีอายุและส่วนสูงต่างกันยืนยิ้มด้วยกัน ข้าง ๆ มีกราฟความเร็วในการเจริญเติบโตและไอคอนหกระบบของการเติบโต: พันธุกรรม ฮอร์โมน อายุกระดูก การนอน สารอาหาร และการออกกำลังกาย"
 lang: "th"
 slug: "why-children-grow-faster.th"
-langAlt: { code: "en", href: "https://www.growsense.life/blog/why-children-grow-faster.html", label: "EN" }
+langAlts:
+  - { code: "en", href: "https://www.growsense.life/blog/why-children-grow-faster.html", label: "EN" }
+  - { code: "zh", href: "https://www.growsense.life/blog/why-children-grow-faster.zh.html", label: "中文" }
 disclaimer: "บทความนี้มีวัตถุประสงค์เพื่อให้ความรู้ ไม่ใช่การวินิจฉัยหรือการรักษาทางการแพทย์ ค่าเปอร์เซ็นไทล์เป็นค่าอ้างอิงมาตรฐาน (WHO) และช่วงเป้าหมายส่วนสูงเป็นเพียงการประมาณการ ไม่ใช่การรับประกัน หากมีข้อกังวลเกี่ยวกับการเจริญเติบโตของบุตรหลาน ควรปรึกษากุมารแพทย์หรือกุมารแพทย์เฉพาะทางด้านต่อมไร้ท่อเสมอ"
 references:
   - items:

@@ -6,7 +6,9 @@ eyebrow: "Growth science"
 hero: "gs-001-hero.jpg"
 heroAlt: "Three children of different ages and heights standing together and smiling, beside a growth-velocity chart and a ring of six growth-system icons: genetics, hormones, bone age, sleep, nutrition, and physical activity."
 lang: "en"
-langAlt: { code: "th", href: "https://www.growsense.life/blog/why-children-grow-faster.th.html", label: "ไทย" }
+langAlts:
+  - { code: "th", href: "https://www.growsense.life/blog/why-children-grow-faster.th.html", label: "ไทย" }
+  - { code: "zh", href: "https://www.growsense.life/blog/why-children-grow-faster.zh.html", label: "中文" }
 disclaimer: "This article is educational and does not provide medical diagnosis or treatment. Percentiles are illustrative WHO references; the target-height range is a projection, not a promise. Growth involves individual medical factors — always discuss concerns with a qualified pediatrician or pediatric endocrinologist."
 card:
   cat: "Height & velocity"

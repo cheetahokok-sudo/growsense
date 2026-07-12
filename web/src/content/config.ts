@@ -15,8 +15,10 @@ const articles = defineCollection({
     hero: z.string(), // hero image filename (lives in /blog/)
     heroAlt: z.string(),
     lang: z.string().default('en'),
-    langAlt: z // optional TH/EN alternate for hreflang + toggle
-      .object({ code: z.string(), href: z.string(), label: z.string() })
+    // Other-language versions of this article (for hreflang + the toggle).
+    // Each page lists the OTHER languages; supports any number (EN/TH/ZH…).
+    langAlts: z
+      .array(z.object({ code: z.string(), href: z.string(), label: z.string() }))
       .optional(),
     disclaimer: z.string(),
     // Hub card (Growth Science index). Omit on translations so they don't

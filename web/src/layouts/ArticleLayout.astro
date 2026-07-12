@@ -7,7 +7,20 @@ const { data } = Astro.props;
 const blogBase = 'https://www.growsense.life/blog/';
 const ogImage = new URL(data.hero, blogBase).href;
 const canonical = new URL(Astro.url.pathname.replace(/^\/blog\//, ''), blogBase).href;
-const selfLabel = data.lang === 'th' ? 'ไทย' : 'EN';
+
+// Localized chrome + toggle labels (article body/refs come from frontmatter).
+const selfLabels = { en: 'EN', th: 'ไทย', zh: '中文' };
+const selfLabel = selfLabels[data.lang] ?? data.lang.toUpperCase();
+const UI = {
+  en: { byline: 'Educational, not medical advice', review: 'Every claim sourced to peer-reviewed research — see references below', hub: 'Growth science', back: '← All Growth Science articles', refs: 'References' },
+  th: { byline: 'เพื่อให้ความรู้ ไม่ใช่คำแนะนำทางการแพทย์', review: 'ทุกข้อมูลอ้างอิงจากงานวิจัยที่ผ่านการตรวจสอบ — ดูแหล่งอ้างอิงด้านล่าง', hub: 'บทความทั้งหมด', back: '← ดูบทความทั้งหมด', refs: 'แหล่งอ้างอิง' },
+  zh: { byline: '仅供科普参考，非医疗建议', review: '每一条论述均引自同行评审研究 — 详见文末参考文献', hub: '成长科学', back: '← 查看全部文章', refs: '参考文献' },
+};
+const ui = UI[data.lang] ?? UI.en;
+// x-default → the English version (self if this is EN, else the 'en' alt).
+const allLangs = [{ code: data.lang, href: canonical }, ...(data.langAlts ?? [])];
+const enHref = (allLangs.find((l) => l.code === 'en') ?? allLangs[0]).href;
+const hasAlts = (data.langAlts ?? []).length > 0;
 
 // Flatten references into continuously-numbered groups (ids stay stable).
 let counter = 0;
@@ -24,10 +37,11 @@ const refGroups = (data.references ?? []).map((g) => {
   <title>{data.title}</title>
   <meta name="description" content={data.description} />
   <link rel="canonical" href={canonical} />
-  {data.langAlt && (
+  {hasAlts && (
     <Fragment>
       <link rel="alternate" hreflang={data.lang} href={canonical} />
-      <link rel="alternate" hreflang={data.langAlt.code} href={data.langAlt.href} />
+      {data.langAlts.map((alt) => <link rel="alternate" hreflang={alt.code} href={alt.href} />)}
+      <link rel="alternate" hreflang="x-default" href={enHref} />
     </Fragment>
   )}
   <!-- Open Graph (Facebook / LINE / general link previews) -->
@@ -113,11 +127,11 @@ const refGroups = (data.references ?? []).map((g) => {
   <nav class="gs-topbar">
     <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg></span>
     <a href="https://www.growsense.life">GrowSense</a>
-    <a class="hub" href="https://www.growsense.life/blog/">{data.lang === 'th' ? 'บทความทั้งหมด' : 'Growth science'}</a>
-    {data.langAlt && (
+    <a class="hub" href="https://www.growsense.life/blog/">{ui.hub}</a>
+    {hasAlts && (
       <span class="lang">
         <a class="on" href={canonical}>{selfLabel}</a>
-        <a href={data.langAlt.href}>{data.langAlt.label}</a>
+        {data.langAlts.map((alt) => <a href={alt.href}>{alt.label}</a>)}
       </span>
     )}
   </nav>
@@ -128,14 +142,14 @@ const refGroups = (data.references ?? []).map((g) => {
     </figure>
     <p class="eyebrow">{data.eyebrow}</p>
     <h1>{data.h1}</h1>
-    <p class="byline">GrowSense Growth Science · {data.lang === 'th' ? 'เพื่อให้ความรู้ ไม่ใช่คำแนะนำทางการแพทย์' : 'Educational, not medical advice'}</p>
-    <div class="review">{data.lang === 'th' ? 'ทุกข้อมูลอ้างอิงจากงานวิจัยที่ผ่านการตรวจสอบ — ดูแหล่งอ้างอิงด้านล่าง' : 'Every claim sourced to peer-reviewed research — see references below'}</div>
+    <p class="byline">GrowSense Growth Science · {ui.byline}</p>
+    <div class="review">{ui.review}</div>
 
     <slot />
 
     {refGroups.length > 0 && (
       <div class="refs">
-        <h2>{data.lang === 'th' ? 'แหล่งอ้างอิง' : 'References'}</h2>
+        <h2>{ui.refs}</h2>
         {refGroups.map((g) => (
           <Fragment>
             {g.group && <p class="refgroup">{g.group}</p>}
@@ -147,7 +161,7 @@ const refGroups = (data.references ?? []).map((g) => {
       </div>
     )}
 
-    <div class="backhub"><a href="https://www.growsense.life/blog/">{data.lang === 'th' ? '← ดูบทความทั้งหมด' : '← All Growth Science articles'}</a></div>
+    <div class="backhub"><a href="https://www.growsense.life/blog/">{ui.back}</a></div>
     <p class="disclaimer">{data.disclaimer}</p>
   </article>
 
