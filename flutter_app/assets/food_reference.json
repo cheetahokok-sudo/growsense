@@ -137,11 +137,11 @@
   "portionVisual": "~2 nuggets",
   "per100g": {
    "protein_g": 14,
-   "zinc_mg": null,
-   "calcium_mg": null
+   "zinc_mg": 0.9,
+   "calcium_mg": 25
   },
   "servingGrams": 50,
-  "source": "Generic estimate from USDA-category frozen chicken nugget products — not tied to a single FDC ID. Replace with product label values if known."
+  "source": "Generic estimate from USDA-category frozen chicken nugget products — not tied to a single FDC ID; protein, zinc and calcium are approximate, rough estimates only. Replace with product label values if known."
  },
  {
   "id": "peanut_butter",

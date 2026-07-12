@@ -22,6 +22,11 @@ class FoodItem {
   final double? zincPer100g;
   final double? calciumPer100g;
   final double? sodiumPer100g;
+  // v2.2 quiet data-collection layer — parsed and held but not shown in
+  // any UI yet. Present only on foods whose value is verified from the
+  // cited USDA record; null = not collected yet (never a guess).
+  final double? ironPer100g;
+  final double? vitaminDIuPer100g;
   final double servingGrams;
   final String source;
 
@@ -37,6 +42,8 @@ class FoodItem {
       zincPer100g = ((j['per100g']?['zinc_mg']) as num?)?.toDouble(),
       calciumPer100g = ((j['per100g']?['calcium_mg']) as num?)?.toDouble(),
       sodiumPer100g = ((j['per100g']?['sodium_mg']) as num?)?.toDouble(),
+      ironPer100g = ((j['per100g']?['iron_mg']) as num?)?.toDouble(),
+      vitaminDIuPer100g = ((j['per100g']?['vitamin_d_iu']) as num?)?.toDouble(),
       servingGrams = (j['servingGrams'] as num?)?.toDouble() ?? 100,
       source = j['source'] as String? ?? '';
 

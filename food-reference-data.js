@@ -14,6 +14,16 @@
 // parents see the trade-off at the moment they log. Absent (undefined)
 // on whole foods, which are naturally low-sodium.
 //
+// v2.2: optional per100g.iron_mg and per100g.vitamin_d_iu — a quiet
+// data-collection layer (no UI yet). Both are the same no-guess rule as
+// the rest of this file: a value appears ONLY when read from the food's
+// already-cited USDA FDC record; foods still awaiting verification carry
+// neither field (undefined = "not collected yet"), never a guessed
+// number. Vitamin D pairs later with the outdoor-activity signal
+// (daily_activity_items.is_outdoor) for a fuller vitamin-D picture.
+// PHASE 2: backfill iron_mg + vitamin_d_iu across all foods from their
+// FDC records (cleanest via the USDA FDC API by the IDs already cited).
+//
 // All values per-100g cooked/as-eaten basis (USDA FoodData Central
 // or noted national database). Where a nutrient is genuinely absent
 // from the source checked it is null — never guessed.
@@ -127,9 +137,9 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'chicken',
     prepNote: 'generic, frozen, cooked (brand-specific values vary — rough estimate only)',
     portionVisual: '~2 nuggets',
-    per100g: { protein_g: 14.0, zinc_mg: null, calcium_mg: null },
+    per100g: { protein_g: 14.0, zinc_mg: 0.9, calcium_mg: 25.0 },
     servingGrams: 50,
-    source: 'Generic estimate from USDA-category frozen chicken nugget products — not tied to a single FDC ID. Replace with product label values if known.'
+    source: 'Generic estimate from USDA-category frozen chicken nugget products — not tied to a single FDC ID; protein, zinc and calcium are approximate, rough estimates only. Replace with product label values if known.'
   },
   {
     id: 'peanut_butter',
