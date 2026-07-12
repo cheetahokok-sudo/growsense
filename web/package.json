@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "deploy": "astro build && node copy-to-blog.mjs"
   },
   "dependencies": {
     "astro": "^4.16.18"

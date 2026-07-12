@@ -14,6 +14,9 @@ export default defineConfig({
     // not directory-style /blog/why-children-grow-faster/index.html
     format: 'file',
     assets: '_assets',
+    // Inline the CSS into each page so every .html is self-contained (matches
+    // the hand-built pages) → cutover is just copying .html, no _assets folder.
+    inlineStylesheets: 'always',
   },
   markdown: {
     gfm: true, // GitHub-flavored: footnotes drive the references list
