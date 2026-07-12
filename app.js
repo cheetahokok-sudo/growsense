@@ -3512,6 +3512,7 @@ const FOOD_TYPE_GROUPS = [
   { key: 'dairy',     label: 'Dairy' },
   { key: 'plant',     label: 'Plant-based' },
   { key: 'composite', label: 'Mixed Dishes & Soups' },
+  { key: 'deli',      label: 'Deli & Processed Meats' },
 ];
 
 const FOOD_REGION_GROUPS = [
@@ -3527,9 +3528,36 @@ function openFoodLibraryModal() {
   const searchEl = document.getElementById('foodLibrarySearch');
   if (searchEl) searchEl.value = '';
   _resetFoodLibraryBrowseUI();
+  initFoodExplainer();
   renderFoodLibraryBrowseList('');
   renderFoodLibraryMineList();
   document.getElementById('foodLibraryModal').classList.remove('hidden');
+}
+
+// ── "Why protein, not everything" explainer — parity with the Flutter
+// Food tab. New parents try to log potato and fruit; this card sets
+// the protein/zinc/calcium focus once, then stays dismissed per device.
+function initFoodExplainer() {
+  const card = document.getElementById('foodExplainerCard');
+  if (!card) return;
+  if (localStorage.getItem('gs_food_explainer_dismissed') === '1') {
+    card.classList.add('hidden');
+    return;
+  }
+  document.getElementById('foodExplainerTitle').textContent =
+    '🌱 ' + t('flutter.food.explainer_title', 'Why we track protein, not everything');
+  document.getElementById('foodExplainerBody').textContent =
+    t('flutter.food.explainer_body',
+      "GrowSense isn't a calorie counter — it follows the nutrients that drive a child's height: protein, zinc and calcium. Log the protein part of a meal (the egg, chicken, milk, tofu) — you don't need to log every potato or piece of fruit.");
+  document.getElementById('foodExplainerLink').textContent =
+    t('flutter.food.explainer_link', 'Learn why →');
+  card.classList.remove('hidden');
+}
+
+function dismissFoodExplainer() {
+  localStorage.setItem('gs_food_explainer_dismissed', '1');
+  const card = document.getElementById('foodExplainerCard');
+  if (card) card.classList.add('hidden');
 }
 
 function closeFoodLibraryModal(e) {
@@ -3649,11 +3677,17 @@ function renderFoodLibraryBrowseList(searchQuery) {
     const scale = f.servingGrams / 100;
     const prot = Math.round(f.per100g.protein_g * scale * 10) / 10;
     const sub  = `${f.servingGrams}g · +${prot}g protein`;
+    // Salty flag: high-sodium foods in their own right (≥500 mg/100g)
+    // — a property of the food, so the flag is stable per portion.
+    // Gold (estimated) token, never the red clinical-flag colour.
+    const salty = (f.per100g.sodium_mg || 0) >= 500
+      ? ` <span style="font-size:9px; font-weight:700; color:var(--estimated); background:color-mix(in srgb, var(--estimated) 14%, transparent); border-radius:4px; padding:1px 5px; vertical-align:1px; white-space:nowrap;">⚠ ${t('flutter.food.salty','Salty')}</span>`
+      : '';
     return `<div class="log-item-row" style="padding:9px 0; border-bottom:0.5px solid var(--border2); display:flex; align-items:center; justify-content:space-between; gap:6px;">
       <div style="display:flex; align-items:center; gap:10px; min-width:0;">
         <span style="font-size:20px; width:26px; text-align:center; flex-shrink:0;">${f.emoji}</span>
         <div style="min-width:0;">
-          <div style="font-size:13px; font-weight:500; color:var(--text1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${f.name}</div>
+          <div style="font-size:13px; font-weight:500; color:var(--text1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${f.name}${salty}</div>
           <div style="font-size:11px; color:var(--text3);">${sub}</div>
         </div>
       </div>
@@ -3822,6 +3856,16 @@ async function addCustomFood() {
   if (!name) { showToast('⚠️', t('toast.error.enter_food_name','Enter a food name')); return; }
   if (!grams || grams <= 0) { showToast('⚠️', t('toast.error.enter_serving_size','Enter a valid serving size')); return; }
   if (!protein || protein < 0) { showToast('⚠️', t('toast.error.enter_protein','Enter the protein amount for this serving')); return; }
+
+  // Same 5 (free) / 50 (paid) per-child cap as the Flutter app — a
+  // UX/abuse cap and upgrade boundary, not a storage concern.
+  const customLimit = isPremium() ? 50 : 5;
+  if ((APP.customFoods || []).length >= customLimit) {
+    showToast('⚠️', t('toast.error.custom_food_limit',
+      'Your plan supports up to {n} custom foods — remove one or upgrade')
+      .replace('{n}', customLimit));
+    return;
+  }
 
   const { data, error } = await sb.from('custom_foods').insert({
     child_id: childId,

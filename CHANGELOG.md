@@ -17,6 +17,40 @@ new"), and add the full entry here.
 
 _Work in progress lands here before it's tagged._
 
+## [1.2.0] — 2026-07-12 · build 4
+
+### Added
+- **Deli & processed meats** — 6 new USDA-cited presets (ham, turkey
+  breast, pork bologna at CP-pack piece size, dry salami, beef hot dog,
+  Vienna sausage) in a new Deli category, each carrying real sodium data.
+- **"Salty" flag** — foods ≥500 mg sodium/100 g show a gold ⚠ chip on
+  their card, so the trade-off is visible at the moment of logging
+  (bacon included). Gold, never the clinical red.
+- **Custom foods in the app** — add your own food (label values for one
+  serving), edit or remove it by tapping its ⭐ card; removal keeps all
+  previously-logged days intact. Capped at 5 (free) / 50 (paid) per
+  child. A "⭐ Mine" tab next to All makes the feature discoverable.
+- **"Why we track protein" explainer** — one-time dismissible card on
+  the Food tab linking the protein article, so new parents know not to
+  log every potato and fruit.
+- **The list learns you** — foods logged often in the last 60 days
+  float to the top of the browse list, recomputed at most once a day so
+  the order never jumps mid-session.
+- **Activity search** — search box over the 33-activity browser
+  (name, category, and note), with an empty state.
+- PWA parity: Deli tab, Salty chip, explainer card, and the custom-food
+  cap in the web app.
+
+### Changed
+- Three activity notes (box jumps, jump rope, sprint) rewritten to the
+  honest GS-041 voice — bone loading and short-term markers, not height
+  promises; both cited papers verified on PubMed.
+
+### Fixed
+- Rep-based activities (box jumps, vertical jumps, hopscotch) failed to
+  save at 10/30/50 reps — duration_min was an integer column rejecting
+  half-minute values; it now accepts fractional minutes.
+
 ## [1.1.0] — 2026-07-12 · build 3
 
 ### Added

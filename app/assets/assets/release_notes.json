@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "1.2.0",
+      "build": 4,
+      "date": "2026-07-12",
+      "title": "Smarter food logging",
+      "highlights": [
+        "Add your own foods — a favourite brand, a home recipe, a supplement — and edit or remove them anytime. Find them fast under the new ⭐ Mine tab.",
+        "The food list now learns you: foods you log often rise to the top.",
+        "New deli & sausage foods (ham, bologna, hot dog, and more) with a ⚠ Salty flag so you can see the sodium trade-off at a glance.",
+        "Search the activity list, and a quick note explaining why GrowSense tracks protein rather than every calorie."
+      ]
+    },
+    {
       "version": "1.1.0",
       "build": 3,
       "date": "2026-07-12",

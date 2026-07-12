@@ -1182,6 +1182,16 @@
 
     <!-- Browse all: search + category tabs + grouped/filtered list -->
     <div id="foodLibraryBrowsePane">
+      <!-- One-time "why protein" explainer — shown until dismissed
+           (localStorage), populated + toggled by initFoodExplainer() -->
+      <div id="foodExplainerCard" class="hidden food-explainer-card">
+        <div class="food-explainer-head">
+          <span id="foodExplainerTitle"></span>
+          <button onclick="dismissFoodExplainer()" aria-label="Dismiss">✕</button>
+        </div>
+        <p id="foodExplainerBody"></p>
+        <a id="foodExplainerLink" href="/blog/protein-and-height" target="_blank" rel="noopener"></a>
+      </div>
       <!-- Search -->
       <input type="search" id="foodLibrarySearch" class="text-input"
         placeholder="Search foods…"
@@ -1199,6 +1209,7 @@
         <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('dairy',this)">🧀 Dairy</button>
         <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('plant',this)">🌱 Plant</button>
         <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('composite',this)">🍲 Soups</button>
+        <button class="activity-browser-tab food-cat-tab" onclick="setFoodCategoryFilter('deli',this)">🥓 Deli</button>
       </div>
       <!-- Group-by toggle — shown only on "All" tab -->
       <div class="seg" id="foodGroupSeg" style="margin-bottom:10px;">
