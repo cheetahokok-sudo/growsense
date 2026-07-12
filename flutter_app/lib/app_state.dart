@@ -97,8 +97,8 @@ class AppState extends ChangeNotifier {
 
   Map<String, dynamic>? get activeChildRow =>
       (activeChild >= 0 && activeChild < children.length)
-          ? children[activeChild]
-          : null;
+      ? children[activeChild]
+      : null;
 
   String? get activeChildId => activeChildRow?['child_id'] as String?;
 
@@ -149,8 +149,7 @@ class AppState extends ChangeNotifier {
     }
     loadingChildren = false;
     notifyListeners();
-    await Future.wait(
-        [loadDay(), loadMeasurements(), loadWeekConsistency()]);
+    await Future.wait([loadDay(), loadMeasurements(), loadWeekConsistency()]);
   }
 
   Future<void> setActiveChild(int i) async {
@@ -159,8 +158,7 @@ class AppState extends ChangeNotifier {
     _clinicalLoadedFor = null; // clinical lists are per-child
     _wearableLoadedFor = null;
     notifyListeners();
-    await Future.wait(
-        [loadDay(), loadMeasurements(), loadWeekConsistency()]);
+    await Future.wait([loadDay(), loadMeasurements(), loadWeekConsistency()]);
   }
 
   Future<void> setLogDate(String date) async {
@@ -217,10 +215,12 @@ class AppState extends ChangeNotifier {
       ]);
       nutrition = results[0] as Map<String, dynamic>?;
       sleep = results[1] as Map<String, dynamic>?;
-      activityItems =
-          List<Map<String, dynamic>>.from(results[2] as List? ?? []);
-      nutritionLogItems =
-          List<Map<String, dynamic>>.from(results[3] as List? ?? []);
+      activityItems = List<Map<String, dynamic>>.from(
+        results[2] as List? ?? [],
+      );
+      nutritionLogItems = List<Map<String, dynamic>>.from(
+        results[3] as List? ?? [],
+      );
       lastError = null;
     } on PostgrestException catch (e) {
       lastError = e.message;
@@ -275,6 +275,64 @@ class AppState extends ChangeNotifier {
     try {
       await sb.from('nutrition_log_items').delete().eq('item_id', itemId);
       nutritionLogItems.removeWhere((i) => i['item_id'] == itemId);
+      notifyListeners();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  // ── Custom foods — parent-defined foods, per child (mirror of the
+  // PWA's custom_foods flow). Values are stored for THE serving, not
+  // per-100g. Loaded on the Food tab; merged into the browse list.
+  List<Map<String, dynamic>> customFoods = [];
+
+  Future<void> loadCustomFoods() async {
+    final childId = activeChildId;
+    if (childId == null) {
+      customFoods = [];
+      notifyListeners();
+      return;
+    }
+    try {
+      final rows = await sb
+          .from('custom_foods')
+          .select('*')
+          .eq('child_id', childId)
+          .order('created_at', ascending: false);
+      customFoods = List<Map<String, dynamic>>.from(rows);
+    } catch (_) {
+      customFoods = [];
+    }
+    notifyListeners();
+  }
+
+  Future<String?> addCustomFood({
+    required String name,
+    required double servingGrams,
+    String? description,
+    required double proteinG,
+    double? zincMg,
+    double? calciumMg,
+  }) async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    try {
+      final row = await sb
+          .from('custom_foods')
+          .insert({
+            'child_id': childId,
+            'name': name,
+            'serving_grams': servingGrams,
+            'serving_description': description,
+            'protein_g': proteinG,
+            'zinc_mg': zincMg,
+            'calcium_mg': calciumMg,
+            'created_by': sb.auth.currentUser?.id,
+          })
+          .select()
+          .single();
+      customFoods = [row, ...customFoods];
       notifyListeners();
       return null;
     } on PostgrestException catch (e) {
@@ -346,8 +404,9 @@ class AppState extends ChangeNotifier {
       return;
     }
     final now = DateTime.now();
-    final monday =
-        localISO(now.subtract(Duration(days: (now.weekday - 1) % 7)));
+    final monday = localISO(
+      now.subtract(Duration(days: (now.weekday - 1) % 7)),
+    );
     try {
       final results = await Future.wait([
         sb
@@ -392,12 +451,14 @@ class AppState extends ChangeNotifier {
     var wakeMins = wake[0] * 60 + wake[1];
     if (bedMins > wakeMins) wakeMins += 1440;
     final totalSleepMin = wakeMins - bedMins;
-    final efficiency = ((totalSleepMin /
-                calcSleepTargetMin(
-                    activeChildRow?['date_of_birth'] as String?)) *
-            100)
-        .round()
-        .clamp(0, 100);
+    final efficiency =
+        ((totalSleepMin /
+                    calcSleepTargetMin(
+                      activeChildRow?['date_of_birth'] as String?,
+                    )) *
+                100)
+            .round()
+            .clamp(0, 100);
     try {
       final meta = manualEntryMeta(logDate);
       await sb.from('daily_sleep').upsert({
@@ -437,20 +498,23 @@ class AppState extends ChangeNotifier {
     if (childId == null) return 'No child selected';
 
     final mealSums = {
-      'breakfast': 0.0, 'lunch': 0.0, 'dinner': 0.0, 'snack': 0.0,
+      'breakfast': 0.0,
+      'lunch': 0.0,
+      'dinner': 0.0,
+      'snack': 0.0,
     };
     for (final item in nutritionLogItems) {
       final slot = item['meal_slot'] as String? ?? 'breakfast';
       mealSums[mealSums.containsKey(slot) ? slot : 'breakfast'] =
           (mealSums[mealSums.containsKey(slot) ? slot : 'breakfast'] ?? 0) +
-              ((item['protein_g'] as num?)?.toDouble() ?? 0);
+          ((item['protein_g'] as num?)?.toDouble() ?? 0);
     }
-    final itemsTotal =
-        mealSums.values.fold<double>(0, (a, b) => a + b);
+    final itemsTotal = mealSums.values.fold<double>(0, (a, b) => a + b);
     final manualGap = proteinTotalG - itemsTotal;
     if (manualGap > 0) {
-      final slot =
-          mealSums.containsKey(activeMealSlot) ? activeMealSlot : 'breakfast';
+      final slot = mealSums.containsKey(activeMealSlot)
+          ? activeMealSlot
+          : 'breakfast';
       mealSums[slot] = mealSums[slot]! + manualGap;
     }
     mealSums['dinner'] = mealSums['dinner']! + mealSums['snack']!;
@@ -484,7 +548,9 @@ class AppState extends ChangeNotifier {
   /// Update editable child-profile fields (name, DOB, parent heights
   /// and ages — the same columns the PWA's account screen writes).
   Future<String?> updateChild(
-      dynamic childId, Map<String, dynamic> fields) async {
+    dynamic childId,
+    Map<String, dynamic> fields,
+  ) async {
     try {
       await sb.from('children').update(fields).eq('child_id', childId);
       final i = children.indexWhere((c) => c['child_id'] == childId);
@@ -513,7 +579,8 @@ class AppState extends ChangeNotifier {
       final d = DateTime.tryParse(dob);
       if (d != null) {
         ageYears = double.parse(
-            (DateTime.now().difference(d).inDays / 365.25).toStringAsFixed(1));
+          (DateTime.now().difference(d).inDays / 365.25).toStringAsFixed(1),
+        );
       }
     }
     try {
@@ -528,8 +595,7 @@ class AppState extends ChangeNotifier {
         'description': description,
         'child_age_years': ageYears,
         'child_sex': child?['biological_sex'],
-        'context':
-            activeScreen == null ? {} : {'active_screen': activeScreen},
+        'context': activeScreen == null ? {} : {'active_screen': activeScreen},
       });
       return null;
     } on PostgrestException catch (e) {
@@ -566,10 +632,14 @@ class AppState extends ChangeNotifier {
   /// google-health-auth Edge Function, which exchanges it for tokens
   /// server-side. Returns (connectedEmail, error).
   Future<(String?, String?)> connectFitbitWithCode(
-      String code, String childId) async {
+    String code,
+    String childId,
+  ) async {
     try {
-      final res = await sb.functions
-          .invoke('google-health-auth', body: {'code': code, 'child_id': childId});
+      final res = await sb.functions.invoke(
+        'google-health-auth',
+        body: {'code': code, 'child_id': childId},
+      );
       final data = res.data as Map<String, dynamic>?;
       if (res.status != 200) {
         return (null, (data?['error'] as String?) ?? 'Connection failed');
@@ -591,8 +661,10 @@ class AppState extends ChangeNotifier {
     syncingWearable = true;
     notifyListeners();
     try {
-      final res = await sb.functions.invoke('google-health-sync',
-          body: {'child_id': childId, 'days_back': daysBack});
+      final res = await sb.functions.invoke(
+        'google-health-sync',
+        body: {'child_id': childId, 'days_back': daysBack},
+      );
       final data = res.data as Map<String, dynamic>?;
       syncingWearable = false;
       if (res.status != 200) {
@@ -650,8 +722,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> _insertClinical(String table, Map<String, dynamic> row,
-      List<Map<String, dynamic>> list) async {
+  Future<String?> _insertClinical(
+    String table,
+    Map<String, dynamic> row,
+    List<Map<String, dynamic>> list,
+  ) async {
     final childId = activeChildId;
     if (childId == null) return 'No child selected';
     try {
@@ -672,8 +747,12 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<String?> _deleteClinical(String table, String idColumn, dynamic id,
-      List<Map<String, dynamic>> list) async {
+  Future<String?> _deleteClinical(
+    String table,
+    String idColumn,
+    dynamic id,
+    List<Map<String, dynamic>> list,
+  ) async {
     try {
       await sb.from(table).delete().eq(idColumn, id);
       list.removeWhere((r) => r[idColumn] == id);
@@ -693,17 +772,16 @@ class AppState extends ChangeNotifier {
     String? reportDoctor,
     String? notes,
     String? xrayStoragePath,
-  }) =>
-      _insertClinical('bone_age_assessments', {
-        'study_date': studyDate,
-        'bone_age_months': boneAgeMonths,
-        'sd_months': sdMonths,
-        'method': method,
-        'chronological_age_months': chronologicalAgeMonths,
-        'report_doctor': reportDoctor,
-        'notes': notes,
-        'xray_storage_path': xrayStoragePath,
-      }, boneAgeAssessments);
+  }) => _insertClinical('bone_age_assessments', {
+    'study_date': studyDate,
+    'bone_age_months': boneAgeMonths,
+    'sd_months': sdMonths,
+    'method': method,
+    'chronological_age_months': chronologicalAgeMonths,
+    'report_doctor': reportDoctor,
+    'notes': notes,
+    'xray_storage_path': xrayStoragePath,
+  }, boneAgeAssessments);
 
   // ── Data export ─────────────────────────────────────────────────────
 
@@ -718,9 +796,7 @@ class AppState extends ChangeNotifier {
 
     String cell(dynamic v) {
       final s = (v ?? '').toString();
-      return s.contains(RegExp(r'[",\n]'))
-          ? '"${s.replaceAll('"', '""')}"'
-          : s;
+      return s.contains(RegExp(r'[",\n]')) ? '"${s.replaceAll('"', '""')}"' : s;
     }
 
     String row(List<dynamic> cells) => cells.map(cell).join(',');
@@ -737,8 +813,10 @@ class AppState extends ChangeNotifier {
             .order('log_date'),
         sb
             .from('daily_sleep')
-            .select('log_date, total_sleep_min, bedtime, wake_time,'
-                ' night_wakes')
+            .select(
+              'log_date, total_sleep_min, bedtime, wake_time,'
+              ' night_wakes',
+            )
             .eq('child_id', childId)
             .gte('log_date', since)
             .order('log_date'),
@@ -749,40 +827,44 @@ class AppState extends ChangeNotifier {
         ..writeln()
         ..writeln('CHILD')
         ..writeln(row(['name', 'date_of_birth', 'biological_sex']))
-        ..writeln(row([
-          child['name'],
-          child['date_of_birth'],
-          child['biological_sex'],
-        ]))
+        ..writeln(
+          row([child['name'], child['date_of_birth'], child['biological_sex']]),
+        )
         ..writeln()
         ..writeln('GROWTH MEASUREMENTS')
         ..writeln(row(['recorded_date', 'height_cm', 'weight_kg']));
       for (final m in measurements.reversed) {
-        b.writeln(row([
-          m['recorded_date'],
-          m['stature_height_cm'],
-          m['mass_weight_kg'],
-        ]));
+        b.writeln(
+          row([
+            m['recorded_date'],
+            m['stature_height_cm'],
+            m['mass_weight_kg'],
+          ]),
+        );
       }
 
       b
         ..writeln()
         ..writeln('BONE AGE ASSESSMENTS')
-        ..writeln(row([
-          'study_date',
-          'bone_age_months',
-          'chronological_age_months',
-          'method',
-          'report_doctor',
-        ]));
+        ..writeln(
+          row([
+            'study_date',
+            'bone_age_months',
+            'chronological_age_months',
+            'method',
+            'report_doctor',
+          ]),
+        );
       for (final r in boneAgeAssessments.reversed) {
-        b.writeln(row([
-          r['study_date'],
-          r['bone_age_months'],
-          r['chronological_age_months'],
-          r['method'],
-          r['report_doctor'],
-        ]));
+        b.writeln(
+          row([
+            r['study_date'],
+            r['bone_age_months'],
+            r['chronological_age_months'],
+            r['method'],
+            r['report_doctor'],
+          ]),
+        );
       }
 
       b
@@ -790,68 +872,76 @@ class AppState extends ChangeNotifier {
         ..writeln('ILLNESS EVENTS')
         ..writeln(row(['start_date', 'end_date', 'illness_type', 'notes']));
       for (final e in illnessEvents.reversed) {
-        b.writeln(row([
-          e['start_date'],
-          e['end_date'],
-          e['illness_type'],
-          e['notes'],
-        ]));
+        b.writeln(
+          row([e['start_date'], e['end_date'], e['illness_type'], e['notes']]),
+        );
       }
 
       b
         ..writeln()
         ..writeln('LAB RESULTS')
-        ..writeln(row([
-          'lab_date',
-          'analyte_name',
-          'result_value',
-          'unit',
-          'reference_low',
-          'reference_high',
-        ]));
+        ..writeln(
+          row([
+            'lab_date',
+            'analyte_name',
+            'result_value',
+            'unit',
+            'reference_low',
+            'reference_high',
+          ]),
+        );
       for (final l in labResults.reversed) {
-        b.writeln(row([
-          l['lab_date'],
-          l['analyte_name'],
-          l['result_value'],
-          l['unit'],
-          l['reference_low'],
-          l['reference_high'],
-        ]));
+        b.writeln(
+          row([
+            l['lab_date'],
+            l['analyte_name'],
+            l['result_value'],
+            l['unit'],
+            l['reference_low'],
+            l['reference_high'],
+          ]),
+        );
       }
 
       b
         ..writeln()
         ..writeln('DAILY NUTRITION (last 30 days)')
         ..writeln(
-            row(['log_date', 'total_protein_g', 'calcium_mg', 'fluids_ml']));
+          row(['log_date', 'total_protein_g', 'calcium_mg', 'fluids_ml']),
+        );
       for (final n in results[0] as List) {
-        b.writeln(row([
-          n['log_date'],
-          n['total_protein_g'],
-          n['calcium_mg'],
-          n['fluids_ml'],
-        ]));
+        b.writeln(
+          row([
+            n['log_date'],
+            n['total_protein_g'],
+            n['calcium_mg'],
+            n['fluids_ml'],
+          ]),
+        );
       }
 
       b
         ..writeln()
         ..writeln('DAILY SLEEP (last 30 days)')
-        ..writeln(row([
-          'log_date',
-          'total_sleep_min',
-          'bedtime',
-          'wake_time',
-          'night_wakes',
-        ]));
+        ..writeln(
+          row([
+            'log_date',
+            'total_sleep_min',
+            'bedtime',
+            'wake_time',
+            'night_wakes',
+          ]),
+        );
       for (final s in results[1] as List) {
-        b.writeln(row([
-          s['log_date'],
-          s['total_sleep_min'],
-          s['bedtime'],
-          s['wake_time'],
-          s['night_wakes'],
-        ]));
+        b.writeln(
+          row([
+            s['log_date'],
+            s['total_sleep_min'],
+            s['bedtime'],
+            s['wake_time'],
+            s['night_wakes'],
+          ]),
+        );
       }
 
       return (b.toString(), null);
@@ -907,7 +997,9 @@ class AppState extends ChangeNotifier {
   /// Add one record (aunts/uncles — multiple allowed). Returns the new
   /// row, or null on failure.
   Future<Map<String, dynamic>?> addFamilyRecord(
-      String relation, double heightCm) async {
+    String relation,
+    double heightCm,
+  ) async {
     final childId = activeChildId;
     if (childId == null) return null;
     try {
@@ -928,10 +1020,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> deleteFamilyRecord(dynamic recordId) async {
     try {
-      await sb
-          .from('family_height_records')
-          .delete()
-          .eq('record_id', recordId);
+      await sb.from('family_height_records').delete().eq('record_id', recordId);
     } on PostgrestException {
       /* non-fatal */
     }
@@ -981,8 +1070,9 @@ class AppState extends ChangeNotifier {
           .maybeSingle();
       final tierLimit = (limitRow?['max_children'] as num?)?.toInt();
       final limit = math.min(tierLimit ?? 4, 4);
-      final activeCount =
-          children.where((c) => c['status'] != 'archived').length;
+      final activeCount = children
+          .where((c) => c['status'] != 'archived')
+          .length;
       if (activeCount >= limit) {
         return 'Your $tier plan supports up to $limit child profiles';
       }
@@ -1000,8 +1090,7 @@ class AppState extends ChangeNotifier {
         if (isSga) 'is_sga': true,
         if (isSga) 'sga_confirmed_by': uid,
       };
-      final row =
-          await sb.from('children').insert(payload).select().single();
+      final row = await sb.from('children').insert(payload).select().single();
       children.add(row);
       notifyListeners();
       return null;
@@ -1014,11 +1103,12 @@ class AppState extends ChangeNotifier {
   /// find_clinician_by_email is a SECURITY DEFINER function returning
   /// only user_id + account_role for clinician accounts — it cannot be
   /// used to enumerate emails (parent/unknown emails return no rows).
-  Future<String?> shareChildWithClinician(
-      dynamic childId, String email) async {
+  Future<String?> shareChildWithClinician(dynamic childId, String email) async {
     try {
-      final matches = await sb
-          .rpc('find_clinician_by_email', params: {'lookup_email': email});
+      final matches = await sb.rpc(
+        'find_clinician_by_email',
+        params: {'lookup_email': email},
+      );
       final list = List<Map<String, dynamic>>.from(matches as List? ?? []);
       if (list.isEmpty) {
         return 'No Doctor or Researcher account found with that email';
@@ -1030,9 +1120,7 @@ class AppState extends ChangeNotifier {
       });
       return null;
     } on PostgrestException catch (e) {
-      return e.code == '23505'
-          ? 'Already shared with this account'
-          : e.message;
+      return e.code == '23505' ? 'Already shared with this account' : e.message;
     }
   }
 
@@ -1041,7 +1129,8 @@ class AppState extends ChangeNotifier {
       final rows = await sb
           .from('doctor_patient_assignments')
           .select(
-              'assignment_id, doctor_id, is_active, user_accounts(email, account_role)')
+            'assignment_id, doctor_id, is_active, user_accounts(email, account_role)',
+          )
           .eq('child_id', childId)
           .eq('is_active', true);
       return List<Map<String, dynamic>>.from(rows);
@@ -1054,7 +1143,8 @@ class AppState extends ChangeNotifier {
     try {
       await sb
           .from('doctor_patient_assignments')
-          .update({'is_active': false}).eq('assignment_id', assignmentId);
+          .update({'is_active': false})
+          .eq('assignment_id', assignmentId);
       return null;
     } on PostgrestException catch (e) {
       return e.message;
@@ -1067,8 +1157,10 @@ class AppState extends ChangeNotifier {
     final code = rawCode.trim().toUpperCase().replaceAll(RegExp(r'\s+'), '');
     if (code.isEmpty) return (null, 'Enter an activation code');
     try {
-      final res =
-          await sb.functions.invoke('redeem-code', body: {'code': code});
+      final res = await sb.functions.invoke(
+        'redeem-code',
+        body: {'code': code},
+      );
       final data = res.data as Map<String, dynamic>?;
       if (data == null || data['error'] != null) {
         return (null, (data?['error'] ?? 'Redemption failed').toString());
@@ -1079,7 +1171,7 @@ class AppState extends ChangeNotifier {
       notifyListeners();
       return (
         (data['message'] ?? '${data['tier']} activated!').toString(),
-        null
+        null,
       );
     } on FunctionException catch (e) {
       final detail = e.details;
@@ -1087,8 +1179,8 @@ class AppState extends ChangeNotifier {
         null,
         detail is Map
             ? (detail['error'] ?? e.reasonPhrase ?? 'Redemption failed')
-                .toString()
-            : (e.reasonPhrase ?? 'Redemption failed')
+                  .toString()
+            : (e.reasonPhrase ?? 'Redemption failed'),
       );
     }
   }
@@ -1096,9 +1188,10 @@ class AppState extends ChangeNotifier {
   Future<String?> deleteBoneAge(dynamic id) async {
     // Remove the stored X-ray first (same as the PWA) — non-fatal if
     // it fails, the DB row is the source of truth.
-    final rec = boneAgeAssessments
-        .cast<Map<String, dynamic>?>()
-        .firstWhere((r) => r?['assessment_id'] == id, orElse: () => null);
+    final rec = boneAgeAssessments.cast<Map<String, dynamic>?>().firstWhere(
+      (r) => r?['assessment_id'] == id,
+      orElse: () => null,
+    );
     final path = rec?['xray_storage_path'] as String?;
     if (path != null) {
       try {
@@ -1106,7 +1199,11 @@ class AppState extends ChangeNotifier {
       } catch (_) {}
     }
     return _deleteClinical(
-        'bone_age_assessments', 'assessment_id', id, boneAgeAssessments);
+      'bone_age_assessments',
+      'assessment_id',
+      id,
+      boneAgeAssessments,
+    );
   }
 
   /// Upload an X-ray image (already downscaled JPEG bytes) to the
@@ -1116,9 +1213,16 @@ class AppState extends ChangeNotifier {
     if (childId == null) return null;
     final path = '$childId/${DateTime.now().millisecondsSinceEpoch}.jpg';
     try {
-      await sb.storage.from('bone-xrays').uploadBinary(path, jpegBytes,
-          fileOptions:
-              const FileOptions(contentType: 'image/jpeg', upsert: false));
+      await sb.storage
+          .from('bone-xrays')
+          .uploadBinary(
+            path,
+            jpegBytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: false,
+            ),
+          );
       return path;
     } catch (_) {
       return null;
@@ -1132,8 +1236,9 @@ class AppState extends ChangeNotifier {
     final cached = _xrayUrlCache[path];
     if (cached != null) return cached;
     try {
-      final url =
-          await sb.storage.from('bone-xrays').createSignedUrl(path, 3600);
+      final url = await sb.storage
+          .from('bone-xrays')
+          .createSignedUrl(path, 3600);
       _xrayUrlCache[path] = url;
       return url;
     } catch (_) {
@@ -1156,23 +1261,27 @@ class AppState extends ChangeNotifier {
       // (vision reads bones fine at that size; keeps payload small).
       final bytes = await sb.storage.from('bone-xrays').download(path);
       final resized = await compute(downscaleXrayJpeg, bytes);
-      final res = await sb.functions.invoke('bone-age-analysis', body: {
-        'image_base64': base64Encode(resized),
-        'media_type': 'image/jpeg',
-        'chronological_age_months': record['chronological_age_months'],
-        'sex': activeChildRow?['sex'] ?? 'male',
-        'assessment_id': record['assessment_id'],
-      });
+      final res = await sb.functions.invoke(
+        'bone-age-analysis',
+        body: {
+          'image_base64': base64Encode(resized),
+          'media_type': 'image/jpeg',
+          'chronological_age_months': record['chronological_age_months'],
+          'sex': activeChildRow?['sex'] ?? 'male',
+          'assessment_id': record['assessment_id'],
+        },
+      );
       final data = res.data as Map<String, dynamic>?;
       if (data == null || data['error'] != null) {
         return (data?['error'] ?? 'AI service returned no result').toString();
       }
-      final idx = boneAgeAssessments
-          .indexWhere((r) => r['assessment_id'] == record['assessment_id']);
+      final idx = boneAgeAssessments.indexWhere(
+        (r) => r['assessment_id'] == record['assessment_id'],
+      );
       if (idx >= 0) {
         boneAgeAssessments[idx]['ai_analysis_result'] = data['result'];
-        boneAgeAssessments[idx]['ai_analysis_date'] =
-            DateTime.now().toIso8601String();
+        boneAgeAssessments[idx]['ai_analysis_date'] = DateTime.now()
+            .toIso8601String();
       }
       return null;
     } on FunctionException catch (e) {
@@ -1195,15 +1304,14 @@ class AppState extends ChangeNotifier {
     required String unit,
     double? referenceLow,
     double? referenceHigh,
-  }) =>
-      _insertClinical('lab_results', {
-        'lab_date': labDate,
-        'analyte_name': analyteName,
-        'result_value': resultValue,
-        'unit': unit,
-        'reference_low': referenceLow,
-        'reference_high': referenceHigh,
-      }, labResults);
+  }) => _insertClinical('lab_results', {
+    'lab_date': labDate,
+    'analyte_name': analyteName,
+    'result_value': resultValue,
+    'unit': unit,
+    'reference_low': referenceLow,
+    'reference_high': referenceHigh,
+  }, labResults);
 
   Future<String?> deleteLabResult(dynamic id) =>
       _deleteClinical('lab_results', 'lab_result_id', id, labResults);
@@ -1213,13 +1321,12 @@ class AppState extends ChangeNotifier {
     String? endDate,
     required String illnessType,
     String? notes,
-  }) =>
-      _insertClinical('illness_events', {
-        'start_date': startDate,
-        'end_date': endDate,
-        'illness_type': illnessType,
-        'notes': notes,
-      }, illnessEvents);
+  }) => _insertClinical('illness_events', {
+    'start_date': startDate,
+    'end_date': endDate,
+    'illness_type': illnessType,
+    'notes': notes,
+  }, illnessEvents);
 
   Future<String?> deleteIllnessEvent(dynamic id) =>
       _deleteClinical('illness_events', 'event_id', id, illnessEvents);
@@ -1228,12 +1335,11 @@ class AppState extends ChangeNotifier {
     required String eventDate,
     required String eventType,
     int? tannerStage,
-  }) =>
-      _insertClinical('puberty_events', {
-        'event_date': eventDate,
-        'event_type': eventType,
-        'tanner_stage': tannerStage,
-      }, pubertyEvents);
+  }) => _insertClinical('puberty_events', {
+    'event_date': eventDate,
+    'event_type': eventType,
+    'tanner_stage': tannerStage,
+  }, pubertyEvents);
 
   Future<String?> deletePubertyEvent(dynamic id) =>
       _deleteClinical('puberty_events', 'event_id', id, pubertyEvents);
@@ -1248,7 +1354,9 @@ class AppState extends ChangeNotifier {
     try {
       final rows = await sb
           .from('measurements')
-          .select('measurement_id, recorded_date, stature_height_cm, mass_weight_kg')
+          .select(
+            'measurement_id, recorded_date, stature_height_cm, mass_weight_kg',
+          )
           .eq('child_id', childId)
           .order('recorded_date', ascending: false);
       measurements = List<Map<String, dynamic>>.from(rows);

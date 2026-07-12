@@ -1,12 +1,18 @@
 // ══════════════════════════════════════════════════════════════════
-// GrowSense Food Reference Data v2.0
-// 70 presets: 20 global staples + 50 international regional foods
+// GrowSense Food Reference Data v2.1
+// 76 presets: 20 global staples + 50 international regional foods
+//             + 6 deli / processed meats
 //
 // Fields added in v2:
 //   region   — 'global' | 'cn' | 'kr' | 'ae' | 'th' | 'vn' | 'us' | 'eu'
 //   category — protein type for optional filter UI
 //              'chicken' | 'beef' | 'pork' | 'fish' | 'seafood'
-//              | 'egg' | 'dairy' | 'plant' | 'composite'
+//              | 'egg' | 'dairy' | 'plant' | 'composite' | 'deli'
+//
+// v2.1: optional per100g.sodium_mg — present on processed/deli meats.
+// The app shows a "Salty" flag when a food is ≥500 mg sodium /100g so
+// parents see the trade-off at the moment they log. Absent (undefined)
+// on whole foods, which are naturally low-sodium.
 //
 // All values per-100g cooked/as-eaten basis (USDA FoodData Central
 // or noted national database). Where a nutrient is genuinely absent
@@ -165,9 +171,83 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'pork',
     prepNote: 'cooked, pan-fried',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 33.89, zinc_mg: 3.06, calcium_mg: 11.11 },
+    per100g: { protein_g: 33.89, zinc_mg: 3.06, calcium_mg: 11.11, sodium_mg: 1717.0 },
     servingGrams: 28,
     source: 'USDA FDC 168322 — Pork, cured, bacon, pre-sliced, cooked, pan-fried. NOTE: high sodium — one 28g tap provides ~9% of a child\'s daily recommended sodium intake.'
+  },
+
+  // ════════════════════════════════════════════
+  // DELI & PROCESSED MEATS (6)
+  // Convenient, real foods kids eat — but salty and processed, so each
+  // carries a sodium_mg value that drives the "Salty" flag. Portions
+  // reflect pieces as sold in the supermarket (e.g. CP Pork Bologna
+  // 150 g ≈ 8 pieces). Nutrients: USDA. Piece sizes: real products.
+  // ════════════════════════════════════════════
+  {
+    id: 'deli_ham',
+    name: 'Ham (deli)',
+    emoji: '🍖',
+    region: 'global', category: 'deli',
+    prepNote: 'sliced, regular ~11% fat',
+    portionVisual: '1 sandwich slice',
+    per100g: { protein_g: 16.60, zinc_mg: 1.90, calcium_mg: 6.0, sodium_mg: 1203.0 },
+    servingGrams: 28,
+    source: 'USDA FDC 173864 — Ham, sliced, regular (approximately 11% fat). NOTE: processed/high sodium — one 28 g slice ≈ 337 mg sodium (~22% of a young child\'s daily limit).'
+  },
+  {
+    id: 'deli_turkey',
+    name: 'Turkey breast (deli)',
+    emoji: '🦃',
+    region: 'global', category: 'deli',
+    prepNote: 'sliced, low-salt deli',
+    portionVisual: '1 sandwich slice',
+    per100g: { protein_g: 13.70, zinc_mg: 1.10, calcium_mg: 5.0, sodium_mg: 772.0 },
+    servingGrams: 28,
+    source: 'USDA FDC 174572 — Turkey breast, low salt, prepackaged or deli, luncheon meat. Leaner and lower-sodium than most cold cuts, but still salty.'
+  },
+  {
+    id: 'bologna',
+    name: 'Bologna (pork)',
+    emoji: '🥪',
+    region: 'global', category: 'deli',
+    prepNote: 'e.g. CP Pork Bologna',
+    portionVisual: '1 piece (CP 150 g pack ≈ 8 pieces)',
+    per100g: { protein_g: 15.30, zinc_mg: 2.00, calcium_mg: 11.0, sodium_mg: 907.0 },
+    servingGrams: 19,
+    source: 'USDA SR — Bologna, pork (NDB 07064). Portion from CP Pork Bologna 150 g ≈ 8 pieces (~19 g each). NOTE: processed/high sodium.'
+  },
+  {
+    id: 'salami',
+    name: 'Salami (dry)',
+    emoji: '🥩',
+    region: 'global', category: 'deli',
+    prepNote: 'dry/hard, thin slices',
+    portionVisual: '3 very thin slices',
+    per100g: { protein_g: 22.60, zinc_mg: 4.20, calcium_mg: 13.0, sodium_mg: 2261.0 },
+    servingGrams: 10,
+    source: 'USDA FDC 174603 — Salami, dry or hard, pork. NOTE: very high sodium — thin slices only; 10 g ≈ 226 mg sodium (~15% of a young child\'s daily limit).'
+  },
+  {
+    id: 'hot_dog',
+    name: 'Hot dog / frankfurter',
+    emoji: '🌭',
+    region: 'global', category: 'deli',
+    prepNote: 'beef frankfurter',
+    portionVisual: '1 whole hot dog',
+    per100g: { protein_g: 11.70, zinc_mg: 2.10, calcium_mg: 13.0, sodium_mg: 810.0 },
+    servingGrams: 45,
+    source: 'USDA FDC 171357 — Frankfurter, beef. NOTE: processed/high sodium — one frank ≈ 365 mg sodium (~24% of a young child\'s daily limit).'
+  },
+  {
+    id: 'vienna_sausage',
+    name: 'Vienna sausage',
+    emoji: '🥫',
+    region: 'global', category: 'deli',
+    prepNote: 'canned',
+    portionVisual: '1 piece',
+    per100g: { protein_g: 10.50, zinc_mg: 1.60, calcium_mg: 10.0, sodium_mg: 879.0 },
+    servingGrams: 16,
+    source: 'USDA FDC 172942 — Sausage, Vienna, canned, chicken, beef, pork. NOTE: processed/high sodium.'
   },
   {
     id: 'raw_salmon',
