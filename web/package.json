@@ -1,0 +1,15 @@
+{
+  "name": "growsense-blog",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Astro static-site generator for the GrowSense Evidence Library (blog). Builds content/*.md into static /blog/*.html.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^4.16.18"
+  }
+}
