@@ -56,7 +56,8 @@ GS-00X/
 | ID | Title | Status |
 |----|-------|--------|
 | GS-001 | Why Do Some Children Grow Faster Than Others? (Height Velocity) | Published · /blog/why-children-grow-faster · TH: /blog/why-children-grow-faster.th |
-| GS-005 | Is My Child Too Short? When to Actually Worry | Published · /blog/is-my-child-too-short · 17 refs verified |
+| GS-002 | How Tall Will My Child Be? Genetics, Bone Age & Prediction | Published · /blog/how-tall-will-my-child-be · 22 refs verified (draft list was fabricated; rebuilt) · Astro |
+| GS-005 | Is My Child Too Short? When to Actually Worry | Published · /blog/is-my-child-too-short · 17 refs verified (EN/TH/中文) |
 | GS-032 | Protein & Height: Does Protein Really Help Children Grow Taller? | Published · /blog/protein-and-height · 17 refs verified |
 | GS-021 | Does Sleep Affect Height? Deep Sleep, GH & the Real Signal | Published · /blog/does-sleep-affect-height · 22 refs verified |
 | GS-041 | Can Exercise Make Children Taller? | Published · /blog/can-exercise-make-children-taller · 22 refs verified · Astro-built |
