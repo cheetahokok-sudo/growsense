@@ -4,7 +4,7 @@ h1: "How tall will my child be? Genetics, bone age, and why no prediction is per
 description: "How adult height is really predicted — mid-parental height, bone age, and pubertal timing — and why every estimate is a range, not a promise. Honest, sourced, and clear. Educational, not medical advice."
 eyebrow: "Growth science · Prediction"
 hero: "gs-002-hero.jpg"
-heroAlt: "A parent marking a child's height on a doorframe, with a growth chart and a hand X-ray suggested softly in the background — the tools of height prediction."
+heroAlt: "A father marking his young daughter's height in pencil against a doorframe growth-chart at home in warm light; she stands tall and looks up, smiling."
 lang: "en"
 disclaimer: "This article is educational and does not provide medical diagnosis or treatment. Height predictions are statistical estimates with real margins of error, not promises. If you have concerns about your child's growth or pubertal timing, consult a qualified pediatrician or pediatric endocrinologist."
 card:
