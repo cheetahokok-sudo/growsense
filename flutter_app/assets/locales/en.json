@@ -666,5 +666,19 @@
  "flutter.food.custom_delete_note": "Days you already logged keep their values — only the reusable card is removed.",
  "flutter.food.custom_saved": "Custom food updated",
  "flutter.food.custom_deleted": "Custom food removed",
- "common.cancel": "Cancel"
+ "common.cancel": "Cancel",
+ "common.iron": "Iron",
+ "common.vitamin_d": "Vitamin D",
+ "flutter.mg": "mg",
+ "flutter.cofactor.title": "Minor co-factors",
+ "flutter.cofactor.sub": "Tracked quietly from your food logs — not part of the daily score.",
+ "flutter.cofactor.empty": "Log a few foods and their iron and vitamin D will appear here.",
+ "flutter.cofactor.iron_role": "oxygen and brain, not height directly",
+ "flutter.cofactor.vitd_role": "from food only — sunlight adds more",
+ "flutter.cofactor.on_track": "On track",
+ "flutter.cofactor.below": "Below target",
+ "flutter.cofactor.low_food": "Low from food",
+ "flutter.cofactor.day": "day",
+ "flutter.cofactor.of_target": "of {x} target",
+ "flutter.cofactor.outdoor": "{n} outdoor days logged — sunlight is the bigger vitamin D source"
 }

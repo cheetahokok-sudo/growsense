@@ -666,5 +666,19 @@
  "flutter.food.custom_delete_note": "已记录的日期保留其数值——只移除可重复使用的卡片。",
  "flutter.food.custom_saved": "已更新自定义食物",
  "flutter.food.custom_deleted": "已移除自定义食物",
- "common.cancel": "取消"
+ "common.cancel": "取消",
+ "common.iron": "铁",
+ "common.vitamin_d": "维生素D",
+ "flutter.mg": "毫克",
+ "flutter.cofactor.title": "次要辅助营养素",
+ "flutter.cofactor.sub": "从你的饮食记录中静默追踪——不计入每日评分。",
+ "flutter.cofactor.empty": "记录几种食物，它们的铁和维生素D就会显示在这里。",
+ "flutter.cofactor.iron_role": "供氧与大脑，不直接影响身高",
+ "flutter.cofactor.vitd_role": "仅来自食物——阳光会补充更多",
+ "flutter.cofactor.on_track": "达标",
+ "flutter.cofactor.below": "低于目标",
+ "flutter.cofactor.low_food": "来自食物偏低",
+ "flutter.cofactor.day": "天",
+ "flutter.cofactor.of_target": "目标 {x}",
+ "flutter.cofactor.outdoor": "记录了 {n} 个户外日——阳光才是维生素D的主要来源"
 }

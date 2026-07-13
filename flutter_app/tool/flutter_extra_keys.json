@@ -427,5 +427,19 @@
   "flutter.food.custom_delete_note": { "en": "Days you already logged keep their values — only the reusable card is removed.", "th": "วันที่บันทึกไปแล้วยังคงค่าเดิม — ลบเฉพาะการ์ดที่ใช้ซ้ำเท่านั้น", "vi": "Những ngày đã ghi vẫn giữ nguyên giá trị — chỉ xóa thẻ dùng lại.", "ko": "이미 기록한 날의 값은 유지됩니다 — 재사용 카드만 삭제돼요.", "zh": "已记录的日期保留其数值——只移除可重复使用的卡片。", "ar": "الأيام المسجّلة تحتفظ بقيمها — تُزال البطاقة القابلة لإعادة الاستخدام فقط." },
   "flutter.food.custom_saved": { "en": "Custom food updated", "th": "อัปเดตอาหารแล้ว", "vi": "Đã cập nhật món", "ko": "맞춤 음식이 수정됨", "zh": "已更新自定义食物", "ar": "تم تحديث الطعام" },
   "flutter.food.custom_deleted": { "en": "Custom food removed", "th": "ลบอาหารแล้ว", "vi": "Đã xóa món", "ko": "맞춤 음식이 삭제됨", "zh": "已移除自定义食物", "ar": "تمت إزالة الطعام" },
-  "common.cancel": { "en": "Cancel", "th": "ยกเลิก", "vi": "Hủy", "ko": "취소", "zh": "取消", "ar": "إلغاء" }
+  "common.cancel": { "en": "Cancel", "th": "ยกเลิก", "vi": "Hủy", "ko": "취소", "zh": "取消", "ar": "إلغاء" },
+  "common.iron": { "en": "Iron", "th": "ธาตุเหล็ก", "vi": "Sắt", "ko": "철분", "zh": "铁", "ar": "الحديد" },
+  "common.vitamin_d": { "en": "Vitamin D", "th": "วิตามินดี", "vi": "Vitamin D", "ko": "비타민 D", "zh": "维生素D", "ar": "فيتامين د" },
+  "flutter.mg": { "en": "mg", "th": "มก.", "vi": "mg", "ko": "mg", "zh": "毫克", "ar": "مغ" },
+  "flutter.cofactor.title": { "en": "Minor co-factors", "th": "สารอาหารเสริมรอง", "vi": "Vi chất phụ", "ko": "보조 영양소", "zh": "次要辅助营养素", "ar": "العوامل المساعدة الثانوية" },
+  "flutter.cofactor.sub": { "en": "Tracked quietly from your food logs — not part of the daily score.", "th": "ติดตามเงียบ ๆ จากบันทึกอาหาร ไม่รวมในคะแนนประจำวัน", "vi": "Theo dõi âm thầm từ nhật ký ăn uống — không tính vào điểm hằng ngày.", "ko": "음식 기록에서 조용히 추적됩니다 — 일일 점수에는 포함되지 않아요.", "zh": "从你的饮食记录中静默追踪——不计入每日评分。", "ar": "يُتابَع بهدوء من سجلات طعامك — ليس جزءًا من التقييم اليومي." },
+  "flutter.cofactor.empty": { "en": "Log a few foods and their iron and vitamin D will appear here.", "th": "บันทึกอาหารสักสองสามอย่าง แล้วธาตุเหล็กและวิตามินดีจะแสดงที่นี่", "vi": "Ghi vài món ăn và lượng sắt, vitamin D sẽ hiện ở đây.", "ko": "음식을 몇 개 기록하면 철분과 비타민 D가 여기에 표시돼요.", "zh": "记录几种食物，它们的铁和维生素D就会显示在这里。", "ar": "سجّل بعض الأطعمة وسيظهر هنا الحديد وفيتامين د." },
+  "flutter.cofactor.iron_role": { "en": "oxygen and brain, not height directly", "th": "ออกซิเจนและสมอง ไม่ใช่ความสูงโดยตรง", "vi": "oxy và não bộ, không phải chiều cao trực tiếp", "ko": "산소와 두뇌 — 키에 직접 관여하지 않음", "zh": "供氧与大脑，不直接影响身高", "ar": "الأكسجين والدماغ، لا الطول مباشرةً" },
+  "flutter.cofactor.vitd_role": { "en": "from food only — sunlight adds more", "th": "จากอาหารเท่านั้น — แสงแดดเพิ่มได้อีก", "vi": "chỉ từ thức ăn — ánh nắng bổ sung thêm", "ko": "음식만 기준 — 햇빛이 더 채워줘요", "zh": "仅来自食物——阳光会补充更多", "ar": "من الطعام فقط — الشمس تضيف المزيد" },
+  "flutter.cofactor.on_track": { "en": "On track", "th": "ได้ตามเป้า", "vi": "Đạt mục tiêu", "ko": "양호", "zh": "达标", "ar": "ضمن الهدف" },
+  "flutter.cofactor.below": { "en": "Below target", "th": "ต่ำกว่าเป้า", "vi": "Dưới mục tiêu", "ko": "목표 미만", "zh": "低于目标", "ar": "دون الهدف" },
+  "flutter.cofactor.low_food": { "en": "Low from food", "th": "ได้จากอาหารน้อย", "vi": "Ít từ thức ăn", "ko": "음식으로는 부족", "zh": "来自食物偏低", "ar": "قليل من الطعام" },
+  "flutter.cofactor.day": { "en": "day", "th": "วัน", "vi": "ngày", "ko": "일", "zh": "天", "ar": "يوم" },
+  "flutter.cofactor.of_target": { "en": "of {x} target", "th": "จากเป้า {x}", "vi": "trên mục tiêu {x}", "ko": "{x} 목표 대비", "zh": "目标 {x}", "ar": "من هدف {x}" },
+  "flutter.cofactor.outdoor": { "en": "{n} outdoor days logged — sunlight is the bigger vitamin D source", "th": "บันทึกวันกลางแจ้ง {n} วัน — แสงแดดคือแหล่งวิตามินดีหลัก", "vi": "{n} ngày ngoài trời — ánh nắng là nguồn vitamin D lớn hơn", "ko": "야외 활동 {n}일 기록 — 햇빛이 더 큰 비타민 D 공급원이에요", "zh": "记录了 {n} 个户外日——阳光才是维生素D的主要来源", "ar": "{n} أيام في الهواء الطلق — الشمس هي المصدر الأكبر لفيتامين د" }
 }

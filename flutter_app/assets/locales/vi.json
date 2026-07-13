@@ -666,5 +666,19 @@
  "flutter.food.custom_delete_note": "Những ngày đã ghi vẫn giữ nguyên giá trị — chỉ xóa thẻ dùng lại.",
  "flutter.food.custom_saved": "Đã cập nhật món",
  "flutter.food.custom_deleted": "Đã xóa món",
- "common.cancel": "Hủy"
+ "common.cancel": "Hủy",
+ "common.iron": "Sắt",
+ "common.vitamin_d": "Vitamin D",
+ "flutter.mg": "mg",
+ "flutter.cofactor.title": "Vi chất phụ",
+ "flutter.cofactor.sub": "Theo dõi âm thầm từ nhật ký ăn uống — không tính vào điểm hằng ngày.",
+ "flutter.cofactor.empty": "Ghi vài món ăn và lượng sắt, vitamin D sẽ hiện ở đây.",
+ "flutter.cofactor.iron_role": "oxy và não bộ, không phải chiều cao trực tiếp",
+ "flutter.cofactor.vitd_role": "chỉ từ thức ăn — ánh nắng bổ sung thêm",
+ "flutter.cofactor.on_track": "Đạt mục tiêu",
+ "flutter.cofactor.below": "Dưới mục tiêu",
+ "flutter.cofactor.low_food": "Ít từ thức ăn",
+ "flutter.cofactor.day": "ngày",
+ "flutter.cofactor.of_target": "trên mục tiêu {x}",
+ "flutter.cofactor.outdoor": "{n} ngày ngoài trời — ánh nắng là nguồn vitamin D lớn hơn"
 }

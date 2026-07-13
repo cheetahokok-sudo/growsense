@@ -666,5 +666,19 @@
  "flutter.food.custom_delete_note": "이미 기록한 날의 값은 유지됩니다 — 재사용 카드만 삭제돼요.",
  "flutter.food.custom_saved": "맞춤 음식이 수정됨",
  "flutter.food.custom_deleted": "맞춤 음식이 삭제됨",
- "common.cancel": "취소"
+ "common.cancel": "취소",
+ "common.iron": "철분",
+ "common.vitamin_d": "비타민 D",
+ "flutter.mg": "mg",
+ "flutter.cofactor.title": "보조 영양소",
+ "flutter.cofactor.sub": "음식 기록에서 조용히 추적됩니다 — 일일 점수에는 포함되지 않아요.",
+ "flutter.cofactor.empty": "음식을 몇 개 기록하면 철분과 비타민 D가 여기에 표시돼요.",
+ "flutter.cofactor.iron_role": "산소와 두뇌 — 키에 직접 관여하지 않음",
+ "flutter.cofactor.vitd_role": "음식만 기준 — 햇빛이 더 채워줘요",
+ "flutter.cofactor.on_track": "양호",
+ "flutter.cofactor.below": "목표 미만",
+ "flutter.cofactor.low_food": "음식으로는 부족",
+ "flutter.cofactor.day": "일",
+ "flutter.cofactor.of_target": "{x} 목표 대비",
+ "flutter.cofactor.outdoor": "야외 활동 {n}일 기록 — 햇빛이 더 큰 비타민 D 공급원이에요"
 }

@@ -666,5 +666,19 @@
  "flutter.food.custom_delete_note": "الأيام المسجّلة تحتفظ بقيمها — تُزال البطاقة القابلة لإعادة الاستخدام فقط.",
  "flutter.food.custom_saved": "تم تحديث الطعام",
  "flutter.food.custom_deleted": "تمت إزالة الطعام",
- "common.cancel": "إلغاء"
+ "common.cancel": "إلغاء",
+ "common.iron": "الحديد",
+ "common.vitamin_d": "فيتامين د",
+ "flutter.mg": "مغ",
+ "flutter.cofactor.title": "العوامل المساعدة الثانوية",
+ "flutter.cofactor.sub": "يُتابَع بهدوء من سجلات طعامك — ليس جزءًا من التقييم اليومي.",
+ "flutter.cofactor.empty": "سجّل بعض الأطعمة وسيظهر هنا الحديد وفيتامين د.",
+ "flutter.cofactor.iron_role": "الأكسجين والدماغ، لا الطول مباشرةً",
+ "flutter.cofactor.vitd_role": "من الطعام فقط — الشمس تضيف المزيد",
+ "flutter.cofactor.on_track": "ضمن الهدف",
+ "flutter.cofactor.below": "دون الهدف",
+ "flutter.cofactor.low_food": "قليل من الطعام",
+ "flutter.cofactor.day": "يوم",
+ "flutter.cofactor.of_target": "من هدف {x}",
+ "flutter.cofactor.outdoor": "{n} أيام في الهواء الطلق — الشمس هي المصدر الأكبر لفيتامين د"
 }
