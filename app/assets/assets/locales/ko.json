@@ -680,5 +680,10 @@
  "flutter.cofactor.low_food": "음식으로는 부족",
  "flutter.cofactor.day": "일",
  "flutter.cofactor.of_target": "{x} 목표 대비",
- "flutter.cofactor.outdoor": "야외 활동 {n}일 기록 — 햇빛이 더 큰 비타민 D 공급원이에요"
+ "flutter.cofactor.outdoor": "야외 활동 {n}일 기록 — 햇빛이 더 큰 비타민 D 공급원이에요",
+ "flutter.child.remove": "프로필 삭제",
+ "flutter.child.remove_q": "이 자녀 프로필을 삭제할까요?",
+ "flutter.child.remove_note": "삭제가 아니라 보관됩니다 — 앱에서는 숨겨지지만 {n}일 동안 복구할 수 있고, 그동안 기록된 데이터는 모두 보존돼요.",
+ "flutter.child.removed": "프로필 보관됨 · {n}일간 복구 가능",
+ "flutter.child.remove_last": "활성 자녀 프로필을 최소 하나는 유지하세요."
 }

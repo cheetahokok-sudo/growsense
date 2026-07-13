@@ -1,6 +1,16 @@
 {
   "releases": [
     {
+      "version": "1.3.1",
+      "build": 6,
+      "date": "2026-07-13",
+      "title": "Remove a child profile",
+      "highlights": [
+        "You can now remove a child profile from the app. It's archived, not deleted — hidden but recoverable for a year (longer on Pro), with all logged data kept during that time.",
+        "You'll always keep at least one active profile."
+      ]
+    },
+    {
       "version": "1.3.0",
       "build": 5,
       "date": "2026-07-13",

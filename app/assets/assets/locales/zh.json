@@ -680,5 +680,10 @@
  "flutter.cofactor.low_food": "来自食物偏低",
  "flutter.cofactor.day": "天",
  "flutter.cofactor.of_target": "目标 {x}",
- "flutter.cofactor.outdoor": "记录了 {n} 个户外日——阳光才是维生素D的主要来源"
+ "flutter.cofactor.outdoor": "记录了 {n} 个户外日——阳光才是维生素D的主要来源",
+ "flutter.child.remove": "移除档案",
+ "flutter.child.remove_q": "移除这个孩子的档案？",
+ "flutter.child.remove_note": "是归档而非删除——从应用中隐藏，但 {n} 天内可恢复，其间所有已记录的数据都会保留。",
+ "flutter.child.removed": "档案已归档 · {n} 天内可恢复",
+ "flutter.child.remove_last": "请至少保留一个使用中的孩子档案。"
 }

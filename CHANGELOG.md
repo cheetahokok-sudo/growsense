@@ -17,6 +17,16 @@ new"), and add the full entry here.
 
 _Work in progress lands here before it's tagged._
 
+## [1.3.1] — 2026-07-13 · build 6
+
+### Added
+- **Remove a child profile** in the app (Account → Children profiles →
+  tap a child → Remove profile). It archives rather than deletes — the
+  profile is hidden but recoverable for the retention window (a year on
+  the free plan, longer on Pro) and all logged data is kept during that
+  time. You can't remove your last active profile. Brings the app to
+  parity with the web app.
+
 ## [1.3.0] — 2026-07-13 · build 5
 
 ### Added

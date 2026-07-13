@@ -680,5 +680,10 @@
  "flutter.cofactor.low_food": "قليل من الطعام",
  "flutter.cofactor.day": "يوم",
  "flutter.cofactor.of_target": "من هدف {x}",
- "flutter.cofactor.outdoor": "{n} أيام في الهواء الطلق — الشمس هي المصدر الأكبر لفيتامين د"
+ "flutter.cofactor.outdoor": "{n} أيام في الهواء الطلق — الشمس هي المصدر الأكبر لفيتامين د",
+ "flutter.child.remove": "إزالة الملف",
+ "flutter.child.remove_q": "إزالة ملف هذا الطفل؟",
+ "flutter.child.remove_note": "يُؤرشَف ولا يُحذف — مخفي من التطبيق لكن يمكن استرجاعه خلال {n} يومًا، وتُحفظ كل البيانات المسجّلة خلال تلك المدة.",
+ "flutter.child.removed": "تمت أرشفة الملف · قابل للاسترجاع {n} يومًا",
+ "flutter.child.remove_last": "أبقِ ملف طفل نشطًا واحدًا على الأقل."
 }

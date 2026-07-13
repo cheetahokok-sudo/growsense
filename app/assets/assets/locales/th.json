@@ -680,5 +680,10 @@
  "flutter.cofactor.low_food": "ได้จากอาหารน้อย",
  "flutter.cofactor.day": "วัน",
  "flutter.cofactor.of_target": "จากเป้า {x}",
- "flutter.cofactor.outdoor": "บันทึกวันกลางแจ้ง {n} วัน — แสงแดดคือแหล่งวิตามินดีหลัก"
+ "flutter.cofactor.outdoor": "บันทึกวันกลางแจ้ง {n} วัน — แสงแดดคือแหล่งวิตามินดีหลัก",
+ "flutter.child.remove": "ลบโปรไฟล์",
+ "flutter.child.remove_q": "ลบโปรไฟล์เด็กคนนี้ไหม",
+ "flutter.child.remove_note": "จะถูกเก็บถาวร ไม่ได้ลบทิ้ง — ซ่อนจากแอปแต่กู้คืนได้ภายใน {n} วัน และข้อมูลที่บันทึกไว้ทั้งหมดยังคงอยู่ในช่วงนั้น",
+ "flutter.child.removed": "เก็บถาวรโปรไฟล์แล้ว · กู้คืนได้ {n} วัน",
+ "flutter.child.remove_last": "ต้องมีโปรไฟล์เด็กที่ใช้งานอย่างน้อยหนึ่งคน"
 }
