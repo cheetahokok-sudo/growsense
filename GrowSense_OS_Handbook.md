@@ -3,7 +3,9 @@
 **The official source of truth for GrowSense OS**
 Pediatric Growth Intelligence Platform
 
-*Version 1.0 · Prepared for future developers, AI engineers, product managers, clinical advisors, and due-diligence reviewers.*
+*Version 1.1 · Updated 2026-07-14 · Prepared for future developers, AI engineers, product managers, clinical advisors, and due-diligence reviewers.*
+
+> **New in v1.1** — see **Section 0 (Changelog & Delta)** for everything shipped and learned since v1.0 (2026-07-05): the Fitbit/Google-Health integration taken end-to-end (with a full OAuth failure runbook), separate nap tracking, the Nutrition Recall Engine, the trilingual **Evidence Library** content moat (new **Section 18**), and a hard-won **Engineering Runbook (Appendix C)**.
 
 ---
 
@@ -15,6 +17,7 @@ Pediatric Growth Intelligence Platform
 
 ## Table of contents
 
+0. Changelog & Delta (v1.1)
 1. Executive Vision
 2. Product Overview
 3. System Architecture
@@ -32,8 +35,101 @@ Pediatric Growth Intelligence Platform
 15. Security & Privacy
 16. Research Platform
 17. Future Roadmap
+18. Evidence Library & Content Moat
 + Appendix A: Flutter / iOS / Android migration playbook
 + Appendix B: UI research digest (2026 premium health-tech)
++ Appendix C: Engineering runbook & hard-won lessons
+
+---
+
+# Section 0 — Changelog & Delta (v1.1)
+
+*This section records what changed between the v1.0 baseline (2026-07-05) and
+this update (2026-07-14). Read it first if you last saw the v1.0 handbook; it
+is the fastest way to get current. Everything here is **shipped** unless
+tagged otherwise, and is expanded in the referenced sections.*
+
+## Shipped since v1.0
+
+- **Wearable sleep sync — taken fully end-to-end (Fitbit / Google Health).**
+  The OAuth *connect* and nightly *sync* now work from both the PWA and the
+  Flutter app against the live Edge Functions (`google-health-auth`,
+  `google-health-sync`), landing deep/REM/HRV nights in `daily_sleep`. Getting
+  here surfaced a cascade of real-world OAuth failures — all now understood and
+  documented as a runbook in **Appendix C** and Section 08. A real connection
+  exists in production (child "Peem"). *This was the single biggest reliability
+  effort of the period.*
+- **Nap tracking, separate from the night.** New `sleep_naps` table; daytime
+  naps are recorded per-session (start/end) but **deliberately excluded from
+  `sleep_efficiency_score` / Growth Readiness** — for ages 5–19 naps are rare
+  and can be a *signal* (daytime sleepiness → OSA), so they're kept for honest
+  history + future clinical analysis, not to inflate a score. Sleep is
+  attributed to the **wake date** (Section 08).
+- **Nutrition Recall Engine (missed-day estimation).** `estimation_method` +
+  `confidence` columns on nutrition/activity/sleep; a gap-fill flow and "trust
+  calendar" that render estimated days distinctly (gold) and let a parent
+  confirm/correct them. Honest-analytics constraint: estimates never silently
+  masquerade as measured data (Section 06).
+- **Flutter app parity milestones.** Today HUD, Analytics, trust calendar,
+  Devices screen (with a new **Disconnect / switch-account** control), food +
+  activity browsers, custom-food CRUD (with a tier cap), frequency-boosted food
+  ordering, bone-age module, AI coach, medical/family screens — the client
+  rewrite (Appendix A) is well underway, not just planned.
+- **Evidence Library launched (new Section 18).** 11 rigorously-cited articles
+  live, most **trilingual EN / TH / 中文**, on the Astro→GitHub-Pages pipeline —
+  the organic-search moat described in the vision, now real.
+- **Auth:** Google/Apple social login shipped; `user_accounts` self-heal on
+  first authenticated load.
+- **Versioning & bug reports:** release process (app_meta + CHANGELOG +
+  release_notes.json + What's-new screen) and a `bug_reports` table.
+- **Food data:** `sodium_mg` field + a visible "Salty" chip; custom foods and
+  favourites.
+- **Delete-child = silent soft-archive.** Removing a child profile soft-archives
+  it (recoverable window under the hood) but the copy reads as a plain delete —
+  no "archived / recoverable" language surfaced.
+
+## Lessons learned (the expensive ones)
+
+- **Google OAuth for a health scope is an operations problem, not a code
+  problem.** A consent screen in **"Testing" expires refresh tokens after 7
+  days**; `invalid_client` ≠ `invalid_grant` (secret vs dead token); the
+  **token exchange must reuse the exact `redirect_uri` from the auth request**,
+  which differs per client (Flutter `/app/` vs PWA `/webapp.html`); a restricted
+  health scope caps unverified apps (~100 users) and needs Google verification
+  before scale. Full runbook in Appendix C — **read it before touching
+  wearables**.
+- **Dart-on-web changes integer semantics.** `Random().nextInt(1 << 32)` throws
+  a `RangeError` on Flutter web (bitwise ops are 32-bit; ints exact only to
+  2^53). `flutter analyze` does **not** catch it; native runs pass; only the
+  browser build breaks. Anything touching randomness/bit-math must be exercised
+  in the web build (Appendix C).
+- **The deploy pipeline has load-bearing gotchas.** `.nojekyll` is required;
+  the Flutter `/app/` bundle needs a **manual PowerShell rebuild** (`flutter
+  build web --release --base-href /app/` — Git Bash mangles `/app/`); GitHub
+  Pages failures are silent (Appendix C).
+- **The no-fabrication citation rule keeps paying for itself.** The GS-019 draft
+  arrived with **4 of 13 PMIDs pointing to unrelated papers** (pig sepsis,
+  dental pathology, chemistry, AIDS microbiota). Every PMID is verified against
+  PubMed before publish; unverifiable ones are cut, not guessed (Section 18).
+
+## Schema additions (reconciled in Section 04)
+
+New/confirmed tables and columns: `sleep_naps`; `google_health_connections`
+(+ the safe `google_health_connection_status` view); `custom_foods`,
+`favorite_foods`; `bug_reports`; `estimation_method` / `confidence` on
+`daily_sleep` / `daily_nutrition` / `daily_activity_items`; `sodium_mg`,
+`hrv_ms`, `deep_sleep_min`, `rem_sleep_min` on `daily_sleep`. **Naming note:**
+the shipped schema uses `daily_sleep` / `daily_nutrition` / `daily_activity_items`
+where the v1.0 data dictionary wrote `sleep_logs` / `nutrition_logs` — see the
+Section 04 reality note.
+
+## Known open items (carry forward)
+
+- Deploy the patched `google-health-sync` (dedupe/merge same-day sessions →
+  `sleep_naps`) to clear a Postgres `21000` on nap-days (Appendix C).
+- Google OAuth **verification** for the restricted health scope (pre-scale).
+- Lab-persistence caveat (Section 04) — still the #1 schema-truth item.
+- `gs-019-hero.jpg` and remaining Evidence-Library heroes/translations.
 
 ---
 
@@ -426,6 +522,36 @@ An `AFTER INSERT` trigger (`trg_count_measurements` → `increment_measurement_c
 | `research_dataset` | De-identified, consented export view (Section 16). |
 | `medical_logs` (finalised) | Durable home for lab + medication + illness metadata (resolves the 🟡 caveat). |
 
+## Schema reality note (v1.1) — shipped names & new tables
+
+The data dictionary above is conceptual; the **shipped Postgres schema**
+(`growsense_schema.sql` + `migrations/`) uses these names — reconcile against
+the real schema before writing code:
+
+| Handbook name (above) | Shipped table | Key real columns |
+|---|---|---|
+| `sleep_logs` | **`daily_sleep`** | `total_sleep_min`, `deep_sleep_min`, `rem_sleep_min`, `hrv_ms`, `sleep_efficiency_score`, `night_wakes`, `data_source`, `estimation_method`, `confidence`; `UNIQUE(child_id, log_date)` |
+| `nutrition_logs` | **`daily_nutrition`** | per-nutrient incl. `sodium_mg`; `estimation_method`, `confidence` |
+| `daily_activity_items` | `daily_activity_items` | as documented + `estimation_method`, `confidence` |
+| `illness_events` | `illness_events` | as documented |
+
+**New tables/objects since v1.0** (all RLS-guarded with the same cascading
+parent/doctor/scientist rule as `daily_sleep`):
+
+| Object | Purpose |
+|---|---|
+| **`sleep_naps`** | Daytime naps, per-session (`start_time`, `end_time`, `total_sleep_min`, `data_source`); `UNIQUE(child_id, log_date, start_time)`. **Excluded from the sleep score** by design (Section 08). |
+| **`google_health_connections`** | Per-child wearable OAuth tokens (server-side): `access_token`, `refresh_token`, `token_expires_at`, `google_email`, `scope`, `last_sync_status`. `onConflict: child_id`. |
+| **`google_health_connection_status`** (view) | Safe read model the clients poll — `google_email`, `last_sync_at`, `token_is_valid` — without exposing tokens. |
+| **`custom_foods`**, **`favorite_foods`** | User-added foods (tier-capped) + favourites; feed frequency-boosted ordering. |
+| **`bug_reports`** | In-app bug reports (see the versioning/What's-new flow). |
+| **estimation columns** | `estimation_method` (`measured` \| `recalled_manual` \| `relative_recall` \| `weekly_survey` \| `pattern_fill` \| `pattern_suggest`) + `confidence` on `daily_nutrition` / `daily_activity_items` / `daily_sleep` — the Nutrition Recall Engine's provenance (Section 06). |
+
+**Migration discipline reminder:** migrations are hand-run in the Supabase SQL
+editor from `migrations/*.sql` (dated). The most recent is
+`2026-07-13_sleep_naps.sql`. Wearable-token tables are populated *only* by the
+`google-health-auth` Edge Function, never the client.
+
 ## Relationship diagram (Mermaid)
 
 ```mermaid
@@ -620,7 +746,34 @@ Deep sleep hosts the dominant daily GH pulse (Section 05). For a growth app, sle
 
 ## How it works
 
-The wearable OAuth flow runs through an Edge Function (keys server-side). Returned sleep sessions are normalised to the child's local date and written to `sleep_logs` with `source`. Deep-sleep minutes and efficiency feed Readiness and the Coach.
+The wearable OAuth flow runs through Edge Functions (keys server-side):
+**`google-health-auth`** exchanges the auth code for tokens and upserts
+`google_health_connections`; **`google-health-sync`** refreshes the token, pulls
+recent nights from the Google Health API, and writes them to **`daily_sleep`**
+(real table name; v1.0 called it `sleep_logs`) normalised to the child's local
+**wake date**, with `data_source`. Deep-sleep minutes and efficiency feed
+Readiness and the Coach. **The full connect→sync→token-refresh flow and its
+failure modes are documented as a runbook in Appendix C — read it first.**
+
+### Sleep-day convention (manual + wearable, identical)
+
+A sleep session is filed under the **date you wake up**, not the bedtime date.
+Logging "21:00–06:30" for the 13th means bed on the 12th, wake on the 13th → it
+belongs to the **13th**. Cross-midnight is handled (`if bed > wake: wake += 24h`);
+it's one session, never split across two day-rows. The Fitbit sync uses the same
+convention (`civil_end_time`), so manual and wearable entries for a night land on
+the same `daily_sleep` row.
+
+### Naps — separate, and out of the score (by design)
+
+Daytime naps go in **`sleep_naps`** (per-session start/end), **not** `daily_sleep`,
+and are **excluded from `sleep_efficiency_score` and Growth Readiness**. Rationale
+for the 5–19 audience: naps are rare, and frequent daytime sleep is a *signal*
+(daytime sleepiness → possible OSA, per the Evidence Library sleep article), so
+inflating a "good sleep" score with naps would be both wrong and off-brand. Per-nap
+timing is retained for future clinical nap-pattern analysis. Manual naps are added
+from a quiet "Naps (optional)" affordance on the sleep sheet; wearable naps should
+be routed here by the sync (the pending merge in Appendix C).
 
 ### Account-mismatch detection (why it matters)
 
@@ -929,9 +1082,12 @@ Error contract (HTTP-status-meaningful): 400 invalid input · 401 auth · 403 re
 
 ### Other functions
 
-- **AI Coach proxy** — holds the Anthropic key, enforces the monthly live-AI cap as the real gate, forwards grounded prompts.
-- **Bone-age estimator** — v1 vision LLM; planned ONNX CNN runtime.
-- **Wearable sync** — Google Health / Fitbit OAuth + sleep parsing.
+- **`ai-coach-proxy`** — holds the Anthropic key, enforces the monthly live-AI cap as the real gate, forwards grounded prompts.
+- **`bone-age-analysis`** — v1 vision LLM; planned ONNX CNN runtime. (Source lives loose at repo root as `bone-age-ai-index.ts`.)
+- **`google-health-auth`** — `POST {code, child_id, redirect_uri}`. Verifies the session JWT + child ownership, exchanges the auth code for Google OAuth tokens, fetches the linked account email, upserts `google_health_connections` (`onConflict: child_id`). **The token exchange must send the same `redirect_uri` the client used to start the flow** — clients now pass it (allowlisted server-side) because Flutter (`/app/`) and the PWA (`/webapp.html`) differ; a mismatch → Google `redirect_uri_mismatch`.
+- **`google-health-sync`** — `POST {child_id, days_back}`. Refreshes the stored token, pulls sleep dataPoints from `health.googleapis.com`, parses stages, writes `daily_sleep`. **Refresh failures are operational, not code bugs** — `invalid_grant` = dead refresh token (usually the consent screen was in "Testing" → 7-day expiry; fix = publish to production + reconnect), `invalid_client` = stale `GOOGLE_CLIENT_SECRET`. Full runbook: **Appendix C**.
+
+> **Edge-function source location.** `google-health-auth` / `google-health-sync` live in Supabase (not this repo) — to change them, edit in the Supabase dashboard and Deploy. Only `bone-age-ai-index.ts` is checked in.
 
 ## Rate limits
 
@@ -1049,6 +1205,83 @@ Partner with pediatric-endocrinology researchers to validate Growth Readiness™
 
 ---
 
+# Section 18 — Evidence Library & Content Moat
+
+## Why it exists
+
+The Evidence Library is GrowSense's **organic-search moat** — the long-term,
+compounding marketing engine referenced in the vision. In a fear-driven category
+where height-supplement marketing sells anxiety, GrowSense sells *verified
+understanding*. That is both un-copyable by supplement marketers and exactly what
+Google's health-content standard (E-E-A-T) rewards. Every article doubles as a
+structured scientific asset: the same verified citations power the public article,
+the in-app AI Coach grounding, and the social/graphic cuts.
+
+**Status: live.** 11 rigorously-cited articles published, most **trilingual
+EN / TH / 中文**. Primary market is Thailand-first.
+
+## The one rule (inherited from the coach-library)
+
+> A citation is **published only after** its title, authors, journal, year, and
+> PMID resolve to the correct PubMed record. Unverifiable citations are **cut,
+> not guessed.**
+
+This is enforced every time — and it earns its keep: the GS-019 draft alone
+arrived with **4 of 13 PMIDs pointing to unrelated papers**. Verify with NCBI
+eutils (`esummary.fcgi` for a batch of IDs; `esearch` / a PubMed search page to
+re-source a correct one), then confirm each title/author/year matches the claim.
+
+## The GS-00X system
+
+Each article is a folder `content/GS-0XX/` containing:
+- `references.md` — the **Verified** block (full citation + PMID) and a
+  fabrication record (any bad PMIDs caught, with what they actually were).
+- `evidence-notes.md` — the audit trail: each load-bearing claim → its verified
+  ref, plus thesis, honesty choices, and internal `[[GS-xxx]]` links.
+- (assets: hero image, and optional graphics/carousel/script briefs.)
+
+**GS-numbers are permanent library IDs, not priority or publish order.** Public
+URLs are readable slugs (`/blog/when-do-children-stop-growing`), never `gs-019`.
+Numbering blocks: foundation 001–010, hormones 011–020, sleep 021–030, nutrition
+031–040, activity 041–050, myths 051–060, puberty 061–070, clinical 071–080.
+The editorial plan (clusters, launch order by search demand, per-market notes)
+lives in **`content/ROADMAP.md`**; the publish log is `content/README.md`.
+
+## Build & deploy pipeline (Astro SSG)
+
+- Articles are `.md` in **`web/src/content/articles/`** with frontmatter
+  (`title`, `h1`, `description`, `eyebrow`, `hero`, `heroAlt`, `lang`,
+  `disclaimer`, `card`, grouped `references`), body using house shells
+  (`<p class="lede">`, `<div class="callout">`, `<div class="flow">`,
+  `<table>`, inline `<sup><a href="#rN">[N]</a></sup>` citations, `<div class="cta">`).
+- **`cd web && npm run deploy`** = `astro build && node copy-to-blog.mjs` →
+  outputs `blog/*.html` at repo root, served by GitHub Pages.
+- Per-language hubs (`blog/index.html` / `index.th.html` / `index.zh.html`)
+  auto-fill from each article's `card` block; one card per article per language.
+
+## Translation pattern (EN → TH / 中文)
+
+Sibling files `<slug>.th.md` / `<slug>.zh.md` with translated frontmatter,
+`lang` + a `slug` override + a `langAlts` array linking the other languages.
+**References stay in English.** In the body, translate prose only — keep HTML,
+citation `<sup>` anchors, tables, and **clinical/scientific terms in English**
+per convention (growth plate, bone age, IGF-1, percentile, DIAAS, WHO…; Chinese
+keeps 生长板/骨龄/百分位 with IGF-1/GH in caps). Thai is warm and **unisex** (no
+ครับ/คะ).
+
+## Verification workflow before any article is committed
+
+1. Verify every PMID against PubMed (correct paper, not just a live ID).
+2. `npm run deploy`, then an **anchor-integrity check** (from repo root): count
+   `href="#rN"` (citations) vs `id="rN"` (refs); assert **0 broken, 0 uncited**
+   for EN + each translation; confirm each hub gained exactly one card.
+3. Commit the article + provenance (`content/GS-0XX/*`) + README row together.
+
+See also: memory notes `blog-architecture-ssg`, `coach-library-expansion`,
+`deploy-pipeline`.
+
+---
+
 # Appendix A — Flutter / iOS / Android migration playbook
 
 **Goal:** re-platform the shipped vanilla-JS web app into native iOS + Android from a single Flutter codebase, **without touching the Supabase backend** (client rewrite, not full-stack rewrite).
@@ -1160,4 +1393,88 @@ A snapshot of where leading health apps have landed, gathered to inform the Grow
 
 ---
 
-*End of Handbook v1.0. This is a living document: update the status tags (✅/🟡/🔵) as features ship, and keep the lab-persistence caveat (Section 04) at the top of the backlog until resolved.*
+---
+
+# Appendix C — Engineering runbook & hard-won lessons
+
+*Operational knowledge that cost real time to acquire. If you touch wearables,
+the Flutter web build, or deploys, read the relevant part first.*
+
+## C.1 — Wearable OAuth (Fitbit / Google Health) runbook
+
+The connect→sync chain is `google-health-auth` (code→tokens) then
+`google-health-sync` (refresh→pull→write `daily_sleep`). Failures are almost
+always **operational** (Google config / token state), not the client. Diagnose
+from **Supabase → Edge Functions → logs**, read Google's error body, and match:
+
+| Symptom / Google error | Cause | Fix |
+|---|---|---|
+| Sync `401` "token refresh failed" / `invalid_grant` "Token expired or revoked" | Stored **refresh token is dead** — usually the OAuth **consent screen is in "Testing"** (Google expires refresh tokens after **7 days**) | **Publish the consent screen to "In production"** (Google Auth Platform → Audience), then **reconnect** the child once. Do **not** go "Back to testing". |
+| `invalid_client` (401) | Wrong **`GOOGLE_CLIENT_SECRET`** in Supabase secrets (rotated in Google, not updated) | `supabase secrets set GOOGLE_CLIENT_SECRET=…` + redeploy. Don't touch it for `invalid_grant`. |
+| Connect completes at Google but sync token exchange → `redirect_uri_mismatch` | Token exchange sent a **different `redirect_uri`** than the auth request | Client sends its own `redirect_uri`; `google-health-auth` allowlists + reuses it. Registered URIs must include the client's. |
+| Flutter "Connect" does nothing / uncaught error, **no** Supabase log | Client crashed *before* navigating to Google | See C.2 (this was `nextInt(1<<32)`). |
+| Both PWA + Flutter fail identically | Server-side (shared backend/tokens) | It's a Google/edge issue, never a single-client bug. |
+
+**Redirect-URI map** (registered on the OAuth client; must match exactly per
+client): PWA uses `https://www.growsense.life/webapp.html`; Flutter uses
+`https://www.growsense.life/app/`. Also registered: `…/growsense/` (github.io),
+the Supabase `/auth/v1/callback`, and `growsense.life/` root.
+
+**Scale gate:** the health scope (`googlehealth.sleep.readonly`) is *restricted*
+→ an unverified app is capped (~100 users, lifetime) and shows an "unverified
+app" warning. **Google OAuth verification** is required before a real launch.
+
+**Two client secrets can coexist** — don't delete whichever one the edge
+function actually uses, or `invalid_grant` becomes `invalid_client`.
+
+## C.2 — Dart on web changes integer semantics (silent, native-passes)
+
+Flutter compiled to **web** represents `int` as a JS `number` (float64). This
+breaks at runtime *only in the browser*; `flutter analyze` and native runs pass.
+
+- `Random().nextInt(max)` throws `RangeError` for large `max` on web —
+  `nextInt(1 << 32)` crashes. **Keep `max ≤ 0x7fffffff`** (concatenate draws /
+  use `Random.secure()` / a UUID for more entropy).
+- Bitwise ops (`<< >> & | ^`) are **32-bit** and shifts wrap; don't build large
+  masks/values via shifts.
+- Integers are exact only within ±2^53.
+
+**Rule:** anything touching randomness, bit-math, or big integers must be
+exercised in the **web build**, not just analyzed. (Memory: `dart-web-int-footguns`.)
+
+## C.3 — Deploy pipeline gotchas
+
+- **`.nojekyll`** at repo root is load-bearing (GitHub Pages must serve
+  `_`-prefixed and `canvaskit/` assets).
+- The Flutter **`/app/` bundle needs a manual rebuild in PowerShell**, not Git
+  Bash: `flutter build web --release --base-href /app/` — Git Bash mangles
+  `/app/` into a Windows path. Then copy `flutter_app/build/web/*` → repo-root
+  `app/` and commit. The built bundle is **checked in** (so `.git` grows each
+  rebuild; consider CI-building it later — noted in the disk-usage lesson).
+- **GitHub Pages failures are silent** — verify the live URL after pushing.
+- Windows **LF→CRLF** git warnings on every text file are normal/ignorable.
+- After any `/app/` redeploy, **hard-refresh** — the Flutter PWA service worker
+  caches `main.dart.js`.
+
+## C.4 — Supabase edge functions & migrations
+
+- `google-health-*` edge functions live **in Supabase, not the repo** — edit +
+  Deploy in the dashboard; only `bone-age-ai-index.ts` is checked in.
+- DB migrations are **hand-run** in the Supabase SQL editor from
+  `migrations/*.sql` (dated). Client code that reads a not-yet-migrated table
+  must fail soft (e.g. nap loading catches the error and returns empty).
+
+## C.5 — Content / citation integrity
+
+Covered in Section 18: verify every PMID against PubMed before publish; run the
+anchor-integrity check (0 broken / 0 uncited across EN + translations) after
+`npm run deploy`. The library's whole value is that a single fabricated citation,
+once caught, ends the trust brand.
+
+---
+
+*End of Handbook v1.1. This is a living document: update the status tags
+(✅/🟡/🔵) and the Section 0 changelog as features ship. Standing backlog items
+to keep visible: the lab-persistence caveat (Section 04), the `google-health-sync`
+nap-merge + Google OAuth verification (Appendix C), and Evidence-Library heroes/
+translations (Section 18).*
