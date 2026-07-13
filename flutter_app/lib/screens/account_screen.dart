@@ -1381,7 +1381,7 @@ class _ChildEditorSheetState extends State<_ChildEditorSheet> {
         content: Text(
           t(
             'flutter.child.remove_note',
-            'It\'s archived, not deleted — hidden from the app but recoverable for {n} days, and all logged data is kept during that time.',
+            'This child\'s profile will be removed from the app.',
             {'n': '$days'},
           ),
           style: const TextStyle(fontSize: 12.5, color: GsColors.text2),
@@ -1436,7 +1436,7 @@ class _ChildEditorSheetState extends State<_ChildEditorSheet> {
         content: Text(
           t(
             'flutter.child.removed',
-            'Profile archived · recoverable for {n} days',
+            'Profile removed',
             {'n': '${res.retentionDays}'},
           ),
         ),

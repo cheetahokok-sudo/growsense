@@ -125034,7 +125034,7 @@ break}n=p.c
 n.toString
 A.bT(n,!1).eM(null)
 n=t.N
-p.c.ad(t.J).f.d2(A.cz(null,null,null,B.bJ,null,B.P,null,A.m(m.$3("flutter.child.removed","Profile archived \xb7 recoverable for {n} days",A.V(["n",""+o.b],n,n)),null,null,null,null,null,null,null),null,B.aI,null,null,null,null,null,null,null,null,null,null))
+p.c.ad(t.J).f.d2(A.cz(null,null,null,B.bJ,null,B.P,null,A.m(m.$3("flutter.child.removed","Profile removed",A.V(["n",""+o.b],n,n)),null,null,null,null,null,null,null),null,B.aI,null,null,null,null,null,null,null,null,null,null))
 case 1:return A.w(q,r)}})
 return A.x($async$xC,r)}}
 A.aUJ.prototype={
@@ -125063,7 +125063,7 @@ $0(){return this.a.e=A.d_(this.b)},
 $S:0}
 A.aUG.prototype={
 $1(a){var s=null,r=this.a,q=A.m(r.$2("flutter.child.remove_q","Remove this child profile?"),s,s,s,B.bri,s,s,s),p=t.N
-p=A.m(r.$3("flutter.child.remove_note","It's archived, not deleted \u2014 hidden from the app but recoverable for {n} days, and all logged data is kept during that time.",A.V(["n",""+this.b],p,p)),s,s,s,B.k6,s,s,s)
+p=A.m(r.$3("flutter.child.remove_note","This child's profile will be removed from the app.",A.V(["n",""+this.b],p,p)),s,s,s,B.k6,s,s,s)
 return A.Wq(A.b([A.eV(A.m(r.$2("common.cancel","Cancel"),s,s,s,s,s,s,s),new A.aUE(a),s),A.eV(A.m(r.$2("flutter.child.remove","Remove profile"),s,s,s,B.z1,s,s,s),new A.aUF(a),s)],t.p),B.B,p,q)},
 $S:121}
 A.aUE.prototype={

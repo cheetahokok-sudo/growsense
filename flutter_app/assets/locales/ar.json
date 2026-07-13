@@ -691,7 +691,7 @@
  "flutter.cofactor.outdoor": "{n} أيام في الهواء الطلق — الشمس هي المصدر الأكبر لفيتامين د",
  "flutter.child.remove": "إزالة الملف",
  "flutter.child.remove_q": "إزالة ملف هذا الطفل؟",
- "flutter.child.remove_note": "يُؤرشَف ولا يُحذف — مخفي من التطبيق لكن يمكن استرجاعه خلال {n} يومًا، وتُحفظ كل البيانات المسجّلة خلال تلك المدة.",
- "flutter.child.removed": "تمت أرشفة الملف · قابل للاسترجاع {n} يومًا",
+ "flutter.child.remove_note": "ستتم إزالة ملف هذا الطفل من التطبيق.",
+ "flutter.child.removed": "تمت إزالة الملف",
  "flutter.child.remove_last": "أبقِ ملف طفل نشطًا واحدًا على الأقل."
 }
