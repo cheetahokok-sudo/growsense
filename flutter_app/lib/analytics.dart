@@ -159,6 +159,28 @@ int calcSleepTargetMin(String? dobStr) {
   return (8.5 * 60).round();
 }
 
+/// Iron RDA (mg/day) by age band (IOM 2001). Teen girls need more for
+/// menstrual loss, so 14–18 splits by sex. A minor co-factor shown only
+/// in Analytics — not part of the readiness score.
+int calcIronTargetMg(String? dobStr, String? sex) {
+  final age = _ageYears(dobStr);
+  final isMale = (sex ?? 'male').toLowerCase() != 'female';
+  if (age == null) return 10;
+  if (age < 4) return 7;
+  if (age < 9) return 10;
+  if (age < 14) return 8;
+  return isMale ? 11 : 15;
+}
+
+/// Vitamin D RDA (IU/day). 600 IU after infancy, 400 IU under 1 y
+/// (IOM 2011). Food alone rarely reaches this — sunlight and fortified
+/// foods carry most of it — so a low food number is expected, not alarming.
+int calcVitaminDTargetIu(String? dobStr) {
+  final age = _ageYears(dobStr);
+  if (age == null) return 600;
+  return age < 1 ? 400 : 600;
+}
+
 double? _ageYears(String? dobStr) {
   if (dobStr == null) return null;
   final dob = DateTime.tryParse(dobStr);

@@ -244,6 +244,8 @@ class AppState extends ChangeNotifier {
     required double proteinG,
     double? zincMg,
     double? calciumMg,
+    double? ironMg,
+    double? vitaminDIu,
   }) async {
     final childId = activeChildId;
     if (childId == null) return 'No child selected';
@@ -259,6 +261,9 @@ class AppState extends ChangeNotifier {
             'protein_g': proteinG,
             'zinc_mg': zincMg,
             'calcium_mg': calciumMg,
+            // Minor co-factors — auto-captured, Analytics-only.
+            'iron_mg': ironMg,
+            'vitamin_d_iu': vitaminDIu,
             'created_by': sb.auth.currentUser?.id,
           })
           .select()

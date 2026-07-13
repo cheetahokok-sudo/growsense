@@ -53,6 +53,14 @@ class FoodItem {
   double? get calciumPerServing =>
       calciumPer100g == null ? null : calciumPer100g! * servingGrams / 100;
 
+  // Minor co-factors — auto-captured at log time, surfaced only in
+  // Analytics (never a Today-page input).
+  double? get ironPerServing =>
+      ironPer100g == null ? null : ironPer100g! * servingGrams / 100;
+  double? get vitaminDIuPerServing => vitaminDIuPer100g == null
+      ? null
+      : vitaminDIuPer100g! * servingGrams / 100;
+
   /// A food is flagged "Salty" when it is a high-sodium food in its own
   /// right (≥500 mg/100g) — a property of the food, not the serving, so
   /// the flag is stable regardless of portion. Whole foods (egg, tofu,

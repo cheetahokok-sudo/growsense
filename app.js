@@ -2048,7 +2048,7 @@ function updateFoodCardTapCounts() {
 // in-memory total is still updated immediately for instant HUD feedback,
 // but the row in nutrition_log_items is what actually persists and is
 // reviewable/undoable.
-async function recordNutritionLogItem(foodId, foodName, proteinAmt, zincAmt, calciumAmt) {
+async function recordNutritionLogItem(foodId, foodName, proteinAmt, zincAmt, calciumAmt, ironAmt, vitDAmt) {
   const childId = activeChildId();
   if (!childId) return;
 
@@ -2061,6 +2061,9 @@ async function recordNutritionLogItem(foodId, foodName, proteinAmt, zincAmt, cal
     protein_g: proteinAmt,
     zinc_mg: zincAmt,
     calcium_mg: calciumAmt,
+    // Minor co-factors — auto-captured, surfaced only in Analytics.
+    iron_mg: ironAmt != null ? ironAmt : null,
+    vitamin_d_iu: vitDAmt != null ? vitDAmt : null,
     created_by: APP.session ? APP.session.user.id : null
   }).select().single();
 
@@ -3996,7 +3999,15 @@ function applyFoodTap(food, proteinAmt, zincAmt, calciumAmt, direction, opts) {
     // A tap: record a new row for this specific food event.
     const foodName = food ? food.name : 'Protein Boost (manual)';
     const foodId = food ? food.id : null;
-    recordNutritionLogItem(foodId, foodName, proteinAmt, zincAmt, calciumAmt);
+    // Auto-capture the minor co-factors from the food's per-100g values
+    // for this one serving. Analytics-only; absent on manual/custom taps.
+    let ironAmt = null, vitDAmt = null;
+    if (food && food.per100g && food.servingGrams) {
+      const scale = food.servingGrams / 100;
+      if (food.per100g.iron_mg != null) ironAmt = Math.round(food.per100g.iron_mg * scale * 100) / 100;
+      if (food.per100g.vitamin_d_iu != null) vitDAmt = Math.round(food.per100g.vitamin_d_iu * scale * 10) / 10;
+    }
+    recordNutritionLogItem(foodId, foodName, proteinAmt, zincAmt, calciumAmt, ironAmt, vitDAmt);
   } else {
     // Long-press/right-click subtract with no specific item targeted —
     // remove the most recent matching log row so the list stays

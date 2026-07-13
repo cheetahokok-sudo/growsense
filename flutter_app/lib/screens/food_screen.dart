@@ -98,6 +98,12 @@ class _FoodScreenState extends State<FoodScreen> {
       calciumMg: food.calciumPerServing == null
           ? null
           : _round1(food.calciumPerServing!),
+      ironMg: food.ironPerServing == null
+          ? null
+          : _round2(food.ironPerServing!),
+      vitaminDIu: food.vitaminDIuPerServing == null
+          ? null
+          : _round1(food.vitaminDIuPerServing!),
     );
     if (!mounted) return;
     final t = widget.i18n.t;
