@@ -57,7 +57,7 @@ GS-00X/
 |----|-------|--------|
 | GS-001 | Why Do Some Children Grow Faster Than Others? (Height Velocity) | Published · /blog/why-children-grow-faster · TH: /blog/why-children-grow-faster.th |
 | GS-003 | Normal Height & Weight by Age: What Growth Charts Really Mean | Published · /blog/normal-height-weight-by-age · 4 PMIDs + 2 WHO verified (1 draft PMID was fabricated; fixed) · Piece 1 of 2 · Astro |
-| GS-004 | National growth-reference library (China/Japan/Korea/India/Saudi/Europe) | PLANNED · Piece 2, pairs with the national-chart app feature |
+| GS-004 | Growth Charts Around the World: Why Every Country Needs Its Own | Published · /blog/growth-charts-around-the-world · 17 PMIDs + 2 WHO verified · Piece 2, world-wide · Astro |
 | GS-002 | How Tall Will My Child Be? Genetics, Bone Age & Prediction | Published · /blog/how-tall-will-my-child-be · 22 refs verified (draft list was fabricated; rebuilt) · Astro |
 | GS-005 | Is My Child Too Short? When to Actually Worry | Published · /blog/is-my-child-too-short · 17 refs verified (EN/TH/中文) |
 | GS-032 | Protein & Height: Does Protein Really Help Children Grow Taller? | Published · /blog/protein-and-height · 17 refs verified |
