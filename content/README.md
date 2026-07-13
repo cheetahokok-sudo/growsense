@@ -65,3 +65,4 @@ GS-00X/
 | GS-041 | Can Exercise Make Children Taller? | Published · /blog/can-exercise-make-children-taller · 22 refs verified · Astro-built |
 | GS-052 | Does Milk Make Kids Taller? What Dairy Really Does for Growth | Published · /blog/does-milk-make-kids-taller · 13 refs verified (draft list clean; 1 label fix) · Astro |
 | GS-051 | Calcium, Vitamin D, Zinc & Iron: Which Growth Supplements Actually Matter? | Published · /blog/growth-supplements-that-matter · 11 PMIDs + 5 fact sheets verified (draft had none) · pillar · Astro |
+| GS-019 | When Do Children Stop Growing? Growth Plates, Bone Age & Runway | Published · /blog/when-do-children-stop-growing · 15 refs verified (draft had 4 fabricated PMIDs — corrected/cut; 2 unverifiable dropped) · Astro |
