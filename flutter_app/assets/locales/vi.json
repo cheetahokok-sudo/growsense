@@ -680,5 +680,10 @@
  "flutter.cofactor.low_food": "Ít từ thức ăn",
  "flutter.cofactor.day": "ngày",
  "flutter.cofactor.of_target": "trên mục tiêu {x}",
- "flutter.cofactor.outdoor": "{n} ngày ngoài trời — ánh nắng là nguồn vitamin D lớn hơn"
+ "flutter.cofactor.outdoor": "{n} ngày ngoài trời — ánh nắng là nguồn vitamin D lớn hơn",
+ "flutter.child.remove": "Xóa hồ sơ",
+ "flutter.child.remove_q": "Xóa hồ sơ trẻ này?",
+ "flutter.child.remove_note": "Được lưu trữ, không xóa — ẩn khỏi ứng dụng nhưng có thể khôi phục trong {n} ngày, và mọi dữ liệu đã ghi vẫn được giữ.",
+ "flutter.child.removed": "Đã lưu trữ hồ sơ · khôi phục được trong {n} ngày",
+ "flutter.child.remove_last": "Giữ ít nhất một hồ sơ trẻ đang hoạt động."
 }

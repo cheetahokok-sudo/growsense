@@ -663,6 +663,64 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// This account's archive-retention window (days). Read live from
+  /// subscription_tier_limits — Pro keeps data longer — never hardcoded,
+  /// so it can't silently drift from the documented policy. 365-day
+  /// fallback if the lookup fails: never less protective than default.
+  Future<int> archiveRetentionDays() async {
+    final tier = (account?['subscription_tier'] as String?) ?? 'free';
+    try {
+      final row = await sb
+          .from('subscription_tier_limits')
+          .select('account_archive_retention_days')
+          .eq('tier', tier)
+          .maybeSingle();
+      return (row?['account_archive_retention_days'] as num?)?.toInt() ?? 365;
+    } catch (_) {
+      return 365;
+    }
+  }
+
+  /// Remove a child profile = soft-delete to archive (mirror of the PWA's
+  /// deleteChildProfile). The row stays in the database with status
+  /// 'archived' + a permanent_delete_after date; it's hidden everywhere
+  /// active children are read, and recoverable until that date. Blocks
+  /// removing the last active profile. Returns the retention window on
+  /// success so the UI can say how long it's recoverable.
+  Future<({String? error, int retentionDays})> archiveChild(
+    dynamic childId,
+  ) async {
+    final activeCount = children.where((c) => c['status'] != 'archived').length;
+    if (activeCount <= 1) {
+      return (error: 'last_active', retentionDays: 0);
+    }
+    try {
+      final days = await archiveRetentionDays();
+      final now = DateTime.now().toUtc();
+      final purge = now.add(Duration(days: days));
+      await sb
+          .from('children')
+          .update({
+            'status': 'archived',
+            'archived_at': now.toIso8601String(),
+            'archived_by': sb.auth.currentUser?.id,
+            'permanent_delete_after': purge.toIso8601String(),
+          })
+          .eq('child_id', childId);
+      // Drop from the in-memory active list and re-anchor the selection,
+      // exactly like a fresh load would.
+      children.removeWhere((c) => c['child_id'] == childId);
+      if (activeChild >= children.length) activeChild = 0;
+      _clinicalLoadedFor = null;
+      _wearableLoadedFor = null;
+      notifyListeners();
+      await Future.wait([loadDay(), loadMeasurements(), loadWeekConsistency()]);
+      return (error: null, retentionDays: days);
+    } on PostgrestException catch (e) {
+      return (error: e.message, retentionDays: 0);
+    }
+  }
+
   /// File an in-app bug/feedback report into the bug_reports table.
   /// Attaches version + an anonymized child snapshot (age/sex only) for
   /// triage. Returns null on success, an error string otherwise.

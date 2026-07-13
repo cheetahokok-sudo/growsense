@@ -680,5 +680,10 @@
  "flutter.cofactor.low_food": "Low from food",
  "flutter.cofactor.day": "day",
  "flutter.cofactor.of_target": "of {x} target",
- "flutter.cofactor.outdoor": "{n} outdoor days logged — sunlight is the bigger vitamin D source"
+ "flutter.cofactor.outdoor": "{n} outdoor days logged — sunlight is the bigger vitamin D source",
+ "flutter.child.remove": "Remove profile",
+ "flutter.child.remove_q": "Remove this child profile?",
+ "flutter.child.remove_note": "It's archived, not deleted — hidden from the app but recoverable for {n} days, and all logged data is kept during that time.",
+ "flutter.child.removed": "Profile archived · recoverable for {n} days",
+ "flutter.child.remove_last": "Keep at least one active child profile."
 }
