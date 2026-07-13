@@ -32,8 +32,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
     final t = widget.i18n.t;
     final childId = widget.appState.activeChildId;
     if (childId == null) return;
+    // Two 31-bit draws — nextInt's max must be <= 2^31 on web (1 << 32
+    // overflows there and throws RangeError, killing the connect click).
+    final rnd = math.Random();
     final csrf =
-        '${DateTime.now().microsecondsSinceEpoch}-${math.Random().nextInt(1 << 32)}';
+        '${DateTime.now().microsecondsSinceEpoch}-${rnd.nextInt(0x7fffffff)}${rnd.nextInt(0x7fffffff)}';
     final url = buildFitbitAuthUrl(childId, csrf);
     try {
       await launchUrl(url,
