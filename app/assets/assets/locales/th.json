@@ -666,5 +666,19 @@
  "flutter.food.custom_delete_note": "วันที่บันทึกไปแล้วยังคงค่าเดิม — ลบเฉพาะการ์ดที่ใช้ซ้ำเท่านั้น",
  "flutter.food.custom_saved": "อัปเดตอาหารแล้ว",
  "flutter.food.custom_deleted": "ลบอาหารแล้ว",
- "common.cancel": "ยกเลิก"
+ "common.cancel": "ยกเลิก",
+ "common.iron": "ธาตุเหล็ก",
+ "common.vitamin_d": "วิตามินดี",
+ "flutter.mg": "มก.",
+ "flutter.cofactor.title": "สารอาหารเสริมรอง",
+ "flutter.cofactor.sub": "ติดตามเงียบ ๆ จากบันทึกอาหาร ไม่รวมในคะแนนประจำวัน",
+ "flutter.cofactor.empty": "บันทึกอาหารสักสองสามอย่าง แล้วธาตุเหล็กและวิตามินดีจะแสดงที่นี่",
+ "flutter.cofactor.iron_role": "ออกซิเจนและสมอง ไม่ใช่ความสูงโดยตรง",
+ "flutter.cofactor.vitd_role": "จากอาหารเท่านั้น — แสงแดดเพิ่มได้อีก",
+ "flutter.cofactor.on_track": "ได้ตามเป้า",
+ "flutter.cofactor.below": "ต่ำกว่าเป้า",
+ "flutter.cofactor.low_food": "ได้จากอาหารน้อย",
+ "flutter.cofactor.day": "วัน",
+ "flutter.cofactor.of_target": "จากเป้า {x}",
+ "flutter.cofactor.outdoor": "บันทึกวันกลางแจ้ง {n} วัน — แสงแดดคือแหล่งวิตามินดีหลัก"
 }

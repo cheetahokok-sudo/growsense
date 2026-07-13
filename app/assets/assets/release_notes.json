@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.3.0",
+      "build": 5,
+      "date": "2026-07-13",
+      "title": "Iron and vitamin D on Analytics",
+      "highlights": [
+        "Analytics now shows two more growth co-factors — iron and vitamin D — captured automatically from the foods you already log.",
+        "See a 30-day average against your child's age target, without any extra tapping on the Today page.",
+        "Vitamin D from food is naturally low, so the card counts your child's outdoor days as the bigger source instead of raising an alarm."
+      ]
+    },
+    {
       "version": "1.2.0",
       "build": 4,
       "date": "2026-07-12",

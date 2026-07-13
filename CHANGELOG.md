@@ -17,6 +17,23 @@ new"), and add the full entry here.
 
 _Work in progress lands here before it's tagged._
 
+## [1.3.0] — 2026-07-13 · build 5
+
+### Added
+- **Iron and vitamin D as minor co-factors** — every food you log now
+  quietly captures its iron and vitamin D (from USDA-verified food data),
+  and Analytics gains a co-factor card: a 30-day average versus the
+  age-based target, with an on-track / below read. These stay off the
+  Today page and the readiness score on purpose — they're secondary, and
+  parents don't need more daily dials.
+- Vitamin D from food reads low by design (food rarely covers it), so the
+  card surfaces your child's outdoor-activity days as the bigger source
+  rather than raising a false alarm.
+
+### Fixed
+- The one food preset missing zinc and calcium (chicken nuggets) is now
+  filled in; all presets carry zinc and calcium.
+
 ## [1.2.0] — 2026-07-12 · build 4
 
 ### Added
