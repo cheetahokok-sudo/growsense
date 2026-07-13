@@ -1200,7 +1200,7 @@
     if(mobLogin)  mobLogin.textContent  = dict[navKey];
   }
 
-  // restore saved language (shared key with app.html)
+  // restore saved language (shared key with webapp.html)
   let saved = 'en';
   try{ saved = localStorage.getItem('growsense_language') || 'en'; }catch(e){}
   if(!I18N[saved]) saved = 'en';
