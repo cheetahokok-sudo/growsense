@@ -59,6 +59,36 @@ class _DevicesScreenState extends State<DevicesScreen> {
     ));
   }
 
+  Future<void> _disconnect() async {
+    final t = widget.i18n.t;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('flutter.dev.disconnect_title', 'Disconnect Fitbit?')),
+        content: Text(t('flutter.dev.disconnect_body',
+            'Sleep already synced stays. You can reconnect with any Google account.')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(t('common.cancel', 'Cancel'))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: TextButton.styleFrom(foregroundColor: GsColors.flag),
+              child: Text(t('flutter.dev.disconnect', 'Disconnect'))),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final err = await widget.appState.disconnectFitbit();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
+      content: Text(err == null
+          ? t('flutter.dev.disconnected', 'Fitbit disconnected')
+          : '${t('flutter.not_saved', 'Failed')}: $err'),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
@@ -104,6 +134,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                       syncing: widget.appState.syncingWearable,
                       onConnect: p.id == 'fitbit' ? _connectFitbit : null,
                       onSync: p.id == 'fitbit' ? _sync : null,
+                      onDisconnect: p.id == 'fitbit' ? _disconnect : null,
                     ),
                   const SizedBox(height: 14),
                 ],
@@ -123,6 +154,7 @@ class _ProviderCard extends StatelessWidget {
     required this.syncing,
     required this.onConnect,
     required this.onSync,
+    required this.onDisconnect,
   });
   final WearableProvider provider;
   final I18n i18n;
@@ -130,6 +162,7 @@ class _ProviderCard extends StatelessWidget {
   final bool syncing;
   final VoidCallback? onConnect;
   final VoidCallback? onSync;
+  final VoidCallback? onDisconnect;
 
   @override
   Widget build(BuildContext context) {
@@ -245,6 +278,15 @@ class _ProviderCard extends StatelessWidget {
                           ? t('flutter.saving', 'Syncing…')
                           : t('flutter.dev.sync_now', 'Sync now')),
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 38),
+                      foregroundColor: GsColors.flag,
+                    ),
+                    onPressed: syncing ? null : onDisconnect,
+                    child: Text(t('flutter.dev.disconnect', 'Disconnect')),
                   ),
                 ],
               ),

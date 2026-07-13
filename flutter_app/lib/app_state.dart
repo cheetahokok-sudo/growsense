@@ -828,15 +828,65 @@ class AppState extends ChangeNotifier {
       syncingWearable = false;
       if (res.status != 200) {
         notifyListeners();
-        return (null, (data?['error'] as String?) ?? 'Sync failed');
+        return (null, _wearableSyncError(data));
       }
       await loadWearableStatus(force: true);
       await loadDay();
       return ((data?['nights_synced'] as num?)?.toInt() ?? 0, null);
+    } on FunctionException catch (e) {
+      // supabase_flutter throws on a non-2xx response; the real Google
+      // OAuth error (invalid_client / invalid_grant / …) rides in details.
+      syncingWearable = false;
+      notifyListeners();
+      final details = e.details;
+      return (
+        null,
+        _wearableSyncError(
+          details is Map ? details.cast<String, dynamic>() : null,
+          fallback: 'Sync failed (${e.status})',
+        ),
+      );
     } catch (e) {
       syncingWearable = false;
       notifyListeners();
       return (null, e.toString());
+    }
+  }
+
+  /// Turns an Edge Function / Google OAuth error body into a message.
+  /// `invalid_grant` (dead refresh token) is user-fixable, so it gets an
+  /// actionable line; anything else surfaces its raw code so an incident
+  /// is self-diagnosing instead of a blank "Sync failed".
+  String _wearableSyncError(Map<String, dynamic>? data,
+      {String fallback = 'Sync failed'}) {
+    final code =
+        (data?['error'] ?? data?['error_description'] ?? data?['message'])
+            ?.toString();
+    if (code == null || code.isEmpty) return fallback;
+    if (code.contains('invalid_grant')) {
+      return 'Connection expired — reconnect Fitbit.';
+    }
+    // invalid_client / deleted_client / etc. — server-side, show raw.
+    return code;
+  }
+
+  /// Removes the Fitbit/Google Health connection for the active child so a
+  /// different Google account (or device) can be linked. Mirrors the PWA's
+  /// disconnect: drops the connection row; sleep already synced stays.
+  Future<String?> disconnectFitbit() async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    try {
+      await sb
+          .from('google_health_connections')
+          .delete()
+          .eq('child_id', childId);
+      await loadWearableStatus(force: true);
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    } catch (e) {
+      return e.toString();
     }
   }
 
