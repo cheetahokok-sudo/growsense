@@ -123125,7 +123125,7 @@ j=n.a.as
 j===$&&A.a()
 i=t.N
 s=7
-return A.l(j.nM("google-health-auth",A.V(["code",a,"child_id",b],i,i)),$async$DC)
+return A.l(j.nM("google-health-auth",A.V(["code",a,"child_id",b,"redirect_uri","https://www.growsense.life/app/"],i,i)),$async$DC)
 case 7:m=d
 l=t.nA.a(m.a)
 if(m.b!==200){j=l

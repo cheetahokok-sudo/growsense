@@ -17,6 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'analytics.dart' show calcSleepTargetMin;
 import 'app_meta.dart';
 import 'recall_engine.dart' show manualEntryMeta;
+import 'wearables.dart' show googleHealthRedirectUri;
 
 /// Downscale an X-ray to <=800px JPEG for AI vision analysis — same
 /// 800px/0.85 rule as the PWA's canvas downscale. Top-level so it can
@@ -797,7 +798,13 @@ class AppState extends ChangeNotifier {
     try {
       final res = await sb.functions.invoke(
         'google-health-auth',
-        body: {'code': code, 'child_id': childId},
+        // redirect_uri must match the one used in the auth request so the
+        // Edge Function's token exchange doesn't hit redirect_uri_mismatch.
+        body: {
+          'code': code,
+          'child_id': childId,
+          'redirect_uri': googleHealthRedirectUri,
+        },
       );
       final data = res.data as Map<String, dynamic>?;
       if (res.status != 200) {

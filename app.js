@@ -512,7 +512,9 @@ async function handleGoogleHealthOAuthCallback() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${APP.session.access_token}`
       },
-      body: JSON.stringify({ code, child_id: childId })
+      // redirect_uri must match the one used to start the OAuth flow so
+      // the Edge Function's token exchange doesn't hit redirect_uri_mismatch.
+      body: JSON.stringify({ code, child_id: childId, redirect_uri: GOOGLE_HEALTH_REDIRECT_URI })
     });
 
     const data = await res.json();
