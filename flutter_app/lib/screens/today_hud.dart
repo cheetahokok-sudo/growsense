@@ -710,6 +710,108 @@ class _SleepEditorCardState extends State<SleepEditorCard> {
             : '${t('flutter.not_saved', 'Not saved')}: $err')));
   }
 
+  // ── Naps (kept separate from the night; never in the sleep score) ──
+  Future<void> _addNap() async {
+    final t = widget.i18n.t;
+    final start = await showTimePicker(
+        context: context,
+        initialTime: const TimeOfDay(hour: 14, minute: 0),
+        helpText: t('flutter.sleep.nap_start', 'Nap start'));
+    if (start == null || !mounted) return;
+    final end = await showTimePicker(
+        context: context,
+        initialTime:
+            TimeOfDay(hour: (start.hour + 1) % 24, minute: start.minute),
+        helpText: t('flutter.sleep.nap_end', 'Nap end'));
+    if (end == null || !mounted) return;
+    final err =
+        await widget.appState.saveNap(start: _fmt(start), end: _fmt(end));
+    if (err != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: GsColors.flag,
+          content: Text('${t('flutter.not_saved', 'Not saved')}: $err')));
+    }
+  }
+
+  Future<void> _deleteNap(dynamic napId) async {
+    final t = widget.i18n.t;
+    final err = await widget.appState.deleteNap(napId);
+    if (err != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: GsColors.flag,
+          content: Text('${t('flutter.not_saved', 'Not saved')}: $err')));
+    }
+  }
+
+  Widget _napsSection() {
+    final t = widget.i18n.t;
+    final naps = widget.appState.naps;
+    String hhmm(dynamic v) {
+      final s = v?.toString() ?? '';
+      return s.length >= 5 ? s.substring(0, 5) : s;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Text(t('flutter.sleep.naps', 'Naps (optional)'),
+                  style:
+                      const TextStyle(fontSize: 12.5, color: GsColors.text2)),
+            ),
+            TextButton.icon(
+              onPressed: _addNap,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 30),
+                foregroundColor: GsColors.accent,
+              ),
+              icon: const Icon(Icons.add, size: 15),
+              label: Text(t('flutter.sleep.add_nap', 'Add nap')),
+            ),
+          ],
+        ),
+        if (naps.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final n in naps)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(10, 3, 3, 3),
+                  decoration: BoxDecoration(
+                    color: GsColors.surface2,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: GsColors.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                          '${hhmm(n['start_time'])}–${hhmm(n['end_time'])} · ${(n['total_sleep_min'] as num?)?.toInt() ?? 0}m',
+                          style: const TextStyle(
+                              fontSize: 11, color: GsColors.text2)),
+                      InkWell(
+                        onTap: () => _deleteNap(n['nap_id']),
+                        child: const Padding(
+                          padding: EdgeInsets.all(3),
+                          child: Icon(Icons.close,
+                              size: 13, color: GsColors.text3),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
@@ -821,6 +923,7 @@ class _SleepEditorCardState extends State<SleepEditorCard> {
                         ),
                       ],
                     ),
+                    _napsSection(),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: _busy ? null : _save,

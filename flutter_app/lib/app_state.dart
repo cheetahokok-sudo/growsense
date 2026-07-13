@@ -60,6 +60,7 @@ class AppState extends ChangeNotifier {
   // Per-day data for the active child + logDate
   Map<String, dynamic>? nutrition; // daily_nutrition row
   Map<String, dynamic>? sleep; // daily_sleep row
+  List<Map<String, dynamic>> naps = []; // sleep_naps rows (NOT in the score)
   List<Map<String, dynamic>> activityItems = []; // daily_activity_items rows
   List<Map<String, dynamic>> nutritionLogItems = []; // nutrition_log_items rows
 
@@ -180,6 +181,7 @@ class AppState extends ChangeNotifier {
     if (childId == null) {
       nutrition = null;
       sleep = null;
+      naps = [];
       activityItems = [];
       nutritionLogItems = [];
       notifyListeners();
@@ -225,6 +227,20 @@ class AppState extends ChangeNotifier {
       lastError = null;
     } on PostgrestException catch (e) {
       lastError = e.message;
+    }
+    // Naps live in a separate table and never feed the sleep score. Load
+    // them on their own, defensively — a pre-migration DB (no sleep_naps
+    // table) must not break the day view.
+    try {
+      final napRows = await sb
+          .from('sleep_naps')
+          .select()
+          .eq('child_id', childId)
+          .eq('log_date', logDate)
+          .order('start_time', ascending: true);
+      naps = List<Map<String, dynamic>>.from(napRows as List? ?? []);
+    } catch (_) {
+      naps = [];
     }
     loadingDay = false;
     notifyListeners();
@@ -579,6 +595,44 @@ class AppState extends ChangeNotifier {
       }, onConflict: 'child_id,log_date');
       await loadDay();
       loadWeekConsistency();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// Records a daytime nap in the separate sleep_naps table. Naps are
+  /// deliberately kept OUT of daily_sleep and the sleep score — stored
+  /// only for honest history + future/clinical analysis (nap frequency
+  /// and timing). start/end are 'HH:mm'; filed under the viewed day.
+  Future<String?> saveNap({required String start, required String end}) async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    final s = start.split(':').map(int.parse).toList();
+    final e = end.split(':').map(int.parse).toList();
+    final startMin = s[0] * 60 + s[1];
+    var endMin = e[0] * 60 + e[1];
+    if (endMin <= startMin) endMin += 1440; // guard a wrap past midnight
+    try {
+      await sb.from('sleep_naps').insert({
+        'child_id': childId,
+        'log_date': logDate,
+        'start_time': start,
+        'end_time': end,
+        'total_sleep_min': endMin - startMin,
+        'data_source': 'manual',
+      });
+      await loadDay();
+      return null;
+    } on PostgrestException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<String?> deleteNap(dynamic napId) async {
+    try {
+      await sb.from('sleep_naps').delete().eq('nap_id', napId);
+      await loadDay();
       return null;
     } on PostgrestException catch (e) {
       return e.message;
