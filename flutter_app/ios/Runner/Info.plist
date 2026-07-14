@@ -66,5 +66,22 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>GrowSense needs access to your photo library so you can attach a bone-age X-ray or a growth photo to your child's record.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>GrowSense uses the camera only if you choose to take a photo to add to your child's record.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.growsense.growsense</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.growsense.growsense</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

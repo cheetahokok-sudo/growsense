@@ -399,16 +399,10 @@ class AccountScreen extends StatelessWidget {
                   ),
                   _LinkRow(
                     icon: Icons.delete_outline,
-                    label: t(
-                      'flutter.legal.delete',
-                      'Request account deletion',
-                    ),
+                    label: t('flutter.legal.delete', 'Delete account'),
                     color: GsColors.flag,
-                    onTap: () => launchUrl(
-                      Uri.parse(
-                        'mailto:contact@growsense.life?subject=GrowSense%20account%20deletion%20request',
-                      ),
-                    ),
+                    onTap: () =>
+                        _confirmAndDeleteAccount(context, appState, i18n),
                   ),
                 ],
               ),
@@ -594,6 +588,71 @@ class AccountScreen extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// In-app account deletion — required by App Store Guideline 5.1.1(v)
+/// (a mailto: link is no longer accepted). Confirms, then calls the
+/// `delete-account` Edge Function, which removes the user's data and
+/// their auth user via the service role. On success we sign out and
+/// pop back to the auth screen. Fails safe: a failed delete never signs
+/// the user out as if it succeeded, and if the function isn't deployed yet
+/// the user just sees a retry/email message.
+Future<void> _confirmAndDeleteAccount(
+    BuildContext context, AppState appState, I18n i18n) async {
+  final t = i18n.t;
+  final messenger = ScaffoldMessenger.of(context);
+  final rootNav = Navigator.of(context, rootNavigator: true);
+  final email = Supabase.instance.client.auth.currentUser?.email ?? '';
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(t('flutter.delete.title', 'Delete your account?')),
+      content: Text(t(
+          'flutter.delete.body',
+          'This permanently deletes your GrowSense account ({email}) and all of your children’s data. This cannot be undone.',
+          {'email': email})),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t('common.cancel', 'Cancel'))),
+        TextButton(
+            style: TextButton.styleFrom(foregroundColor: GsColors.flag),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t('flutter.delete.confirm', 'Delete everything'))),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+  if (!context.mounted) return;
+
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    useRootNavigator: true,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    final res =
+        await Supabase.instance.client.functions.invoke('delete-account');
+    if (res.status != 200) {
+      throw Exception('delete-account returned ${res.status}');
+    }
+    await Supabase.instance.client.auth.signOut();
+    appState.reset();
+    rootNav.pop(); // dismiss the spinner
+    rootNav.pop(); // close the account screen → AuthGate shows sign-in
+    messenger.showSnackBar(SnackBar(
+        content:
+            Text(t('flutter.delete.done', 'Your account has been deleted.'))));
+  } catch (_) {
+    rootNav.pop(); // dismiss the spinner
+    messenger.showSnackBar(SnackBar(
+        backgroundColor: GsColors.flag,
+        content: Text(t('flutter.delete.error',
+            'Could not delete your account. Please try again, or email contact@growsense.life.'))));
   }
 }
 

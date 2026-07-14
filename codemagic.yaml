@@ -1,0 +1,61 @@
+# Codemagic CI/CD — GrowSense iOS (Flutter, app lives in flutter_app/).
+#
+# ONE-TIME SETUP in the Codemagic UI before the first build:
+#   1. Connect this GitHub repo.
+#   2. Team settings → Integrations → App Store Connect: add an API key
+#      (Issuer ID + Key ID + the .p8). Name it to match `integrations` below.
+#   3. Create the app in App Store Connect first (bundle id
+#      com.growsense.growsense), then put its numeric Apple ID in APP_ID.
+#   4. Apple Developer Program enrollment must be active (nothing signs without it).
+#
+# This workflow builds a signed IPA and ships it to TestFlight. It does NOT
+# auto-submit to App Store review — promote from TestFlight when ready.
+
+workflows:
+  ios-appstore:
+    name: GrowSense iOS — TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    working_directory: flutter_app
+    integrations:
+      app_store_connect: GrowSense ASC Key   # ← must match the API key name in Codemagic
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.growsense.growsense
+      vars:
+        BUNDLE_ID: "com.growsense.growsense"
+        APP_STORE_APPLE_ID: 0000000000        # ← numeric Apple ID from App Store Connect
+    scripts:
+      - name: Set up code signing (automatic, via ASC API key)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Flutter dependencies
+        script: flutter pub get
+      - name: CocoaPods install
+        script: find . -name "Podfile" -execdir pod install \;
+      - name: Bump build number to the next TestFlight number
+        script: |
+          BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          echo "Next build: $(($BUILD_NUMBER + 1))"
+      - name: Flutter build IPA
+        script: |
+          flutter build ipa --release \
+            --build-number=$(($BUILD_NUMBER + 1)) \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # submit_to_app_store: false   # flip to true only for a real release

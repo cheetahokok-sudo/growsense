@@ -38,8 +38,18 @@ class _AuthScreenState extends State<AuthScreen> {
   /// Where OAuth and recovery links return to: the exact URL the app
   /// is served from (localhost in dev, /growsense/app/ in production).
   /// Both must be in the Supabase Auth redirect allowlist.
+  /// Where OAuth and recovery links return to.
+  ///  - Web: the exact URL the app is served from (localhost in dev,
+  ///    growsense.life/app/ in production).
+  ///  - iOS/Android: a custom-scheme deep link that re-opens the app;
+  ///    supabase_flutter's built-in deep-link handler completes the session.
+  ///    The scheme is registered in ios/Runner/Info.plist (CFBundleURLTypes)
+  ///    and android/.../AndroidManifest.xml. Every value here must also be in
+  ///    the Supabase Auth → URL Configuration redirect allowlist.
+  static const String _nativeRedirect =
+      'com.growsense.growsense://login-callback/';
   String? get _redirect =>
-      kIsWeb ? Uri.base.toString().split('#').first : null;
+      kIsWeb ? Uri.base.toString().split('#').first : _nativeRedirect;
 
   Future<void> _oauth(OAuthProvider provider) async {
     setState(() {
