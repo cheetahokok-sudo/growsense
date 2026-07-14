@@ -116,7 +116,11 @@ class AppState extends ChangeNotifier {
       // First entry via Google/Apple OAuth (or a partial email
       // signup): there is no DB trigger for user_accounts — the PWA
       // inserts it client-side after signUp — so self-heal here.
-      // Flutter onboards parents; clinicians sign up in the web app.
+      //
+      // POLICY (decided 2026-07-14): every Flutter/iOS signup is a
+      // parent_subscriber, always — no role picker in the app. Doctors,
+      // scientists and admins are onboarded only via a web signup link
+      // sent by the system admin. Don't add role selection here.
       account ??= await sb
           .from('user_accounts')
           .insert({
