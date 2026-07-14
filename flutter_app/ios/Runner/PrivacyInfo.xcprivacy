@@ -11,10 +11,11 @@
   declared in App Store Connect's App Privacy section, which is the source
   of truth for the "nutrition labels".
 
-  MANUAL STEP: this file must be added to the Runner target's bundle
-  resources in Xcode (drag into the Runner group, tick Runner target
-  membership) — see APPSTORE_iOS.md. It is intentionally not wired into
-  project.pbxproj here to avoid risking the build.
+  WIRED IN 2026-07-14: this file is now referenced in project.pbxproj —
+  added to the Runner group and the Runner target's Resources (Copy Bundle
+  Resources) build phase (UUIDs A1B2C3D4...0001 / ...0002). No Xcode/Mac
+  needed; the Codemagic build bundles it. (Done this way because the founder
+  is on Windows with no Mac.)
 -->
 <plist version="1.0">
 <dict>
