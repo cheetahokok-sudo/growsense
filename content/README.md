@@ -66,3 +66,4 @@ GS-00X/
 | GS-052 | Does Milk Make Kids Taller? What Dairy Really Does for Growth | Published · /blog/does-milk-make-kids-taller · 13 refs verified (draft list clean; 1 label fix) · Astro |
 | GS-051 | Calcium, Vitamin D, Zinc & Iron: Which Growth Supplements Actually Matter? | Published · /blog/growth-supplements-that-matter · 11 PMIDs + 5 fact sheets verified (draft had none) · pillar · Astro |
 | GS-019 | When Do Children Stop Growing? Growth Plates, Bone Age & Runway | Published · /blog/when-do-children-stop-growing · 15 refs verified (draft had 4 fabricated PMIDs — corrected/cut; 2 unverifiable dropped) · Astro |
+| GS-017 | Early Puberty & Adult Height: Why Growing Fast Early Can Mean Stopping Short | Published · /blog/early-puberty-and-adult-height · 13 refs verified (draft had 5 fabricated PMIDs of 12 — corrected/cut) · myths section split to a Myths-cluster companion · Astro |
