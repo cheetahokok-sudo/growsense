@@ -28,7 +28,7 @@ workflows:
         bundle_identifier: com.growsense.growsense
       vars:
         BUNDLE_ID: "com.growsense.growsense"
-        APP_STORE_APPLE_ID: 0000000000        # ← numeric Apple ID from App Store Connect
+        APP_STORE_APPLE_ID: 6790710624        # numeric Apple ID for "GrowSense Life" (com.growsense.growsense)
     scripts:
       - name: Set up code signing (automatic, via ASC API key)
         script: |

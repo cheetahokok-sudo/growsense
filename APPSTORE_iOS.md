@@ -61,9 +61,27 @@ Version note: `pubspec.yaml` is `1.0.0+1` on this branch (fine for a first
 1.0.0 submission). `codemagic.yaml` auto-increments the **build number** from the
 latest TestFlight build; bump the **version** (`1.0.0` → `1.0.1`…) per release.
 
+## Step 4 — Apple account set up (2026-07-14)
+
+Done in the Apple portals (account: Aimvalee Chanphen, **Team ID `D5D3MX2XMH`**):
+- ✅ **Apple Developer Program** enrolment active.
+- ✅ **App ID registered**: `com.growsense.growsense` (explicit) with **Sign in with
+  Apple** capability enabled (primary App ID).
+- ✅ **App record created** in App Store Connect.
+  - **App Store title:** `GrowSense Life` (the plain "GrowSense" was already taken;
+    this is only the store listing name — the home-screen name stays "GrowSense"
+    via `CFBundleDisplayName`).
+  - **Apple ID (numeric):** `6790710624` → already written into `codemagic.yaml`
+    `APP_STORE_APPLE_ID`.
+  - SKU `growsense-ios`, Primary language English (U.S.), iOS only.
+
+Next: create the **App Store Connect API key** (Users and Access → Integrations →
+App Store Connect API), name it `GrowSense ASC Key` in Codemagic, then run the
+Codemagic workflow. Deploy `delete-account` + add the Supabase redirect URL.
+
 ### External gates still to do (not code)
-- **Apple Developer Program enrolment** (+ D-U-N-S if Organization) — the slowest.
-- **App Store Connect**: create the app for `com.growsense.growsense`, then the API key.
+- **App Store Connect API key**: Users and Access → Integrations → App Store Connect
+  API → Team Keys → App Manager role; download the `.p8` (once) + Issuer ID + Key ID.
 - **Privacy policy URL** (mandatory — child health data) + **App Privacy nutrition
   labels** in ASC (declare health data, contact info, identifiers).
 - App icon = GrowSense brand icon (not the default Flutter logo).
