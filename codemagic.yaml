@@ -29,6 +29,10 @@ workflows:
       # "Set up code signing" script below runs `fetch-signing-files --create`,
       # which creates the distribution certificate AND profile from scratch,
       # authenticating via the `GrowSense ASC Key` integration.
+      groups:
+        - appstore          # Codemagic env-var group; must contain the SECURE var
+                            # CERTIFICATE_PRIVATE_KEY (the PEM private key used to
+                            # create/reuse the iOS distribution certificate).
       vars:
         BUNDLE_ID: "com.growsense.growsense"
         APP_STORE_APPLE_ID: 6790710624        # numeric Apple ID for "GrowSense Life" (com.growsense.growsense)
@@ -36,8 +40,14 @@ workflows:
       - name: Set up code signing (automatic, via ASC API key)
         script: |
           keychain initialize
+          # --certificate-key gives fetch-signing-files a persistent private key so
+          # it CREATES the iOS distribution certificate on the first run (there were
+          # zero certs on the account) and reuses it on every later build. Without a
+          # key it only makes profiles, so the archive had no certificate to sign with.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE --create
+            --type IOS_APP_STORE \
+            --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
+            --create
           keychain add-certificates
           xcode-project use-profiles
       - name: Flutter dependencies
