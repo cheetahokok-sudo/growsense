@@ -41,14 +41,17 @@ workflows:
         script: flutter pub get
       - name: CocoaPods install
         script: find . -name "Podfile" -execdir pod install \;
-      - name: Bump build number to the next TestFlight number
+      - name: Flutter build IPA (auto-bump build number)
         script: |
+          # NOTE: each Codemagic script step runs in its own shell, so the
+          # build-number lookup and the build must live in the SAME step —
+          # otherwise BUILD_NUMBER is empty at build time and every build is #1
+          # (TestFlight rejects duplicate build numbers).
           BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
-          echo "Next build: $(($BUILD_NUMBER + 1))"
-      - name: Flutter build IPA
-        script: |
+          NEXT=$(($BUILD_NUMBER + 1))
+          echo "Next build number: $NEXT"
           flutter build ipa --release \
-            --build-number=$(($BUILD_NUMBER + 1)) \
+            --build-number=$NEXT \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa

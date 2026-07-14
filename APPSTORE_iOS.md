@@ -34,7 +34,12 @@ there. This deep link is what re-opens the app after the provider screen.)
 
 ## Still ahead (not code — see the full review)
 - Apple Developer Program enrolment (+ D-U-N-S if Organization) — slowest step.
-- Confirm the app icon is the GrowSense brand icon, not the default Flutter logo.
+- ⚠️ **BLOCKER — app icon is still the DEFAULT FLUTTER LOGO** (verified 2026-07-14:
+  `ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png` is the
+  blue Flutter chevron). Apple auto-rejects placeholder/template icons
+  (Guideline 2.3.7 / 4.0). A branded 1024×1024 icon (no alpha, no rounded corners)
+  must replace the whole appiconset before submission. Same for Android
+  `mipmap-*/ic_launcher`.
 - Codemagic (or a Mac) to build/sign/submit — cannot be done from Windows.
 - Native Sign in with Apple polish, App Privacy nutrition label, reviewer demo
   account, screenshots, age rating.
