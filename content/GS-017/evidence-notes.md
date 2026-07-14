@@ -49,6 +49,11 @@ corrected/cut before ship (see references.md). Reinforces: verify every PMID.
 - ← companion: Myths-cluster "do foods cause early puberty?" (to build, links back here)
 
 ## Pending
-- Hero `gs-017-hero.jpg`.
-- TH + 中文 translations.
+- Hero `gs-017-hero.jpg` (article ships with placeholder until generated).
 - Companion Myths article (poultry/soy/obesity — own verification pass).
+
+## Shipped
+- TH + 中文 translations (2026-07-14): 13/13 citations resolve, 0 broken, 0
+  uncited in all three langs; hubs at 12 cards each. References kept English;
+  clinical terms (growth plate, bone age, estrogen, aromatase, GnRHa, CPP,
+  premature thelarche, Tanner, LH/FSH, IGF-1/GH) kept English per house pattern.
