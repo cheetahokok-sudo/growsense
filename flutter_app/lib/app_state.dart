@@ -122,7 +122,11 @@ class AppState extends ChangeNotifier {
           .insert({
             'user_id': user.id,
             'email': user.email,
-            'account_role': 'parent',
+            // app_role enum is ('parent_subscriber','doctor','scientist',
+            // 'system_admin') — there is no bare 'parent'. Must match the
+            // PWA's signup default (app.js signupRole) or the insert throws
+            // 22P02 (invalid enum) and the row is never created.
+            'account_role': 'parent_subscriber',
           })
           .select()
           .single();
