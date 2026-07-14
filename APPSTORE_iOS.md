@@ -35,12 +35,14 @@ there. This deep link is what re-opens the app after the provider screen.)
 ## Still ahead (not code — see the full review)
 - Apple Developer Program enrolment (+ D-U-N-S if Organization) — slowest step.
 - ✅ **App icon — DONE (2026-07-14).** Replaced the default Flutter logo with the
-  GrowSense brand mark (white upward trend-arrow on accent-green `#2F6B4F`,
-  matching the website logo). All 15 iOS appiconset sizes + 5 Android
-  `mipmap-*/ic_launcher` regenerated; 1024 marketing icon is RGB with **no alpha**
-  (Apple requirement). Master source of truth:
-  `flutter_app/assets/icon/growsense_icon.png` (regenerate sizes from it).
-  No Android adaptive-icon config exists, so the legacy PNGs fully cover Android.
+  GrowSense brand icon: white upward velocity chart over children rising
+  left→right (two middle ones stalled = a growth-velocity plateau) on a
+  deep-green gradient, full-bleed square. Flat design (no bevel/shadow) so it
+  reads at all sizes and iOS applies its own corner mask. All 15 iOS appiconset
+  sizes + 5 Android `mipmap-*/ic_launcher` regenerated; 1024 marketing icon is
+  RGB with **no alpha** (Apple requirement). Master source of truth:
+  `flutter_app/assets/icon/growsense_icon.png` (regen sizes with scratchpad
+  make_icon_v3.py). No Android adaptive-icon config exists, so legacy PNGs cover it.
 - Codemagic (or a Mac) to build/sign/submit — cannot be done from Windows.
 - Native Sign in with Apple polish, App Privacy nutrition label, reviewer demo
   account, screenshots, age rating.
