@@ -23,9 +23,12 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.growsense.growsense
+      # NOTE: no declarative `ios_signing:` block here on purpose. That block makes
+      # Codemagic look for an ALREADY-EXISTING provisioning profile and fails on a
+      # fresh account ("No matching profiles found ... app_store"). Instead the
+      # "Set up code signing" script below runs `fetch-signing-files --create`,
+      # which creates the distribution certificate AND profile from scratch,
+      # authenticating via the `GrowSense ASC Key` integration.
       vars:
         BUNDLE_ID: "com.growsense.growsense"
         APP_STORE_APPLE_ID: 6790710624        # numeric Apple ID for "GrowSense Life" (com.growsense.growsense)
