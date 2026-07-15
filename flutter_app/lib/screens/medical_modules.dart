@@ -13,6 +13,7 @@ import '../growth_evidence.dart';
 import '../i18n.dart';
 import '../illness_reference.dart';
 import '../theme.dart';
+import '../widgets/evidence_refs.dart';
 import '../widgets/growth_systems.dart';
 import '../widgets/lab_viz.dart';
 import '../widgets/premium_gate.dart';
@@ -408,89 +409,442 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
   }
 }
 
-/// Grouped per-analyte lab cards. Evidence-based patient display (see
-/// lab_viz.dart): latest value with a plain-language status chip, a
-/// number-line range bar, and a trend sparkline when there are serial
-/// results. Individual dated entries expand beneath each card.
-class _LabAnalytePanel extends StatelessWidget {
+/// Canonical order for the five focus labs; anything else follows.
+const _labOrder = ['igf1', 'vitamin_d', 'ferritin', 'tsh', 'hemoglobin'];
+
+/// The "first look" a parent gets after entering lab values: a swipe row
+/// of compact cards (value, range, trend, one plain-language line), each
+/// opening a detail card with What-it-means + Evidence & References — all
+/// FREE. The AI cross-lab synthesis below is the premium layer.
+class _LabAnalytePanel extends StatefulWidget {
   const _LabAnalytePanel({required this.appState, required this.i18n});
   final AppState appState;
   final I18n i18n;
 
   @override
-  Widget build(BuildContext context) {
-    final t = i18n.t;
-    final results = appState.labResults;
+  State<_LabAnalytePanel> createState() => _LabAnalytePanelState();
+}
 
-    // Group by analyte (case-insensitive); labResults is date-desc so
-    // each group's first entry is the latest. Insertion order keeps
-    // the most recently updated analyte on top.
+class _LabAnalytePanelState extends State<_LabAnalytePanel> {
+  GrowthEvidence? _evidence;
+
+  @override
+  void initState() {
+    super.initState();
+    GrowthEvidence.load().then((e) {
+      if (mounted) setState(() => _evidence = e);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    final results = widget.appState.labResults;
+
+    // Group by analyte name; labResults is date-desc so each group's
+    // first entry is the latest. Order the five focus labs first.
     final groups = <String, List<Map<String, dynamic>>>{};
     for (final r in results) {
-      final key =
-          (r['analyte_name'] as String? ?? '').trim().toLowerCase();
+      final key = (r['analyte_name'] as String? ?? '').trim().toLowerCase();
       groups.putIfAbsent(key, () => []).add(r);
+    }
+    final ordered = groups.values.toList();
+    if (_evidence != null) {
+      int rank(List<Map<String, dynamic>> g) {
+        final k = _evidence!.keyForAnalyteName(g.first['analyte_name'] ?? '');
+        final i = k == null ? -1 : _labOrder.indexOf(k);
+        return i < 0 ? 99 : i;
+      }
+
+      ordered.sort((a, b) => rank(a).compareTo(rank(b)));
+    }
+
+    if (groups.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: GsColors.surface,
+          borderRadius: BorderRadius.circular(GsRadius.md),
+          border: Border.all(color: GsColors.border),
+          boxShadow: gsShadow,
+        ),
+        child: Text(t('flutter.nothing_recorded', 'Nothing recorded yet.'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12.5, color: GsColors.text3)),
+      );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (results.isNotEmpty) ...[
-          _LabAiCard(appState: appState, i18n: i18n),
-          const SizedBox(height: 12),
-        ],
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: GsColors.surface,
-            borderRadius: BorderRadius.circular(GsRadius.md),
-            border: Border.all(color: GsColors.border),
-            boxShadow: gsShadow,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(t('flutter.history', 'History'),
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: GsColors.measured)),
-                  Text(
-                      '${results.length} ${t('flutter.records', 'records')}',
-                      style: const TextStyle(
-                          fontSize: 11, color: GsColors.text3)),
-                ],
-              ),
-              if (groups.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Text(
-                      t('flutter.nothing_recorded', 'Nothing recorded yet.'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 12.5, color: GsColors.text3)),
-                )
-              else ...[
-                const SizedBox(height: 4),
-                Text(
-                    t('flutter.lab.range_note',
-                        'Ranges shown are the ones printed on your lab report — they are matched to your child\'s age and sex by the lab.'),
-                    style: const TextStyle(
-                        fontSize: 10.5, color: GsColors.text3, height: 1.4)),
-                const SizedBox(height: 10),
-                for (final entry in groups.entries) ...[
-                  _LabAnalyteCard(
-                      entries: entry.value, appState: appState, i18n: i18n),
-                  const SizedBox(height: 10),
-                ],
-              ],
-            ],
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 8),
+          child: Text(t('flutter.lab.your_results', 'Your results'),
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w800)),
+        ),
+        // First look — horizontal swipe row.
+        SizedBox(
+          height: 226,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            itemCount: ordered.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (context, i) => _LabMiniCard(
+              entries: ordered[i],
+              evidence: _evidence,
+              appState: widget.appState,
+              i18n: widget.i18n,
+            ),
           ),
         ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Text(
+              t('flutter.lab.range_note',
+                  'Ranges shown are the ones printed on your lab report — matched to your child\'s age and sex by the lab. Tap a card for details.'),
+              style: const TextStyle(
+                  fontSize: 10.5, color: GsColors.text3, height: 1.4)),
+        ),
+        const SizedBox(height: 14),
+        _LabAiCard(appState: widget.appState, i18n: widget.i18n),
       ],
+    );
+  }
+}
+
+/// Compact "first look" card. Tap → full detail sheet.
+class _LabMiniCard extends StatelessWidget {
+  const _LabMiniCard(
+      {required this.entries,
+      required this.evidence,
+      required this.appState,
+      required this.i18n});
+  final List<Map<String, dynamic>> entries;
+  final GrowthEvidence? evidence;
+  final AppState appState;
+  final I18n i18n;
+
+  double? _d(dynamic v) => (v as num?)?.toDouble();
+
+  @override
+  Widget build(BuildContext context) {
+    final latest = entries.first;
+    final value = _d(latest['result_value']) ?? 0;
+    final low = _d(latest['reference_low']);
+    final high = _d(latest['reference_high']);
+    final unit = latest['unit'] as String? ?? '';
+    final status = labStatusOf(value, low, high);
+    final key = evidence?.keyForAnalyteName(latest['analyte_name'] ?? '');
+    final band = labStatusBand(status);
+    final hint = (key != null && band != null)
+        ? evidence?.analytes[key]?.hintFor(band)
+        : null;
+    final series = [
+      for (final r in entries.reversed)
+        (
+          value: _d(r['result_value']) ?? 0,
+          low: _d(r['reference_low']),
+          high: _d(r['reference_high']),
+        ),
+    ];
+
+    return GestureDetector(
+      onTap: () => showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => _LabDetailSheet(
+            entries: entries,
+            evidence: evidence,
+            appState: appState,
+            i18n: i18n),
+      ),
+      child: Container(
+        width: 168,
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: GsColors.surface,
+          borderRadius: BorderRadius.circular(GsRadius.md),
+          border: Border.all(color: GsColors.border),
+          boxShadow: gsShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                    color: labStatusColor(status), shape: BoxShape.circle),
+              ),
+              Expanded(
+                child: Text('${latest['analyte_name'] ?? ''}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w800)),
+              ),
+            ]),
+            const SizedBox(height: 6),
+            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(_fmtVal(value),
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.w800, height: 1.0)),
+              const SizedBox(width: 3),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(unit,
+                    style: const TextStyle(
+                        fontSize: 10.5, color: GsColors.text2)),
+              ),
+            ]),
+            const SizedBox(height: 4),
+            Row(children: [
+              if (low != null || high != null)
+                Flexible(
+                  child: Text('(${_fmtNum(low)} – ${_fmtNum(high)})',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 9.5, color: GsColors.text3)),
+                ),
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: labStatusColor(status).withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(labStatusShort(status, i18n),
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: labStatusColor(status))),
+              ),
+            ]),
+            const SizedBox(height: 6),
+            if (series.length >= 2)
+              SizedBox(height: 40, child: LabSparkline(points: series))
+            else
+              const SizedBox(height: 40),
+            const SizedBox(height: 6),
+            Expanded(
+              child: Text(
+                  hint ??
+                      (evidence?.analytes[key]?.meaning ??
+                          i18n.t('flutter.lab.tap_more', 'Tap for details.')),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 10.5, color: GsColors.text2, height: 1.35)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _fmtNum(double? v) => v == null
+    ? '—'
+    : (v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1));
+
+/// Detail card (mockup 1): big value, range bar, 12-month trend,
+/// What-it-means, Evidence & References, and the dated entries + delete.
+class _LabDetailSheet extends StatefulWidget {
+  const _LabDetailSheet(
+      {required this.entries,
+      required this.evidence,
+      required this.appState,
+      required this.i18n});
+  final List<Map<String, dynamic>> entries;
+  final GrowthEvidence? evidence;
+  final AppState appState;
+  final I18n i18n;
+
+  @override
+  State<_LabDetailSheet> createState() => _LabDetailSheetState();
+}
+
+class _LabDetailSheetState extends State<_LabDetailSheet> {
+  bool _evidenceOpen = false;
+  double? _d(dynamic v) => (v as num?)?.toDouble();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    final latest = widget.entries.first;
+    final value = _d(latest['result_value']) ?? 0;
+    final low = _d(latest['reference_low']);
+    final high = _d(latest['reference_high']);
+    final unit = latest['unit'] as String? ?? '';
+    final status = labStatusOf(value, low, high);
+    final key = widget.evidence?.keyForAnalyteName(latest['analyte_name'] ?? '');
+    final analyte = key == null ? null : widget.evidence?.analytes[key];
+    final cards = key == null
+        ? const <EvidenceCard>[]
+        : (widget.evidence?.cardsForAnalyte(key) ?? const []);
+    final series = [
+      for (final r in widget.entries.reversed)
+        (
+          value: _d(r['result_value']) ?? 0,
+          low: _d(r['reference_low']),
+          high: _d(r['reference_high']),
+        ),
+    ];
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.94,
+      expand: false,
+      builder: (context, scroll) => Container(
+        decoration: const BoxDecoration(
+          color: GsColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: ListView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 18),
+                decoration: BoxDecoration(
+                    color: GsColors.border2,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            Text('${latest['analyte_name'] ?? ''}',
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(_fmtVal(value),
+                  style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      height: 1.0,
+                      color: labStatusColor(status))),
+              const SizedBox(width: 5),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(unit,
+                    style: const TextStyle(
+                        fontSize: 13, color: GsColors.text2)),
+              ),
+              const Spacer(),
+              LabStatusChip(status: status, i18n: widget.i18n),
+            ]),
+            if (low != null || high != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                  '${t('flutter.lab.lab_range', 'Lab range')} ${_fmtNum(low)} – ${_fmtNum(high)} $unit',
+                  style: const TextStyle(fontSize: 11, color: GsColors.text3)),
+              const SizedBox(height: 8),
+              LabRangeBar(value: value, low: low, high: high),
+            ],
+            if (series.length >= 2) ...[
+              const SizedBox(height: 18),
+              Text(t('flutter.lab.trend', 'Trend'),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: GsColors.measured)),
+              const SizedBox(height: 4),
+              LabSparkline(points: series),
+            ],
+            if (analyte != null) ...[
+              const SizedBox(height: 18),
+              Text(t('flutter.lab.what_means', 'What it means'),
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text(analyte.meaning,
+                  style: const TextStyle(
+                      fontSize: 12.5, color: GsColors.text2, height: 1.5)),
+            ],
+            if (cards.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              InkWell(
+                onTap: () => setState(() => _evidenceOpen = !_evidenceOpen),
+                child: Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: GsColors.bg,
+                    borderRadius: BorderRadius.circular(GsRadius.sm),
+                    border: Border.all(color: GsColors.border),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.menu_book_outlined,
+                        size: 16, color: GsColors.measured),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                          '${t('flutter.gs.evidence', 'Evidence & References')} (${cards.length})',
+                          style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: GsColors.measured)),
+                    ),
+                    Icon(_evidenceOpen ? Icons.expand_less : Icons.chevron_right,
+                        size: 18, color: GsColors.measured),
+                  ]),
+                ),
+              ),
+              if (_evidenceOpen) ...[
+                const SizedBox(height: 8),
+                EvidenceRefsList(cards: cards),
+              ],
+            ],
+            const SizedBox(height: 18),
+            Text(t('flutter.lab.all_entries', 'All entries'),
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w700)),
+            for (final r in widget.entries)
+              Row(children: [
+                Expanded(
+                  child: _TwoLine(
+                    title: '${r['lab_date'] ?? ''}',
+                    meta: (r['reference_low'] != null ||
+                            r['reference_high'] != null)
+                        ? '${_fmtNum(_d(r['reference_low']))}–${_fmtNum(_d(r['reference_high']))} ${r['unit'] ?? ''}'
+                        : '${r['unit'] ?? ''}',
+                    trailing: _fmtVal(_d(r['result_value']) ?? 0),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close,
+                      size: 16, color: GsColors.text3),
+                  onPressed: () async {
+                    final err = await widget.appState
+                        .deleteLabResult(r['lab_result_id']);
+                    if (!context.mounted) return;
+                    if (err != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          backgroundColor: GsColors.flag,
+                          content: Text(
+                              '${t('flutter.could_not_remove', 'Could not remove')}: $err')));
+                    } else if (widget.entries.length == 1) {
+                      Navigator.of(context).pop(); // last entry gone
+                    } else {
+                      setState(() => widget.entries.remove(r));
+                    }
+                  },
+                ),
+              ]),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -508,33 +862,6 @@ class _LabAiCard extends StatefulWidget {
 }
 
 class _LabAiCardState extends State<_LabAiCard> {
-  GrowthEvidence? _evidence;
-
-  @override
-  void initState() {
-    super.initState();
-    GrowthEvidence.load().then((e) {
-      if (mounted) setState(() => _evidence = e);
-    });
-  }
-
-  /// The child's logged lab values grouped by canonical analyte key
-  /// (oldest → newest), so each report tile can draw the real inline
-  /// range bar + trend. labResults is date-desc, so we reverse.
-  Map<String, LabSeries> _buildLabSeries(GrowthEvidence evidence) {
-    final out = <String, LabSeries>{};
-    for (final r in widget.appState.labResults) {
-      final key = evidence.keyForAnalyteName(r['analyte_name'] as String? ?? '');
-      if (key == null) continue;
-      (out[key] ??= <({double value, double? low, double? high})>[]).insert(0, (
-        value: (r['result_value'] as num?)?.toDouble() ?? 0,
-        low: (r['reference_low'] as num?)?.toDouble(),
-        high: (r['reference_high'] as num?)?.toDouble(),
-      ));
-    }
-    return out;
-  }
-
   Future<void> _run() async {
     final t = widget.i18n.t;
     if (!widget.appState.isPremium) {
@@ -639,169 +966,8 @@ class _LabAiCardState extends State<_LabAiCard> {
             ),
           if (report != null && !running) ...[
             const SizedBox(height: 12),
-            if (_evidence == null)
-              const Center(
-                  child: Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
-              ))
-            else
-              GrowthSystemsReport(
-                  report: report,
-                  evidence: _evidence!,
-                  i18n: widget.i18n,
-                  labSeries: _buildLabSeries(_evidence!)),
+            GrowthSystemsReport(report: report, i18n: widget.i18n),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-
-class _LabAnalyteCard extends StatefulWidget {
-  const _LabAnalyteCard(
-      {required this.entries, required this.appState, required this.i18n});
-
-  /// All results for one analyte, newest first.
-  final List<Map<String, dynamic>> entries;
-  final AppState appState;
-  final I18n i18n;
-
-  @override
-  State<_LabAnalyteCard> createState() => _LabAnalyteCardState();
-}
-
-class _LabAnalyteCardState extends State<_LabAnalyteCard> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = widget.i18n.t;
-    final latest = widget.entries.first;
-    final value = (latest['result_value'] as num?)?.toDouble() ?? 0;
-    final low = (latest['reference_low'] as num?)?.toDouble();
-    final high = (latest['reference_high'] as num?)?.toDouble();
-    final unit = latest['unit'] as String? ?? '';
-    final status = labStatusOf(value, low, high);
-    final serial = widget.entries.length > 1;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: GsColors.bg,
-        borderRadius: BorderRadius.circular(GsRadius.md),
-        border: Border.all(color: GsColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(children: [
-            Expanded(
-              child: Text('${latest['analyte_name'] ?? ''}',
-                  style: const TextStyle(
-                      fontSize: 13.5, fontWeight: FontWeight.w800)),
-            ),
-            LabStatusChip(status: status, i18n: widget.i18n),
-          ]),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(_fmtVal(value),
-                  style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      height: 1.0)),
-              const SizedBox(width: 4),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(unit,
-                    style: const TextStyle(
-                        fontSize: 11.5, color: GsColors.text2)),
-              ),
-              const Spacer(),
-              Text('${latest['lab_date'] ?? ''}',
-                  style: const TextStyle(
-                      fontSize: 10.5, color: GsColors.text3)),
-            ],
-          ),
-          if (low != null || high != null) ...[
-            const SizedBox(height: 4),
-            LabRangeBar(value: value, low: low, high: high),
-          ],
-          if (serial) ...[
-            const SizedBox(height: 8),
-            LabSparkline(
-              points: [
-                for (final r in widget.entries.reversed)
-                  (
-                    value: (r['result_value'] as num?)?.toDouble() ?? 0,
-                    low: (r['reference_low'] as num?)?.toDouble(),
-                    high: (r['reference_high'] as num?)?.toDouble(),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-                '${widget.entries.length} ${t('flutter.records', 'records')} · ${widget.entries.last['lab_date']} → ${latest['lab_date']}',
-                style:
-                    const TextStyle(fontSize: 10, color: GsColors.text3)),
-          ],
-          const SizedBox(height: 4),
-          InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(_expanded ? Icons.expand_less : Icons.expand_more,
-                      size: 15, color: GsColors.text3),
-                  const SizedBox(width: 4),
-                  Text(
-                      _expanded
-                          ? t('flutter.lab.hide_entries', 'Hide entries')
-                          : t('flutter.lab.show_entries', 'All entries'),
-                      style: const TextStyle(
-                          fontSize: 11, color: GsColors.text3)),
-                ],
-              ),
-            ),
-          ),
-          if (_expanded)
-            for (final r in widget.entries)
-              Row(children: [
-                Expanded(
-                  child: _TwoLine(
-                    title: '${r['lab_date'] ?? ''}',
-                    meta: (r['reference_low'] != null ||
-                            r['reference_high'] != null)
-                        ? '${r['reference_low'] ?? '—'}–${r['reference_high'] ?? '—'} ${r['unit'] ?? ''}'
-                        : '${r['unit'] ?? ''}',
-                    trailing: _fmtVal(
-                        (r['result_value'] as num?)?.toDouble() ?? 0),
-                  ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.close,
-                      size: 16, color: GsColors.text3),
-                  onPressed: () async {
-                    final err = await widget.appState
-                        .deleteLabResult(r['lab_result_id']);
-                    if (err != null && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          backgroundColor: GsColors.flag,
-                          content: Text(
-                              '${t('flutter.could_not_remove', 'Could not remove')}: $err')));
-                    }
-                  },
-                ),
-              ]),
         ],
       ),
     );

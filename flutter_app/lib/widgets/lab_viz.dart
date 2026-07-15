@@ -63,6 +63,15 @@ Color labStatusColor(LabStatus s) => switch (s) {
       LabStatus.noRange => GsColors.text3,
     };
 
+/// Collapses the six status bands to the three the parent-hint copy
+/// uses (low / in_range / high). Null for no-range (can't judge).
+String? labStatusBand(LabStatus s) => switch (s) {
+      LabStatus.low || LabStatus.borderlineLow => 'low',
+      LabStatus.high || LabStatus.borderlineHigh => 'high',
+      LabStatus.inRange => 'in_range',
+      LabStatus.noRange => null,
+    };
+
 String labStatusLabel(LabStatus s, I18n i18n) {
   final t = i18n.t;
   return switch (s) {
@@ -74,6 +83,19 @@ String labStatusLabel(LabStatus s, I18n i18n) {
     LabStatus.low => t('flutter.lab.below', 'Below range'),
     LabStatus.high => t('flutter.lab.above', 'Above range'),
     LabStatus.noRange => t('flutter.lab.no_range', 'No range given'),
+  };
+}
+
+/// Short label for the compact first-look card (mockup: "In range" / "Low").
+String labStatusShort(LabStatus s, I18n i18n) {
+  final t = i18n.t;
+  return switch (s) {
+    LabStatus.inRange => t('flutter.lab.short_in', 'In range'),
+    LabStatus.borderlineLow || LabStatus.low =>
+      t('flutter.lab.short_low', 'Low'),
+    LabStatus.borderlineHigh || LabStatus.high =>
+      t('flutter.lab.short_high', 'High'),
+    LabStatus.noRange => '—',
   };
 }
 

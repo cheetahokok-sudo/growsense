@@ -38,6 +38,7 @@ class GrowthAnalyte {
   final String meaning;
   final List<String> cautions;
   final List<String> evidence; // evidence-card keys
+  final Map<String, String> parentHint; // in_range | low | high
   GrowthAnalyte.fromJson(Map<String, dynamic> j)
       : id = j['id'] as String,
         label = j['label'] as String? ?? '',
@@ -45,7 +46,13 @@ class GrowthAnalyte {
         aliases = (j['aliases'] as List?)?.cast<String>() ?? const [],
         meaning = j['meaning'] as String? ?? '',
         cautions = (j['cautions'] as List?)?.cast<String>() ?? const [],
-        evidence = (j['evidence'] as List?)?.cast<String>() ?? const [];
+        evidence = (j['evidence'] as List?)?.cast<String>() ?? const [],
+        parentHint = ((j['parent_hint'] as Map?) ?? const {})
+            .map((k, v) => MapEntry(k as String, v as String));
+
+  /// Static, parent-friendly one-liner for a low/in-range/high band.
+  /// Free layer — never AI, always consistent with the cited evidence.
+  String? hintFor(String band) => parentHint[band];
 }
 
 class EvidenceCard {

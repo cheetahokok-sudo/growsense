@@ -63,6 +63,11 @@
       "aliases": ["igf-1", "igf1", "igf 1", "insulin-like growth factor", "insulin-like growth factor 1", "insulin-like growth factor-1", "somatomedin c"],
       "normalize": "sds_age_sex_puberty",
       "meaning": "IGF-1 carries much of growth hormone's signal to bone and cartilage, supporting growth-plate cell hypertrophy and matrix expansion — not simply making more cells.",
+      "parent_hint": {
+        "in_range": "Strong growth signaling supporting healthy growth velocity.",
+        "low": "Lower than the lab range — worth reviewing growth velocity and context with your doctor.",
+        "high": "Above the lab range — often reflects a growth or puberty phase; confirm with your doctor."
+      },
       "cautions": [
         "Interpret as an SDS adjusted for age, sex and ideally pubertal stage — concentrations change greatly through childhood and peak around puberty; a single universal range is misleading.",
         "Never infer growth-hormone deficiency or sufficiency from IGF-1 alone — combine with height velocity, bone age and clinical context.",
@@ -77,6 +82,11 @@
       "aliases": ["vitamin d", "25-oh vitamin d", "25 oh d", "25-hydroxyvitamin d", "calcidiol", "vit d"],
       "normalize": "lab_range",
       "meaning": "Vitamin D supports calcium absorption and bone mineralization — part of the environment growth happens in, not a direct switch for height.",
+      "parent_hint": {
+        "in_range": "Supports healthy bone mineralization and immunity.",
+        "low": "Slightly low. Optimize for better bone mineralization and immunity.",
+        "high": "Above the lab range — review any supplement intake with your doctor."
+      },
       "cautions": [
         "Belongs in the bone/mineral support domain, not as a direct height-growth driver.",
         "Human evidence for a height effect is modest and not uniform across sexes."
@@ -90,6 +100,11 @@
       "aliases": ["ferritin", "serum ferritin"],
       "normalize": "lab_range_threshold",
       "meaning": "Ferritin reflects iron stores. Low stores can reduce energy and, with anemia, may affect growth — but higher is not better.",
+      "parent_hint": {
+        "in_range": "Iron stores look adequate for energy and growth.",
+        "low": "Low iron stores may limit energy and growth potential.",
+        "high": "Higher than the lab range — ferritin also rises with inflammation; discuss with your doctor."
+      },
       "cautions": [
         "Not a 'higher is better' marker — do not reward rising ferritin with a better score.",
         "Interpret alongside hemoglobin and red-cell indices; ferritin is also an inflammatory marker.",
@@ -104,6 +119,11 @@
       "aliases": ["hemoglobin", "haemoglobin", "hgb", "hb"],
       "normalize": "lab_range",
       "meaning": "Hemoglobin reflects oxygen-carrying capacity — a systemic-health and stamina marker.",
+      "parent_hint": {
+        "in_range": "Good oxygen-carrying capacity supporting stamina and focus.",
+        "low": "Below the lab range — may reflect low iron or other causes; review with your doctor.",
+        "high": "Above the lab range — worth discussing with your doctor."
+      },
       "cautions": [
         "Growth relevance of hemoglobin trends is clearest in specific disease contexts (e.g. chronic kidney disease); do not over-generalize.",
         "Interpret with iron indices, not alone."
@@ -117,6 +137,11 @@
       "aliases": ["tsh", "thyroid stimulating hormone", "thyrotropin"],
       "normalize": "lab_range",
       "meaning": "TSH is a regulator of thyroid output; thyroid hormone drives metabolic rate and skeletal maturation.",
+      "parent_hint": {
+        "in_range": "Thyroid function looks balanced and within healthy range.",
+        "low": "Below the lab range — a fuller thyroid check (free T4) with your doctor helps.",
+        "high": "Above the lab range — a fuller thyroid check (free T4) with your doctor helps."
+      },
       "cautions": [
         "TSH alone is not a complete thyroid assessment — free T4 and growth history are needed before interpreting.",
         "Delayed treatment of hypothyroidism can leave incomplete catch-up growth, so thyroid is a high-importance domain."
