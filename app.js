@@ -6795,7 +6795,14 @@ function renderBoneAgeAIPanel(result, doctorBoneAgeMonths, chronologicalAgeMonth
 const ILLNESS_TYPE_LABELS = {
   fever: 'Fever', cold_respiratory: 'Cold / respiratory', ear_infection: 'Ear infection',
   stomach_gi: 'Stomach / GI', flu: 'Flu', skin_rash: 'Skin / rash', injury: 'Injury',
-  hospitalization: 'Hospitalization', other: 'Other'
+  hospitalization: 'Hospitalization', other: 'Other',
+  // Flutter app's richer taxonomy (illness_reference.json) — the DB CHECK
+  // accepts the union of both sets (migrations/2026-07-15_illness_type_
+  // check_widen.sql); these labels keep Flutter-logged rows readable here.
+  cold: 'Cold / respiratory', rsv: 'RSV', covid: 'COVID-19',
+  gastroenteritis: 'Stomach / GI', hfmd: 'Hand, foot & mouth',
+  strep: 'Strep throat', asthma_flare: 'Asthma flare', ear: 'Ear infection',
+  skin: 'Skin / rash', hospital: 'Hospitalization'
 };
 
 async function loadIllnessEvents() {
