@@ -168,20 +168,36 @@ async function loadAndRenderAdminArchivePanel() {
 
 function renderArchivedChildrenList(rows) {
   const el = document.getElementById('archivedChildrenList');
+  // Purge-overdue control: the countdown the UI promises is enforced
+  // manually from here (no cron) — button appears only when something
+  // is actually overdue.
+  const overdue = rows.filter(r => Number(r.days_until_permanent_delete) <= 0).length;
+  const purgeBtn = document.getElementById('purgeOverdueBtn');
+  if (purgeBtn) {
+    purgeBtn.style.display = overdue > 0 ? '' : 'none';
+    purgeBtn.textContent = `Purge overdue (${overdue})`;
+  }
   if (rows.length === 0) { el.innerHTML = '<div class="log-list-empty">None archived.</div>'; return; }
-  el.innerHTML = rows.map(r => `
+  el.innerHTML = rows.map(r => {
+    const days = Number(r.days_until_permanent_delete);
+    const meta = days <= 0
+      ? '<span style="color:var(--flag); font-weight:700;">overdue — past its deletion date</span>'
+      : `${days} days until permanent deletion`;
+    const safeName = escHtml(r.name).replace(/'/g, '&#39;');
+    return `
     <div class="log-item-row">
       <div class="log-item-left">
         <div class="log-item-info">
-          <span class="log-item-name">${r.name}</span>
-          <span class="log-item-meta">${r.days_until_permanent_delete} days until permanent deletion</span>
+          <span class="log-item-name">${escHtml(r.name)}</span>
+          <span class="log-item-meta">${meta}</span>
         </div>
       </div>
-      <div class="log-item-right">
+      <div class="log-item-right" style="display:flex; gap:10px;">
         <button class="btn-link" onclick="restoreArchivedChild('${r.child_id}', this)">Restore</button>
+        <button class="btn-link" style="color:var(--flag);" onclick="deleteArchivedChildNow('${r.child_id}', '${safeName}', this)">Delete now</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function renderArchivedAccountsList(rows) {
@@ -202,13 +218,40 @@ function renderArchivedAccountsList(rows) {
   `).join('');
 }
 
+// Child lifecycle goes through SECURITY DEFINER RPCs (see
+// migrations/2026-07-15_admin_child_lifecycle.sql): children RLS has no
+// admin arm, so the old direct UPDATE here was a silent no-op (0 rows,
+// no error). The RPCs also write admin_audit_log.
 async function restoreArchivedChild(childId, btn) {
-  const { error } = await sb.from('children').update({
-    status: 'active', archived_at: null, archived_by: null, permanent_delete_after: null
-  }).eq('child_id', childId);
+  const { error } = await sb.rpc('admin_restore_child', { p_child_id: childId });
   if (error) { showToast('⚠️', 'Could not restore: ' + error.message); return; }
   showToast('✅', 'Child profile restored');
   btn.closest('.log-item-row').remove();
+}
+
+// Hard delete of an ARCHIVED child (the RPC refuses active profiles).
+// Typed confirmation — this is irreversible and cascades through every
+// data table for the child.
+async function deleteArchivedChildNow(childId, name, btn) {
+  const typed = prompt(
+    `PERMANENT deletion of "${name}" and ALL their data (measurements, ` +
+    `nutrition, activity, sleep, medical records).\n\nThis cannot be undone.\n\n` +
+    `Type DELETE to confirm:`);
+  if (typed !== 'DELETE') { if (typed !== null) showToast('⚠️', 'Not confirmed — nothing deleted'); return; }
+  if (btn) btn.disabled = true;
+  const { error } = await sb.rpc('admin_delete_child_permanently', { p_child_id: childId });
+  if (error) { showToast('⚠️', 'Could not delete: ' + error.message); if (btn) btn.disabled = false; return; }
+  showToast('✅', `"${name}" permanently deleted`);
+  loadAndRenderAdminArchivePanel();
+}
+
+// Enforce the promised retention countdown (no cron yet — manual).
+async function purgeOverdueChildren() {
+  if (!confirm('Permanently delete every archived child whose retention countdown has expired?')) return;
+  const { data, error } = await sb.rpc('admin_purge_overdue_children');
+  if (error) { showToast('⚠️', 'Purge failed: ' + error.message); return; }
+  showToast('✅', `Purged ${data ?? 0} overdue child profile${data === 1 ? '' : 's'}`);
+  loadAndRenderAdminArchivePanel();
 }
 
 async function restoreArchivedAccount(userId, btn) {

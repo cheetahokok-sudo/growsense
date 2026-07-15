@@ -142,7 +142,10 @@
           <div class="card-header"><span class="card-title">Archived data (pending permanent deletion)</span></div>
           <div class="card-body">
             <div class="setup-note" style="margin-bottom:10px;">Restoring sets status back to active. Nothing below is permanently deleted until its countdown reaches zero.</div>
-            <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived children</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <div style="font-size:12px; font-weight:700; color:var(--text2);">Archived children</div>
+              <button class="btn-link" id="purgeOverdueBtn" style="display:none; color:var(--flag);" onclick="purgeOverdueChildren()">Purge overdue (0)</button>
+            </div>
             <div id="archivedChildrenList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
             <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:6px;">Archived accounts</div>
             <div id="archivedAccountsList" style="display:flex; flex-direction:column; gap:8px;"></div>
