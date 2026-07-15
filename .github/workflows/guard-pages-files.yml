@@ -1,0 +1,26 @@
+# Guard the invisible load-bearing files of the GitHub Pages deploy.
+#
+# Two root files hold this site together and have both been lost to
+# history surgery before, each causing a silent production outage:
+#   - CNAME      binds www.growsense.life to Pages. Lost 2026-07-14 in a
+#                branch rebuild -> domain unbound -> Cloudflare served a
+#                frozen snapshot for a day while deploys showed green.
+#   - .nojekyll  stops Pages running Jekyll (which chokes on Astro
+#                frontmatter). Lost 2026-07-11 -> all deploys failed
+#                silently for a day.
+# This job turns "silent outage" into "red X on the commit".
+name: Guard Pages files
+on:
+  push:
+    branches: [main]
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: CNAME + .nojekyll must exist and be correct
+        run: |
+          test -f .nojekyll || { echo "::error::.nojekyll missing — Pages will run Jekyll and deploys will silently fail"; exit 1; }
+          test -f CNAME || { echo "::error::CNAME missing — custom domain will silently unbind (day-long outage on 2026-07-14)"; exit 1; }
+          grep -qx "www.growsense.life" CNAME || { echo "::error::CNAME content wrong: '$(cat CNAME)' (expected www.growsense.life)"; exit 1; }
+          echo "OK: CNAME + .nojekyll present and correct"
