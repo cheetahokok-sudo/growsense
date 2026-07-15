@@ -9,9 +9,11 @@
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../growth_evidence.dart';
 import '../i18n.dart';
 import '../illness_reference.dart';
 import '../theme.dart';
+import '../widgets/growth_systems.dart';
 import '../widgets/lab_viz.dart';
 import '../widgets/premium_gate.dart';
 
@@ -506,6 +508,16 @@ class _LabAiCard extends StatefulWidget {
 }
 
 class _LabAiCardState extends State<_LabAiCard> {
+  GrowthEvidence? _evidence;
+
+  @override
+  void initState() {
+    super.initState();
+    GrowthEvidence.load().then((e) {
+      if (mounted) setState(() => _evidence = e);
+    });
+  }
+
   Future<void> _run() async {
     final t = widget.i18n.t;
     if (!widget.appState.isPremium) {
@@ -610,7 +622,18 @@ class _LabAiCardState extends State<_LabAiCard> {
             ),
           if (report != null && !running) ...[
             const SizedBox(height: 12),
-            _LabAiReport(report: report, i18n: widget.i18n),
+            if (_evidence == null)
+              const Center(
+                  child: Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+              ))
+            else
+              GrowthSystemsReport(
+                  report: report, evidence: _evidence!, i18n: widget.i18n),
           ],
         ],
       ),
@@ -618,143 +641,6 @@ class _LabAiCardState extends State<_LabAiCard> {
   }
 }
 
-/// Renders the structured lab-AI JSON: overview, per-analyte meanings,
-/// questions for the doctor, and the fixed clinical caveat.
-class _LabAiReport extends StatelessWidget {
-  const _LabAiReport({required this.report, required this.i18n});
-  final Map<String, dynamic> report;
-  final I18n i18n;
-
-  Color _statusColor(String? s) => switch (s) {
-        'below_range' || 'above_range' => GsColors.flag,
-        'in_range' => GsColors.accent,
-        _ => GsColors.text3,
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    final t = i18n.t;
-    final overview = report['overview'] as String?;
-    final analytes =
-        (report['analytes'] as List?)?.cast<dynamic>() ?? const [];
-    final questions =
-        (report['questions_for_doctor'] as List?)?.cast<dynamic>() ??
-            const [];
-    final caveat = report['caveat'] as String?;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (overview != null && overview.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.all(11),
-            decoration: BoxDecoration(
-              color: GsColors.accentLight,
-              borderRadius: BorderRadius.circular(GsRadius.sm),
-            ),
-            child: Text(overview,
-                style: const TextStyle(
-                    fontSize: 12.5,
-                    height: 1.5,
-                    color: GsColors.accentDark,
-                    fontWeight: FontWeight.w600)),
-          ),
-        for (final a in analytes) ...[
-          const SizedBox(height: 10),
-          Builder(builder: (_) {
-            final m = (a as Map).cast<String, dynamic>();
-            final status = m['status'] as String?;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    margin: const EdgeInsets.only(top: 2, right: 7),
-                    decoration: BoxDecoration(
-                        color: _statusColor(status),
-                        shape: BoxShape.circle),
-                  ),
-                  Expanded(
-                    child: Text('${m['name'] ?? ''}',
-                        style: const TextStyle(
-                            fontSize: 12.5, fontWeight: FontWeight.w800)),
-                  ),
-                ]),
-                if ((m['value_note'] as String?)?.isNotEmpty ?? false)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 14, top: 2),
-                    child: Text('${m['value_note']}',
-                        style: const TextStyle(
-                            fontSize: 11.5,
-                            color: GsColors.text,
-                            height: 1.4)),
-                  ),
-                if ((m['meaning'] as String?)?.isNotEmpty ?? false)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 14, top: 2),
-                    child: Text('${m['meaning']}',
-                        style: const TextStyle(
-                            fontSize: 11.5,
-                            color: GsColors.text2,
-                            height: 1.4)),
-                  ),
-                if ((m['growth_relevance'] as String?)?.isNotEmpty ?? false)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 14, top: 2),
-                    child: Text('🌱 ${m['growth_relevance']}',
-                        style: const TextStyle(
-                            fontSize: 11,
-                            color: GsColors.accent,
-                            height: 1.4,
-                            fontWeight: FontWeight.w600)),
-                  ),
-              ],
-            );
-          }),
-        ],
-        if (questions.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(t('flutter.lab.ai_questions', 'Questions for your doctor'),
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: GsColors.measured)),
-          const SizedBox(height: 4),
-          for (final q in questions)
-            Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('•  ',
-                      style: TextStyle(
-                          fontSize: 12, color: GsColors.measured)),
-                  Expanded(
-                    child: Text('$q',
-                        style: const TextStyle(
-                            fontSize: 11.5,
-                            color: GsColors.text2,
-                            height: 1.4)),
-                  ),
-                ],
-              ),
-            ),
-        ],
-        if (caveat != null && caveat.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(caveat,
-              style: const TextStyle(
-                  fontSize: 10,
-                  color: GsColors.text3,
-                  height: 1.4,
-                  fontStyle: FontStyle.italic)),
-        ],
-      ],
-    );
-  }
-}
 
 class _LabAnalyteCard extends StatefulWidget {
   const _LabAnalyteCard(
