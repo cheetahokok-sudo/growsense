@@ -210,6 +210,27 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Not authorized to analyze this record" }, 403);
   }
 
+  // ── Step 3.5: Premium gate (server-side enforcement) ─────────────
+  // The AI second opinion is a paid feature; storing + viewing X-ray
+  // history and the maturation timeline stay free. The Flutter client
+  // shows a paywall first, but a stale/forged client must still be
+  // rejected here — the client key is public. An expired paid tier
+  // counts as free. `premium_required` is the machine-readable signal
+  // the client maps back to the upgrade sheet.
+  const { data: acct } = await adminClient
+    .from("user_accounts")
+    .select("subscription_tier, tier_expires_at")
+    .eq("user_id", user.id)
+    .single();
+
+  const tier = acct?.subscription_tier ?? "free";
+  const notExpired =
+    !acct?.tier_expires_at || new Date(acct.tier_expires_at) > new Date();
+  const isPremium = tier !== "free" && notExpired;
+  if (!isPremium) {
+    return jsonResponse({ error: "premium_required" }, 402);
+  }
+
   // ── Step 4: Build user message with image + context ──────────────
   const ageYears = Math.floor(chronological_age_months / 12);
   const ageMonths = Math.round(chronological_age_months % 12);

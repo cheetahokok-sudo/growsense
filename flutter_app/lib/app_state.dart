@@ -337,6 +337,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Paid-tier check that drives premium UX and paywalls (bone-age AI
+  /// second opinion, visit-summary PDF, future lab interpretation). The
+  /// REAL guard is server-side in each Edge Function — this only gates
+  /// the UI so free users see a paywall instead of a dead button. An
+  /// expired paid tier counts as free.
+  bool get isPremium {
+    final tier = (account?['subscription_tier'] as String?) ?? 'free';
+    if (tier == 'free') return false;
+    final exp = account?['tier_expires_at'];
+    if (exp != null) {
+      final until = DateTime.tryParse(exp.toString());
+      if (until != null && until.isBefore(DateTime.now())) return false;
+    }
+    return true;
+  }
+
   /// Custom-food cap: keeps "Mine" curated and blocks garbage growth.
   /// Storage is a non-issue (~200 bytes/row) — this is a UX/abuse cap
   /// and a natural free/premium boundary, mirroring addChild's gating.
@@ -1528,6 +1544,11 @@ class AppState extends ChangeNotifier {
   /// Edge Function (Claude Vision, GP framework, v2 carpal-anchor
   /// algorithm). The function persists ai_analysis_result on the row;
   /// we mirror it into local state. Returns an error string or null.
+  /// Error string the bone-age Edge Function returns when a free-tier
+  /// account reaches the server guard (stale client that skipped the
+  /// paywall). The UI matches on this to show the upgrade sheet.
+  static const premiumRequiredError = 'premium_required';
+
   bool boneAgeAiRunning = false;
   Future<String?> runBoneAgeAI(Map<String, dynamic> record) async {
     final path = record['xray_storage_path'] as String?;
