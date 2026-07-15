@@ -327,11 +327,23 @@ function escHtml(s) {
 
 let _bugRows = [];
 let _bugFilter = 'open';
+let _bugEmails = {};
 
 async function loadBugReports() {
   const { data, error } = await sb.from('bug_reports')
     .select('*').order('created_at', { ascending: false }).limit(200);
   _bugRows = (!error && data) ? data : [];
+  // Reporter emails — bug_reports.user_id references auth.users (not
+  // user_accounts), so PostgREST can't embed it; batch-map the ids to
+  // emails under the admin session instead. This is what lets CS follow
+  // up with the person who filed the report.
+  const ids = [...new Set(_bugRows.map(r => r.user_id).filter(Boolean))];
+  _bugEmails = {};
+  if (ids.length) {
+    const { data: accs } = await sb.from('user_accounts')
+      .select('user_id, email').in('user_id', ids);
+    (accs || []).forEach(a => { _bugEmails[a.user_id] = a.email; });
+  }
   const nNew = _bugRows.filter(r => r.status === 'new').length;
   const nTri = _bugRows.filter(r => r.status === 'triaged').length;
   const nHigh = _bugRows.filter(r => r.severity === 'high' &&
@@ -368,6 +380,20 @@ function renderBugReports() {
     const screen = r.context && r.context.active_screen
       ? ` · ${escHtml(r.context.active_screen)}` : '';
     const done = r.status === 'fixed' || r.status === 'wontfix';
+    // Reporter identity: email when the account still exists, otherwise
+    // a stub — user_id is SET NULL on account deletion by design.
+    const repEmail = r.user_id ? _bugEmails[r.user_id] : null;
+    const reporter = repEmail || (r.user_id ? 'unknown user' : 'deleted account');
+    const followUp = repEmail
+      ? ` <a class="btn-link" style="font-size:inherit;" href="mailto:${escHtml(repEmail)}?subject=${encodeURIComponent('GrowSense — about the issue you reported')}">Email reporter</a>`
+      : '';
+    // Saved fix note — clamped to 10 lines on screen; the 1000-char cap
+    // is enforced by the DB CHECK, this is just the display guard.
+    const noteBlock = r.admin_note ? `
+      <div style="margin-top:8px; padding:8px 10px; background:var(--surface2); border-radius:8px;">
+        <div style="font-size:10px; font-weight:700; color:var(--accent); margin-bottom:3px;">FIX NOTE · ${escHtml((r.admin_note_at || '').slice(0, 10))}</div>
+        <div style="font-size:12px; line-height:1.45; white-space:pre-wrap; display:-webkit-box; -webkit-line-clamp:10; -webkit-box-orient:vertical; overflow:hidden;">${escHtml(r.admin_note)}</div>
+      </div>` : '';
     return `
     <div class="card" style="padding:12px 14px; ${done ? 'opacity:.6;' : ''}">
       <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:6px;">
@@ -379,14 +405,59 @@ function renderBugReports() {
         <span style="font-size:10px; color:var(--text3); white-space:nowrap;">${escHtml(when)}</span>
       </div>
       <div style="font-size:12.5px; line-height:1.5; white-space:pre-wrap;">${escHtml(r.description)}</div>
-      <div style="font-size:10px; color:var(--text3); margin-top:6px;">status: ${escHtml(r.status)}${childCtx}${screen}</div>
-      <div style="display:flex; gap:8px; margin-top:8px;">
+      <div style="font-size:10px; color:var(--text3); margin-top:6px;">status: ${escHtml(r.status)} · by ${escHtml(reporter)}${childCtx}${screen}</div>
+      ${noteBlock}
+      <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
         <button class="btn-link" onclick="updateBugStatus('${r.report_id}','triaged',this)">Triaged</button>
         <button class="btn-link" onclick="updateBugStatus('${r.report_id}','fixed',this)">Fixed</button>
         <button class="btn-link" style="color:var(--text3);" onclick="updateBugStatus('${r.report_id}','wontfix',this)">Won't fix</button>
+        <button class="btn-link" onclick="toggleBugNote('${r.report_id}', true)">${r.admin_note ? 'Edit note' : '+ Fix note'}</button>${followUp}
+      </div>
+      <div id="bugNoteEd_${r.report_id}" style="display:none; margin-top:8px;">
+        <textarea id="bugNoteTa_${r.report_id}" maxlength="1000" rows="4"
+          placeholder="Cause + fix, short. Reference the commit for detail. (max 1000 chars)"
+          style="width:100%; box-sizing:border-box; background:var(--surface2); color:inherit; border:1px solid var(--surface2); border-radius:8px; padding:8px 10px; font:inherit; font-size:12px; line-height:1.45; resize:vertical;"></textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+          <span id="bugNoteCt_${r.report_id}" style="font-size:10px; color:var(--text3);"></span>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-link" style="color:var(--text3);" onclick="toggleBugNote('${r.report_id}', false)">Cancel</button>
+            <button class="btn-link" onclick="saveBugNote('${r.report_id}', this)">Save note</button>
+          </div>
+        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+// Inline fix-note editor. The note is the "what caused it / what fixed
+// it" record written at close time — capped at 1000 chars by a DB CHECK
+// so it stays a summary (long detail belongs in the referenced commit).
+function toggleBugNote(id, show) {
+  const ed = document.getElementById('bugNoteEd_' + id);
+  if (!ed) return;
+  if (!show) { ed.style.display = 'none'; return; }
+  const r = _bugRows.find(x => x.report_id === id);
+  const ta = document.getElementById('bugNoteTa_' + id);
+  const ct = document.getElementById('bugNoteCt_' + id);
+  ta.value = (r && r.admin_note) || '';
+  const upd = () => { ct.textContent = ta.value.length + ' / 1000'; };
+  ta.oninput = upd; upd();
+  ed.style.display = 'block';
+  ta.focus();
+}
+
+async function saveBugNote(id, btn) {
+  const ta = document.getElementById('bugNoteTa_' + id);
+  const text = (ta.value || '').trim().slice(0, 1000);
+  if (btn) btn.disabled = true;
+  const { error } = await sb.from('bug_reports').update({
+    admin_note: text || null,
+    admin_note_by: text && ADMIN.account ? ADMIN.account.user_id : null,
+    admin_note_at: text ? new Date().toISOString() : null
+  }).eq('report_id', id);
+  if (error) { showToast('⚠️', 'Could not save note: ' + error.message); if (btn) btn.disabled = false; return; }
+  showToast('✅', text ? 'Fix note saved' : 'Fix note cleared');
+  await loadBugReports();
 }
 
 async function updateBugStatus(id, status, btn) {
