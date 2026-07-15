@@ -13,7 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app_state.dart';
 import 'i18n.dart';
 import 'screens/auth_screen.dart';
-import 'screens/home_shell.dart';
+import 'screens/onboarding_gate.dart';
 import 'screens/welcome_screen.dart';
 import 'theme.dart';
 
@@ -155,7 +155,7 @@ class _AuthGateState extends State<AuthGate> {
         // Finish a Fitbit OAuth round-trip if we came back with a code.
         WidgetsBinding.instance.addPostFrameCallback(
             (_) => handleFitbitCallback(widget.appState));
-        return HomeShell(appState: widget.appState, i18n: widget.i18n);
+        return RootGate(appState: widget.appState, i18n: widget.i18n);
       },
     );
   }

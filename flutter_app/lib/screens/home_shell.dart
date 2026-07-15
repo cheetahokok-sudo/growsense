@@ -33,7 +33,8 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void initState() {
     super.initState();
-    widget.appState.loadChildren();
+    // Children are already loaded by RootGate (the onboarding gate that
+    // renders this shell); only units remain to fetch here.
     widget.appState.loadUnits();
   }
 
