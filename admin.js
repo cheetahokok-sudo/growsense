@@ -224,19 +224,39 @@ function renderArchivedChildrenList(rows) {
 function renderArchivedAccountsList(rows) {
   const el = document.getElementById('archivedAccountsList');
   if (rows.length === 0) { el.innerHTML = '<div class="log-list-empty">None archived.</div>'; return; }
-  el.innerHTML = rows.map(r => `
+  el.innerHTML = rows.map(r => {
+    const safeEmail = escHtml(r.email).replace(/'/g, '&#39;');
+    return `
     <div class="log-item-row">
       <div class="log-item-left">
         <div class="log-item-info">
-          <span class="log-item-name">${r.email}</span>
+          <span class="log-item-name">${escHtml(r.email)}</span>
           <span class="log-item-meta">${r.days_until_permanent_delete} days until permanent deletion</span>
         </div>
       </div>
-      <div class="log-item-right">
+      <div class="log-item-right" style="display:flex; gap:10px;">
         <button class="btn-link" onclick="restoreArchivedAccount('${r.user_id}', this)">Restore</button>
+        <button class="btn-link" style="color:var(--flag);" onclick="deleteArchivedAccountNow('${r.user_id}', '${safeEmail}', this)">Delete now</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+// Hard delete of an ARCHIVED account: SECURITY DEFINER RPC (refuses
+// active accounts and system_admins), audits first, then deletes the
+// auth user — FK hygiene (2026-07-15 migration) cascades the whole
+// tree: user_accounts -> children -> all child data.
+async function deleteArchivedAccountNow(userId, email, btn) {
+  const typed = prompt(
+    `PERMANENT deletion of the account ${email}, its login, ALL its ` +
+    `children and ALL their data.\n\nThis cannot be undone.\n\n` +
+    `Type DELETE to confirm:`);
+  if (typed !== 'DELETE') { if (typed !== null) showToast('⚠️', 'Not confirmed — nothing deleted'); return; }
+  if (btn) btn.disabled = true;
+  const { error } = await sb.rpc('admin_delete_account_permanently', { p_user_id: userId });
+  if (error) { showToast('⚠️', 'Could not delete: ' + error.message); if (btn) btn.disabled = false; return; }
+  showToast('✅', `${email} permanently deleted`);
+  loadAndRenderAdminArchivePanel();
 }
 
 // Child lifecycle goes through SECURITY DEFINER RPCs (see
