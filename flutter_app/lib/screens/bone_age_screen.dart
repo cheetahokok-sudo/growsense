@@ -25,7 +25,7 @@ import '../app_state.dart';
 import '../growth_math.dart' show ageYearsAt;
 import '../i18n.dart';
 import '../theme.dart';
-import 'account_screen.dart';
+import '../widgets/premium_gate.dart';
 
 String _fmtYM(num months) {
   final m = months.round();
@@ -690,116 +690,21 @@ class _BoneAgeCardState extends State<_BoneAgeCard> {
 
   void _showPremiumSheet() {
     final t = widget.i18n.t;
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) => Container(
-        decoration: const BoxDecoration(
-          color: GsColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: GsColors.border2,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 56,
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: GsColors.estimatedLight,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Text('🤖', style: TextStyle(fontSize: 26)),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  t('flutter.ba.premium_title',
-                      'AI second opinion is Premium'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: GsColors.text),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  t('flutter.ba.premium_body',
-                      'Unlock the AI read of each X-ray — a Greulich-Pyle '
-                          'second opinion with a bone-age range and statistical '
-                          'context, on top of your radiologist’s report.'),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 13.5, height: 1.5, color: GsColors.text2),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: GsColors.accentLight,
-                    borderRadius: BorderRadius.circular(GsRadius.md),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check_circle_outline,
-                          size: 18, color: GsColors.accent),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          t('flutter.ba.premium_free_note',
-                              'Storing X-rays and your maturation timeline '
-                                  'stays free — always.'),
-                          style: const TextStyle(
-                              fontSize: 12,
-                              height: 1.4,
-                              fontWeight: FontWeight.w600,
-                              color: GsColors.accentDark),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => AccountScreen(
-                          appState: widget.appState, i18n: widget.i18n),
-                    ));
-                  },
-                  child: Text(
-                      t('flutter.ba.premium_cta', 'See subscription options')),
-                ),
-                const SizedBox(height: 4),
-                TextButton(
-                  onPressed: () => Navigator.pop(sheetContext),
-                  child: Text(
-                    t('flutter.ba.premium_dismiss', 'Maybe later'),
-                    style: const TextStyle(
-                        fontSize: 13, color: GsColors.text3),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    showPremiumSheet(
+      context,
+      appState: widget.appState,
+      i18n: widget.i18n,
+      emoji: '🤖',
+      title: t('flutter.ba.premium_title', 'AI second opinion is Premium'),
+      body: t(
+          'flutter.ba.premium_body',
+          'Unlock the AI read of each X-ray — a Greulich-Pyle second '
+              'opinion with a bone-age range and statistical context, on '
+              'top of your radiologist’s report.'),
+      freeNote: t(
+          'flutter.ba.premium_free_note',
+          'Storing X-rays and your maturation timeline stays free — '
+              'always.'),
     );
   }
 
@@ -922,19 +827,7 @@ class _BoneAgeCardState extends State<_BoneAgeCard> {
                 ),
                 if (!widget.appState.isPremium) ...[
                   const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: GsColors.estimatedLight,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(t('flutter.premium', 'Premium'),
-                        style: const TextStyle(
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w700,
-                            color: GsColors.estimatedDark)),
-                  ),
+                  PremiumBadge(i18n: widget.i18n),
                 ],
               ]),
             ),

@@ -979,6 +979,7 @@ class AppState extends ChangeNotifier {
     final childId = activeChildId;
     if (childId == null || childId == _clinicalLoadedFor) return;
     _clinicalLoadedFor = childId;
+    labAiReport = null; // per-child; the lab screen lazy-loads the latest
     loadingClinical = true;
     notifyListeners();
     try {
@@ -1614,6 +1615,67 @@ class AppState extends ChangeNotifier {
 
   Future<String?> deleteLabResult(dynamic id) =>
       _deleteClinical('lab_results', 'lab_result_id', id, labResults);
+
+  /// Latest AI interpretation report for the active child, kept in
+  /// memory for the lab screen. null = none loaded/run this session.
+  Map<String, dynamic>? labAiReport;
+  bool labAiRunning = false;
+
+  /// Load the most recent stored lab-AI report for the active child
+  /// (so a returning premium user sees their last interpretation).
+  Future<void> loadLatestLabAiReport() async {
+    final childId = activeChildId;
+    if (childId == null) return;
+    try {
+      final row = await sb
+          .from('lab_ai_reports')
+          .select('report, created_at')
+          .eq('child_id', childId)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      labAiReport = row;
+      notifyListeners();
+    } on PostgrestException {
+      // Non-fatal: the screen just shows the "run" state.
+    }
+  }
+
+  /// Premium: AI interpretation of the child's lab panel via the
+  /// lab-ai-analysis Edge Function (Haiku 4.5). The function reads the
+  /// labs itself and enforces the tier; we only send child_id. Returns
+  /// an error string (or [premiumRequiredError] / 'no_labs') or null.
+  Future<String?> runLabAI() async {
+    final childId = activeChildId;
+    if (childId == null) return 'No child selected';
+    labAiRunning = true;
+    notifyListeners();
+    try {
+      final res = await sb.functions.invoke(
+        'lab-ai-analysis',
+        body: {'child_id': childId},
+      );
+      final data = res.data as Map<String, dynamic>?;
+      if (data == null || data['error'] != null) {
+        return (data?['error'] ?? 'AI service returned no result').toString();
+      }
+      labAiReport = {
+        'report': data['report'],
+        'created_at': data['created_at'],
+      };
+      return null;
+    } on FunctionException catch (e) {
+      final detail = e.details;
+      return detail is Map
+          ? (detail['error'] ?? detail['detail'] ?? e.reasonPhrase).toString()
+          : (e.reasonPhrase ?? 'AI interpretation failed');
+    } catch (e) {
+      return e.toString();
+    } finally {
+      labAiRunning = false;
+      notifyListeners();
+    }
+  }
 
   Future<String?> addIllnessEvent({
     required String startDate,
