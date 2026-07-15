@@ -1,6 +1,12 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../i18n.dart';
@@ -63,6 +69,69 @@ class _AuthScreenState extends State<AuthScreen> {
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     }
+  }
+
+  /// Continue with Apple. On iOS/macOS this must use the NATIVE system
+  /// sheet (AuthenticationServices) — Apple's guidelines require it and
+  /// the browser-redirect flow is a poor fit. Everywhere else (the web
+  /// PWA, Android) we fall back to the OAuth redirect used by Google.
+  ///
+  /// Native flow: make a random nonce, send its SHA-256 to Apple, and
+  /// hand Supabase the returned identity token together with the RAW
+  /// nonce so it can verify the hash — the standard replay guard.
+  Future<void> _appleSignIn() async {
+    final t = widget.i18n.t;
+    final useNative = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.macOS);
+    if (!useNative) return _oauth(OAuthProvider.apple);
+
+    setState(() {
+      _error = null;
+      _info = null;
+    });
+    try {
+      final rawNonce = _generateNonce();
+      final hashedNonce =
+          sha256.convert(utf8.encode(rawNonce)).toString();
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        setState(() => _error = t('flutter.auth.apple_failed',
+            'Apple sign-in did not return a token — please try again.'));
+        return;
+      }
+      await Supabase.instance.client.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+      // AuthGate takes over on the new session; loadAccount self-heals
+      // the user_accounts row on first entry.
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Tapping "Cancel" on the system sheet isn't an error worth showing.
+      if (e.code == AuthorizationErrorCode.canceled) return;
+      setState(() => _error = e.message);
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
+    }
+  }
+
+  /// Cryptographically-random URL-safe nonce for Sign in with Apple.
+  /// Uses Random.secure() over a fixed charset (each index is a tiny
+  /// int, so no web 2^53 / bit-shift hazards).
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+        length, (_) => charset[random.nextInt(charset.length)]).join();
   }
 
   Future<void> _submit() async {
@@ -201,8 +270,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 10),
                       _SocialButton(
-                        onPressed:
-                            _busy ? null : () => _oauth(OAuthProvider.apple),
+                        onPressed: _busy ? null : _appleSignIn,
                         background: Colors.black,
                         foreground: Colors.white,
                         icon: const Icon(Icons.apple,
