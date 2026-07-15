@@ -30,11 +30,19 @@
   </div>
 </div>
 
-<!-- GATE 1: no session -->
+<!-- GATE 1: no session — sign in directly. The URL is not the security
+     boundary (the repo is public); the system_admin role check + RLS
+     are. A non-admin signing in here just hits Gate 2. -->
 <div class="admin-gate" id="adminGateNoSession">
-  <h2>Sign in required</h2>
-  <p>Open the main GrowSense app and sign in there first, then come back here — your session carries over automatically.</p>
-  <a href="./" class="btn-primary" style="display:inline-block; text-decoration:none;">Go to GrowSense</a>
+  <h2>Admin sign in</h2>
+  <p>Sign in with your GrowSense admin account.</p>
+  <form onsubmit="handleAdminSignIn(event)" style="display:flex; flex-direction:column; gap:10px; max-width:320px; margin:0 auto;">
+    <input type="email" id="adminLoginEmail" class="text-input" placeholder="Email" autocomplete="username" required>
+    <input type="password" id="adminLoginPassword" class="text-input" placeholder="Password" autocomplete="current-password" required>
+    <div id="adminLoginError" style="color:var(--flag); font-size:12px; min-height:14px;"></div>
+    <button type="submit" class="btn-primary" id="adminLoginBtn">Sign in</button>
+  </form>
+  <p style="margin-top:14px; font-size:12px;">Or <a href="./">sign in on the main app</a> — the session carries over on the same domain.</p>
 </div>
 
 <!-- GATE 2: wrong role -->

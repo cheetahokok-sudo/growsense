@@ -45,7 +45,7 @@ function isSystemAdmin() {
 // the main app at /growsense/ is already visible here at
 // /growsense/admin.html with no extra work needed.
 // ══════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', async () => {
+async function bootAdminSession() {
   const { data } = await sb.auth.getSession();
 
   if (!data.session) {
@@ -81,7 +81,28 @@ window.addEventListener('DOMContentLoaded', async () => {
   showAdminGate('dashboard');
   restoreSidebarState();
   await initAdminDashboard();
-});
+}
+
+window.addEventListener('DOMContentLoaded', bootAdminSession);
+
+// Direct sign-in on the admin page itself. The page URL was never the
+// security boundary (public repo) — the system_admin role gate + RLS
+// are; a non-admin who signs in here just lands on Gate 2.
+async function handleAdminSignIn(ev) {
+  ev.preventDefault();
+  const btn = document.getElementById('adminLoginBtn');
+  const errEl = document.getElementById('adminLoginError');
+  errEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  const { error } = await sb.auth.signInWithPassword({
+    email: document.getElementById('adminLoginEmail').value.trim(),
+    password: document.getElementById('adminLoginPassword').value
+  });
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if (error) { errEl.textContent = error.message; return; }
+  document.getElementById('adminLoginPassword').value = '';
+  await bootAdminSession();
+}
 
 function showAdminGate(which) {
   document.getElementById('adminGateNoSession').classList.toggle('hidden', which !== 'noSession');
