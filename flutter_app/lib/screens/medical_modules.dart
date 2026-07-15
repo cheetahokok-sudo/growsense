@@ -518,6 +518,23 @@ class _LabAiCardState extends State<_LabAiCard> {
     });
   }
 
+  /// The child's logged lab values grouped by canonical analyte key
+  /// (oldest → newest), so each report tile can draw the real inline
+  /// range bar + trend. labResults is date-desc, so we reverse.
+  Map<String, LabSeries> _buildLabSeries(GrowthEvidence evidence) {
+    final out = <String, LabSeries>{};
+    for (final r in widget.appState.labResults) {
+      final key = evidence.keyForAnalyteName(r['analyte_name'] as String? ?? '');
+      if (key == null) continue;
+      (out[key] ??= <({double value, double? low, double? high})>[]).insert(0, (
+        value: (r['result_value'] as num?)?.toDouble() ?? 0,
+        low: (r['reference_low'] as num?)?.toDouble(),
+        high: (r['reference_high'] as num?)?.toDouble(),
+      ));
+    }
+    return out;
+  }
+
   Future<void> _run() async {
     final t = widget.i18n.t;
     if (!widget.appState.isPremium) {
@@ -633,7 +650,10 @@ class _LabAiCardState extends State<_LabAiCard> {
               ))
             else
               GrowthSystemsReport(
-                  report: report, evidence: _evidence!, i18n: widget.i18n),
+                  report: report,
+                  evidence: _evidence!,
+                  i18n: widget.i18n,
+                  labSeries: _buildLabSeries(_evidence!)),
           ],
         ],
       ),

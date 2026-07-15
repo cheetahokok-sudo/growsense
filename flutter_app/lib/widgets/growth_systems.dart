@@ -24,6 +24,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../growth_evidence.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import 'lab_viz.dart';
+
+/// One analyte's serial values, oldest → newest, for the inline chart.
+typedef LabSeries = List<({double value, double? low, double? high})>;
 
 // Domain → how it connects to observed growth (edge style in the orbit).
 const _domainEdge = {
@@ -56,10 +60,15 @@ class GrowthSystemsReport extends StatelessWidget {
       {super.key,
       required this.report,
       required this.evidence,
-      required this.i18n});
+      required this.i18n,
+      this.labSeries = const {}});
   final Map<String, dynamic> report;
   final GrowthEvidence evidence;
   final I18n i18n;
+
+  /// The child's real logged values per analyte key (oldest → newest),
+  /// used for the inline range bar + trend chart in each tile.
+  final Map<String, LabSeries> labSeries;
 
   Map<String, dynamic> _domainData(String id) {
     final d = (report['domains'] as Map?)?[id];
@@ -130,10 +139,14 @@ class GrowthSystemsReport extends StatelessWidget {
           ),
         ],
 
-        // Per-analyte plain-language notes + curated evidence
+        // Per-analyte plain-language notes + inline chart + evidence
         for (final a in _analytes) ...[
           const SizedBox(height: 10),
-          _AnalyteTile(data: a, evidence: evidence, i18n: i18n),
+          _AnalyteTile(
+              data: a,
+              evidence: evidence,
+              i18n: i18n,
+              series: labSeries[a['key']]),
         ],
 
         if (patterns.isNotEmpty) ...[
@@ -295,7 +308,11 @@ class GrowthSystemsReport extends StatelessWidget {
               for (final a in domainAnalytes) ...[
                 const SizedBox(height: 14),
                 _AnalyteTile(
-                    data: a, evidence: evidence, i18n: i18n, startOpen: true),
+                    data: a,
+                    evidence: evidence,
+                    i18n: i18n,
+                    series: labSeries[a['key']],
+                    startOpen: true),
               ],
             ],
           ),
@@ -601,10 +618,12 @@ class _AnalyteTile extends StatefulWidget {
       {required this.data,
       required this.evidence,
       required this.i18n,
+      this.series,
       this.startOpen = false});
   final Map<String, dynamic> data;
   final GrowthEvidence evidence;
   final I18n i18n;
+  final LabSeries? series;
   final bool startOpen;
 
   @override
@@ -662,6 +681,21 @@ class _AnalyteTileState extends State<_AnalyteTile> {
                 style: const TextStyle(
                     fontSize: 11.5, color: GsColors.text, height: 1.4)),
           ),
+        // Inline multidimension chart from the child's own logged values.
+        if (widget.series != null && widget.series!.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 6),
+            child: LabRangeBar(
+                value: widget.series!.last.value,
+                low: widget.series!.last.low,
+                high: widget.series!.last.high),
+          ),
+          if (widget.series!.length >= 2)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, top: 2),
+              child: LabSparkline(points: widget.series!),
+            ),
+        ],
         if (trend != null && trend.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(left: 16, top: 2),

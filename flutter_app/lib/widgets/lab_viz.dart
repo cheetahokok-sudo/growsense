@@ -21,6 +21,8 @@
 // flag = clearly outside, measured blue = the data line itself.
 // ══════════════════════════════════════════════════════════════════
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../i18n.dart';
@@ -219,43 +221,64 @@ String _fmtNum(double v) =>
 /// age-appropriate). Line in measured blue (confirmed data), per-point
 /// dots colored by each entry's own status, endpoint emphasized.
 class LabSparkline extends StatelessWidget {
-  const LabSparkline({super.key, required this.points});
+  const LabSparkline({super.key, required this.points, this.project = true});
 
   /// (value, low, high) tuples oldest → newest.
   final List<({double value, double? low, double? high})> points;
+
+  /// Draw a subtle dotted projection of the recent trend (≥3 points).
+  /// A visual direction cue only — never a numeric prediction.
+  final bool project;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 56,
       width: double.infinity,
-      child: CustomPaint(painter: _SparklinePainter(points)),
+      child: CustomPaint(painter: _SparklinePainter(points, project)),
     );
   }
 }
 
 class _SparklinePainter extends CustomPainter {
-  _SparklinePainter(this.points);
+  _SparklinePainter(this.points, this.project);
   final List<({double value, double? low, double? high})> points;
+  final bool project;
+
+  /// Projected next value from the slope of the last (up to 3) points.
+  double? _projValue() {
+    if (!project || points.length < 3) return null;
+    final n = points.length;
+    // Slope over the last two intervals, then extend one interval.
+    final slope = (points[n - 1].value - points[n - 3].value) / 2;
+    return points[n - 1].value + slope;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
     if (points.isEmpty) return;
     final latest = points.last;
+    final projValue = _projValue();
 
-    // Y domain: values plus the band, padded.
+    // Y domain: values plus the band plus any projection, padded.
     var lo = points.map((p) => p.value).reduce((a, b) => a < b ? a : b);
     var hi = points.map((p) => p.value).reduce((a, b) => a > b ? a : b);
     if (latest.low != null && latest.low! < lo) lo = latest.low!;
     if (latest.high != null && latest.high! > hi) hi = latest.high!;
+    if (projValue != null) {
+      if (projValue < lo) lo = projValue;
+      if (projValue > hi) hi = projValue;
+    }
     final span = (hi - lo).abs() < 1e-9 ? 1.0 : hi - lo;
     lo -= span * 0.18;
     hi += span * 0.18;
 
+    // When projecting, reserve one extra x-slot for the projected point.
+    final slots = (projValue != null ? points.length + 1 : points.length);
     const padX = 6.0;
-    double x(int i) => points.length == 1
+    double x(int i) => slots == 1
         ? size.width / 2
-        : padX + i / (points.length - 1) * (size.width - padX * 2);
+        : padX + i / (slots - 1) * (size.width - padX * 2);
     double y(double v) => size.height - (v - lo) / (hi - lo) * size.height;
 
     // Reference band behind everything.
@@ -286,6 +309,34 @@ class _SparklinePainter extends CustomPainter {
             ..strokeJoin = StrokeJoin.round);
     }
 
+    // Projection: dotted continuation of the recent trend, hollow
+    // endpoint. Purely a direction cue — no number is shown.
+    if (projValue != null) {
+      final from = Offset(x(points.length - 1), y(points.last.value));
+      final to = Offset(x(points.length), y(projValue));
+      final paint = Paint()
+        ..color = GsColors.text3.withValues(alpha: 0.7)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.3;
+      final total = (to - from).distance;
+      final unit = (to - from) / total;
+      var d = 0.0;
+      while (d < total) {
+        final s = from + unit * d;
+        final e = from + unit * math.min(d + 2.5, total);
+        canvas.drawLine(s, e, paint);
+        d += 5.0;
+      }
+      canvas.drawCircle(to, 2.6, Paint()..color = GsColors.bg);
+      canvas.drawCircle(
+          to,
+          2.6,
+          Paint()
+            ..color = GsColors.text3
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2);
+    }
+
     // Dots: each point in its own status color, endpoint emphasized.
     for (var i = 0; i < points.length; i++) {
       final p = points[i];
@@ -302,5 +353,5 @@ class _SparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SparklinePainter old) =>
-      old.points != points;
+      old.points != points || old.project != project;
 }

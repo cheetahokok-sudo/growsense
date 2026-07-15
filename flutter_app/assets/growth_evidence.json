@@ -52,7 +52,7 @@
       "icon": "🦋",
       "question": "Is thyroid-dependent skeletal maturation supported?",
       "importance": "high",
-      "primary_inputs": ["tsh", "free_t4"]
+      "primary_inputs": ["tsh"]
     }
   ],
   "analytes": [
@@ -120,18 +120,6 @@
       "cautions": [
         "TSH alone is not a complete thyroid assessment — free T4 and growth history are needed before interpreting.",
         "Delayed treatment of hypothyroidism can leave incomplete catch-up growth, so thyroid is a high-importance domain."
-      ],
-      "evidence": ["rivkees1988"]
-    },
-    {
-      "id": "free_t4",
-      "label": "Free T4",
-      "domain": "thyroid",
-      "aliases": ["free t4", "ft4", "free thyroxine", "free-t4"],
-      "normalize": "lab_range",
-      "meaning": "Free T4 is the active thyroid hormone level; pairing it with TSH classifies thyroid status.",
-      "cautions": [
-        "High TSH + low free T4 is a stronger growth-relevant pattern than high TSH with normal free T4."
       ],
       "evidence": ["rivkees1988"]
     }

@@ -34,6 +34,7 @@ class GrowthAnalyte {
   final String id;
   final String label;
   final String domain;
+  final List<String> aliases;
   final String meaning;
   final List<String> cautions;
   final List<String> evidence; // evidence-card keys
@@ -41,6 +42,7 @@ class GrowthAnalyte {
       : id = j['id'] as String,
         label = j['label'] as String? ?? '',
         domain = j['domain'] as String? ?? '',
+        aliases = (j['aliases'] as List?)?.cast<String>() ?? const [],
         meaning = j['meaning'] as String? ?? '',
         cautions = (j['cautions'] as List?)?.cast<String>() ?? const [],
         evidence = (j['evidence'] as List?)?.cast<String>() ?? const [];
@@ -113,6 +115,16 @@ class GrowthEvidence {
   GrowthDomain? domain(String id) {
     for (final d in domains) {
       if (d.id == id) return d;
+    }
+    return null;
+  }
+
+  /// Map a free-text lab analyte name to a canonical key via aliases,
+  /// so the report can attach the child's real series to each tile.
+  String? keyForAnalyteName(String name) {
+    final n = name.trim().toLowerCase();
+    for (final a in analytes.values) {
+      if (a.aliases.any((al) => n == al || n.contains(al))) return a.id;
     }
     return null;
   }

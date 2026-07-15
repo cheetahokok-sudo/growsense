@@ -60,13 +60,16 @@ function jsonResponse(body: unknown, status = 200) {
 // Canonical analyte keys ↔ aliases (must stay in sync with
 // growth_evidence.json). Used to map free-text analyte names to keys so
 // the client can attach the right evidence cards.
+// Scope is deliberately the five labs a parent recognizes — IGF-1,
+// vitamin D, ferritin, TSH, hemoglobin. Anything else is out of scope
+// (keeps the interpretation digestible; free T4 is surfaced only as a
+// "would help your doctor" missing-context note, never a sixth card).
 const ANALYTE_KEYS: Record<string, string[]> = {
   igf1: ["igf-1", "igf1", "igf 1", "insulin-like growth factor", "insulin-like growth factor 1", "insulin-like growth factor-1", "somatomedin c"],
   vitamin_d: ["vitamin d", "25-oh vitamin d", "25 oh d", "25-hydroxyvitamin d", "calcidiol", "vit d"],
   ferritin: ["ferritin", "serum ferritin"],
   hemoglobin: ["hemoglobin", "haemoglobin", "hgb", "hb"],
   tsh: ["tsh", "thyroid stimulating hormone", "thyrotropin"],
-  free_t4: ["free t4", "ft4", "free thyroxine", "free-t4"],
 };
 
 function analyteKey(name: string): string | null {
@@ -85,9 +88,11 @@ THE FIVE DOMAINS (use these exact keys):
 - growth_plate_response: height velocity, bone-age delta, puberty stage — is the skeleton responding and how much growth time remains?
 - bone_support: vitamin D — is the mineralization environment supportive?
 - iron_oxygen: ferritin, hemoglobin — are iron stores and oxygen delivery potentially limiting?
-- thyroid: TSH, free T4 — is thyroid-dependent skeletal maturation supported?
+- thyroid: TSH — is thyroid-dependent skeletal maturation supported? (If TSH is abnormal, add "free T4" to missing_context so the doctor can complete the picture — do NOT interpret thyroid status from TSH alone.)
 
 DOMAIN STATUS is one of: "supported", "needs_attention", "insufficient_data". Use insufficient_data when the domain's inputs are missing.
+
+SCOPE: interpret ONLY these five labs — IGF-1, vitamin D, ferritin, TSH, hemoglobin. If the data contains any other analyte, ignore it silently (do not list it, do not judge it). Keep everything a non-medical parent can follow; do not introduce molecular-pathway detail (PI3K/AKT/mTOR etc.). Your job is to translate hard science into calm, everyday language.
 
 ABSOLUTE RULES:
 1. Use ONLY the reference interval provided with each lab value — it is the family's own lab report, already matched to the child's age and sex. NEVER invent or recall a "normal range". If a range is null, status is "unknown_range" and you must NOT judge high or low.
@@ -116,7 +121,7 @@ Return ONLY valid JSON (no markdown, no text outside the object):
   },
   "analytes": [
     {
-      "key": "<igf1|vitamin_d|ferritin|hemoglobin|tsh|free_t4>",
+      "key": "<igf1|vitamin_d|ferritin|hemoglobin|tsh>",
       "name": "<analyte name as given>",
       "status": "<in_range|below_range|above_range|unknown_range>",
       "value_note": "<value vs its provided range; if none: 'Reference range not provided'>",
