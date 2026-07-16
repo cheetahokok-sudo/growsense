@@ -71,7 +71,7 @@ const Map<String, String> _gsIcons = {
   'ai':
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3.8l1.5 4.7 4.7 1.5-4.7 1.5L11 16.2l-1.5-4.7L4.8 10l4.7-1.5Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><path d="M17.4 14l.55 1.7 1.7.55-1.7.55-.55 1.7-.55-1.7-1.7-.55 1.7-.55Z" fill="#2f7d74"/></svg>',
   'bone':
-      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 15.4 14.4 10.6" stroke="#153a2b" stroke-width="2.6"/><circle cx="7.6" cy="14.2" r="2.05" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><circle cx="9.8" cy="16.4" r="2.05" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><circle cx="16.4" cy="9.8" r="2.05" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><circle cx="14.2" cy="7.6" r="2.05" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/></svg>',
+      '<svg viewBox="0 0 24 24" fill="#153a2b"><g transform="rotate(-45 12 12)"><rect x="6.2" y="10.2" width="11.6" height="3.6" rx="1.1"/><circle cx="6.8" cy="9.4" r="2.55"/><circle cx="6.8" cy="14.6" r="2.55"/><circle cx="17.2" cy="9.4" r="2.55"/><circle cx="17.2" cy="14.6" r="2.55"/></g></svg>',
   'lab':
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.6h5" stroke="#153a2b" stroke-width="1.4"/><path d="M10 3.6v13.4a2 2 0 0 0 4 0V3.6" stroke="#153a2b" stroke-width="1.4"/><path d="M10 11h4v6a2 2 0 0 1-4 0Z" fill="#cfe3d5"/><circle cx="11.3" cy="14" r=".65" fill="#2f7d74"/></svg>',
   'measure':

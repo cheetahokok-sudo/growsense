@@ -7,6 +7,32 @@ import '../app_state.dart';
 import '../i18n.dart';
 import '../theme.dart';
 import '../wearables.dart';
+import '../widgets/gs_icons.dart';
+
+/// GrowSense icon name for a wearable — a device FORM (silhouette), never
+/// a brand logo. Specific hardware shapes for the ones we drew; category
+/// fallback for the rest.
+String deviceIconName(WearableProvider p) {
+  switch (p.id) {
+    case 'fitbit':
+      return 'form_band';
+    case 'whoop':
+      return 'form_loop';
+    case 'apple_health':
+      return 'form_squircle';
+    case 'garmin':
+      return 'form_round';
+    case 'samsung_health':
+      return 'phone';
+  }
+  return switch (p.category) {
+    DeviceCategory.ring => 'ring',
+    DeviceCategory.cgm => 'gluc',
+    DeviceCategory.eeg => 'eeg',
+    DeviceCategory.watch => 'form_round',
+    DeviceCategory.band => 'form_band',
+  };
+}
 
 /// Devices & sensors — connect wearables and biosensors. Fitbit/Google
 /// Health is live (reuses the PWA's Edge Functions); the rest are
@@ -201,8 +227,7 @@ class _ProviderCard extends StatelessWidget {
                   color: provider.brand.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(GsRadius.sm),
                 ),
-                child: Text(provider.emoji,
-                    style: const TextStyle(fontSize: 20)),
+                child: GsIcon(deviceIconName(provider), size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
