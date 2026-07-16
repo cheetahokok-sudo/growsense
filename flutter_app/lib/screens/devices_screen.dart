@@ -227,7 +227,7 @@ class _ProviderCard extends StatelessWidget {
                   color: provider.brand.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(GsRadius.sm),
                 ),
-                child: GsIcon(deviceIconName(provider), size: 22),
+                child: GsIcon(deviceIconName(provider), size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(

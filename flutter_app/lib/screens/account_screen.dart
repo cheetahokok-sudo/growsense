@@ -222,7 +222,7 @@ class AccountScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const GsIcon('share', size: 20),
+                        const GsIcon('share', size: 26),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -256,7 +256,7 @@ class AccountScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Text('⌚', style: TextStyle(fontSize: 18)),
+                        const GsIcon('watch', size: 26),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -289,7 +289,7 @@ class AccountScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const GsIcon('bell', size: 20),
+                        const GsIcon('bell', size: 26),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -326,7 +326,7 @@ class AccountScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const GsIcon('about', size: 20),
+                        const GsIcon('about', size: 26),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -808,22 +808,31 @@ class _RedeemRowState extends State<_RedeemRow> {
         alignment: AlignmentDirectional.centerStart,
         child: InkWell(
           onTap: () => setState(() => _expanded = true),
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: GsColors.accentLight,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                  color: GsColors.accent.withValues(alpha: 0.35)),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🎟️', style: TextStyle(fontSize: 13)),
-                const SizedBox(width: 6),
+                const GsIcon('ticket', size: 20),
+                const SizedBox(width: 8),
                 Text(
                   t('flutter.sub.redeem_toggle', 'Have an activation code?'),
                   style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: GsColors.accent,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: GsColors.accentDark,
                   ),
                 ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right,
+                    size: 16, color: GsColors.accent),
               ],
             ),
           ),
@@ -921,7 +930,7 @@ class _ExportTileState extends State<_ExportTile> {
         children: [
           Row(
             children: [
-              const GsIcon('csv', size: 20),
+              const GsIcon('csv', size: 26),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -1040,7 +1049,7 @@ class _VisitPdfTileState extends State<_VisitPdfTile> {
         children: [
           Row(
             children: [
-              const GsIcon('pdf', size: 20),
+              const GsIcon('pdf', size: 26),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(

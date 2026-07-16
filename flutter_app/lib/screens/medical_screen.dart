@@ -256,7 +256,7 @@ class _ModuleRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            GsIconTile(icon, tile: 36, glyph: 22),
+            GsIconTile(icon, tile: 38, glyph: 25),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

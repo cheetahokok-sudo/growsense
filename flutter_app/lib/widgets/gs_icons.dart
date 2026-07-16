@@ -78,6 +78,8 @@ const Map<String, String> _gsIcons = {
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3.5" width="8" height="17" rx="2" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><path d="M8 7.2h3M8 10.8h2M8 14.4h3M8 18h2" stroke="#153a2b" stroke-width="1.3"/></svg>',
   'illness':
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5a2 2 0 0 0-2 2v7.4a3.3 3.3 0 1 0 4 0V6.5a2 2 0 0 0-2-2Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><circle cx="12" cy="16.7" r="2" fill="#a23b3b"/><path d="M12 8.2v6" stroke="#a23b3b" stroke-width="1.6"/></svg>',
+  'ticket':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 7H18.5a1.5 1.5 0 0 1 1.5 1.5V10a1.7 1.7 0 0 0 0 3.8V15.5a1.5 1.5 0 0 1-1.5 1.5H5.5a1.5 1.5 0 0 1-1.5-1.5V13.8a1.7 1.7 0 0 0 0-3.8V8.5a1.5 1.5 0 0 1 1.5-1.5Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><path d="M14.6 7.6V16.4" stroke="#2f7d74" stroke-width="1.2" stroke-dasharray="1.3 1.5"/></svg>',
   'sprout':
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6" stroke="#153a2b" stroke-width="1.4"/><path d="M12 15c-3 0-4.5-1.5-4.5-4.5 3 0 4.5 1.5 4.5 4.5Z" fill="#78a488"/><path d="M12 13c0-2.6 1.5-4 4-4 0 2.6-1.5 4-4 4Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><path d="M8 20h8" stroke="#153a2b" stroke-width="1.4"/></svg>',
 };
