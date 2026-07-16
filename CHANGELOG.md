@@ -17,6 +17,32 @@ new"), and add the full entry here.
 
 _Work in progress lands here before it's tagged._
 
+## [1.4.0] — 2026-07-16 · build 7
+
+### Added
+- **Lab intelligence.** The lab-values screen is rebuilt: a swipe row of
+  per-analyte cards (latest value, reference range, status, trend with a
+  dotted projection, and a plain-language line), each opening a detail
+  card with a range bar, 12-month trend, "What it means", and
+  **Evidence & References** (curated, PubMed-verified). Scope is the five
+  labs parents recognise: IGF-1, vitamin D, ferritin, TSH, hemoglobin.
+- **Lab SDS (z-score).** Optional SDS captured from the lab report and
+  shown on a −3…+3 age/sex-adjusted bar (never computed by the app — a
+  correct SDS is assay/age/sex-specific).
+- **Premium — AI Growth-Systems interpretation.** A cross-lab reading
+  (overview, patterns, questions for the doctor) from the `lab-ai-analysis`
+  Edge Function, gated server-side on subscription tier. Citations are
+  curated app-side, never AI-generated. Also folded into the visit PDF.
+- **Premium — bone-age AI second opinion** is now gated client- and
+  server-side; storing X-rays and the maturation timeline stay free.
+- **Onboarding gate** — accounts with no children are routed to a
+  create-first-child screen instead of an empty Today page.
+- **Native Sign in with Apple** on iOS (web keeps the OAuth redirect).
+
+### Changed
+- Visit-summary PDF now carries a richer growth-labs summary (per-analyte
+  value, range, status, SDS, plus the AI synthesis when present).
+
 ## [1.3.1] — 2026-07-13 · build 6
 
 ### Added

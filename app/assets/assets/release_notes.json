@@ -1,6 +1,19 @@
 {
   "releases": [
     {
+      "version": "1.4.0",
+      "build": 7,
+      "date": "2026-07-16",
+      "title": "Lab results, made clear",
+      "highlights": [
+        "Your lab results come alive: each value shows a clear range bar, a trend with a gentle projection, and a plain-language line on what it means.",
+        "Tap any result for the full picture — reference range, 12-month trend, what it means, and Evidence & References to the research behind it.",
+        "IGF-1, vitamin D, ferritin, TSH and hemoglobin get a focused, parent-friendly treatment; if your report prints an SDS (z-score), add it to see it on an age & sex-adjusted scale.",
+        "Premium: an AI reading across all five growth labs together, with questions you can bring to your doctor — and it's added to the visit-summary PDF.",
+        "New accounts are gently guided to set up their first child before anything else."
+      ]
+    },
+    {
       "version": "1.3.1",
       "build": 6,
       "date": "2026-07-13",

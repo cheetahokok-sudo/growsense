@@ -1,0 +1,418 @@
+{
+  "version": "2026-07-15",
+  "disclaimer": "Mechanistic and epidemiological education, not a diagnosis. Relationships describe how systems generally interact in child growth; they are not claims about an individual child's cause of growth. Always interpret with the treating clinician.",
+  "evidence_types": {
+    "human_clinical": "Human treatment or randomized trial",
+    "human_observational": "Human longitudinal / prospective cohort",
+    "animal": "Animal model (mechanism)",
+    "cell_molecular": "Cell or molecular study (mechanism)",
+    "expert_review": "Expert mechanistic review"
+  },
+  "edge_types": {
+    "direct": "Direct mechanistic signaling (solid line)",
+    "supporting": "Supporting physiology (dashed line)",
+    "association": "Clinical association only (dotted line)"
+  },
+  "domains": [
+    {
+      "id": "growth_signaling",
+      "label": "Growth signaling",
+      "icon": "🧠",
+      "question": "Is growth signaling broadly compatible with the observed growth?",
+      "importance": "high",
+      "primary_inputs": ["igf1", "height_velocity"]
+    },
+    {
+      "id": "growth_plate_response",
+      "label": "Growth-plate response",
+      "icon": "🦴",
+      "question": "Is the skeleton responding, and how much growth time remains?",
+      "importance": "high",
+      "primary_inputs": ["height_velocity", "bone_age", "puberty_stage"]
+    },
+    {
+      "id": "bone_support",
+      "label": "Bone support",
+      "icon": "☀️",
+      "question": "Is the mineralization environment supportive?",
+      "importance": "moderate",
+      "primary_inputs": ["vitamin_d", "calcium"]
+    },
+    {
+      "id": "iron_oxygen",
+      "label": "Iron & oxygen",
+      "icon": "🩸",
+      "question": "Are iron stores and oxygen delivery potentially limiting?",
+      "importance": "moderate",
+      "primary_inputs": ["ferritin", "hemoglobin", "mcv", "mch"]
+    },
+    {
+      "id": "thyroid",
+      "label": "Thyroid regulation",
+      "icon": "🦋",
+      "question": "Is thyroid-dependent skeletal maturation supported?",
+      "importance": "high",
+      "primary_inputs": ["tsh"]
+    }
+  ],
+  "analytes": [
+    {
+      "id": "igf1",
+      "label": "IGF-1",
+      "domain": "growth_signaling",
+      "aliases": ["igf-1", "igf1", "igf 1", "insulin-like growth factor", "insulin-like growth factor 1", "insulin-like growth factor-1", "somatomedin c"],
+      "normalize": "sds_age_sex_puberty",
+      "meaning": "IGF-1 carries much of growth hormone's signal to bone and cartilage, supporting growth-plate cell hypertrophy and matrix expansion — not simply making more cells.",
+      "parent_hint": {
+        "in_range": "Strong growth signaling supporting healthy growth velocity.",
+        "low": "Lower than the lab range — worth reviewing growth velocity and context with your doctor.",
+        "high": "Above the lab range — often reflects a growth or puberty phase; confirm with your doctor."
+      },
+      "cautions": [
+        "Interpret as an SDS adjusted for age, sex and ideally pubertal stage — concentrations change greatly through childhood and peak around puberty; a single universal range is misleading.",
+        "Never infer growth-hormone deficiency or sufficiency from IGF-1 alone — combine with height velocity, bone age and clinical context.",
+        "Around early puberty, interpretation is less certain when pubertal stage is unknown."
+      ],
+      "evidence": ["juul1994", "ly2024", "kristrom2014", "wang1999", "wu2015", "ruan2024"]
+    },
+    {
+      "id": "vitamin_d",
+      "label": "Vitamin D",
+      "domain": "bone_support",
+      "aliases": ["vitamin d", "25-oh vitamin d", "25 oh d", "25-hydroxyvitamin d", "calcidiol", "vit d"],
+      "normalize": "lab_range",
+      "meaning": "Vitamin D supports calcium absorption and bone mineralization — part of the environment growth happens in, not a direct switch for height.",
+      "parent_hint": {
+        "in_range": "Supports healthy bone mineralization and immunity.",
+        "low": "Slightly low. Optimize for better bone mineralization and immunity.",
+        "high": "Above the lab range — review any supplement intake with your doctor."
+      },
+      "cautions": [
+        "Belongs in the bone/mineral support domain, not as a direct height-growth driver.",
+        "Human evidence for a height effect is modest and not uniform across sexes."
+      ],
+      "evidence": ["gilbertdiamond2010", "ruan2024"]
+    },
+    {
+      "id": "ferritin",
+      "label": "Ferritin",
+      "domain": "iron_oxygen",
+      "aliases": ["ferritin", "serum ferritin"],
+      "normalize": "lab_range_threshold",
+      "meaning": "Ferritin reflects iron stores. Low stores can reduce energy and, with anemia, may affect growth — but higher is not better.",
+      "parent_hint": {
+        "in_range": "Iron stores look adequate for energy and growth.",
+        "low": "Low iron stores may limit energy and growth potential.",
+        "high": "Higher than the lab range — ferritin also rises with inflammation; discuss with your doctor."
+      },
+      "cautions": [
+        "Not a 'higher is better' marker — do not reward rising ferritin with a better score.",
+        "Interpret alongside hemoglobin and red-cell indices; ferritin is also an inflammatory marker.",
+        "Low ferritin with normal hemoglobin = reduced iron stores, NOT anemia."
+      ],
+      "evidence": ["soliman2009", "perng2013"]
+    },
+    {
+      "id": "hemoglobin",
+      "label": "Hemoglobin",
+      "domain": "iron_oxygen",
+      "aliases": ["hemoglobin", "haemoglobin", "hgb", "hb"],
+      "normalize": "lab_range",
+      "meaning": "Hemoglobin reflects oxygen-carrying capacity — a systemic-health and stamina marker.",
+      "parent_hint": {
+        "in_range": "Good oxygen-carrying capacity supporting stamina and focus.",
+        "low": "Below the lab range — may reflect low iron or other causes; review with your doctor.",
+        "high": "Above the lab range — worth discussing with your doctor."
+      },
+      "cautions": [
+        "Growth relevance of hemoglobin trends is clearest in specific disease contexts (e.g. chronic kidney disease); do not over-generalize.",
+        "Interpret with iron indices, not alone."
+      ],
+      "evidence": ["akchurin2023", "soliman2009"]
+    },
+    {
+      "id": "tsh",
+      "label": "TSH",
+      "domain": "thyroid",
+      "aliases": ["tsh", "thyroid stimulating hormone", "thyrotropin"],
+      "normalize": "lab_range",
+      "meaning": "TSH is a regulator of thyroid output; thyroid hormone drives metabolic rate and skeletal maturation.",
+      "parent_hint": {
+        "in_range": "Thyroid function looks balanced and within healthy range.",
+        "low": "Below the lab range — a fuller thyroid check (free T4) with your doctor helps.",
+        "high": "Above the lab range — a fuller thyroid check (free T4) with your doctor helps."
+      },
+      "cautions": [
+        "TSH alone is not a complete thyroid assessment — free T4 and growth history are needed before interpreting.",
+        "Delayed treatment of hypothyroidism can leave incomplete catch-up growth, so thyroid is a high-importance domain."
+      ],
+      "evidence": ["rivkees1988"]
+    }
+  ],
+  "relationships": [
+    {
+      "from": "gh", "to": "igf1", "type": "direct",
+      "mechanism": "Growth hormone stimulates circulating (hepatic) and locally produced bone/cartilage IGF-1.",
+      "confidence": "mechanistically_strong",
+      "evidence": ["ruan2024", "wu2015"]
+    },
+    {
+      "from": "igf1", "to": "igf1_receptor", "type": "direct",
+      "mechanism": "IGF-1 activates the IGF-1 receptor on growth-plate chondrocytes.",
+      "confidence": "mechanistically_strong",
+      "evidence": ["ruan2024"]
+    },
+    {
+      "from": "igf1_receptor", "to": "pi3k_akt_mtor", "type": "direct",
+      "mechanism": "Downstream PI3K → AKT → mTOR drives cell survival and protein synthesis.",
+      "confidence": "mechanistically_strong",
+      "evidence": ["ruan2024"]
+    },
+    {
+      "from": "igf1_receptor", "to": "ras_mapk", "type": "direct",
+      "mechanism": "Downstream RAS → MAPK drives proliferation and differentiation.",
+      "confidence": "mechanistically_strong",
+      "evidence": ["ruan2024"]
+    },
+    {
+      "from": "igf1", "to": "chondrocyte_hypertrophy", "type": "direct",
+      "mechanism": "IGF-1 augments chondrocyte hypertrophy and matrix expansion; loss reduces long-bone growth even with normal chondrocyte proliferation.",
+      "confidence": "animal_supported",
+      "evidence": ["wang1999"]
+    },
+    {
+      "from": "chondrocyte_hypertrophy", "to": "longitudinal_growth", "type": "direct",
+      "mechanism": "Cartilage matrix production and ossification produce longitudinal bone growth.",
+      "confidence": "mechanistically_strong",
+      "evidence": ["ruan2024"]
+    },
+    {
+      "from": "gh", "to": "longitudinal_growth", "type": "supporting",
+      "mechanism": "GH also promotes growth-plate chondrogenesis through IGF-independent routes — so IGF-1 cannot represent the whole GH–growth axis.",
+      "confidence": "animal_supported",
+      "evidence": ["wu2015"]
+    },
+    {
+      "from": "igf1", "to": "wnt_bcatenin", "type": "supporting",
+      "mechanism": "IGF signaling crosstalks with Wnt/β-catenin (osteoblast differentiation, bone formation).",
+      "confidence": "mechanistically_strong",
+      "evidence": ["ruan2024"]
+    },
+    {
+      "from": "igf1", "to": "bmp_tgfb", "type": "supporting",
+      "mechanism": "IGF signaling crosstalks with BMP/TGF-β signaling.",
+      "confidence": "mechanistically_strong",
+      "evidence": ["ruan2024"]
+    },
+    {
+      "from": "igf1", "to": "hedgehog_pth", "type": "supporting",
+      "mechanism": "IGF signaling crosstalks with Hedgehog/PTHrP (growth-plate maturation timing).",
+      "confidence": "mechanistically_strong",
+      "evidence": ["ruan2024"]
+    },
+    {
+      "from": "vitamin_d", "to": "bone_mineralization", "type": "supporting",
+      "mechanism": "Vitamin D supports calcium absorption and the mineralization environment; a modest, non-uniform association with linear growth.",
+      "confidence": "human_observational_mixed",
+      "evidence": ["gilbertdiamond2010"]
+    },
+    {
+      "from": "iron_stores", "to": "longitudinal_growth", "type": "association",
+      "mechanism": "Iron-deficiency anemia can coexist with slower growth in young children; growth may improve after treatment. In iron-replete children the relationship is mixed.",
+      "confidence": "human_observational_mixed",
+      "evidence": ["soliman2009", "perng2013"]
+    },
+    {
+      "from": "hemoglobin", "to": "longitudinal_growth", "type": "association",
+      "mechanism": "Declining hemoglobin has tracked with worsening growth in specific disease populations (e.g. CKD); disease-specific evidence.",
+      "confidence": "disease_specific",
+      "evidence": ["akchurin2023"]
+    },
+    {
+      "from": "thyroid", "to": "skeletal_maturation", "type": "supporting",
+      "mechanism": "Thyroid hormone supports metabolic rate and skeletal maturation; untreated/late-treated hypothyroidism can permanently reduce adult stature.",
+      "confidence": "human_observational",
+      "evidence": ["rivkees1988"]
+    }
+  ],
+  "pattern_rules": [
+    {
+      "id": "iron_deficiency_pattern",
+      "when": "ferritin low AND hemoglobin low AND mcv low",
+      "reading": "Iron-deficiency pattern — worth clinician review of iron status.",
+      "certainty": "moderate",
+      "evidence": ["soliman2009"]
+    },
+    {
+      "id": "low_stores_no_anemia",
+      "when": "ferritin low AND hemoglobin in_range",
+      "reading": "Reduced iron stores without current anemia — relevance to growth possible but not certain; do not label anemia.",
+      "certainty": "low",
+      "evidence": ["perng2013", "soliman2009"]
+    },
+    {
+      "id": "primary_hypothyroid_pattern",
+      "when": "tsh high AND free_t4 low",
+      "reading": "Thyroid pattern with stronger growth relevance — clinician review.",
+      "certainty": "moderate",
+      "evidence": ["rivkees1988"]
+    },
+    {
+      "id": "isolated_high_tsh",
+      "when": "tsh high AND free_t4 in_range_or_missing",
+      "reading": "Different interpretation and lower certainty — free T4 and growth history needed.",
+      "certainty": "low",
+      "evidence": ["rivkees1988"]
+    },
+    {
+      "id": "concordant_low_signaling",
+      "when": "igf1_sds low AND height_velocity low",
+      "reading": "Concordant low growth signaling and slow growth — a stronger reason for endocrine review.",
+      "certainty": "moderate",
+      "evidence": ["kristrom2014", "juul1994"]
+    },
+    {
+      "id": "discordant_signaling",
+      "when": "igf1_sds low AND height_velocity normal",
+      "reading": "Discordant — low IGF-1 with normal growth; investigate context (assay, puberty, nutrition) before concern.",
+      "certainty": "low",
+      "evidence": ["ly2024", "wu2015"]
+    }
+  ],
+  "safety_rules": [
+    "Never diagnose growth-hormone deficiency from IGF-1 alone.",
+    "Never interpret TSH as a complete thyroid assessment without free T4.",
+    "Never reward increasingly high ferritin, IGF-1 or hemoglobin with a better score.",
+    "Use the reporting laboratory's pediatric reference range whenever available.",
+    "Clearly distinguish association from causation.",
+    "Do not recommend supplement doses or growth-hormone adjustments.",
+    "Show urgent/critical alerts only from validated laboratory-specific thresholds.",
+    "Always display interpretation confidence and what context is missing."
+  ],
+  "evidence_cards": {
+    "ruan2024": {
+      "pmid": "39206513",
+      "title": "IGF signaling pathway in bone and cartilage development, homeostasis, and disease",
+      "authors": "Ruan X, et al.",
+      "journal": "FASEB J",
+      "year": 2024,
+      "type": "expert_review",
+      "claim": "IGF ligands/receptors act on bone and cartilage via PI3K–AKT and MAPK, with crosstalk to Wnt/β-catenin, BMP/TGF-β, Hedgehog/PTH and mTOR; endocrine vs locally produced IGF-1 are distinct.",
+      "confidence": "mechanistically_strong",
+      "usability": "educational"
+    },
+    "juul1994": {
+      "pmid": "8126152",
+      "title": "Serum insulin-like growth factor-I in 1030 healthy children, adolescents, and adults: relation to age, sex, stage of puberty, testicular size, and body mass index",
+      "authors": "Juul A, et al.",
+      "journal": "J Clin Endocrinol Metab",
+      "year": 1994,
+      "type": "human_observational",
+      "claim": "IGF-1 varies substantially by age, sex and pubertal stage; puberty-specific grouping reduces unexplained variation, so IGF-1 must be normalized rather than read raw.",
+      "confidence": "strong_reference_data",
+      "usability": "educational"
+    },
+    "ly2024": {
+      "pmid": "39906034",
+      "title": "Interpreting IGF-1 in children treated with recombinant growth hormone: challenges during early puberty",
+      "authors": "Ly HJ, et al.",
+      "journal": "Front Endocrinol",
+      "year": 2024,
+      "type": "human_observational",
+      "claim": "Pubertal signs and sex-steroid exposure complicate IGF-1 SDS interpretation, particularly around early puberty.",
+      "confidence": "moderate",
+      "usability": "educational"
+    },
+    "kristrom2014": {
+      "pmid": "24823461",
+      "title": "IGF-1 and growth response to adult height in a randomized GH treatment trial in short non-GH-deficient children",
+      "authors": "Kriström B, et al.",
+      "journal": "J Clin Endocrinol Metab",
+      "year": 2014,
+      "type": "human_clinical",
+      "claim": "The treatment-related change in IGF-1 SDS was the strongest IGF-system variable associated with long-term adult-height response. Applies to GH-treated short children, not untreated children.",
+      "confidence": "strong_in_context",
+      "usability": "educational",
+      "scope_note": "GH-treated children only — do not generalize to untreated children."
+    },
+    "wang1999": {
+      "pmid": "10544181",
+      "title": "Igf1 promotes longitudinal bone growth by insulin-like actions augmenting chondrocyte hypertrophy",
+      "authors": "Wang J, et al.",
+      "journal": "FASEB J",
+      "year": 1999,
+      "type": "animal",
+      "claim": "In IGF-1-null mice, long-bone growth fell ~35% despite normal chondrocyte proliferation; the deficit was smaller hypertrophic chondrocytes — IGF-1 acts on cell hypertrophy and anabolism, not just cell number.",
+      "confidence": "animal_supported",
+      "usability": "educational"
+    },
+    "wu2015": {
+      "pmid": "25910049",
+      "title": "Insulin-like growth factor-independent effects of growth hormone on growth plate chondrogenesis and longitudinal bone growth",
+      "authors": "Wu S, et al.",
+      "journal": "Endocrinology",
+      "year": 2015,
+      "type": "animal",
+      "claim": "GH promoted chondrogenesis and longitudinal growth even when local IGF-1/IGF-2 receptor effects were blocked — IGF-1 cannot represent the whole GH–growth pathway.",
+      "confidence": "animal_supported",
+      "usability": "educational"
+    },
+    "gilbertdiamond2010": {
+      "pmid": "20926524",
+      "title": "Vitamin D deficiency and anthropometric indicators of adiposity in school-age children: a prospective study",
+      "authors": "Gilbert-Diamond D, et al.",
+      "journal": "Am J Clin Nutr",
+      "year": 2010,
+      "type": "human_observational",
+      "claim": "In 479 schoolchildren (~30 mo), vitamin D deficiency was related to slower linear growth in girls (-0.6 cm/y, P=0.04) but not boys; the sex interaction was not statistically significant.",
+      "confidence": "human_observational_mixed",
+      "usability": "educational",
+      "scope_note": "Primary endpoint was adiposity; the linear-growth finding is a secondary outcome."
+    },
+    "soliman2009": {
+      "pmid": "19261662",
+      "title": "Linear growth in children with iron deficiency anemia before and after treatment",
+      "authors": "Soliman AT, et al.",
+      "journal": "J Trop Pediatr",
+      "year": 2009,
+      "type": "human_clinical",
+      "claim": "40 young children with iron-deficiency anemia were shorter with lower growth-velocity SDS than controls; measures improved after treatment and growth velocity correlated with ferritin.",
+      "confidence": "moderate_small_sample",
+      "usability": "educational"
+    },
+    "perng2013": {
+      "pmid": "23462945",
+      "title": "Iron status and linear growth: a prospective study in school-age children",
+      "authors": "Perng W, et al.",
+      "journal": "Eur J Clin Nutr",
+      "year": 2013,
+      "type": "human_observational",
+      "claim": "In 2,714 iron-replete schoolchildren (~30 mo), higher ferritin was associated with slower height-SDS change in boys, none in girls; hemoglobin was unrelated to growth. Ferritin is not linearly 'better when higher'.",
+      "confidence": "human_observational_mixed",
+      "usability": "educational"
+    },
+    "rivkees1988": {
+      "pmid": "3344006",
+      "title": "Long-term growth in juvenile acquired hypothyroidism: the failure to achieve normal adult stature",
+      "authors": "Rivkees SA, et al.",
+      "journal": "N Engl J Med",
+      "year": 1988,
+      "type": "human_observational",
+      "claim": "Thyroid replacement produced catch-up growth, but some children did not regain their prior trajectory or expected adult height, especially after prolonged disease.",
+      "confidence": "human_observational",
+      "usability": "educational"
+    },
+    "akchurin2023": {
+      "pmid": "36481700",
+      "title": "Longitudinal relationship between anemia and statural growth impairment in children and adolescents with nonglomerular CKD",
+      "authors": "Akchurin O, et al.",
+      "journal": "Am J Kidney Dis",
+      "year": 2023,
+      "type": "human_observational",
+      "claim": "In nonglomerular CKD, declining hemoglobin tracked with worsening growth even before conventional anemia thresholds.",
+      "confidence": "disease_specific",
+      "usability": "educational",
+      "scope_note": "CKD population — disease-specific, do not generalize to healthy children."
+    }
+  }
+}
