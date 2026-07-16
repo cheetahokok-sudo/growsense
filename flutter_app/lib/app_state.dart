@@ -1604,6 +1604,7 @@ class AppState extends ChangeNotifier {
     required String unit,
     double? referenceLow,
     double? referenceHigh,
+    double? sds, // lab-reported standard-deviation score, if any
   }) => _insertClinical('lab_results', {
     'lab_date': labDate,
     'analyte_name': analyteName,
@@ -1611,6 +1612,7 @@ class AppState extends ChangeNotifier {
     'unit': unit,
     'reference_low': referenceLow,
     'reference_high': referenceHigh,
+    'sds': sds,
   }, labResults);
 
   Future<String?> deleteLabResult(dynamic id) =>

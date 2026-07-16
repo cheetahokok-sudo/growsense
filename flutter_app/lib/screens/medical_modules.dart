@@ -252,6 +252,7 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
   final _unit = TextEditingController();
   final _refLow = TextEditingController();
   final _refHigh = TextEditingController();
+  final _sds = TextEditingController();
   bool _busy = false;
 
   // Growth-relevant presets a parent is most likely holding a report
@@ -273,7 +274,7 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
 
   @override
   void dispose() {
-    for (final c in [_analyte, _value, _unit, _refLow, _refHigh]) {
+    for (final c in [_analyte, _value, _unit, _refLow, _refHigh, _sds]) {
       c.dispose();
     }
     super.dispose();
@@ -298,6 +299,7 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
       unit: _unit.text.trim(),
       referenceLow: double.tryParse(_refLow.text),
       referenceHigh: double.tryParse(_refHigh.text),
+      sds: double.tryParse(_sds.text),
     );
     if (!mounted) return;
     setState(() => _busy = false);
@@ -305,6 +307,7 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
         t('flutter.not_saved', 'Not saved'));
     if (err == null) {
       _value.clear();
+      _sds.clear();
     }
   }
 
@@ -393,6 +396,13 @@ class _LabResultsScreenState extends State<LabResultsScreen> {
                       decoration: _dec(
                           '${t('medical.other_labs.ref_range', 'Reference range')} ↑'))),
             ]),
+            const SizedBox(height: 10),
+            TextField(
+                controller: _sds,
+                keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true, signed: true),
+                decoration: _dec(t('flutter.lab.sds_field',
+                    'SDS / z-score (optional — if your report shows it)'))),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _busy ? null : _save,
@@ -536,6 +546,7 @@ class _LabMiniCard extends StatelessWidget {
     final low = _d(latest['reference_low']);
     final high = _d(latest['reference_high']);
     final unit = latest['unit'] as String? ?? '';
+    final sds = _d(latest['sds']);
     final status = labStatusOf(value, low, high);
     final key = evidence?.keyForAnalyteName(latest['analyte_name'] ?? '');
     final band = labStatusBand(status);
@@ -602,6 +613,20 @@ class _LabMiniCard extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 10.5, color: GsColors.text2)),
               ),
+              if (sds != null) ...[
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(
+                      '${sds >= 0 ? '+' : '−'}${sds.abs().toStringAsFixed(1)} SDS',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: sds.abs() <= 2
+                              ? GsColors.accent
+                              : GsColors.estimated)),
+                ),
+              ],
             ]),
             const SizedBox(height: 4),
             Row(children: [
@@ -684,6 +709,7 @@ class _LabDetailSheetState extends State<_LabDetailSheet> {
     final low = _d(latest['reference_low']);
     final high = _d(latest['reference_high']);
     final unit = latest['unit'] as String? ?? '';
+    final sds = _d(latest['sds']);
     final status = labStatusOf(value, low, high);
     final key = widget.evidence?.keyForAnalyteName(latest['analyte_name'] ?? '');
     final analyte = key == null ? null : widget.evidence?.analytes[key];
@@ -751,6 +777,30 @@ class _LabDetailSheetState extends State<_LabDetailSheet> {
                   style: const TextStyle(fontSize: 11, color: GsColors.text3)),
               const SizedBox(height: 8),
               LabRangeBar(value: value, low: low, high: high),
+            ],
+            // Lab-reported standard score (SDS / z-score), age & sex adjusted.
+            if (sds != null) ...[
+              const SizedBox(height: 18),
+              Row(children: [
+                Text(
+                    '${sds >= 0 ? '+' : '−'}${sds.abs().toStringAsFixed(1)} SDS',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: sds.abs() <= 2
+                            ? GsColors.accent
+                            : GsColors.estimated)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                      t('flutter.lab.sds_note',
+                          'Age & sex adjusted — from your lab report. 0 is the average; within ±2 is the usual range.'),
+                      style: const TextStyle(
+                          fontSize: 10, color: GsColors.text3, height: 1.3)),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              SdsBar(sds: sds),
             ],
             if (series.length >= 2) ...[
               const SizedBox(height: 18),

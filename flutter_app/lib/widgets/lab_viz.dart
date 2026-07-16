@@ -235,6 +235,107 @@ class _RangeBarPainter extends CustomPainter {
 String _fmtNum(double v) =>
     v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(v.abs() < 10 ? 1 : 0);
 
+// ── SDS (standard-deviation score) bar ─────────────────────────────
+
+/// A -3 … +3 standard-score axis with 0 centred and a diamond marker at
+/// the child's lab-reported SDS. Green inside ±2 SD (the usual normal
+/// band), gold beyond. GrowSense never computes the SDS — this only
+/// renders the value the lab printed.
+class SdsBar extends StatelessWidget {
+  const SdsBar({super.key, required this.sds});
+  final double sds;
+
+  @override
+  Widget build(BuildContext context) {
+    final within = sds.abs() <= 2;
+    final color = within ? GsColors.accent : GsColors.estimated;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 26,
+          child: CustomPaint(painter: _SdsBarPainter(sds, color)),
+        ),
+        const SizedBox(height: 2),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: const [
+            Text('−3 SDS',
+                style: TextStyle(fontSize: 9, color: GsColors.text3)),
+            Text('0',
+                style: TextStyle(fontSize: 9, color: GsColors.text3)),
+            Text('+3 SDS',
+                style: TextStyle(fontSize: 9, color: GsColors.text3)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SdsBarPainter extends CustomPainter {
+  _SdsBarPainter(this.sds, this.color);
+  final double sds;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const trackH = 8.0;
+    final trackY = 6.0;
+    final r = trackH / 2;
+    double x(double s) => (s + 3) / 6 * size.width; // -3..+3 → 0..w
+
+    // Full track (out-of-band tint) with the ±2 SD band highlighted.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, trackY, size.width, trackH), Radius.circular(r)),
+      Paint()..color = GsColors.surface2,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(x(-2), trackY, x(2) - x(-2), trackH),
+      Paint()..color = GsColors.accent.withValues(alpha: 0.20),
+    );
+    // Centre (0) tick.
+    canvas.drawLine(
+      Offset(x(0), trackY - 1),
+      Offset(x(0), trackY + trackH + 1),
+      Paint()
+        ..color = GsColors.text3
+        ..strokeWidth = 1,
+    );
+
+    // Diamond marker at the value (clamped to the axis).
+    final cx = x(sds.clamp(-3.0, 3.0));
+    final cy = trackY + trackH / 2;
+    final path = Path()
+      ..moveTo(cx, cy - 6)
+      ..lineTo(cx + 6, cy)
+      ..lineTo(cx, cy + 6)
+      ..lineTo(cx - 6, cy)
+      ..close();
+    canvas.drawPath(path, Paint()..color = Colors.white);
+    canvas.drawPath(
+        path,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2);
+    canvas.drawPath(
+        path
+          ..reset()
+          ..moveTo(cx, cy - 3.2)
+          ..lineTo(cx + 3.2, cy)
+          ..lineTo(cx, cy + 3.2)
+          ..lineTo(cx - 3.2, cy)
+          ..close(),
+        Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SdsBarPainter old) =>
+      old.sds != sds || old.color != color;
+}
+
 // ── Trend sparkline ────────────────────────────────────────────────
 
 /// Serial values for one analyte, oldest → newest, drawn over the

@@ -17,6 +17,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../analytics.dart';
 import '../app_state.dart';
+import '../growth_evidence.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 
@@ -63,6 +64,12 @@ Future<(Uint8List?, String?)> buildVisitPdf(
 
   try {
     await appState.loadClinicalIfNeeded();
+    // Curated evidence (for the plain-language lab lines) + the latest
+    // premium AI synthesis, if the family generated one.
+    final labEvidence = await GrowthEvidence.load();
+    try {
+      await appState.loadLatestLabAiReport();
+    } catch (_) {}
     final sb = appState.sb;
     final dob = child['date_of_birth'] as String?;
     final sex = child['biological_sex'] as String?;
@@ -239,7 +246,7 @@ Future<(Uint8List?, String?)> buildVisitPdf(
         _sectionTitle(t('flutter.pdf.history', 'Measurement history')),
         pw.SizedBox(height: 6),
         _measTable(meas, dob, sex, who, t),
-        ..._clinicalSections(appState, t),
+        ..._clinicalSections(appState, t, labEvidence),
         pw.SizedBox(height: 18),
         _disclaimer(t),
       ],
@@ -427,7 +434,7 @@ pw.Widget _measTable(List<Map<String, dynamic>> meas, String? dob, String? sex,
 }
 
 List<pw.Widget> _clinicalSections(
-    AppState a, String Function(String, [String?]) t) {
+    AppState a, String Function(String, [String?]) t, GrowthEvidence ev) {
   final out = <pw.Widget>[];
 
   if (a.boneAgeAssessments.isNotEmpty) {
@@ -452,22 +459,126 @@ List<pw.Widget> _clinicalSections(
   }
 
   if (a.labResults.isNotEmpty) {
+    // Group by analyte (labResults is date-desc → first = latest);
+    // order the five focus labs first.
+    const order = ['igf1', 'vitamin_d', 'ferritin', 'tsh', 'hemoglobin'];
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final r in a.labResults) {
+      final k = (r['analyte_name'] as String? ?? '').trim().toLowerCase();
+      groups.putIfAbsent(k, () => []).add(r);
+    }
+    final ordered = groups.values.toList()
+      ..sort((x, y) {
+        int rank(List<Map<String, dynamic>> g) {
+          final k = ev.keyForAnalyteName(g.first['analyte_name'] ?? '');
+          final i = k == null ? -1 : order.indexOf(k);
+          return i < 0 ? 99 : i;
+        }
+
+        return rank(x).compareTo(rank(y));
+      });
+
+    double? d(dynamic v) => (v as num?)?.toDouble();
+    String statusOf(double v, double? lo, double? hi) {
+      if (lo == null && hi == null) return '-';
+      if (lo != null && v < lo) return t('flutter.lab.short_low', 'Low');
+      if (hi != null && v > hi) return t('flutter.lab.short_high', 'High');
+      return t('flutter.lab.short_in', 'In range');
+    }
+
     out
       ..add(pw.SizedBox(height: 16))
-      ..add(_sectionTitle(t('flutter.pdf.labs', 'Recent labs')))
-      ..add(pw.SizedBox(height: 6))
-      ..add(_dataTable([
-        t('flutter.pdf.date', 'Date'),
-        t('flutter.pdf.analyte', 'Analyte'),
-        t('flutter.pdf.result', 'Result'),
-      ], [
-        for (final r in a.labResults.take(10))
-          [
-            (r['lab_date'] ?? '-').toString(),
+      ..add(_sectionTitle(t('flutter.pdf.labs', 'Growth labs')))
+      ..add(pw.SizedBox(height: 6));
+
+    // Premium AI synthesis, if the family generated one.
+    final report = a.labAiReport?['report'];
+    if (report is Map) {
+      final headline = report['headline'] as String?;
+      final summary = report['parent_summary'] as String?;
+      out.add(pw.Container(
+        width: double.infinity,
+        margin: const pw.EdgeInsets.only(bottom: 8),
+        padding: const pw.EdgeInsets.all(10),
+        decoration: pw.BoxDecoration(
+            color: _tint,
+            borderRadius: pw.BorderRadius.circular(6),
+            border: pw.Border.all(color: _line, width: 0.5)),
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          if (headline != null && headline.isNotEmpty)
+            pw.Text(headline,
+                style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _accent)),
+          if (summary != null && summary.isNotEmpty) ...[
+            pw.SizedBox(height: 3),
+            pw.Text(summary,
+                style: const pw.TextStyle(
+                    fontSize: 8.5, color: _ink, lineSpacing: 1.6)),
+          ],
+        ]),
+      ));
+    }
+
+    out.add(_dataTable([
+      t('flutter.pdf.analyte', 'Analyte'),
+      t('flutter.pdf.latest', 'Latest'),
+      t('medical.other_labs.ref_range', 'Reference range'),
+      t('flutter.pdf.status', 'Status'),
+      'SDS',
+    ], [
+      for (final g in ordered)
+        () {
+          final r = g.first;
+          final v = d(r['result_value']) ?? 0;
+          final lo = d(r['reference_low']);
+          final hi = d(r['reference_high']);
+          final sds = d(r['sds']);
+          return [
             (r['analyte_name'] ?? '-').toString(),
-            '${r['result_value'] ?? '-'}${r['unit'] ?? ''}',
-          ]
-      ], flex: [3, 4, 3]));
+            '${_fmt(v)} ${r['unit'] ?? ''}',
+            (lo != null || hi != null)
+                ? '${_fmt(lo)}–${_fmt(hi)}'
+                : '-',
+            statusOf(v, lo, hi),
+            sds == null
+                ? '-'
+                : '${sds >= 0 ? '+' : '−'}${sds.abs().toStringAsFixed(1)}',
+          ];
+        }()
+    ], flex: [3, 2, 3, 2, 1]));
+
+    // Plain-language line per focus analyte (what the family was told).
+    final hints = <pw.Widget>[];
+    for (final g in ordered) {
+      final r = g.first;
+      final key = ev.keyForAnalyteName(r['analyte_name'] ?? '');
+      if (key == null) continue;
+      final v = d(r['result_value']) ?? 0;
+      final lo = d(r['reference_low']);
+      final hi = d(r['reference_high']);
+      final band = (lo == null && hi == null)
+          ? null
+          : (lo != null && v < lo)
+              ? 'low'
+              : (hi != null && v > hi)
+                  ? 'high'
+                  : 'in_range';
+      final hint = band == null ? null : ev.analytes[key]?.hintFor(band);
+      if (hint == null) continue;
+      hints.add(pw.Padding(
+        padding: const pw.EdgeInsets.only(top: 3),
+        child: pw.Text('• ${r['analyte_name']}: $hint',
+            style: const pw.TextStyle(fontSize: 8, color: _muted)),
+      ));
+    }
+    if (hints.isNotEmpty) {
+      out
+        ..add(pw.SizedBox(height: 6))
+        ..add(pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start, children: hints));
+    }
   }
 
   if (a.illnessEvents.isNotEmpty) {
