@@ -25,6 +25,7 @@ import '../app_state.dart';
 import '../growth_math.dart' show ageYearsAt;
 import '../i18n.dart';
 import '../theme.dart';
+import '../widgets/gs_icons.dart';
 import '../widgets/premium_gate.dart';
 
 String _fmtYM(num months) {
@@ -740,9 +741,13 @@ class _BoneAgeCardState extends State<_BoneAgeCard> {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('🦴 ${_fmtYM(ba)}',
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w800)),
+                    Row(children: [
+                      const GsIcon('bone', size: 16),
+                      const SizedBox(width: 5),
+                      Text(_fmtYM(ba),
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w800)),
+                    ]),
                     const SizedBox(height: 2),
                     Text(
                         '${r['study_date'] ?? ''}'

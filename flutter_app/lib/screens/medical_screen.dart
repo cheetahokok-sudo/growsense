@@ -8,6 +8,7 @@ import '../app_state.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import '../widgets/gs_icons.dart';
 import '../units.dart';
 import 'bone_age_screen.dart';
 import 'medical_modules.dart';
@@ -135,7 +136,7 @@ class _MedicalScreenState extends State<MedicalScreen> {
             ),
             _ModuleGroup(children: [
               _ModuleRow(
-                emoji: '📏',
+                icon: 'measure',
                 title: t('flutter.growth_measurements',
                     'Growth measurements'),
                 count: s.measurements.length,
@@ -146,7 +147,7 @@ class _MedicalScreenState extends State<MedicalScreen> {
                     appState: s, i18n: widget.i18n)),
               ),
               _ModuleRow(
-                emoji: '🦴',
+                icon: 'bone',
                 title: t('medical.bone_age.title', 'Bone age assessment'),
                 count: s.boneAgeAssessments.length,
                 lastDate: lastDate(s.boneAgeAssessments, 'study_date'),
@@ -155,7 +156,7 @@ class _MedicalScreenState extends State<MedicalScreen> {
                     BoneAgeScreen(appState: s, i18n: widget.i18n)),
               ),
               _ModuleRow(
-                emoji: '🧪',
+                icon: 'lab',
                 title: t('medical.lab_values.title', 'Lab values'),
                 count: s.labResults.length,
                 lastDate: lastDate(s.labResults, 'lab_date'),
@@ -164,7 +165,7 @@ class _MedicalScreenState extends State<MedicalScreen> {
                     LabResultsScreen(appState: s, i18n: widget.i18n)),
               ),
               _ModuleRow(
-                emoji: '🤒',
+                icon: 'illness',
                 title: t('medical.illness.title',
                     'Development interference log'),
                 count: s.illnessEvents.length,
@@ -174,7 +175,7 @@ class _MedicalScreenState extends State<MedicalScreen> {
                     IllnessLogScreen(appState: s, i18n: widget.i18n)),
               ),
               _ModuleRow(
-                emoji: '🌱',
+                icon: 'sprout',
                 title: t('medical.puberty.title', 'Puberty milestones'),
                 count: s.pubertyEvents.length,
                 lastDate: lastDate(s.pubertyEvents, 'event_date'),
@@ -222,7 +223,7 @@ class _ModuleGroup extends StatelessWidget {
 
 class _ModuleRow extends StatelessWidget {
   const _ModuleRow({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.count,
     required this.lastDate,
@@ -230,7 +231,7 @@ class _ModuleRow extends StatelessWidget {
     required this.onTap,
     this.last = false,
   });
-  final String emoji;
+  final String icon;
   final String title;
   final int count;
   final String lastDate;
@@ -255,7 +256,7 @@ class _ModuleRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 20)),
+            GsIconTile(icon, tile: 36, glyph: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

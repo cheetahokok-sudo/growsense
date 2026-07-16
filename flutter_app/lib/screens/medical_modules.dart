@@ -14,6 +14,7 @@ import '../i18n.dart';
 import '../illness_reference.dart';
 import '../theme.dart';
 import '../widgets/evidence_refs.dart';
+import '../widgets/gs_icons.dart';
 import '../widgets/growth_systems.dart';
 import '../widgets/lab_viz.dart';
 import '../widgets/premium_gate.dart';
@@ -986,7 +987,7 @@ class _LabAiCardState extends State<_LabAiCard> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(children: [
-            const Text('🤖', style: TextStyle(fontSize: 16)),
+            const GsIcon('ai', size: 18),
             const SizedBox(width: 8),
             Text(t('flutter.lab.ai_title', 'AI interpretation'),
                 style: const TextStyle(

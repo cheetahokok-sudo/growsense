@@ -68,6 +68,18 @@ const Map<String, String> _gsIcons = {
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9.3" y="3" width="5.4" height="4.6" rx="1.9" fill="#cfe3d5"/><rect x="9.3" y="16.4" width="5.4" height="4.6" rx="1.9" fill="#cfe3d5"/><rect x="6.6" y="6.2" width="10.8" height="11.6" rx="3.6" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><path d="M18 10.4v3" stroke="#153a2b" stroke-width="1.6"/><path d="M12 14c-1.4-.9-2.1-1.7-2.1-2.6a1.1 1.1 0 0 1 2.1-.6 1.1 1.1 0 0 1 2.1.6c0 .9-.7 1.7-2.1 2.6Z" fill="#a23b3b"/></svg>',
   'form_round':
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 7.2 10 3.7h4l.4 3.5M9.6 16.8 10 20.3h4l.4-3.5" fill="#cfe3d5"/><circle cx="12" cy="12" r="5.4" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><path d="M17.5 10.4v.6M17.5 13v.6" stroke="#153a2b" stroke-width="1.7"/><circle cx="12" cy="12" r="1.6" fill="none" stroke="#2f7d74" stroke-width="1.3"/></svg>',
+  'ai':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3.8l1.5 4.7 4.7 1.5-4.7 1.5L11 16.2l-1.5-4.7L4.8 10l4.7-1.5Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><path d="M17.4 14l.55 1.7 1.7.55-1.7.55-.55 1.7-.55-1.7-1.7-.55 1.7-.55Z" fill="#2f7d74"/></svg>',
+  'bone':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 15.4 14.4 10.6" stroke="#153a2b" stroke-width="2.6"/><circle cx="7.6" cy="14.2" r="2.05" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><circle cx="9.8" cy="16.4" r="2.05" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><circle cx="16.4" cy="9.8" r="2.05" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><circle cx="14.2" cy="7.6" r="2.05" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/></svg>',
+  'lab':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.6h5" stroke="#153a2b" stroke-width="1.4"/><path d="M10 3.6v13.4a2 2 0 0 0 4 0V3.6" stroke="#153a2b" stroke-width="1.4"/><path d="M10 11h4v6a2 2 0 0 1-4 0Z" fill="#cfe3d5"/><circle cx="11.3" cy="14" r=".65" fill="#2f7d74"/></svg>',
+  'measure':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3.5" width="8" height="17" rx="2" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><path d="M8 7.2h3M8 10.8h2M8 14.4h3M8 18h2" stroke="#153a2b" stroke-width="1.3"/></svg>',
+  'illness':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5a2 2 0 0 0-2 2v7.4a3.3 3.3 0 1 0 4 0V6.5a2 2 0 0 0-2-2Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><circle cx="12" cy="16.7" r="2" fill="#a23b3b"/><path d="M12 8.2v6" stroke="#a23b3b" stroke-width="1.6"/></svg>',
+  'sprout':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6" stroke="#153a2b" stroke-width="1.4"/><path d="M12 15c-3 0-4.5-1.5-4.5-4.5 3 0 4.5 1.5 4.5 4.5Z" fill="#78a488"/><path d="M12 13c0-2.6 1.5-4 4-4 0 2.6-1.5 4-4 4Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><path d="M8 20h8" stroke="#153a2b" stroke-width="1.4"/></svg>',
 };
 
 /// Soft tile tint per icon (defaults to pale green). Device categories
