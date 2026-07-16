@@ -9,9 +9,77 @@
 // ══════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '../i18n.dart';
 import '../theme.dart';
+
+/// Flatten the AI report into a plain-language block a parent can copy,
+/// forward, or have read aloud.
+String growthReportPlainText(Map<String, dynamic> report,
+    {String? disclaimer}) {
+  final b = StringBuffer();
+  b.writeln('GrowSense — lab interpretation');
+  void section(String? s) {
+    if (s != null && s.trim().isNotEmpty) {
+      b
+        ..writeln()
+        ..writeln(s.trim());
+    }
+  }
+
+  section(report['headline'] as String?);
+  section(report['parent_summary'] as String?);
+
+  final analytes =
+      (report['analytes'] as List?)?.whereType<Map>().toList() ?? const [];
+  if (analytes.isNotEmpty) {
+    b
+      ..writeln()
+      ..writeln('Markers:');
+    for (final a in analytes) {
+      final name = (a['name'] ?? '').toString();
+      final note = (a['value_note'] ?? '').toString();
+      final meaning = (a['meaning'] ?? '').toString();
+      b.writeln('• $name: $note${meaning.isNotEmpty ? ' $meaning' : ''}');
+    }
+  }
+
+  final patterns =
+      (report['patterns'] as List?)?.whereType<Map>().toList() ?? const [];
+  if (patterns.isNotEmpty) {
+    b
+      ..writeln()
+      ..writeln('Patterns across markers:');
+    for (final p in patterns) {
+      b.writeln('• ${p['reading'] ?? ''}');
+    }
+  }
+
+  final discuss = (report['clinician_discussion_points'] as List?) ?? const [];
+  if (discuss.isNotEmpty) {
+    b
+      ..writeln()
+      ..writeln('Questions for your doctor:');
+    for (final d in discuss) {
+      b.writeln('• $d');
+    }
+  }
+
+  final missing = (report['missing_context'] as List?) ?? const [];
+  if (missing.isNotEmpty) {
+    b
+      ..writeln()
+      ..writeln('Would sharpen this: ${missing.join(', ')}');
+  }
+
+  b
+    ..writeln()
+    ..writeln(disclaimer ??
+        'Educational summary, not a diagnosis. Review with your child\'s doctor.');
+  return b.toString();
+}
 
 class GrowthSystemsReport extends StatelessWidget {
   const GrowthSystemsReport(
@@ -46,6 +114,9 @@ class GrowthSystemsReport extends StatelessWidget {
           const SizedBox(height: 6),
           _ConfidenceChip(confidence: confidence, i18n: i18n),
         ],
+
+        const SizedBox(height: 10),
+        _ReportControls(text: growthReportPlainText(report), i18n: i18n),
 
         if (parentSummary != null && parentSummary.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -192,6 +263,113 @@ class _ConfidenceChip extends StatelessWidget {
               style: TextStyle(
                   fontSize: 10.5, fontWeight: FontWeight.w700, color: color)),
         ]),
+      ),
+    );
+  }
+}
+
+/// Copy + read-aloud controls for the interpretation. Read-aloud uses the
+/// device's built-in text-to-speech (flutter_tts) — on-device, no API or
+/// AI-token cost — so a parent can listen while driving.
+class _ReportControls extends StatefulWidget {
+  const _ReportControls({required this.text, required this.i18n});
+  final String text;
+  final I18n i18n;
+
+  @override
+  State<_ReportControls> createState() => _ReportControlsState();
+}
+
+class _ReportControlsState extends State<_ReportControls> {
+  final FlutterTts _tts = FlutterTts();
+  bool _speaking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tts.setCompletionHandler(() {
+      if (mounted) setState(() => _speaking = false);
+    });
+    _tts.setCancelHandler(() {
+      if (mounted) setState(() => _speaking = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
+
+  String _ttsLocale(String code) => switch (code) {
+        'th' => 'th-TH',
+        'vi' => 'vi-VN',
+        'ko' => 'ko-KR',
+        'zh' => 'zh-CN',
+        'ar' => 'ar-SA',
+        _ => 'en-US',
+      };
+
+  Future<void> _toggleSpeak() async {
+    final t = widget.i18n.t;
+    if (_speaking) {
+      await _tts.stop();
+      if (mounted) setState(() => _speaking = false);
+      return;
+    }
+    try {
+      await _tts.setLanguage(_ttsLocale(widget.i18n.code));
+      await _tts.setSpeechRate(0.46);
+      if (mounted) setState(() => _speaking = true);
+      // Strip bullet marks so the engine doesn't read them out.
+      await _tts.speak(widget.text.replaceAll('•', ' '));
+    } catch (_) {
+      if (mounted) setState(() => _speaking = false);
+      _snack(t('flutter.gs.tts_unavailable',
+          'Read-aloud is not available on this device.'));
+    }
+  }
+
+  void _copy() {
+    Clipboard.setData(ClipboardData(text: widget.text));
+    _snack(widget.i18n
+        .t('flutter.gs.copied', 'Copied — paste into a message to share.'));
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.i18n.t;
+    return Row(children: [
+      _btn(Icons.copy_outlined, t('flutter.gs.copy', 'Copy'), _copy),
+      const SizedBox(width: 8),
+      _btn(
+        _speaking ? Icons.stop_rounded : Icons.volume_up_outlined,
+        _speaking
+            ? t('flutter.gs.stop', 'Stop')
+            : t('flutter.gs.listen', 'Listen'),
+        _toggleSpeak,
+        active: _speaking,
+      ),
+    ]);
+  }
+
+  Widget _btn(IconData icon, String label, VoidCallback onTap,
+      {bool active = false}) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 15),
+      label: Text(label, style: const TextStyle(fontSize: 11.5)),
+      style: OutlinedButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        foregroundColor: active ? GsColors.accent : GsColors.text2,
+        side: BorderSide(color: active ? GsColors.accent : GsColors.border2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       ),
     );
   }

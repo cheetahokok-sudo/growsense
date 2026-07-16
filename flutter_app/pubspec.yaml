@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.9.0
   flutter_svg: ^2.0.10 # renders the GrowSense duotone icon set (gs_icons.dart)
+  flutter_tts: ^4.2.0 # read-aloud via the device's built-in TTS (no API cost)
   sign_in_with_apple: ^6.1.4 # native Sign in with Apple on iOS (web keeps the OAuth redirect flow)
   crypto: ^3.0.6 # SHA-256 for the Apple sign-in nonce
   google_fonts: ^6.2.1
