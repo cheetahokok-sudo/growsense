@@ -4,7 +4,7 @@ h1: "What bone age actually is — and why two hospitals can give different answ
 description: "Your child's bone age came back as 8 at one hospital and 9 at another. Usually neither is wrong. An honest, sourced guide to what bone age measures, why Greulich–Pyle and TW3 are different rulers, the five reasons readings differ, how much variation is normal, why the atlas may not fit your child, and what to do when two reports disagree. Educational, not medical advice."
 eyebrow: "Growth science · Prediction"
 hero: "gs-057-hero.jpg"
-heroAlt: "A hand and wrist radiograph on a lightbox beside a child's growth chart, showing the small bones and growth plates used to estimate skeletal maturity."
+heroAlt: "Two hand and wrist radiographs of a child lying side by side on a lightbox beside a sunlit window, each showing the small bones and open growth plates a radiologist reads to estimate skeletal maturity. A clinician's hand rests at the edge of the frame."
 lang: "en"
 disclaimer: "This article is educational and does not provide medical diagnosis or treatment. Bone-age results must be interpreted by a qualified clinician alongside your child's growth rate, pubertal stage and health history. Imaging decisions, including whether and when to repeat a radiograph, should be made with your child's paediatrician or paediatric endocrinologist."
 card:
