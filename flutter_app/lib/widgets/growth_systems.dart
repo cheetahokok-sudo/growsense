@@ -10,6 +10,7 @@
 
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -284,7 +285,17 @@ class _ReportControls extends StatefulWidget {
 
 class _ReportControlsState extends State<_ReportControls>
     with SingleTickerProviderStateMixin {
-  final FlutterTts _tts = FlutterTts();
+  // Read-aloud is native-only for now. flutter_tts's WEB backend is broken in
+  // ways we can't work around from here: _speak() silently no-ops unless its
+  // internal ttsState is stopped/paused (one missed onEnd wedges it for good),
+  // and _setLanguage() reads synth.getVoices() synchronously, which browsers
+  // populate asynchronously — so it finds nothing on a fresh load. The result
+  // is a button that does nothing, with no error. Rather than ship that, hide
+  // it on web until we drive window.speechSynthesis directly. Copy still works
+  // everywhere, so the parent can always get the text out.
+  static const bool _canSpeak = !kIsWeb;
+
+  late final FlutterTts _tts = FlutterTts();
 
   // Two phases so the parent gets honest feedback: _engaged flips the moment
   // they tap (button reacts instantly), _started flips only when the engine
@@ -293,14 +304,17 @@ class _ReportControlsState extends State<_ReportControls>
   bool _engaged = false;
   bool _started = false;
 
-  // Drives the equalizer pulse shown while speaking.
-  late final AnimationController _pulse = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 850))
-    ..repeat(reverse: true);
+  // Drives the equalizer pulse shown while speaking. Null on web, where there
+  // is no Listen button to animate.
+  AnimationController? _pulse;
 
   @override
   void initState() {
     super.initState();
+    if (!_canSpeak) return;
+    _pulse = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 850))
+      ..repeat(reverse: true);
     _tts
       ..setStartHandler(() {
         if (mounted) setState(() => _started = true);
@@ -309,12 +323,9 @@ class _ReportControlsState extends State<_ReportControls>
       ..setCancelHandler(_reset)
       ..setErrorHandler((_) => _reset());
     // Configure once, up front. Doing this per-tap with awaits before speak()
-    // breaks iOS Safari's user-gesture requirement (was throwing "not
-    // available"). The report is English, so read it with an English voice
-    // regardless of the UI language (avoids a missing-voice failure when the
-    // phone has no Thai/other TTS voice). These calls are unawaited, so any
-    // rejection is swallowed inside _configureTts — otherwise flutter_tts's
-    // web backend can leak them as uncaught console errors (seen on Edge).
+    // breaks iOS Safari's user-gesture requirement. The report is English, so
+    // read it with an English voice regardless of the UI language (avoids a
+    // missing-voice failure when the phone has no Thai/other TTS voice).
     _configureTts();
   }
 
@@ -331,8 +342,10 @@ class _ReportControlsState extends State<_ReportControls>
 
   @override
   void dispose() {
-    _pulse.dispose();
-    _tts.stop().catchError((_) => 1); // best-effort; ignore a rejected stop
+    _pulse?.dispose();
+    if (_canSpeak) {
+      _tts.stop().catchError((_) => 1); // best-effort; ignore a rejected stop
+    }
     super.dispose();
   }
 
@@ -379,6 +392,7 @@ class _ReportControlsState extends State<_ReportControls>
             : t('flutter.gs.starting', 'Starting…');
     return Row(children: [
       _btn(Icons.copy_outlined, t('flutter.gs.copy', 'Copy'), _copy),
+      if (_canSpeak) ...[
       const SizedBox(width: 8),
       OutlinedButton(
         onPressed: _toggleSpeak,
@@ -390,8 +404,8 @@ class _ReportControlsState extends State<_ReportControls>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (_engaged)
-            _EqualizerPulse(pulse: _pulse, active: _started)
+          if (_engaged && _pulse != null)
+            _EqualizerPulse(pulse: _pulse!, active: _started)
           else
             const Icon(Icons.volume_up_outlined, size: 15),
           const SizedBox(width: 6),
@@ -402,6 +416,7 @@ class _ReportControlsState extends State<_ReportControls>
           ],
         ]),
       ),
+      ],
     ]);
   }
 
