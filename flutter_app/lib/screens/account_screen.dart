@@ -8,6 +8,7 @@ import '../export/download.dart';
 import '../export/visit_pdf.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import '../widgets/gs_icons.dart';
 import 'bug_report_screen.dart';
 import 'devices_screen.dart';
 import 'settings_modules.dart';
@@ -221,7 +222,7 @@ class AccountScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Text('🩺', style: TextStyle(fontSize: 18)),
+                        const GsIcon('share', size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -288,7 +289,7 @@ class AccountScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Text('🔔', style: TextStyle(fontSize: 18)),
+                        const GsIcon('bell', size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -325,7 +326,7 @@ class AccountScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Text('🌿', style: TextStyle(fontSize: 18)),
+                        const GsIcon('about', size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -920,7 +921,7 @@ class _ExportTileState extends State<_ExportTile> {
         children: [
           Row(
             children: [
-              const Text('📄', style: TextStyle(fontSize: 18)),
+              const GsIcon('csv', size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -1039,7 +1040,7 @@ class _VisitPdfTileState extends State<_VisitPdfTile> {
         children: [
           Row(
             children: [
-              const Text('🩺', style: TextStyle(fontSize: 18)),
+              const GsIcon('pdf', size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
