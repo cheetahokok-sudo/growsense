@@ -654,10 +654,7 @@ class _LabMiniCard extends StatelessWidget {
               ),
             ]),
             const SizedBox(height: 6),
-            if (series.length >= 2)
-              SizedBox(height: 40, child: LabSparkline(points: series))
-            else
-              const SizedBox(height: 40),
+            SizedBox(height: 40, child: LabSparkline(points: series)),
             const SizedBox(height: 6),
             Expanded(
               child: Text(
@@ -802,15 +799,26 @@ class _LabDetailSheetState extends State<_LabDetailSheet> {
               const SizedBox(height: 8),
               SdsBar(sds: sds),
             ],
-            if (series.length >= 2) ...[
+            ...[
               const SizedBox(height: 18),
-              Text(t('flutter.lab.trend', 'Trend'),
+              Text(
+                  series.length >= 2
+                      ? t('flutter.lab.trend', 'Trend')
+                      : t('flutter.lab.this_reading', 'This reading'),
                   style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: GsColors.measured)),
               const SizedBox(height: 4),
               LabSparkline(points: series),
+              if (series.length < 2) ...[
+                const SizedBox(height: 4),
+                Text(
+                    t('flutter.lab.one_reading',
+                        'One reading so far — the dotted line just marks where it sits. Add more over time to see the real trend.'),
+                    style: const TextStyle(
+                        fontSize: 10, color: GsColors.text3, height: 1.3)),
+              ],
             ],
             if (analyte != null) ...[
               const SizedBox(height: 18),

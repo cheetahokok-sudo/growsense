@@ -416,6 +416,41 @@ class _SparklinePainter extends CustomPainter {
       );
     }
 
+    // Single reading: the one dot sitting in its band, plus a flat dotted
+    // projection forward to a hollow endpoint. Honest (it assumes no
+    // change — not a predicted trend), but it fills the card and shows at
+    // a glance where the value sits in range. Most parents log one value
+    // and return much later, so this is the common case.
+    if (points.length == 1) {
+      final p = points[0];
+      final c = labStatusColor(labStatusOf(p.value, p.low, p.high));
+      final yy = y(p.value);
+      final dotX = padX + (size.width - padX * 2) * 0.38;
+      final endX = size.width - padX;
+      final proj = Paint()
+        ..color = GsColors.text3.withValues(alpha: 0.65)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.3;
+      var d = 0.0;
+      final len = endX - dotX;
+      while (d < len) {
+        canvas.drawLine(Offset(dotX + d, yy),
+            Offset(dotX + math.min(d + 2.5, len), yy), proj);
+        d += 5.0;
+      }
+      canvas.drawCircle(Offset(endX, yy), 2.6, Paint()..color = GsColors.bg);
+      canvas.drawCircle(
+          Offset(endX, yy),
+          2.6,
+          Paint()
+            ..color = GsColors.text3
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2);
+      canvas.drawCircle(Offset(dotX, yy), 5.5, Paint()..color = Colors.white);
+      canvas.drawCircle(Offset(dotX, yy), 4.0, Paint()..color = c);
+      return;
+    }
+
     // Data line.
     if (points.length > 1) {
       final path = Path()..moveTo(x(0), y(points[0].value));
