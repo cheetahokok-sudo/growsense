@@ -451,12 +451,20 @@ class _LabAnalytePanelState extends State<_LabAnalytePanel> {
     final t = widget.i18n.t;
     final results = widget.appState.labResults;
 
-    // Group by analyte name; labResults is date-desc so each group's
-    // first entry is the latest. Order the five focus labs first.
+    // Group by analyte name, then sort each group by TEST DATE (newest
+    // first) — not list/insert order. A back-dated entry added in-session
+    // lands at the top of labResults, so we can't assume the list is
+    // date-ordered until the next reload; sorting here keeps the "latest"
+    // value and the trend correct immediately.
     final groups = <String, List<Map<String, dynamic>>>{};
     for (final r in results) {
       final key = (r['analyte_name'] as String? ?? '').trim().toLowerCase();
       groups.putIfAbsent(key, () => []).add(r);
+    }
+    for (final g in groups.values) {
+      g.sort((a, b) => (b['lab_date'] ?? '')
+          .toString()
+          .compareTo((a['lab_date'] ?? '').toString()));
     }
     final ordered = groups.values.toList();
     if (_evidence != null) {
