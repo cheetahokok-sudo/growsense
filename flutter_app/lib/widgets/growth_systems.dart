@@ -287,12 +287,23 @@ class _ReportControlsState extends State<_ReportControls> {
   @override
   void initState() {
     super.initState();
-    _tts.setCompletionHandler(() {
-      if (mounted) setState(() => _speaking = false);
-    });
-    _tts.setCancelHandler(() {
-      if (mounted) setState(() => _speaking = false);
-    });
+    _tts
+      ..setCompletionHandler(() {
+        if (mounted) setState(() => _speaking = false);
+      })
+      ..setCancelHandler(() {
+        if (mounted) setState(() => _speaking = false);
+      })
+      ..setErrorHandler((_) {
+        if (mounted) setState(() => _speaking = false);
+      });
+    // Configure once, up front (fire-and-forget). Doing this per-tap with
+    // awaits before speak() breaks iOS Safari's user-gesture requirement,
+    // which was throwing "not available". The report is English, so read
+    // it with an English voice regardless of the UI language (avoids a
+    // missing-voice failure when the phone has no Thai/other TTS voice).
+    _tts.setLanguage('en-US');
+    _tts.setSpeechRate(0.46);
   }
 
   @override
@@ -301,32 +312,21 @@ class _ReportControlsState extends State<_ReportControls> {
     super.dispose();
   }
 
-  String _ttsLocale(String code) => switch (code) {
-        'th' => 'th-TH',
-        'vi' => 'vi-VN',
-        'ko' => 'ko-KR',
-        'zh' => 'zh-CN',
-        'ar' => 'ar-SA',
-        _ => 'en-US',
-      };
-
   Future<void> _toggleSpeak() async {
-    final t = widget.i18n.t;
     if (_speaking) {
       await _tts.stop();
       if (mounted) setState(() => _speaking = false);
       return;
     }
+    // Speak first thing in the gesture (no pre-awaits) so iOS Safari keeps
+    // the user-activation. flutter_tts.speak returns 1 on success, 0 on
+    // failure; reset quietly rather than showing a false error.
+    setState(() => _speaking = true);
     try {
-      await _tts.setLanguage(_ttsLocale(widget.i18n.code));
-      await _tts.setSpeechRate(0.46);
-      if (mounted) setState(() => _speaking = true);
-      // Strip bullet marks so the engine doesn't read them out.
-      await _tts.speak(widget.text.replaceAll('•', ' '));
+      final r = await _tts.speak(widget.text.replaceAll('•', ' '));
+      if (r == 0 && mounted) setState(() => _speaking = false);
     } catch (_) {
       if (mounted) setState(() => _speaking = false);
-      _snack(t('flutter.gs.tts_unavailable',
-          'Read-aloud is not available on this device.'));
     }
   }
 
