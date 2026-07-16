@@ -308,13 +308,21 @@ class _ReportControlsState extends State<_ReportControls>
       ..setCompletionHandler(_reset)
       ..setCancelHandler(_reset)
       ..setErrorHandler((_) => _reset());
-    // Configure once, up front (fire-and-forget). Doing this per-tap with
-    // awaits before speak() breaks iOS Safari's user-gesture requirement,
-    // which was throwing "not available". The report is English, so read
-    // it with an English voice regardless of the UI language (avoids a
-    // missing-voice failure when the phone has no Thai/other TTS voice).
-    _tts.setLanguage('en-US');
-    _tts.setSpeechRate(0.46);
+    // Configure once, up front. Doing this per-tap with awaits before speak()
+    // breaks iOS Safari's user-gesture requirement (was throwing "not
+    // available"). The report is English, so read it with an English voice
+    // regardless of the UI language (avoids a missing-voice failure when the
+    // phone has no Thai/other TTS voice). These calls are unawaited, so any
+    // rejection is swallowed inside _configureTts — otherwise flutter_tts's
+    // web backend can leak them as uncaught console errors (seen on Edge).
+    _configureTts();
+  }
+
+  Future<void> _configureTts() async {
+    try {
+      await _tts.setLanguage('en-US');
+      await _tts.setSpeechRate(0.46);
+    } catch (_) {/* voice/rate config best-effort; speak() still works */}
   }
 
   void _reset() {
@@ -324,7 +332,7 @@ class _ReportControlsState extends State<_ReportControls>
   @override
   void dispose() {
     _pulse.dispose();
-    _tts.stop();
+    _tts.stop().catchError((_) => 1); // best-effort; ignore a rejected stop
     super.dispose();
   }
 
