@@ -8,6 +8,8 @@
 // The AI writes prose only; it never emits citations.
 // ══════════════════════════════════════════════════════════════════
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -280,23 +282,32 @@ class _ReportControls extends StatefulWidget {
   State<_ReportControls> createState() => _ReportControlsState();
 }
 
-class _ReportControlsState extends State<_ReportControls> {
+class _ReportControlsState extends State<_ReportControls>
+    with SingleTickerProviderStateMixin {
   final FlutterTts _tts = FlutterTts();
-  bool _speaking = false;
+
+  // Two phases so the parent gets honest feedback: _engaged flips the moment
+  // they tap (button reacts instantly), _started flips only when the engine
+  // actually begins producing audio. "Starting…" vs "Speaking" tells them
+  // whether it's warming up or truly blocked.
+  bool _engaged = false;
+  bool _started = false;
+
+  // Drives the equalizer pulse shown while speaking.
+  late final AnimationController _pulse = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 850))
+    ..repeat(reverse: true);
 
   @override
   void initState() {
     super.initState();
     _tts
-      ..setCompletionHandler(() {
-        if (mounted) setState(() => _speaking = false);
+      ..setStartHandler(() {
+        if (mounted) setState(() => _started = true);
       })
-      ..setCancelHandler(() {
-        if (mounted) setState(() => _speaking = false);
-      })
-      ..setErrorHandler((_) {
-        if (mounted) setState(() => _speaking = false);
-      });
+      ..setCompletionHandler(_reset)
+      ..setCancelHandler(_reset)
+      ..setErrorHandler((_) => _reset());
     // Configure once, up front (fire-and-forget). Doing this per-tap with
     // awaits before speak() breaks iOS Safari's user-gesture requirement,
     // which was throwing "not available". The report is English, so read
@@ -306,27 +317,35 @@ class _ReportControlsState extends State<_ReportControls> {
     _tts.setSpeechRate(0.46);
   }
 
+  void _reset() {
+    if (mounted) setState(() => _engaged = _started = false);
+  }
+
   @override
   void dispose() {
+    _pulse.dispose();
     _tts.stop();
     super.dispose();
   }
 
   Future<void> _toggleSpeak() async {
-    if (_speaking) {
+    if (_engaged) {
       await _tts.stop();
-      if (mounted) setState(() => _speaking = false);
+      _reset();
       return;
     }
-    // Speak first thing in the gesture (no pre-awaits) so iOS Safari keeps
-    // the user-activation. flutter_tts.speak returns 1 on success, 0 on
-    // failure; reset quietly rather than showing a false error.
-    setState(() => _speaking = true);
+    // Instant tactile feedback: flip the button state before anything async.
+    // Then speak first thing in the gesture (no pre-awaits) so iOS Safari
+    // keeps the user-activation. speak() returns 1 on success, 0 on failure.
+    setState(() {
+      _engaged = true;
+      _started = false;
+    });
     try {
       final r = await _tts.speak(widget.text.replaceAll('•', ' '));
-      if (r == 0 && mounted) setState(() => _speaking = false);
+      if (r == 0) _reset();
     } catch (_) {
-      if (mounted) setState(() => _speaking = false);
+      _reset();
     }
   }
 
@@ -345,16 +364,35 @@ class _ReportControlsState extends State<_ReportControls> {
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
+    final listenLabel = !_engaged
+        ? t('flutter.gs.listen', 'Listen')
+        : _started
+            ? t('flutter.gs.speaking', 'Speaking')
+            : t('flutter.gs.starting', 'Starting…');
     return Row(children: [
       _btn(Icons.copy_outlined, t('flutter.gs.copy', 'Copy'), _copy),
       const SizedBox(width: 8),
-      _btn(
-        _speaking ? Icons.stop_rounded : Icons.volume_up_outlined,
-        _speaking
-            ? t('flutter.gs.stop', 'Stop')
-            : t('flutter.gs.listen', 'Listen'),
-        _toggleSpeak,
-        active: _speaking,
+      OutlinedButton(
+        onPressed: _toggleSpeak,
+        style: OutlinedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          foregroundColor: _engaged ? GsColors.accent : GsColors.text2,
+          side: BorderSide(
+              color: _engaged ? GsColors.accent : GsColors.border2),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (_engaged)
+            _EqualizerPulse(pulse: _pulse, active: _started)
+          else
+            const Icon(Icons.volume_up_outlined, size: 15),
+          const SizedBox(width: 6),
+          Text(listenLabel, style: const TextStyle(fontSize: 11.5)),
+          if (_engaged) ...[
+            const SizedBox(width: 6),
+            const Icon(Icons.stop_rounded, size: 15),
+          ],
+        ]),
       ),
     ]);
   }
@@ -370,6 +408,54 @@ class _ReportControlsState extends State<_ReportControls> {
         foregroundColor: active ? GsColors.accent : GsColors.text2,
         side: BorderSide(color: active ? GsColors.accent : GsColors.border2),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      ),
+    );
+  }
+}
+
+/// A tiny three-bar equalizer that bounces while speech is playing. When the
+/// engine hasn't produced audio yet (_started == false) the bars sit low and
+/// still, so "Starting…" reads as waiting rather than talking.
+class _EqualizerPulse extends StatelessWidget {
+  const _EqualizerPulse({required this.pulse, required this.active});
+  final Animation<double> pulse;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 15,
+      height: 15,
+      child: AnimatedBuilder(
+        animation: pulse,
+        builder: (context, _) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              for (final phase in const [0.0, 0.66, 0.33])
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 0.7),
+                  child: _bar(phase),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _bar(double phase) {
+    // Each bar is offset in phase so they bounce out of sync like a real VU
+    // meter. Before audio starts, hold a short, calm height.
+    final wave = (0.5 + 0.5 * math.sin((pulse.value + phase) * 2 * math.pi));
+    final h = active ? (4.0 + wave * 9.0) : 4.0;
+    return Container(
+      width: 2.4,
+      height: h,
+      decoration: BoxDecoration(
+        color: GsColors.accent,
+        borderRadius: BorderRadius.circular(1.2),
       ),
     );
   }
