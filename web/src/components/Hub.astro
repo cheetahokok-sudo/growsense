@@ -19,6 +19,7 @@ const UI = {
     eyebrow: 'Growth science', h1: "Understand your child's growth",
     sub: 'Calm, honest answers to the questions parents actually ask — every claim backed by peer-reviewed research, no fear and no false promises.',
     home: '← Home', more: 'More growth-science guides coming soon.', read: 'Read the article →',
+    search: 'Search articles…', all: 'All', empty: 'No articles match that search.', clear: 'Clear search',
   },
   th: {
     title: 'วิทยาศาสตร์การเจริญเติบโต — GrowSense',
@@ -26,6 +27,7 @@ const UI = {
     eyebrow: 'วิทยาศาสตร์การเจริญเติบโต', h1: 'เข้าใจการเจริญเติบโตของลูก',
     sub: 'ไขข้อข้องใจอย่างตรงไปตรงมาเพื่อความสบายใจของพ่อแม่ — ทุกข้อมูลอ้างอิงงานวิจัยที่น่าเชื่อถือ นำเสนอตามความจริง และไม่มีการันตีเกินขอบเขตวิทยาศาสตร์',
     home: '← หน้าแรก', more: 'บทความวิทยาศาสตร์การเจริญเติบโตเพิ่มเติมเร็ว ๆ นี้', read: 'อ่านบทความ →',
+    search: 'ค้นหาบทความ…', all: 'ทั้งหมด', empty: 'ไม่พบบทความที่ตรงกับคำค้นหา', clear: 'ล้างคำค้นหา',
   },
   zh: {
     title: '成长科学 — GrowSense',
@@ -33,6 +35,7 @@ const UI = {
     eyebrow: '成长科学', h1: '读懂孩子的成长',
     sub: '用冷静、诚实的方式回答父母真正会问的问题——每条论述都有同行评审研究支撑，不制造焦虑，也不做空洞承诺。',
     home: '← 首页', more: '更多成长科学文章即将上线', read: '阅读文章 →',
+    search: '搜索文章…', all: '全部', empty: '没有匹配的文章。', clear: '清除搜索',
   },
 };
 const t = UI[lang] ?? UI.en;
@@ -43,6 +46,31 @@ const ogImage = blogBase + 'gs-001-hero.jpg';
 const cards = (await getCollection('articles'))
   .filter((a) => a.data.card && (a.data.lang ?? 'en') === lang)
   .sort((a, b) => a.data.card.order - b.data.card.order);
+
+// ── Search ────────────────────────────────────────────────────────────────
+// Deliberately NOT a search engine. At 16 articles the whole haystack is a
+// few KB, so it ships inline on each card as a data attribute and matching is
+// String.includes(). No index file, no fetch, no library.
+//
+// Substring matching is not laziness — it is the only approach that works in
+// all three languages. Thai and Chinese have no spaces between words, so any
+// tokeniser that splits on whitespace sees "การเจริญเติบโตของเด็ก" as ONE
+// token and Thai search silently breaks. includes() has no word boundaries to
+// get wrong.
+//
+// Revisit around ~200 articles, when shipping the whole haystack starts to
+// cost more than it saves — then Pagefind (chunked index, CJK-aware).
+const headings = (body) =>
+  (body.match(/^##\s+(.+)$/gm) ?? []).map((h) => h.replace(/^##\s+[\d.]*\s*/, ''));
+
+const haystack = (a) =>
+  [a.data.card.title, a.data.card.blurb, a.data.card.cat, ...headings(a.body)]
+    .join(' ')
+    .toLowerCase();
+
+// Categories in first-appearance order, so the chips follow the card order
+// the hub already uses rather than an arbitrary sort.
+const cats = [...new Set(cards.map((a) => a.data.card.cat))];
 ---
 <!doctype html>
 <html lang={lang}>
@@ -92,6 +120,18 @@ const cards = (await getCollection('articles'))
     .hub-hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:40px;line-height:1.1;margin:0 0 12px;color:#fff}
     .hub-hero p{max-width:580px;margin:0 auto;color:#b7cfc1;font-size:17px}
     .wrap{max-width:900px;margin:0 auto;padding:36px 22px 20px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .hubtools{margin:0 0 22px;display:flex;flex-direction:column;gap:12px}
+    .searchbox input{width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);-webkit-appearance:none}
+    .searchbox input::placeholder{color:var(--muted)}
+    .searchbox input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,107,79,.12)}
+    .chips{display:flex;flex-wrap:wrap;gap:7px}
+    .chip{font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:var(--bg);color:var(--text2);cursor:pointer;transition:.12s}
+    .chip:hover{border-color:var(--accent);color:var(--accent)}
+    .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+    .chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .hub-empty{text-align:center;color:var(--muted);font-size:14px;padding:26px 0}
+    .card[hidden]{display:none}
     .grid{display:grid;grid-template-columns:1fr;gap:20px}
     @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
     .card{display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;text-decoration:none;color:inherit;transition:.15s;box-shadow:0 1px 2px rgba(20,30,25,.04)}
@@ -131,9 +171,22 @@ const cards = (await getCollection('articles'))
   </header>
 
   <div class="wrap">
-    <div class="grid">
+    {/* Hidden until JS runs — a search box that does nothing is worse than no
+        search box. Without JS the cards below are simply all shown. */}
+    <div class="hubtools" id="hubtools" hidden>
+      <div class="searchbox">
+        <label class="sr-only" for="hubsearch">{t.search}</label>
+        <input id="hubsearch" type="search" placeholder={t.search} autocomplete="off" />
+      </div>
+      <div class="chips" role="group">
+        <button class="chip on" data-cat="">{t.all}</button>
+        {cats.map((c) => <button class="chip" data-cat={c}>{c}</button>)}
+      </div>
+    </div>
+
+    <div class="grid" id="hubgrid">
       {cards.map((a) => (
-        <a class="card" href={`${a.slug}.html`}>
+        <a class="card" href={`${a.slug}.html`} data-cat={a.data.card.cat} data-s={haystack(a)}>
           <div class="thumb"><img src={a.data.hero} alt={a.data.card.title} loading="lazy" onerror="this.style.display='none';this.closest('.thumb').style.minHeight='0'" /></div>
           <div class="body">
             <p class="cat">{a.data.card.cat}</p>
@@ -144,8 +197,48 @@ const cards = (await getCollection('articles'))
         </a>
       ))}
     </div>
+    <p class="hub-empty" id="hubempty" hidden>{t.empty}</p>
     <p class="hub-note">{t.more}</p>
   </div>
+
+  <script is:inline define:vars={{ clearLabel: t.clear }}>
+    (function () {
+      var tools = document.getElementById('hubtools');
+      var input = document.getElementById('hubsearch');
+      var grid = document.getElementById('hubgrid');
+      var empty = document.getElementById('hubempty');
+      if (!tools || !input || !grid) return;
+      tools.hidden = false; // JS is alive — safe to show the controls
+
+      var cards = [].slice.call(grid.querySelectorAll('.card'));
+      var chips = [].slice.call(document.querySelectorAll('.chip'));
+      var cat = '';
+
+      function apply() {
+        var q = input.value.trim().toLowerCase();
+        var shown = 0;
+        cards.forEach(function (c) {
+          var okCat = !cat || c.getAttribute('data-cat') === cat;
+          // No tokenising: substring only, so Thai and Chinese work unchanged.
+          var okQ = !q || c.getAttribute('data-s').indexOf(q) !== -1;
+          var show = okCat && okQ;
+          c.hidden = !show;
+          if (show) shown++;
+        });
+        empty.hidden = shown !== 0;
+      }
+
+      input.addEventListener('input', apply);
+      input.setAttribute('aria-label', clearLabel ? input.placeholder : input.placeholder);
+      chips.forEach(function (b) {
+        b.addEventListener('click', function () {
+          cat = b.getAttribute('data-cat');
+          chips.forEach(function (x) { x.classList.toggle('on', x === b); });
+          apply();
+        });
+      });
+    })();
+  </script>
 
   <footer>
     © 2026 GrowSense · Pediatric growth intelligence
