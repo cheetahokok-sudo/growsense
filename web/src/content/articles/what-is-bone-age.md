@@ -6,6 +6,9 @@ eyebrow: "Growth science · Prediction"
 hero: "gs-057-hero.jpg"
 heroAlt: "Two hand and wrist radiographs of a child lying side by side on a lightbox beside a sunlit window, each showing the small bones and open growth plates a radiologist reads to estimate skeletal maturity. A clinician's hand rests at the edge of the frame."
 lang: "en"
+langAlts:
+  - { code: "th", href: "https://www.growsense.life/blog/what-is-bone-age.th.html", label: "ไทย" }
+  - { code: "zh", href: "https://www.growsense.life/blog/what-is-bone-age.zh.html", label: "中文" }
 disclaimer: "This article is educational and does not provide medical diagnosis or treatment. Bone-age results must be interpreted by a qualified clinician alongside your child's growth rate, pubertal stage and health history. Imaging decisions, including whether and when to repeat a radiograph, should be made with your child's paediatrician or paediatric endocrinologist."
 card:
   cat: "Prediction"
