@@ -1,0 +1,8 @@
+# https://www.growsense.life
+User-agent: *
+Allow: /
+
+# Authenticated Flutter SPA — a crawler only ever sees a loading shell.
+Disallow: /app/
+
+Sitemap: https://www.growsense.life/sitemap.xml

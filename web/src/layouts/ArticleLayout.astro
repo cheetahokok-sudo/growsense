@@ -25,12 +25,67 @@ const locales = { en: 'en_US', th: 'th_TH', zh: 'zh_CN' };
 const selfLocale = locales[data.lang] ?? 'en_US';
 const altLocales = (data.langAlts ?? []).map((a) => locales[a.code]).filter(Boolean);
 
+// Turn "PMID: 12345678" into a real link to the paper. The citations are the
+// strongest trust signal these pages have; as plain text they are invisible to
+// a crawler and unusable to a parent who wants to check us. Deliberately NOT
+// rel="nofollow" — an outbound link to PubMed is a signal we want to send.
+const linkPmids = (html) =>
+  html.replace(
+    /PMID:\s*(\d{4,9})/g,
+    '<a href="https://pubmed.ncbi.nlm.nih.gov/$1/" target="_blank" rel="noopener">PMID: $1</a>',
+  );
+
 // Flatten references into continuously-numbered groups (ids stay stable).
 let counter = 0;
 const refGroups = (data.references ?? []).map((g) => {
-  const items = g.items.map((text) => ({ n: ++counter, text }));
+  const items = g.items.map((text) => ({ n: ++counter, text: linkPmids(text) }));
   return { group: g.group, items, start: items.length ? items[0].n : 1 };
 });
+
+// ── JSON-LD ────────────────────────────────────────────────────────────────
+// MedicalWebPage tells Google this is health content and hands it the citation
+// list explicitly, rather than hoping it infers both from the prose.
+//
+// HONESTY CONSTRAINTS — do not "improve" these without them becoming true:
+//   • author/publisher is the GrowSense organisation. No named person claims
+//     authorship of pages a person did not write.
+//   • there is NO reviewedBy / MedicalAudience reviewer. Nobody clinically
+//     reviews these articles today. Claiming a reviewer to win E-E-A-T would
+//     be a lie to parents making decisions about a child.
+const stripTags = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+const citations = (data.references ?? [])
+  .flatMap((g) => g.items)
+  .map((raw) => {
+    const pmid = raw.match(/PMID:\s*(\d{4,9})/)?.[1];
+    if (!pmid) return null;
+    return {
+      '@type': 'ScholarlyArticle',
+      name: stripTags(raw).replace(/\s*PMID:\s*\d+\.?\s*$/, ''),
+      identifier: `PMID:${pmid}`,
+      url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
+    };
+  })
+  .filter(Boolean);
+
+const org = {
+  '@type': 'Organization',
+  name: 'GrowSense',
+  url: 'https://www.growsense.life',
+};
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'MedicalWebPage',
+  headline: data.h1,
+  name: data.title,
+  description: data.description,
+  image: ogImage,
+  url: canonical,
+  inLanguage: data.lang,
+  isAccessibleForFree: true,
+  author: org,
+  publisher: org,
+  ...(citations.length ? { citation: citations } : {}),
+};
 ---
 <!doctype html>
 <html lang={data.lang}>
@@ -47,6 +102,9 @@ const refGroups = (data.references ?? []).map((g) => {
       <link rel="alternate" hreflang="x-default" href={enHref} />
     </Fragment>
   )}
+  <!-- Structured data: declares this as medical content and hands Google the
+       citation list explicitly. Built from frontmatter — see jsonLd above. -->
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <!-- Open Graph (Facebook / LINE / general link previews) -->
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="GrowSense" />
