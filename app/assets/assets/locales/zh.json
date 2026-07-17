@@ -698,5 +698,6 @@
  "flutter.child.remove_q": "移除这个孩子的档案？",
  "flutter.child.remove_note": "这个孩子的档案将从应用中移除。",
  "flutter.child.removed": "已移除档案",
- "flutter.child.remove_last": "请至少保留一个使用中的孩子档案。"
+ "flutter.child.remove_last": "请至少保留一个使用中的孩子档案。",
+ "flutter.cofactor.collapsed": "铁 · 维生素 D"
 }

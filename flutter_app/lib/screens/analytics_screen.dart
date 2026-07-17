@@ -1108,6 +1108,10 @@ class _CoFactorCard extends StatefulWidget {
 
 class _CoFactorCardState extends State<_CoFactorCard> {
   bool _loading = true;
+  // Collapsed by default: co-factors are secondary to the main nutrients, and
+  // this section is the extensible "window" more micronutrients will land in —
+  // keeping it folded away stops the Analytics screen getting noisy as it grows.
+  bool _expanded = false;
   double? _avgIron;
   double? _avgVitD;
   int _ironTarget = 10;
@@ -1191,22 +1195,50 @@ class _CoFactorCardState extends State<_CoFactorCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                t('flutter.cofactor.title', 'Minor co-factors'),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+          // Tappable header — toggles the whole co-factor section open/closed.
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(GsRadius.sm),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    t('flutter.cofactor.title', 'Minor co-factors'),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
-              ),
-              Text(
-                t('flutter.30d', '30d'),
-                style: const TextStyle(fontSize: 11.5, color: GsColors.text3),
-              ),
-            ],
+                // When collapsed, name what's inside so it reads as a section.
+                if (!_expanded)
+                  Text(
+                    t('flutter.cofactor.collapsed', 'Iron · Vitamin D'),
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: GsColors.text3,
+                    ),
+                  )
+                else
+                  Text(
+                    t('flutter.30d', '30d'),
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: GsColors.text3,
+                    ),
+                  ),
+                const SizedBox(width: 4),
+                Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                  color: GsColors.text3,
+                ),
+              ],
+            ),
           ),
+          if (!_expanded)
+            const SizedBox.shrink()
+          else ...[
           const SizedBox(height: 2),
           Text(
             t(
@@ -1289,6 +1321,7 @@ class _CoFactorCardState extends State<_CoFactorCard> {
             ],
           ],
         ],
+          ],
       ),
     );
   }

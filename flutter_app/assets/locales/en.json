@@ -698,5 +698,6 @@
  "flutter.child.remove_q": "Remove this child profile?",
  "flutter.child.remove_note": "This child's profile will be removed from the app.",
  "flutter.child.removed": "Profile removed",
- "flutter.child.remove_last": "Keep at least one active child profile."
+ "flutter.child.remove_last": "Keep at least one active child profile.",
+ "flutter.cofactor.collapsed": "Iron · Vitamin D"
 }

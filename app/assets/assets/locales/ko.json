@@ -698,5 +698,6 @@
  "flutter.child.remove_q": "이 자녀 프로필을 삭제할까요?",
  "flutter.child.remove_note": "이 자녀 프로필이 앱에서 삭제됩니다.",
  "flutter.child.removed": "프로필이 삭제되었습니다",
- "flutter.child.remove_last": "활성 자녀 프로필을 최소 하나는 유지하세요."
+ "flutter.child.remove_last": "활성 자녀 프로필을 최소 하나는 유지하세요.",
+ "flutter.cofactor.collapsed": "철분 · 비타민 D"
 }

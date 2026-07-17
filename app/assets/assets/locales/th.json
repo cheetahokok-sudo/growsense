@@ -698,5 +698,6 @@
  "flutter.child.remove_q": "ลบโปรไฟล์เด็กคนนี้ไหม",
  "flutter.child.remove_note": "โปรไฟล์เด็กคนนี้จะถูกลบออกจากแอป",
  "flutter.child.removed": "ลบโปรไฟล์แล้ว",
- "flutter.child.remove_last": "ต้องมีโปรไฟล์เด็กที่ใช้งานอย่างน้อยหนึ่งคน"
+ "flutter.child.remove_last": "ต้องมีโปรไฟล์เด็กที่ใช้งานอย่างน้อยหนึ่งคน",
+ "flutter.cofactor.collapsed": "ธาตุเหล็ก · วิตามินดี"
 }

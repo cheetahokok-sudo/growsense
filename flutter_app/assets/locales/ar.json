@@ -698,5 +698,6 @@
  "flutter.child.remove_q": "إزالة ملف هذا الطفل؟",
  "flutter.child.remove_note": "ستتم إزالة ملف هذا الطفل من التطبيق.",
  "flutter.child.removed": "تمت إزالة الملف",
- "flutter.child.remove_last": "أبقِ ملف طفل نشطًا واحدًا على الأقل."
+ "flutter.child.remove_last": "أبقِ ملف طفل نشطًا واحدًا على الأقل.",
+ "flutter.cofactor.collapsed": "الحديد · فيتامين د"
 }
