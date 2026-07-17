@@ -3,22 +3,22 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.growsense.life/</loc>
-    <lastmod>2026-07-13</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.growsense.life/privacy.html</loc>
-    <lastmod>2026-07-11</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://www.growsense.life/terms.html</loc>
-    <lastmod>2026-07-11</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://www.growsense.life/support.html</loc>
-    <lastmod>2026-07-11</lastmod>
+    <lastmod>2026-07-17</lastmod>
     <priority>0.3</priority>
   </url>
   <url>
@@ -52,6 +52,28 @@
     <loc>https://www.growsense.life/blog/do-foods-cause-early-puberty.html</loc>
     <lastmod>2026-07-14</lastmod>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.html"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.th.html"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.zh.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.html"/>
+  </url>
+  <url>
+    <loc>https://www.growsense.life/blog/do-foods-cause-early-puberty.th.html</loc>
+    <lastmod>2026-07-17</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.html"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.th.html"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.zh.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.html"/>
+  </url>
+  <url>
+    <loc>https://www.growsense.life/blog/do-foods-cause-early-puberty.zh.html</loc>
+    <lastmod>2026-07-17</lastmod>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.html"/>
+    <xhtml:link rel="alternate" hreflang="th" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.th.html"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.zh.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.growsense.life/blog/do-foods-cause-early-puberty.html"/>
   </url>
   <url>
     <loc>https://www.growsense.life/blog/does-milk-make-kids-taller.html</loc>

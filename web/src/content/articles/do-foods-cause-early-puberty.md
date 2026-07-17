@@ -6,6 +6,9 @@ eyebrow: "Growth science · Myths"
 hero: "gs-056-hero.jpg"
 heroAlt: "A glass of milk, a plate of golden fried chicken, and a small dish of soybeans and tofu on a calm dark-green table — the three foods most often blamed for early puberty, looked at honestly."
 lang: "en"
+langAlts:
+  - { code: "th", href: "https://www.growsense.life/blog/do-foods-cause-early-puberty.th.html", label: "ไทย" }
+  - { code: "zh", href: "https://www.growsense.life/blog/do-foods-cause-early-puberty.zh.html", label: "中文" }
 disclaimer: "This article is educational and does not diagnose precocious puberty or recommend treatment. Early or fast-progressing puberty should be assessed by a qualified pediatrician or pediatric endocrinologist — not managed by removing foods. If your child shows early pubertal signs, see a doctor for evaluation."
 card:
   cat: "Myths"
