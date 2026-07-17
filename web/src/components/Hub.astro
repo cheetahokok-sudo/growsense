@@ -52,6 +52,10 @@ const cards = (await getCollection('articles'))
   <title>{t.title}</title>
   <meta name="description" content={t.desc} />
   <link rel="canonical" href={self.url} />
+  <!-- Icons live at the site root, not under /blog/ — absolute paths. -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="alternate" hreflang={lang} href={self.url} />
   {alts.map((a) => <link rel="alternate" hreflang={a.code} href={a.url} />)}
   <link rel="alternate" hreflang="x-default" href={hubs.en.url} />

@@ -175,6 +175,10 @@ const jsonLd = {
   <title>{data.title}</title>
   <meta name="description" content={data.description} />
   <link rel="canonical" href={canonical} />
+  <!-- Icons live at the site root, not under /blog/ — absolute paths. -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   {hasAlts && (
     <Fragment>
       <link rel="alternate" hreflang={data.lang} href={canonical} />

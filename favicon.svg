@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="GrowSense">
+  <rect width="24" height="24" rx="5.3" fill="#2F6B4F"/>
+  <g transform="translate(12 12) scale(0.76) translate(-12 -12)">
+    <path d="M3 17l5-5 4 4 8-9" fill="none" stroke="#fff" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="20" cy="7" r="1.5" fill="#fff"/>
+  </g>
+</svg>
