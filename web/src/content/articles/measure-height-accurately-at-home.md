@@ -4,7 +4,7 @@ h1: "How to measure your child's height accurately at home"
 description: "Your child's growth chart is only as good as the number you write down — and a 1 cm error hides three months of real growth. A sourced, repeatable protocol: why height falls during the day, why clinics get this wrong too, the three-reading rule, and how often to measure. Educational, not medical advice."
 eyebrow: "Growth science · Growth basics"
 hero: "gs-058-hero.jpg"
-heroAlt: "A hardcover book held flat and level on top of a child's head against a pale doorframe, a pencil about to mark the wall beneath its edge, in soft morning light."
+heroAlt: "Close view from behind of a child standing at a pale doorframe, a hardcover book held flat and level on the crown of the head with its edge against the frame, while a hand marks the wall just beneath it with a pencil, in soft morning light."
 lang: "en"
 langAlts:
   - { code: "th", href: "https://www.growsense.life/blog/measure-height-accurately-at-home.th.html", label: "ไทย" }
@@ -145,6 +145,11 @@ Weekly measurement produces almost pure noise: at 0.4 cm a month, a week of real
 This isn't caution for its own sake. The Wessex Growth Study showed that height velocity remains imprecise even when the individual height measurements look perfectly reasonable<sup><a href="#r8">[8]</a></sup> — because velocity inherits the error of both readings *and* divides by a small time interval. Short intervals amplify error; long intervals dilute it.
 
 ## 8. The mistakes that cost the most centimetres
+
+<figure>
+<img src="gs-058-mistakes.jpg" alt="Two photographs side by side of the same child being measured against a doorframe with a hardcover book. On the left the child stands with bare heels flat on the floor and the book level on the crown of the head. On the right the same child is on tiptoes with hair tied in a high bun, and the book rests on top of the bun rather than the skull." loading="lazy" width="1600" height="900" />
+<figcaption><b>Left:</b> heels flat, head level, the book resting on the skull. <b>Right:</b> the same child, three errors at once — up on tiptoes, hair in a bun, and the book sitting on the bun instead of the head. Nothing about this child changed. The number would be several centimetres apart.</figcaption>
+</figure>
 
 **Shoes.** Even thin socks add height inconsistently. Barefoot, always.
 
