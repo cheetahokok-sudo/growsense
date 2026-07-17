@@ -3,7 +3,63 @@
 // design system — change it once, rebuild, and all articles update. It renders
 // the References block from frontmatter (grouped, continuous r1..rN ids) and
 // adds the Open Graph / Twitter share tags + hreflang the hand-built pages lack.
-const { data } = Astro.props;
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+
+const { data, id } = Astro.props;
+const srcFile = id ? `src/content/articles/${id}` : null;
+
+// Publication dates come from git rather than a frontmatter field, so they
+// cannot drift or be wrong: the first commit that added the file IS the
+// publication date, and the last commit that touched it IS the modification
+// date. Nothing to remember to update, and nothing to invent.
+function gitDate(file, first) {
+  if (!file) return null;
+  try {
+    const args = first
+      ? ['log', '--diff-filter=A', '--follow', '--format=%cI', '--', file]
+      : ['log', '-1', '--format=%cI', '--', file];
+    const out = execFileSync('git', args, { encoding: 'utf8' }).trim();
+    const lines = out.split('\n').filter(Boolean);
+    return (first ? lines[lines.length - 1] : lines[0]) || null;
+  } catch {
+    return null; // not a git checkout (e.g. a clean CI clone) — omit rather than fake
+  }
+}
+const datePublished = gitDate(srcFile, true);
+const dateModified = gitDate(srcFile, false) ?? datePublished;
+
+// Pull the Q&A pairs out of the article's own <div class="faq"> block so the
+// FAQPage schema can never disagree with what's on the page — it is generated
+// FROM the page. Skipped silently for articles with no FAQ.
+function extractFaq(file) {
+  if (!file) return [];
+  let raw;
+  try {
+    raw = readFileSync(file, 'utf8');
+  } catch {
+    return [];
+  }
+  const block = raw.match(/<div class="faq">([\s\S]*?)<\/div>/)?.[1];
+  if (!block) return [];
+  const text = (s) =>
+    s
+      .replace(/<sup>[\s\S]*?<\/sup>/g, '') // drop "[1]" citation markers — meaningless out of context
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  const out = [];
+  const re = /<p class="q">([\s\S]*?)<\/p>([\s\S]*?)(?=<p class="q">|$)/g;
+  let m;
+  while ((m = re.exec(block))) {
+    const q = text(m[1]);
+    const a = text(m[2]);
+    if (q && a) out.push({ q, a });
+  }
+  return out;
+}
+const faqs = extractFaq(srcFile);
+
 const blogBase = 'https://www.growsense.life/blog/';
 const ogImage = new URL(data.hero, blogBase).href;
 const canonical = new URL(Astro.url.pathname.replace(/^\/blog\//, ''), blogBase).href;
@@ -72,9 +128,9 @@ const org = {
   name: 'GrowSense',
   url: 'https://www.growsense.life',
 };
-const jsonLd = {
-  '@context': 'https://schema.org',
+const medicalPage = {
   '@type': 'MedicalWebPage',
+  '@id': `${canonical}#page`,
   headline: data.h1,
   name: data.title,
   description: data.description,
@@ -84,7 +140,31 @@ const jsonLd = {
   isAccessibleForFree: true,
   author: org,
   publisher: org,
+  ...(datePublished ? { datePublished } : {}),
+  ...(dateModified ? { dateModified } : {}),
   ...(citations.length ? { citation: citations } : {}),
+};
+
+// FAQPage is emitted only when the page actually has a visible FAQ — Google
+// requires the marked-up Q&A to be present on the page, and marking up
+// questions a reader can't see is exactly the kind of thing that earns a
+// structured-data manual action.
+const faqPage = faqs.length
+  ? {
+      '@type': 'FAQPage',
+      '@id': `${canonical}#faq`,
+      inLanguage: data.lang,
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    }
+  : null;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': faqPage ? [medicalPage, faqPage] : [medicalPage],
 };
 ---
 <!doctype html>
