@@ -4,7 +4,7 @@ h1: "Your child's growth blood tests, explained"
 description: "IGF-1, TSH, free T4, vitamin D and ferritin came back marked high, normal or low — but what do they mean for your child's growth? An honest, sourced guide to what each test shows, why one number rarely explains slow growth, why reference ranges vary, and how the four tests connect as one system. Educational, not medical advice."
 eyebrow: "Growth science · Medical tests"
 hero: "gs-060-hero.jpg"
-heroAlt: "A child's blood-test report on a warm wooden table beside a growth chart, with IGF-1, TSH, vitamin D and ferritin results visible, looked at calmly rather than anxiously."
+heroAlt: "Four small blood-sample tubes with different coloured caps — sage green, gold, lilac and blue — standing in a warm oak rack on a sunlit windowsill beside a leafy plant, calm and domestic rather than clinical."
 lang: "en"
 langAlts:
   - { code: "th", href: "https://www.growsense.life/blog/growth-blood-tests-explained.th.html", label: "ไทย" }
