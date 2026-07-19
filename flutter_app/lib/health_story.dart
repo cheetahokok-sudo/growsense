@@ -38,7 +38,8 @@ class HealthStoryRepo {
           .from('illness_episodes')
           .select()
           .eq('child_id', childId)
-          .order('onset_date', ascending: false);
+          .order('onset_date', ascending: false)
+          .timeout(const Duration(seconds: 12));
       return (List<Map<String, dynamic>>.from(rows), true);
     } on PostgrestException catch (e) {
       if (_missingTable(e)) return (<Map<String, dynamic>>[], false);
