@@ -30,6 +30,19 @@ A hook can be strong; it can never cross into a claim the source doesn't support
 - **Brand:** GrowSense green `#2F6B4F`; calm, warm, uncluttered; sentence case; no shouty hype.
 - AI video (if ever) is a minor abstract accent only — never the substance, never people, never text.
 
+## Prompting an AI video model (Veo / Sora / etc.) — hard rules
+
+Learned from a real Veo attempt (garbled `#2F6B4F` on every chart; a fake app screen full of gibberish):
+
+1. **Strip production notes from any video prompt.** Feed the model ONLY the visual scene + the exact on-screen text you want shown. NEVER put hex codes, pixel safe-zones, or assembly instructions in the prompt — the model renders them literally as garbled on-screen text (it drew "#2F6B4F" as a chart label and "…250 pixel amd 250 pixe safe zone" as a caption). **Describe colour in words** ("deep muted forest-green"), never as a hex code.
+2. **Never AI-generate the app screen.** The model invents a fake GrowSense app with nonsense labels (real failure: it rendered "Total cumpol meekly tenst", "Oreents", "Actrooires"). The product beat is ALWAYS a real screen recording. The real app is the single most trust-building shot — AI can only forge a broken imitation.
+
+Corollaries:
+- **10-second cap → produce as ~5 clips of ~10s**, then assemble in CapCut. This also gives per-shot re-gen control and lets the app clip be a real recording.
+- **Generate vertical (1080×1920) directly** — don't let it export 720p landscape with a pillarboxed insert.
+- **Keep on-screen text to one short line per clip** (models garble long text); add precise numbers and the citation as clean CapCut overlays if the model mangles them.
+- Assume a watermark; trim/cover it in CapCut.
+
 ## Worked reference: "The 60-minute myth" (verified)
 
 - **Guideline (WHO 2020, Bull FC et al. Br J Sports Med. PMID 33239350):** ages 5–17, an *average* of ≥60 min/day of moderate-to-vigorous activity *across the week*, with vigorous + muscle-strengthening + bone-strengthening activity on ≥3 days/week. Nuance: it's a weekly average, not a nightly pass/fail — daily movement is still encouraged.
