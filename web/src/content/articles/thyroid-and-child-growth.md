@@ -2,7 +2,7 @@
 title: "Thyroid and Your Child's Growth: How Hypothyroidism Slows Height Gain — GrowSense"
 h1: "Thyroid and your child's growth: how hypothyroidism slows height"
 description: "An underactive thyroid can sharply slow a child's height while weight holds steady or rises — one of the most treatable causes of growth failure. An honest, sourced guide to the tell-tale pattern, why the growth plate stalls, why bone age falls behind, what catch-up growth looks like after levothyroxine, and why it isn't always complete. Educational, not medical advice."
-eyebrow: "Growth science · Medical causes"
+eyebrow: "Growth science · Medical tests"
 hero: "gs-064-hero.jpg"
 heroAlt: "A paediatric growth chart on a clipboard in warm light, beside a pen, stethoscope and small plant — the child's plotted height line keeps rising but flattens in the last stretch, drifting below the printed percentile curves it had been tracking: the quiet signature of a slowing growth trajectory."
 lang: "en"
@@ -11,7 +11,7 @@ langAlts:
   - { code: "zh", href: "https://www.growsense.life/blog/thyroid-and-child-growth.zh.html", label: "中文" }
 disclaimer: "This article is educational and does not diagnose thyroid disease or interpret your child's results. Thyroid tests must be read by a clinician using paediatric reference ranges, alongside symptoms, growth velocity and bone age — never from one number. Do not start, stop or adjust levothyroxine except under medical supervision. If your child's height is crossing downward through percentiles, see a paediatrician."
 card:
-  cat: "Medical causes"
+  cat: "Medical tests"
   title: "Thyroid and your child's growth: how hypothyroidism slows height"
   blurb: "An underactive thyroid slows height while weight holds or rises — one of the most treatable causes of growth failure. The tell-tale pattern, why the growth plate stalls, what catch-up looks like after treatment, and why it isn't always complete."
   order: 0
