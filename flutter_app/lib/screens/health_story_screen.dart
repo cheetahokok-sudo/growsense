@@ -44,13 +44,23 @@ class _HealthStoryScreenState extends State<HealthStoryScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final (rows, ready) = await HealthStoryRepo.fetch(widget.appState);
-    if (!mounted) return;
-    setState(() {
-      _episodes = rows;
-      _tablesReady = ready;
-      _loading = false;
-    });
+    // Never let an unexpected error strand the spinner.
+    try {
+      final (rows, ready) = await HealthStoryRepo.fetch(widget.appState);
+      if (!mounted) return;
+      setState(() {
+        _episodes = rows;
+        _tablesReady = ready;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _episodes = [];
+        _tablesReady = false;
+        _loading = false;
+      });
+    }
   }
 
   int _last12mCount() {
@@ -237,46 +247,60 @@ class _HealthStoryScreenState extends State<HealthStoryScreen> {
     final range =
         resolved.isNotEmpty && resolved != onset ? '$onset → $resolved' : onset;
     final diagnosis = (e['diagnosis'] ?? '').toString();
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-      decoration: BoxDecoration(
-        color: GsColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GsColors.border),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.sick_outlined, size: 18, color: GsColors.text2),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 13.5, fontWeight: FontWeight.w600)),
-                if (range.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: Text(
-                        diagnosis.isNotEmpty ? '$range · $diagnosis' : range,
-                        style: const TextStyle(
-                            fontSize: 11.5, color: GsColors.text3)),
-                  ),
-              ],
-            ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () async {
+        await Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) =>
+                EpisodeDetailScreen(appState: widget.appState, episode: e),
           ),
-          if (status == 'resolved')
-            const Icon(Icons.check_circle_outline,
-                size: 16, color: GsColors.accent)
-          else if (status == 'active')
-            Text('active',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: GsColors.estimatedDark)),
-        ],
+        );
+        if (mounted) _load();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: GsColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: GsColors.border),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.sick_outlined, size: 18, color: GsColors.text2),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(
+                          fontSize: 13.5, fontWeight: FontWeight.w600)),
+                  if (range.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Text(
+                          diagnosis.isNotEmpty ? '$range · $diagnosis' : range,
+                          style: const TextStyle(
+                              fontSize: 11.5, color: GsColors.text3)),
+                    ),
+                ],
+              ),
+            ),
+            if (status == 'resolved')
+              const Icon(Icons.check_circle_outline,
+                  size: 16, color: GsColors.accent)
+            else if (status == 'active')
+              Text('active',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: GsColors.estimatedDark)),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, size: 18, color: GsColors.text3),
+          ],
+        ),
       ),
     );
   }
@@ -591,6 +615,314 @@ class _EpisodeCaptureScreenState extends State<EpisodeCaptureScreen> {
                 style: TextStyle(
                     fontSize: 12, height: 1.45, color: GsColors.flagDark),
               ),
+            ),
+          ],
+        ),
+      );
+}
+
+// ── Episode detail ───────────────────────────────────────────────────
+
+class EpisodeDetailScreen extends StatefulWidget {
+  const EpisodeDetailScreen({
+    super.key,
+    required this.appState,
+    required this.episode,
+  });
+  final AppState appState;
+  final Map<String, dynamic> episode;
+
+  @override
+  State<EpisodeDetailScreen> createState() => _EpisodeDetailScreenState();
+}
+
+class _EpisodeDetailScreenState extends State<EpisodeDetailScreen> {
+  bool _loading = true;
+  List<Map<String, dynamic>> _symptoms = [];
+  List<Map<String, dynamic>> _temps = [];
+  List<Map<String, dynamic>> _meds = [];
+  List<Map<String, dynamic>> _childMeds = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final id = widget.episode['episode_id'];
+      final (sy, tp, md) = await HealthStoryRepo.fetchDetail(widget.appState, id as Object);
+      final cm = await HealthStoryRepo.fetchChildMedications(widget.appState);
+      if (!mounted) return;
+      setState(() {
+        _symptoms = sy;
+        _temps = tp;
+        _meds = md;
+        _childMeds = cm;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  double? _peakTemp() {
+    double? peak;
+    for (final t in _temps) {
+      final v = (t['temp_c'] as num?)?.toDouble();
+      if (v != null && (peak == null || v > peak)) peak = v;
+    }
+    return peak;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final e = widget.episode;
+    final system = (e['primary_system'] ?? '').toString();
+    final label = kPrimarySystemLabels[system] ?? 'Illness';
+    final onset = (e['onset_date'] ?? '').toString();
+    final resolved = (e['resolved_date'] ?? '').toString();
+    final status = (e['status'] ?? '').toString();
+    final care = (e['care_sought'] ?? 'none').toString();
+    final diagnosis = (e['diagnosis'] ?? '').toString();
+    final peak = _peakTemp();
+    final abxCount =
+        _childMeds.where((m) => m['med_class'] == 'antibiotic').length;
+    final hasAntihistamine =
+        _childMeds.any((m) => m['med_class'] == 'antihistamine');
+
+    return Scaffold(
+      appBar: AppBar(title: Text(label)),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+              children: [
+                _card([
+                  _kv('Onset',
+                      resolved.isNotEmpty && resolved != onset
+                          ? '$onset → $resolved'
+                          : onset),
+                  _kv('Status', status.isEmpty ? '—' : status),
+                  if (peak != null)
+                    _kv('Peak fever', '${peak.toStringAsFixed(1)} °C',
+                        color: GsColors.estimatedDark),
+                  _kv('Care', _careLabel(care)),
+                  if (diagnosis.isNotEmpty)
+                    _kv('Diagnosis (from doctor)', diagnosis,
+                        color: GsColors.measuredDark),
+                ]),
+                if (_temps.isNotEmpty) ...[
+                  _label('Temperatures'),
+                  for (final t in _temps) _tempRow(t),
+                ],
+                if (_symptoms.isNotEmpty) ...[
+                  _label('Symptoms'),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final s in _symptoms)
+                        _tag(kSymptomLabels[(s['symptom'] ?? '').toString()] ??
+                            (s['symptom'] ?? '').toString()),
+                    ],
+                  ),
+                ],
+                if (_meds.isNotEmpty) ...[
+                  _label('Medicines given → response'),
+                  for (final m in _meds) _medRow(m),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      '“Improved after” is a timing note — not proof the '
+                      'medicine caused it.',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          height: 1.4,
+                          color: GsColors.text3),
+                    ),
+                  ),
+                ],
+                if (abxCount > 0 || hasAntihistamine) ...[
+                  const SizedBox(height: 16),
+                  _cumulativeCard(abxCount, hasAntihistamine),
+                ],
+                const SizedBox(height: 16),
+                const Text(
+                  'A record for your doctor — not a diagnosis.',
+                  style: TextStyle(
+                      fontSize: 11, height: 1.4, color: GsColors.text3),
+                ),
+              ],
+            ),
+    );
+  }
+
+  String _careLabel(String c) =>
+      const {
+        'none': 'Not sought',
+        'pharmacy': 'Pharmacy',
+        'gp': 'GP',
+        'er': 'Hospital / ER',
+        'admitted': 'Admitted',
+      }[c] ??
+      c;
+
+  Widget _card(List<Widget> rows) => Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: GsColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: GsColors.border),
+        ),
+        child: Column(children: rows),
+      );
+
+  Widget _kv(String k, String v, {Color color = GsColors.text}) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(k, style: const TextStyle(fontSize: 12, color: GsColors.text3)),
+            const Spacer(),
+            Flexible(
+              child: Text(v,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: color)),
+            ),
+          ],
+        ),
+      );
+
+  Widget _label(String s) => Padding(
+        padding: const EdgeInsets.only(top: 18, bottom: 6),
+        child: Text(s.toUpperCase(),
+            style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.4,
+                color: GsColors.text3)),
+      );
+
+  Widget _tempRow(Map<String, dynamic> t) {
+    final v = (t['temp_c'] as num?)?.toDouble();
+    final route = (t['route'] ?? '').toString();
+    final at = (t['measured_at'] ?? '').toString();
+    final when = at.length >= 16 ? at.substring(0, 16).replaceFirst('T', ' ') : at;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Text(v == null ? '—' : '${v.toStringAsFixed(1)} °C',
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600)),
+          const SizedBox(width: 8),
+          if (route.isNotEmpty)
+            Text(route, style: const TextStyle(fontSize: 11.5, color: GsColors.text3)),
+          const Spacer(),
+          Text(when, style: const TextStyle(fontSize: 11, color: GsColors.text3)),
+        ],
+      ),
+    );
+  }
+
+  Widget _tag(String s) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: GsColors.surface2,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(s,
+            style: const TextStyle(fontSize: 12, color: GsColors.text2)),
+      );
+
+  Widget _medRow(Map<String, dynamic> m) {
+    final name = (m['medication'] ?? '').toString();
+    final cls = (m['med_class'] ?? '').toString();
+    final resp = (m['response'] ?? '').toString();
+    final dose = (m['dose_amount'] as num?)?.toString();
+    final unit = (m['dose_unit'] ?? '').toString();
+    final freq = (m['frequency'] ?? '').toString();
+    final respLabel = const {
+      'improved': 'Improved after',
+      'no_change': 'No change',
+      'worsened': 'Worsened',
+      'resolved': 'Resolved',
+    }[resp];
+    final sub = [
+      if (dose != null) '$dose${unit.isNotEmpty ? ' $unit' : ''}',
+      if (freq.isNotEmpty) freq,
+    ].join(' · ');
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(name,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600)),
+              if (cls.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                _tag(cls),
+              ],
+              const Spacer(),
+              if (respLabel != null)
+                Text(respLabel,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: GsColors.accentDark)),
+            ],
+          ),
+          if (sub.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(sub,
+                  style:
+                      const TextStyle(fontSize: 11, color: GsColors.text3)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cumulativeCard(int abxCount, bool hasAntihistamine) => Container(
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: GsColors.estimatedLight,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('LIFETIME EXPOSURE · ALL EPISODES',
+                style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.4,
+                    color: GsColors.estimatedDark)),
+            const SizedBox(height: 6),
+            if (abxCount > 0)
+              _kv('Antibiotic courses', '$abxCount',
+                  color: GsColors.estimatedDark),
+            if (hasAntihistamine)
+              _kv('Antihistamines', 'given', color: GsColors.estimatedDark),
+            const SizedBox(height: 6),
+            const Text(
+              'Counts only — worth reviewing with your doctor. Most '
+              'childhood infections are viral, so an antibiotic “working” '
+              'isn’t proof it was needed.',
+              style: TextStyle(
+                  fontSize: 11, height: 1.4, color: GsColors.estimatedDark),
             ),
           ],
         ),

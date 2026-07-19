@@ -14,8 +14,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app_state.dart';
 
 class HealthStoryRepo {
-  static bool _missingTable(PostgrestException e) =>
-      e.code == '42P01' || e.message.contains('does not exist');
+  static bool _missingTable(PostgrestException e) {
+    final code = e.code ?? '';
+    final msg = e.message.toLowerCase();
+    // 42P01 = Postgres undefined_table; PGRST205 = PostgREST can't find
+    // the table in its schema cache (the usual "migration not applied"
+    // case). Also match the plain-text variants defensively.
+    return code == '42P01' ||
+        code == 'PGRST205' ||
+        code == 'PGRST202' ||
+        msg.contains('does not exist') ||
+        msg.contains('schema cache') ||
+        msg.contains('could not find the table');
+  }
 
   /// Episodes for the active child, newest first. Returns the rows and
   /// whether the tables exist yet (false → migration not applied).
@@ -32,6 +43,52 @@ class HealthStoryRepo {
     } on PostgrestException catch (e) {
       if (_missingTable(e)) return (<Map<String, dynamic>>[], false);
       rethrow;
+    }
+  }
+
+  /// Child rows for one episode: (symptoms, temperatures, medications),
+  /// newest-relevant order. Any failure yields empty lists.
+  static Future<
+      (
+        List<Map<String, dynamic>>,
+        List<Map<String, dynamic>>,
+        List<Map<String, dynamic>>,
+      )> fetchDetail(AppState s, Object episodeId) async {
+    Future<List<Map<String, dynamic>>> q(String table, String order,
+        {bool asc = true}) async {
+      try {
+        final rows = await s.sb
+            .from(table)
+            .select()
+            .eq('episode_id', episodeId)
+            .order(order, ascending: asc);
+        return List<Map<String, dynamic>>.from(rows);
+      } catch (_) {
+        return <Map<String, dynamic>>[];
+      }
+    }
+
+    final symptoms = await q('episode_symptoms', 'created_at');
+    final temps = await q('episode_temperatures', 'measured_at');
+    final meds = await q('episode_medications', 'created_at');
+    return (symptoms, temps, meds);
+  }
+
+  /// Every medication row across the active child's episodes — for the
+  /// cumulative-exposure rollup. Counts only; the caller must never
+  /// present this as harm. Empty on any failure.
+  static Future<List<Map<String, dynamic>>> fetchChildMedications(
+      AppState s) async {
+    final childId = s.activeChildId;
+    if (childId == null) return <Map<String, dynamic>>[];
+    try {
+      final rows = await s.sb
+          .from('episode_medications')
+          .select('med_class, medication, illness_episodes!inner(child_id)')
+          .eq('illness_episodes.child_id', childId);
+      return List<Map<String, dynamic>>.from(rows);
+    } catch (_) {
+      return <Map<String, dynamic>>[];
     }
   }
 
