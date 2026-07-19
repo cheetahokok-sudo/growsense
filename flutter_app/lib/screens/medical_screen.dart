@@ -10,7 +10,9 @@ import '../i18n.dart';
 import '../theme.dart';
 import '../widgets/gs_icons.dart';
 import '../units.dart';
+import '../beta_flags.dart';
 import 'bone_age_screen.dart';
+import 'health_story_screen.dart';
 import 'medical_modules.dart';
 
 /// Medical tab — growth measurement entry, WHO 2007 height-for-age
@@ -135,6 +137,16 @@ class _MedicalScreenState extends State<MedicalScreen> {
                   style: const TextStyle(fontSize: 11, color: GsColors.text3)),
             ),
             _ModuleGroup(children: [
+              if (healthStoryCapture(s))
+                _ModuleRow(
+                  icon: 'illness',
+                  title: t('medical.health_story.title', 'Health Story (beta)'),
+                  count: s.illnessEvents.length,
+                  lastDate: lastDate(s.illnessEvents, 'start_date'),
+                  i18n: widget.i18n,
+                  onTap: () => _pushModule(
+                      HealthStoryScreen(appState: s, i18n: widget.i18n)),
+                ),
               _ModuleRow(
                 icon: 'measure',
                 title: t('flutter.growth_measurements',
