@@ -262,7 +262,49 @@ Because intelligence only **reads** episodes, it can be rewritten indefinitely w
 
 ---
 
-## 9. References (verified against PubMed, 2026-07-19)
+## 9. Release & beta gating
+
+Health Story is an **accumulation** feature (value compounds over months) and **YMYL** — so it cannot be validated without real users, but it also cannot ship its risky half broadly. The release model resolves both: a controlled beta is the *instrument* for validation, gated in two independent stages.
+
+### 9.1 Two gates, not one
+
+Approving "Health Story for beta" is **two decisions**, gated separately, because the halves carry different risk:
+
+| Gate | What ships | Risk | When |
+|---|---|---|---|
+| **Gate 1 — Capture** | episode logging, questionnaire, record/detail/list views, cumulative *counts* (no interpretation) | Low, additive; cannot harm a parent | Open to the beta cohort early — it starts the data clock |
+| **Gate 2 — Intelligence** | pattern flags (P1–P7), "worth discussing" prompts, visit-summary flags | YMYL — a wrong flag causes real anxiety | Stays **dark even for beta users** until clinician review (H-D) passes |
+
+Capture can be live for beta users while every flag remains off. Gate 2 opens per-rule as each rule earns clinician sign-off — not all at once.
+
+### 9.2 Beta relaxes polish, never the claim boundary
+
+"It's just beta" lowers the bar on UX polish, performance and breadth — **never** on safety. Even in the earliest beta, these are production-grade from day one: the claim boundary (record-and-flag, never diagnose/boost), the §3.3 safety interstitials, the "worth discussing / improved after" framing, and explicit **beta consent** ("this records your child's health; it does not diagnose; it is an experimental feature"). Beta tests *usefulness*, not whether the safety rails hold.
+
+### 9.3 Cohort criteria (the "superhost" gate, done for health)
+
+Selection is by **feature flag enabled per user** — the same mechanism Airbnb uses to release to superhosts only. But cohort choice matters more here than for a normal feature:
+
+- **In:** engaged parents who log regularly, have given beta consent, and clearly understand "record, not diagnosis." A **representative mix** of healthy children *and* some with recurrent issues — so both engine faces (reassurance *and* flags) get exercised.
+- **Avoid:** loading the cohort with the *sickest* children just to harvest pattern data faster. It skews validation and raises the stakes of a misfire. Reassurance (P0) is as important to test as any flag.
+- **Size:** small enough to review outcomes by hand in early stages; large enough that P0 frequency norms and H-A logging-completeness become trustworthy.
+
+### 9.4 Platform is deferred, and decoupled from the feature decision
+
+The capture layer is platform-agnostic (a Supabase table + a form behind a flag), so **no platform decision is needed to approve beta.** Pick the surface by iteration speed and cohort control, not feature commitment:
+
+- **Flutter web (`/app/`) behind a flag** — fastest loop, no App Store review; best for early capture validation (Phase 1).
+- **iOS TestFlight** — the built-in "invite specific users" gate (a clean superhost mechanism), but every change waits on review; better once the flow is stable and Gate 2 is ready with clinician sign-off.
+
+Suggested path: validate capture on Flutter-web-behind-flag first, then graduate to a TestFlight cohort for native + the first flags. Whether Health Story ships in the general iOS release stays an open decision, made later with real beta data in hand — shipping capture behind a flag commits to nothing.
+
+### 9.5 Graduation criteria (beta → general)
+
+A rule/feature leaves beta only when: H-A (logging completeness) is met for P0 to be trustworthy; the relevant flag passed H-D clinician review; the claim-boundary and consent flows are confirmed in legal review (§8); and false-positive/anxiety signals from the cohort are within tolerance. Reassurance-only (P0 + capture + visit summary) may graduate ahead of the flags.
+
+---
+
+## 10. References (verified against PubMed, 2026-07-19)
 
 - **[R1]** Castro-Rodríguez JA, Holberg CJ, Wright AL, Martinez FD. A clinical index to define risk of asthma in young children with recurrent wheezing. *Am J Respir Crit Care Med.* 2000;162(4 Pt 1):1403–1406. PMID: 11029352.
 - **[R2]** Arkwright PD, Gennery AR. Ten warning signs of primary immunodeficiency: a new paradigm is needed for the 21st century. *Ann N Y Acad Sci.* 2011;1238:7–14. PMID: 22129048. *(source of the warning signs AND their limited sensitivity/specificity)*
