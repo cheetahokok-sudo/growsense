@@ -83,14 +83,23 @@ Log **episodes, not days.** An episode is a bounded illness event with a lifecyc
 | `temp_c` | numeric | |
 | `route` | enum | `axillary` \| `oral` \| `tympanic` \| `rectal` \| `forehead` — route changes interpretation |
 
-**`episode_medications`** (what was given + whether it helped — the response is clinically meaningful)
+**`episode_medications`** (what was given, how much, and whether it helped — the response is clinically meaningful, and the *cumulative* record is a distinct value in its own right, see §2.5)
 
 | field | type | notes |
 |---|---|---|
 | `episode_id` | uuid | fk |
-| `medication` | text | free or picklist |
-| `class` | enum? | `antipyretic` \| `antibiotic` \| `bronchodilator` \| `antihistamine` \| `other` |
-| `response` | enum? | `resolved` \| `improved` \| `no_change` \| `worsened` — e.g. wheeze responding to bronchodilator is a pattern input |
+| `medication` | text | free or picklist (e.g. "Meiact", "Bilaxten", "Zyrtec") |
+| `class` | enum? | `antipyretic` \| `antibiotic` \| `bronchodilator` \| `antihistamine` \| `steroid` \| `other` |
+| `dose_amount` | numeric? | **recorded exactly as entered by the parent — the app never suggests or computes a dose** |
+| `dose_unit` | enum? | `mg` \| `ml` \| `drops` \| `puffs` \| `sachet` \| `other` |
+| `frequency` | text? | e.g. "twice daily", "as needed" — free/picklist |
+| `duration_days` | int? | intended or actual length of the course |
+| `doses_given` | int? | running count for an in-progress course ("3 doses so far") |
+| `prescribed_by` | enum? | `doctor` \| `pharmacy` \| `self` \| `unknown` |
+| `started_on` / `ended_on` | date? | anchors the exposure timeline |
+| `response` | enum? | `resolved` \| `improved` \| `no_change` \| `worsened` — with `response_day` int? for *when*. Wheeze improving after a bronchodilator is a pattern input; an antibiotic course with `no_change` is often *more* informative to a clinician than one that "worked" |
+
+> **Framing rule — "improved after ≠ improved because of."** `response` records a temporal association only. The engine and all copy must present it as **"improved _after_ X,"** never **"improved _because of_ X"** or **"X works for your child."** Most childhood infections are viral and self-resolve, so post-medication improvement is confounded by natural recovery — the same post-hoc trap the blog covers for supplements and seasonal growth. For any `antibiotic` response, attach the standing note: *"most childhood infections clear on their own; whether an antibiotic changed the course is a question for your doctor."* This guards the parent against reading "got better on the antibiotic" as proof it was needed — a real driver of antibiotic overuse in the target markets.
 
 ### 2.3 Symptom vocabulary (controlled enum — extend deliberately)
 
@@ -102,6 +111,15 @@ Log **episodes, not days.** An episode is a bounded illness event with a lifecyc
 - Episodes render on the existing **trust-calendar timeline**.
 - Episodes overlay on the existing **growth curve** (the differentiator — see rule P6).
 - The output surfaces through the existing **Visit PDF**.
+
+### 2.5 Cumulative medication exposure (a derived rollup, not a table)
+
+Individual medicine records are one value; the **multi-year sum across episodes** is a second, distinct one — the thing no parent can hold in their head and no 3-minute appointment reconstructs. Computed on the fly from `episode_medications` grouped by `class`, e.g.:
+
+- **Antibiotics:** number of *courses* and total *days on antibiotics* per rolling 12 months and since birth (course count, not pill count, is the clinically meaningful unit).
+- **Antihistamines / steroids / others:** total days of exposure and recurrence pattern (e.g. "needed every rainy season for 3 years").
+
+**Claim boundary — total and surface, never adjudicate harm.** This rollup is arithmetic on logged data; it is honest to *count* and to say "worth reviewing with your doctor." It must **never** state or imply that a cumulative dose *caused* harm — that is a diagnosis. For allergy medicines the useful signal is usually the **recurring need** (a persistent allergy worth managing properly), not the tally; for antibiotics it is **course frequency** for stewardship review [R2][R8]. Chronic doctor-guided use of a second-generation antihistamine for a genuine allergy is common and is *not* something the app should alarm about — it should surface the *pattern*, and let the clinician judge the exposure.
 
 ---
 
@@ -182,9 +200,15 @@ Trigger (adapted from published immunodeficiency warning signs): e.g. **≥4 new
 **P6 — Illness burden × growth (the differentiator).**
 Trigger: clusters of illness episodes coinciding with a low six-to-twelve-month height-velocity window (from existing WHO growth data). Flag: "these illnesses clustered around a slower-growth stretch — worth discussing whether illness burden is affecting growth." This is the honest, on-mission link (infection competes with growth; already taught in the blood-test and seasonal articles). *Limitation:* coincidence ≠ causation; correlation over one window is weak; needs clinical read alongside velocity and nutrition.
 
+**P7 — Recurrent medication need / cumulative exposure (from §2.5 rollup).**
+Two sub-triggers, both framed as review prompts, never harm claims:
+- *Recurrent allergy-medicine need:* repeated antihistamine/steroid courses for rash/rhinitis across seasons or years. Flag: "your child has needed allergy medicines repeatedly over [period] — worth discussing whether there's an underlying allergy to manage, rather than treating each flare." (Links to P3 atopic march.)
+- *Frequent antibiotic courses:* course count above the usual for age over a rolling window / since birth. Flag: "your child has had [N] antibiotic courses in [period] — worth reviewing with your doctor, both for whether each was needed and for antibiotic stewardship." [R2][R8]
+*Limitation (must be shown):* this counts exposure, it does not judge it. Chronic doctor-guided antihistamine use for a real allergy is normal and not a concern in itself; "improved after" an antibiotic never proves it was needed (see the §2 framing rule). Course/exposure norms vary by condition and region — the flag is a prompt for a clinician, never a verdict that the child was over-medicated or harmed.
+
 ### 4.3 Output ordering
 
-`P0 context → safety interstitials (already shown at capture) → any P1–P6 flags → visit summary`. Reassuring context leads; flags follow; nothing is a verdict.
+`P0 context → safety interstitials (already shown at capture) → any P1–P7 flags → visit summary`. Reassuring context leads; flags follow; nothing is a verdict.
 
 ---
 
@@ -194,6 +218,8 @@ Trigger: clusters of illness episodes coinciding with a low six-to-twelve-month 
 2. **Flags as questions**, never answers. Copy is always "worth discussing," with the plain-language pattern and the trigger data behind it.
 3. **Frequency context** against age/exposure norms — reassurance is a first-class output, not just alarms.
 4. **Illness-on-growth overlay** — episodes rendered against the growth curve.
+5. **Medication-response line** — per-episode, "improved *after* X" phrasing only (never "because of"); antibiotic responses carry the standing viral-illness note from §2. This is the medical-memory the doctor most values.
+6. **Cumulative-exposure line** (from §2.5) — e.g. "antibiotics: N courses / ~N days since birth (M in the last 12 months); antihistamines: recurring each rainy season for 3 years." Framed as "worth reviewing," with counts only — never a harm claim.
 
 **Non-negotiables:** no diagnosis; no "boost"; absence-of-flag ≠ all-clear; sparse/low-confidence data is shown as such (never smoothed into false precision); AI (existing Haiku/Sonnet) may **summarise and cite only** — it may not generate a pattern conclusion outside the deterministic config.
 
@@ -245,5 +271,6 @@ Because intelligence only **reads** episodes, it can be rewritten indefinitely w
 - **[R5]** Heikkinen T, Järvinen A. The common cold. *Lancet.* 2003;361(9351):51–59. PMID: 12517470. *(normal cold frequency in children)*
 - **[R6]** Chonmaitree T, Revai K, Grady JJ, et al. Viral upper respiratory tract infection and otitis media complication in young children. *Clin Infect Dis.* 2008;46(6):815–823. PMID: 18279042. *(URI frequency cohort, infancy/daycare)*
 - **[R7]** Marshall GS. Prolonged and recurrent fevers in children. *J Infect.* 2014;68 Suppl 1:S83–S93. PMID: 24120354. *(periodic fever / PFAPA pattern and its differential)*
+- **[R8]** Aversa Z, et al. Association of Infant Antibiotic Exposure With Childhood Health Outcomes. *Mayo Clin Proc.* 2021;96(1):66–77. PMID: 33208243. *(rationale for surfacing cumulative early-life antibiotic exposure — association only, not causation)*
 
 > All PMIDs confirmed via PubMed eutils on 2026-07-19. The Jeffrey Modell Foundation "10 Warning Signs" is a clinical screening tool, not a single indexed trial; it is represented here via its scholarly reappraisal [R2], which is also the source for its documented limitations. No citation in this document is unverified.
