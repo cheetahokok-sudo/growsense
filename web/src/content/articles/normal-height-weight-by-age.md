@@ -55,6 +55,8 @@ Clinicians often use a **z-score** (standard-deviation score) — how far a meas
 
 About **95% of a healthy population falls between −2 and +2**. But a value outside that band is a *signal to look closer*, not a diagnosis — and a child inside it can still need review if their line has slowed or crossed downward.
 
+<div class="callout"><strong>Try it on your own child.</strong> The free <a href="/blog/height-percentile-calculator.html">height percentile calculator</a> places your child on the WHO curve instantly — a snapshot to start from, with the trajectory over time being the real story.</div>
+
 ## 2. Standard, reference, and "average" are not the same
 
 Three words get used interchangeably and shouldn't be:

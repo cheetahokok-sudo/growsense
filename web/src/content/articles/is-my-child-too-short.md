@@ -45,6 +45,8 @@ references:
   <div class="callout"><strong>The percentile paradox.</strong> Being at the 3rd percentile is not, by itself, a disease. By definition, 3 of every 100 completely healthy children occupy the bottom of the chart — someone always has to. A percentile is a data coordinate, not a diagnosis.</div>
   <p><strong>How growth charts really work.</strong> A chart isn't a ladder to climb — it's a set of parallel "channels." Healthy children find their channel in the first years of life and then <strong>track along it</strong>, roughly parallel to the printed curves. What pediatricians watch is not <em>which</em> channel a child is in, but whether they <strong>stay in it</strong>.<sup><a href="#r4">[4]</a><a href="#r5">[5]</a></sup> A child steadily on the 5th percentile is usually reassuring; a child drifting <em>downward across</em> channels is the pattern that earns attention.</p>
 
+  <div class="callout"><strong>Want to check your child's percentile right now?</strong> Our free <a href="/blog/height-percentile-calculator.html">height percentile calculator</a> plots them on the WHO growth curve in seconds — no signup. Remember it's one snapshot: the <em>trend</em> over time is what actually matters.</div>
+
   <h2>2. The biggest mistake: comparing sideways instead of forward</h2>
   <p>The most common error is measuring a child against the local ecosystem — classmates, teammates, cousins. Pediatric endocrinologists don't work that way. They compare a child <strong>against their own history and their own genetic potential.</strong> "Shortest in the class" is a social fact. "Falling off their own curve" is a medical one. Only the second matters.</p>
 
