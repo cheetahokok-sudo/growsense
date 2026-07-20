@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>window.gsTrack=window.gsTrack||function(){};</script>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -363,9 +364,10 @@
     <h1 class="hero-h1 reveal" data-i18n="hero.title">Know if your child is <em>growing to their potential.</em></h1>
     <p class="hero-sub reveal" data-i18n="hero.sub">GrowSense turns height, sleep, nutrition, and clinical labs into one clear answer — and a research-backed projection of your child's adult height. Not another tracker. A growth companion.</p>
     <div class="hero-cta">
-      <a href="app/" class="btn btn-light reveal" id="heroPrimary" data-i18n="hero.cta_login">Log in to your account</a>
-      <a href="#how" class="btn btn-outline reveal" data-i18n="hero.cta_explore">Explore GrowSense →</a>
+      <a href="app/" class="btn btn-light reveal" id="heroPrimary" data-i18n="hero.cta_start" onclick="gsTrack('cta_hero_click',{label:'trajectory'})">See my child's trajectory</a>
+      <a href="#how" class="btn btn-outline reveal" data-i18n="hero.cta_explore" onclick="gsTrack('cta_hero_click',{label:'explore'})">Explore GrowSense →</a>
     </div>
+    <a href="app/" class="hero-login reveal" id="heroLogin" data-i18n="hero.have_account" onclick="gsTrack('cta_hero_click',{label:'login'})" style="display:inline-block;margin-top:12px;font-size:13.5px;color:rgba(26,36,30,.62);text-decoration:underline;text-underline-offset:3px">Already have an account? Log in</a>
     <div class="hero-fine reveal" data-i18n="hero.fine">Free to start · No wearable required · 6 languages</div>
   </div>
   <div class="hero-fade"></div>
@@ -928,7 +930,7 @@
       'hero.badge':'Pediatric growth intelligence for parents',
       'hero.title':'Know if your child is <em>growing to their potential.</em>',
       'hero.sub':"GrowSense turns height, sleep, nutrition, and clinical labs into one clear answer — and a research-backed projection of your child's adult height. Not another tracker. A growth companion.",
-      'hero.cta_login':'Log in to your account','hero.cta_continue':'Continue to your home →',
+      'hero.cta_login':'Log in to your account','hero.cta_continue':'Continue to your home →','hero.cta_start':'See my child's trajectory','hero.have_account':'Already have an account? Log in',
       'hero.cta_explore':'Explore GrowSense →','hero.fine':'Free to start · No wearable required · 6 languages',
       'stat.who':'Years of WHO growth references built in',
       'stat.activities':'Evidence-tiered activities for bone growth',
@@ -970,7 +972,7 @@
       'hero.badge':'ระบบวิเคราะห์การเจริญเติบโตเด็ก สำหรับพ่อแม่',
       'hero.title':'รู้ว่าลูกของคุณ<em>กำลังเติบโตเต็มศักยภาพหรือไม่</em>',
       'hero.sub':'GrowSense เปลี่ยนข้อมูลส่วนสูง การนอน โภชนาการ และผลแล็บ ให้เป็นคำตอบที่ชัดเจน พร้อมคาดการณ์ส่วนสูงเมื่อโตเต็มวัยจากงานวิจัย ไม่ใช่แค่แอปบันทึก แต่คือเพื่อนคู่คิดเรื่องการเติบโต',
-      'hero.cta_login':'เข้าสู่ระบบ','hero.cta_continue':'ไปที่หน้าหลัก →',
+      'hero.cta_login':'เข้าสู่ระบบ','hero.cta_continue':'ไปที่หน้าหลัก →','hero.cta_start':'ดูเส้นทางการเติบโตของลูก','hero.have_account':'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ',
       'hero.cta_explore':'สำรวจ GrowSense →','hero.fine':'เริ่มฟรี · ไม่ต้องใช้อุปกรณ์สวมใส่ · 6 ภาษา',
       'stat.who':'ปีของข้อมูลอ้างอิงการเจริญเติบโตจาก WHO',
       'stat.activities':'กิจกรรมที่จัดระดับตามหลักฐานด้านกระดูก',
@@ -1012,7 +1014,7 @@
       'hero.badge':'为父母打造的儿童成长智能平台',
       'hero.title':'了解您的孩子<em>是否在充分发育成长。</em>',
       'hero.sub':'GrowSense 将身高、睡眠、营养和临床化验整合成一个清晰的答案，并基于研究预测孩子的成年身高。不只是记录工具，而是成长伙伴。',
-      'hero.cta_login':'登录您的账户','hero.cta_continue':'进入您的主页 →',
+      'hero.cta_login':'登录您的账户','hero.cta_continue':'进入您的主页 →','hero.cta_start':'查看孩子的成长轨迹','hero.have_account':'已有账户？登录',
       'hero.cta_explore':'探索 GrowSense →','hero.fine':'免费开始 · 无需穿戴设备 · 6 种语言',
       'stat.who':'年 WHO 成长参考数据',
       'stat.activities':'项按骨骼证据分级的活动',
@@ -1054,7 +1056,7 @@
       'hero.badge':'부모를 위한 소아 성장 인텔리전스',
       'hero.title':'우리 아이가 <em>잠재력만큼 자라고 있는지</em> 확인하세요.',
       'hero.sub':'GrowSense는 키, 수면, 영양, 임상 검사 결과를 하나의 명확한 답으로 바꾸고, 연구 기반으로 성인 키를 예측합니다. 단순 기록 앱이 아닌 성장 동반자입니다.',
-      'hero.cta_login':'계정에 로그인','hero.cta_continue':'홈으로 계속 →',
+      'hero.cta_login':'계정에 로그인','hero.cta_continue':'홈으로 계속 →','hero.cta_start':'우리 아이 성장 곡선 보기','hero.have_account':'이미 계정이 있으신가요? 로그인',
       'hero.cta_explore':'GrowSense 살펴보기 →','hero.fine':'무료 시작 · 웨어러블 불필요 · 6개 언어',
       'stat.who':'년간의 WHO 성장 참고 데이터',
       'stat.activities':'골격 근거 기반으로 분류된 활동',
@@ -1096,7 +1098,7 @@
       'hero.badge':'Trí tuệ tăng trưởng nhi khoa cho cha mẹ',
       'hero.title':'Biết con bạn có đang <em>phát triển đúng tiềm năng hay không.</em>',
       'hero.sub':'GrowSense biến chiều cao, giấc ngủ, dinh dưỡng và xét nghiệm lâm sàng thành một câu trả lời rõ ràng — cùng dự đoán chiều cao khi trưởng thành dựa trên nghiên cứu. Không chỉ là ứng dụng ghi chép, mà là người bạn đồng hành tăng trưởng.',
-      'hero.cta_login':'Đăng nhập tài khoản','hero.cta_continue':'Tiếp tục đến trang chủ →',
+      'hero.cta_login':'Đăng nhập tài khoản','hero.cta_continue':'Tiếp tục đến trang chủ →','hero.cta_start':'Xem đường tăng trưởng của con','hero.have_account':'Đã có tài khoản? Đăng nhập',
       'hero.cta_explore':'Khám phá GrowSense →','hero.fine':'Miễn phí bắt đầu · Không cần thiết bị đeo · 6 ngôn ngữ',
       'stat.who':'Năm dữ liệu tham chiếu tăng trưởng WHO',
       'stat.activities':'Hoạt động phân loại theo bằng chứng xương',
@@ -1138,7 +1140,7 @@
       'hero.badge':'منصة ذكاء نمو الأطفال لأولياء الأمور',
       'hero.title':'اعرف ما إذا كان طفلك <em>ينمو ليبلغ كامل إمكاناته.</em>',
       'hero.sub':'يحوّل GrowSense بيانات الطول والنوم والتغذية والفحوصات المخبرية إلى إجابة واحدة واضحة — مع توقّع للطول عند البلوغ مبني على أبحاث علمية. ليس مجرد تطبيق تسجيل، بل رفيق نمو.',
-      'hero.cta_login':'تسجيل الدخول إلى حسابك','hero.cta_continue':'المتابعة إلى صفحتك الرئيسية →',
+      'hero.cta_login':'تسجيل الدخول إلى حسابك','hero.cta_continue':'المتابعة إلى صفحتك الرئيسية →','hero.cta_start':'شاهد مسار نمو طفلك','hero.have_account':'لديك حساب بالفعل؟ تسجيل الدخول',
       'hero.cta_explore':'استكشف GrowSense →','hero.fine':'ابدأ مجانًا · لا حاجة لجهاز · 6 لغات',
       'stat.who':'عامًا من بيانات مرجعية لنمو الطفل من منظمة الصحة العالمية',
       'stat.activities':'نشاطًا مُصنَّفًا وفق أدلة صحة العظام',
@@ -1270,9 +1272,11 @@
     const heroPrimary = document.getElementById('heroPrimary');
     const navLogin    = document.getElementById('navLogin');
     const mobLogin    = document.getElementById('mobLogin');
-    const key = hasSession ? 'hero.cta_continue' : 'hero.cta_login';
+    const key = hasSession ? 'hero.cta_continue' : 'hero.cta_start';
     const navKey = hasSession ? 'nav.continue' : 'nav.login';
     if(heroPrimary) heroPrimary.innerHTML = dict[key];
+    const heroLogin = document.getElementById('heroLogin');
+    if(heroLogin) heroLogin.style.display = hasSession ? 'none' : 'inline-block';
     if(navLogin)  navLogin.textContent  = dict[navKey];
     if(mobLogin)  mobLogin.textContent  = dict[navKey];
   }
