@@ -467,6 +467,80 @@
 </section>
 
 <!-- FEATURE 2: EVIDENCE-BASED ACTIVITY -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     GrowSense · "Try it free" landing section  (drop-in)
+     ───────────────────────────────────────────────────────────────────────
+     WHERE: paste this <section> into index.html AFTER "How it works" and
+            BEFORE the final "Create a free account" CTA. It's the taste-test
+            that leads INTO signup — the page's primary action stays
+            "Create a free account", this is secondary by design (Canopy note).
+     STYLE: uses your existing CSS vars (--green-deep, --cream, --gold, --line)
+            and .wrap / .btn / .btn-light classes, so it matches the page.
+            The scoped <style> is safe to paste as-is (or fold the rules into
+            your main stylesheet and delete the block).
+     ATTRIBUTION: the CTA carries UTMs so PostHog can measure landing → tool
+            → install once analytics is live. Keep them.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="trytool">
+  <div class="wrap">
+    <div class="trytool-card">
+      <div class="trytool-copy">
+        <span class="trytool-kick">Free · no signup</span>
+        <h2>See it work before you sign up</h2>
+        <p>Get your child’s height percentile on the official WHO growth curve
+           in ten seconds — no account needed. It’s the very same math that
+           runs inside the app.</p>
+        <div class="trytool-actions">
+          <a class="btn btn-light" href="blog/height-percentile-calculator.html?utm_source=landing&amp;utm_medium=section&amp;utm_campaign=try-free-tool&amp;utm_content=primary">
+            Try the free calculator →
+          </a>
+          <a class="trytool-2nd" href="app/">…then create a free account to track the whole curve over time →</a>
+        </div>
+      </div>
+
+      <div class="trytool-viz" aria-hidden="true">
+        <svg viewBox="0 0 240 132" role="img">
+          <path d="M8 106 C64 106 76 28 120 28 C164 28 176 106 232 106" fill="none" stroke="#8fceac" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M8 106 C64 106 76 28 120 28 L120 106 Z" fill="rgba(143,206,172,.18)"/>
+          <line x1="120" y1="28" x2="120" y2="106" stroke="#C6A05F" stroke-width="2" stroke-dasharray="3 3"/>
+          <circle cx="120" cy="28" r="5.5" fill="#C6A05F" stroke="#0E2A20" stroke-width="2.5"/>
+        </svg>
+        <div class="trytool-badge"><b>50<span>th</span></b> percentile</div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .trytool{padding:56px 0;background:var(--cream,#FBFAF6)}
+    .trytool-card{display:grid;grid-template-columns:1.15fr .85fr;gap:34px;align-items:center;
+      background:var(--green-deep,#0E2A20);color:#eaf1ec;border-radius:22px;padding:40px 36px;
+      position:relative;overflow:hidden}
+    .trytool-card::before{content:"";position:absolute;inset:0;pointer-events:none;
+      background:radial-gradient(70% 120% at 88% -10%,rgba(90,165,131,.28),transparent 60%)}
+    .trytool-copy{position:relative}
+    .trytool-kick{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.15em;
+      text-transform:uppercase;color:#8fceac;margin-bottom:12px}
+    .trytool-copy h2{font-size:clamp(24px,3.4vw,32px);line-height:1.12;margin:0 0 12px;color:#fff}
+    .trytool-copy p{font-size:16px;line-height:1.6;color:rgba(234,241,236,.82);margin:0 0 22px;max-width:44ch}
+    .trytool-actions{display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+    .trytool-2nd{font-size:13.5px;color:rgba(234,241,236,.7);text-decoration:none;border-bottom:1px solid rgba(234,241,236,.25);padding-bottom:1px}
+    .trytool-2nd:hover{color:#fff;border-color:rgba(234,241,236,.6)}
+    .trytool-viz{position:relative;display:flex;align-items:center;justify-content:center}
+    .trytool-viz svg{width:100%;max-width:260px;height:auto}
+    .trytool-badge{position:absolute;top:6px;right:10px;background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:8px 12px;font-size:12px;
+      color:rgba(234,241,236,.8);font-weight:600}
+    .trytool-badge b{font-size:22px;color:#fff;font-weight:800;margin-right:5px}
+    .trytool-badge b span{font-size:12px;font-weight:700;vertical-align:super;margin-left:1px}
+    @media (max-width:720px){
+      .trytool-card{grid-template-columns:1fr;gap:8px;padding:32px 24px}
+      .trytool-viz{order:-1;margin-bottom:4px}
+      .trytool-viz svg{max-width:200px}
+    }
+  </style>
+</section>
+<!-- ═══════════ end "Try it free" section ═══════════ -->
+
 <section style="background:var(--paper);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
   <div class="wrap">
     <div class="frow rev">
