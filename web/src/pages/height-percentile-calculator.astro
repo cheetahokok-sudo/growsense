@@ -1,9 +1,8 @@
 ---
 // Free lead-magnet tool: child height percentile calculator.
-// Reuses the APP'S OWN verified math (growth-percentile.js) and the official
-// WHO 2007 5–19y reference data (who-reference-data.js) — read at build time
-// and inlined as classic scripts, exactly as the app loads them, so the tool
-// can never disagree with the product.
+// Reuses the APP'S OWN verified math (growth-percentile.js) + official WHO 2007
+// 5–19y data (who-reference-data.js), read at build time and inlined as classic
+// scripts exactly as the app loads them, so tool can never disagree with product.
 import { readFileSync } from 'node:fs';
 const whoSrc  = readFileSync(new URL('../../../who-reference-data.js', import.meta.url), 'utf8');
 const mathSrc = readFileSync(new URL('../../../growth-percentile.js', import.meta.url), 'utf8');
@@ -11,7 +10,7 @@ const mathSrc = readFileSync(new URL('../../../growth-percentile.js', import.met
 const APP = 'https://www.growsense.life/?utm_source=blog&utm_medium=tool&utm_campaign=height-percentile-calculator&utm_content=result&open=measure';
 const canonical = 'https://www.growsense.life/blog/height-percentile-calculator.html';
 const title = 'Child Height Percentile Calculator (Ages 5–19) — GrowSense';
-const desc  = 'Free, instant height percentile for children and teens (5–19), on the official WHO 2007 reference. See where your child sits, what it means, and why the curve over time matters more than one number.';
+const desc  = 'Free, instant height percentile for children and teens (5–19) on the official WHO 2007 reference. See where your child sits on the growth curve, what it means, and why the trend over time matters more than one number.';
 ---
 <!doctype html>
 <html lang="en">
@@ -21,97 +20,167 @@ const desc  = 'Free, instant height percentile for children and teens (5–19), 
   <title>{title}</title>
   <meta name="description" content={desc} />
   <link rel="canonical" href={canonical} />
+  <link rel="icon" href="https://www.growsense.life/favicon.svg" type="image/svg+xml" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={desc} />
   <meta property="og:url" content={canonical} />
-  <meta property="og:image" content="https://www.growsense.life/blog/gs-085-hero.jpg" />
+  <meta property="og:image" content="https://www.growsense.life/blog/gs-066-hero.jpg" />
+  <meta name="theme-color" content="#0E2A20" />
   <meta name="robots" content="index,follow" />
   <style>
     :root{
-      --paper:#f6f4ef; --card:#ffffff; --ink:#14201b; --ink-soft:#4a5852; --line:#e2ddd1;
-      --accent:#2f6b4f; --deep:#0e2a20; --measured:#2a5c8a; --estimated:#9c7a3d; --flag:#a23b3b;
-      --serif:"Fraunces",Georgia,serif; --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+      --paper:#f5f3ee; --card:#ffffff; --ink:#14201b; --ink-soft:#51605a; --line:#e4dfd3;
+      --green:#2f6b4f; --green-600:#2a5f47; --deep:#0e2a20; --measured:#2a5c8a;
+      --estimated:#9c7a3d; --flag:#a23b3b; --mist:#eef2ee;
+      --serif:"Fraunces",Georgia,serif;
+      --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      --shadow:0 10px 30px -12px rgba(14,42,32,.28);
     }
     *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
     body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
-      line-height:1.6;-webkit-font-smoothing:antialiased}
-    a{color:var(--accent)}
-    .wrap{max-width:720px;margin:0 auto;padding:0 22px}
-    header.bar{background:var(--deep);color:#e8efe6;padding:14px 0}
-    header.bar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .brand{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-weight:600;
-      font-size:18px;color:#fff;text-decoration:none}
-    .brand .leaf{width:22px;height:22px}
-    .bar a.back{color:rgba(232,239,230,.8);font-size:13px;text-decoration:none}
-    main{padding:34px 0 60px}
-    .eyebrow{font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
-    h1{font-family:var(--serif);font-weight:600;font-size:clamp(27px,5vw,38px);line-height:1.12;
-      letter-spacing:-.01em;margin:12px 0 10px;text-wrap:balance}
-    .lede{font-size:18px;color:var(--ink-soft);margin:0 0 26px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 22px;
-      box-shadow:0 1px 0 rgba(20,32,27,.03)}
-    .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
-    .field{flex:1;min-width:130px}
-    label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px}
-    .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-    .seg button{flex:1;padding:11px 8px;border:0;background:var(--card);color:var(--ink-soft);
-      font:inherit;font-weight:600;cursor:pointer}
-    .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
-    select,input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
-      font:inherit;background:var(--card);color:var(--ink)}
-    input:focus,select:focus,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-    .calc{width:100%;margin-top:6px;padding:13px;border:0;border-radius:11px;background:var(--accent);
-      color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer}
-    .calc:hover{background:#2a5f47}
-    .hint{font-size:12.5px;color:var(--ink-soft);margin:10px 2px 0}
-    /* result */
-    .result{margin-top:22px;display:none}
-    .result.on{display:block}
-    .big{font-family:var(--serif);font-size:clamp(28px,6vw,42px);font-weight:600;line-height:1.05;margin:0}
-    .big .ord{color:var(--accent)}
-    .sub{color:var(--ink-soft);margin:6px 0 18px}
-    .track{position:relative;height:46px;margin:20px 0 8px}
-    .track .base{position:absolute;left:0;right:0;top:19px;height:8px;border-radius:6px;
-      background:linear-gradient(90deg,#cdd7cf,#eadfc7 50%,#cdd7cf)}
-    .tick{position:absolute;top:8px;transform:translateX(-50%);text-align:center}
-    .tick i{display:block;width:2px;height:14px;background:#c4bdae;margin:0 auto}
-    .tick span{font-size:10px;color:var(--ink-soft);display:block;margin-top:2px}
-    .pin{position:absolute;top:2px;transform:translateX(-50%);transition:left .5s cubic-bezier(.2,.7,.2,1)}
-    .pin b{display:block;width:16px;height:16px;border-radius:50%;background:var(--measured);
-      border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);margin:0 auto}
-    .read{border-left:3px solid var(--accent);background:#f0f4f1;border-radius:0 12px 12px 0;
-      padding:14px 16px;margin:18px 0;font-size:15px}
+      line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    a{color:var(--green)}
+    .wrap{max-width:680px;margin:0 auto;padding:0 20px}
+
+    /* ---- header: real GrowSense brand chrome ---- */
+    header.bar{background:var(--deep);color:#fff;position:sticky;top:0;z-index:20;
+      border-bottom:1px solid rgba(255,255,255,.06)}
+    header.bar .wrap{max-width:920px;display:flex;align-items:center;justify-content:space-between;
+      gap:12px;height:58px}
+    .logo{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none}
+    .logomark{width:32px;height:32px;border-radius:9px;background:var(--green);display:flex;
+      align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(47,107,79,.5)}
+    .logomark svg{width:18px;height:18px}
+    .logo-txt{font-weight:700;font-size:18px;letter-spacing:-.01em}
+    .logo-txt span{font-weight:500;opacity:.9}
+    .bar .back{color:rgba(255,255,255,.72);font-size:13px;text-decoration:none;font-weight:500}
+    .bar .back:hover{color:#fff}
+
+    /* ---- hero ---- */
+    .hero{position:relative;overflow:hidden;background:var(--deep);color:#eaf1ec;
+      padding:46px 0 40px}
+    .hero::before{content:"";position:absolute;inset:0;opacity:.9;
+      background:
+        radial-gradient(80% 120% at 88% -20%, rgba(90,165,131,.30), transparent 60%),
+        radial-gradient(70% 90% at -10% 120%, rgba(156,122,61,.14), transparent 60%);}
+    .hero .wrap{position:relative}
+    .kick{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#8fceac}
+    .hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,6vw,40px);line-height:1.1;
+      letter-spacing:-.015em;margin:12px 0 12px;color:#fff;text-wrap:balance}
+    .hero p{font-size:17px;color:rgba(234,241,236,.82);margin:0;max-width:46ch}
+    .hero .trust{display:inline-flex;align-items:center;gap:8px;margin-top:18px;font-size:12.5px;
+      color:rgba(234,241,236,.72);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+      padding:6px 12px;border-radius:999px}
+    .hero .trust svg{width:13px;height:13px;stroke:#8fceac}
+
+    main{padding:0 0 60px}
+    .lift{margin-top:-24px;position:relative;z-index:5}
+
+    /* ---- input card ---- */
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 20px;
+      box-shadow:var(--shadow)}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .row + .row{margin-top:14px}
+    .field{flex:1;min-width:120px}
+    label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;
+      letter-spacing:.01em}
+    .seg{display:flex;background:var(--mist);border-radius:11px;padding:4px;gap:4px}
+    .seg button{flex:1;padding:10px 8px;border:0;background:transparent;color:var(--ink-soft);
+      font:inherit;font-weight:600;cursor:pointer;border-radius:8px;transition:.18s}
+    .seg button[aria-pressed="true"]{background:var(--card);color:var(--green);
+      box-shadow:0 1px 4px rgba(20,32,27,.12)}
+    select,input{width:100%;padding:12px 12px;border:1px solid var(--line);border-radius:11px;
+      font:inherit;background:var(--card);color:var(--ink);transition:.16s}
+    input:hover,select:hover{border-color:#cfc9bb}
+    input:focus,select:focus,.seg button:focus-visible{outline:none;border-color:var(--green);
+      box-shadow:0 0 0 3px rgba(47,107,79,.16)}
+    .calc{width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:var(--green);
+      color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer;transition:.18s;
+      display:flex;align-items:center;justify-content:center;gap:9px}
+    .calc:hover{background:var(--green-600);transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(47,107,79,.6)}
+    .calc:active{transform:translateY(0)}
+    .calc svg{width:17px;height:17px}
+    .hint{font-size:12px;color:var(--ink-soft);margin:12px 2px 0;display:flex;gap:7px;align-items:center}
+    .hint svg{width:13px;height:13px;flex:none;stroke:var(--ink-soft)}
+
+    /* ---- result ---- */
+    .result{margin-top:20px;opacity:0;transform:translateY(14px);
+      transition:opacity .5s ease,transform .5s cubic-bezier(.2,.7,.2,1)}
+    .result.on{opacity:1;transform:none}
+    .scorecard{background:var(--card);border:1px solid var(--line);border-radius:18px;
+      padding:24px 22px 20px;box-shadow:var(--shadow);overflow:hidden}
+    .score{display:flex;align-items:baseline;gap:10px;position:relative}
+    .score .num{font-family:var(--serif);font-weight:600;font-size:clamp(46px,13vw,68px);line-height:.9;
+      color:var(--green);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+    .score .lbl{font-family:var(--serif);font-size:20px;color:var(--ink-soft);font-weight:500}
+    .subline{color:var(--ink-soft);font-size:13.5px;margin:10px 0 4px;font-variant-numeric:tabular-nums}
+
+    /* ---- the bell-curve viz (the signature moment) ---- */
+    .dist{width:100%;height:auto;display:block;margin:6px 0 2px;overflow:visible}
+    .dist .grid{stroke:var(--line);stroke-width:1}
+    .dist .area{fill:rgba(47,107,79,.14)}
+    .dist .curve{fill:none;stroke:var(--green);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+    .dist .marker{stroke:var(--measured);stroke-width:2;stroke-dasharray:3 3}
+    .dist .dot{fill:var(--measured);stroke:#fff;stroke-width:2.5}
+    .dist .axlab{fill:var(--ink-soft);font-size:9px;font-family:var(--sans);font-weight:600}
+    .caption{text-align:center;font-size:12.5px;color:var(--ink-soft);margin:2px 0 0}
+
+    .read{border-left:3px solid var(--green);background:var(--mist);border-radius:0 12px 12px 0;
+      padding:14px 16px;margin:18px 0 0;font-size:14.5px}
     .read.warn{border-left-color:var(--estimated);background:#f7f2e8}
     .read.flag{border-left-color:var(--flag);background:#f7edec}
     .read b{color:var(--ink)}
-    .cta{display:block;text-align:center;background:var(--deep);color:#fff;text-decoration:none;
-      padding:16px;border-radius:13px;font-weight:700;margin-top:8px}
-    .cta span{display:block;font-weight:500;font-size:13px;color:rgba(232,239,230,.75);margin-top:3px}
-    .note{font-size:13px;color:var(--ink-soft);margin-top:26px;padding-top:18px;border-top:1px solid var(--line)}
-    .disclaimer{font-size:12.5px;color:var(--ink-soft);opacity:.9;margin-top:12px}
-    footer{padding:26px 0 46px;color:var(--ink-soft);font-size:13px;text-align:center}
+
+    .cta{display:flex;align-items:center;gap:14px;text-decoration:none;margin-top:16px;
+      background:var(--deep);color:#fff;padding:16px 18px;border-radius:14px;transition:.18s}
+    .cta:hover{transform:translateY(-1px);box-shadow:0 12px 26px -12px rgba(14,42,32,.6)}
+    .cta .ic{width:40px;height:40px;border-radius:11px;background:var(--green);flex:none;
+      display:flex;align-items:center;justify-content:center}
+    .cta .ic svg{width:22px;height:22px}
+    .cta .t{flex:1}
+    .cta .t b{display:block;font-size:15.5px}
+    .cta .t span{font-size:12.5px;color:rgba(234,241,236,.72)}
+    .cta .arw{opacity:.6;transition:.18s}
+    .cta:hover .arw{opacity:1;transform:translateX(3px)}
+
+    .note{font-size:13px;color:var(--ink-soft);margin-top:26px}
+    .note b{color:var(--ink)}
+    .disclaimer{font-size:12px;color:var(--ink-soft);opacity:.92;margin-top:12px;
+      padding-top:14px;border-top:1px solid var(--line)}
+    footer{background:var(--deep);color:rgba(234,241,236,.62);padding:22px 0;font-size:13px}
+    footer .wrap{max-width:920px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
+    footer .logo-txt{font-size:15px}
+
+    @media (prefers-reduced-motion:reduce){
+      html{scroll-behavior:auto}
+      .result,.calc,.cta,.seg button{transition:none}
+    }
   </style>
 </head>
 <body>
   <header class="bar">
     <div class="wrap">
-      <a class="brand" href="https://www.growsense.life/blog/">
-        <svg class="leaf" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <path d="M16 29C9 25 5 19 6 10c6 1 11 3 13 8-3-1-6-1-8 0 4 0 8 2 5 11z" fill="#8fceac"/>
-          <path d="M16 29c1-8 5-15 12-18-1 9-5 15-12 18z" fill="#c6a05f"/>
-        </svg>GrowSense</a>
+      <a class="logo" href="https://www.growsense.life/blog/">
+        <span class="logomark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg></span>
+        <span class="logo-txt">Grow<span>Sense</span></span>
+      </a>
       <a class="back" href="https://www.growsense.life/blog/">← Growth Science</a>
     </div>
   </header>
 
-  <main>
+  <section class="hero">
     <div class="wrap">
-      <div class="eyebrow">Free tool · Ages 5–19</div>
-      <h1>Child height percentile calculator</h1>
-      <p class="lede">See where your child sits on the official WHO 2007 growth reference —
-        instantly, and with an honest read of what the number does and doesn't mean.</p>
+      <div class="kick">Free tool · Ages 5–19</div>
+      <h1>Where is your child on the growth curve?</h1>
+      <p>Get an instant height percentile on the official WHO 2007 reference — with an honest read of what it does, and doesn't, mean.</p>
+      <span class="trust"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Same WHO math the GrowSense app uses · nothing leaves your device</span>
+    </div>
+  </section>
 
+  <main>
+    <div class="wrap lift">
       <div class="card">
         <div class="row">
           <div class="field">
@@ -136,32 +205,47 @@ const desc  = 'Free, instant height percentile for children and teens (5–19), 
             <input id="height" type="number" inputmode="decimal" min="70" max="220" step="0.1" placeholder="e.g. 128.5" />
           </div>
         </div>
-        <button class="calc" id="go" type="button">Show percentile</button>
-        <p class="hint" id="hint">Nothing you type leaves your device. This tool covers ages 5–19 (WHO 2007 reference).</p>
+        <button class="calc" id="go" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg>
+          Show percentile</button>
+        <p class="hint" id="hint"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Private by design — nothing you type leaves your device. Covers ages 5–19 (WHO 2007).</p>
       </div>
 
       <section class="result" id="result" aria-live="polite">
-        <p class="big"><span class="ord" id="ord">—</span> percentile</p>
-        <p class="sub" id="subline"></p>
-        <div class="track" aria-hidden="true">
-          <div class="base"></div>
-          <div class="tick" style="left:3%"><i></i><span>3rd</span></div>
-          <div class="tick" style="left:15%"><i></i><span>15th</span></div>
-          <div class="tick" style="left:50%"><i></i><span>50th</span></div>
-          <div class="tick" style="left:85%"><i></i><span>85th</span></div>
-          <div class="tick" style="left:97%"><i></i><span>97th</span></div>
-          <div class="pin" id="pin" style="left:50%"><b></b></div>
+        <div class="scorecard">
+          <div class="score">
+            <span class="num" id="num">—</span>
+            <span class="lbl" id="lbl">percentile</span>
+          </div>
+          <p class="subline" id="subline"></p>
+
+          <svg class="dist" id="dist" viewBox="0 0 320 152" role="img" aria-label="Where your child sits on the growth distribution">
+            <line class="grid" x1="8" y1="122" x2="312" y2="122"></line>
+            <path class="area" id="area" d=""></path>
+            <path class="curve" id="curve" d=""></path>
+            <line class="marker" id="marker" x1="160" y1="20" x2="160" y2="122" style="opacity:0"></line>
+            <circle class="dot" id="dot" cx="160" cy="70" r="5.5" style="opacity:0"></circle>
+            <text class="axlab" id="ax3"  x="0" y="138" text-anchor="middle">3rd</text>
+            <text class="axlab" id="ax50" x="0" y="138" text-anchor="middle">50th</text>
+            <text class="axlab" id="ax97" x="0" y="138" text-anchor="middle">97th</text>
+          </svg>
+          <p class="caption" id="caption"></p>
+
+          <div class="read" id="read"></div>
+
+          <a class="cta" id="cta" href={APP}>
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg></span>
+            <span class="t"><b>Track this over time in GrowSense</b><span>One point is a snapshot — the app follows the whole curve.</span></span>
+            <span class="arw"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </a>
         </div>
-        <div class="read" id="read"></div>
-        <a class="cta" id="cta" href={APP}>Track this over time in GrowSense
-          <span>One measurement is a snapshot — GrowSense follows the curve.</span></a>
       </section>
 
       <p class="note"><b>How it works.</b> The WHO publishes height-for-age as five percentile
         bands (3rd / 15th / 50th / 85th / 97th). This tool interpolates those bands to your
         child's exact age, places their height between them, and converts to a percentile — the
-        same method GrowSense uses inside the app. Under 5? That age needs a different WHO
-        standard; ask your pediatrician. Worried about a low or dropping curve? Read
+        same method the GrowSense app uses. Under 5 needs a different WHO standard; ask your
+        pediatrician. Worried about a low or dropping curve? Read
         <a href="https://www.growsense.life/blog/is-my-child-too-short.html">is my child too short?</a></p>
       <p class="disclaimer">Educational only — not a diagnosis. A single percentile is a
         snapshot, not a verdict; healthy children sit at every percentile, and the trend over
@@ -170,87 +254,116 @@ const desc  = 'Free, instant height percentile for children and teens (5–19), 
     </div>
   </main>
 
-  <footer><div class="wrap">GrowSense · pediatric growth intelligence · growsense.life</div></footer>
+  <footer>
+    <div class="wrap">
+      <a class="logo" href="https://www.growsense.life/" style="color:#fff"><span class="logomark" style="width:26px;height:26px"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg></span><span class="logo-txt">Grow<span>Sense</span></span></a>
+      <span>Pediatric growth intelligence · growsense.life</span>
+    </div>
+  </footer>
 
   <script is:inline set:html={whoSrc}></script>
   <script is:inline set:html={mathSrc}></script>
   <script is:inline>
     (function(){
-      var sex = 'male';
-      var ph = window.posthog; // present if analytics is wired; safe if not
-      function track(ev, props){ try{ if(ph && ph.capture) ph.capture(ev, props||{}); }catch(e){} }
+      var sex='male';
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function track(ev,p){ try{ if(window.posthog&&window.posthog.capture) window.posthog.capture(ev,p||{}); }catch(e){} }
 
-      // populate age selects
-      var yrs = document.getElementById('years'), mos = document.getElementById('months');
+      // ---- geometry for the normal-distribution curve ----
+      var W=320,H=152,padL=8,padR=8,base=122,top=18,zMin=-3.2,zMax=3.2;
+      function xForZ(z){ z=Math.max(zMin,Math.min(zMax,z)); return padL+(z-zMin)/(zMax-zMin)*(W-padL-padR); }
+      function yForZ(z){ return base-Math.exp(-z*z/2)*(base-top); }
+      // static full curve, computed once
+      var curveD='M'+xForZ(zMin).toFixed(1)+' '+yForZ(zMin).toFixed(1);
+      for(var z=zMin+0.1; z<=zMax+1e-9; z+=0.1) curveD+=' L'+xForZ(z).toFixed(1)+' '+yForZ(z).toFixed(1);
+      var curveEl=document.getElementById('curve'); curveEl.setAttribute('d',curveD);
+      // axis labels at 3rd/50th/97th (z of the WHO band edges)
+      document.getElementById('ax3').setAttribute('x', xForZ(-1.881).toFixed(1));
+      document.getElementById('ax50').setAttribute('x', xForZ(0).toFixed(1));
+      document.getElementById('ax97').setAttribute('x', xForZ(1.881).toFixed(1));
+      function areaTo(zc){
+        zc=Math.max(zMin,Math.min(zMax,zc));
+        var d='M'+xForZ(zMin).toFixed(1)+' '+base;
+        for(var z=zMin; z<=zc+1e-9; z+=0.1){ var zz=Math.min(z,zc); d+=' L'+xForZ(zz).toFixed(1)+' '+yForZ(zz).toFixed(1); }
+        d+=' L'+xForZ(zc).toFixed(1)+' '+base+' Z'; return d;
+      }
+
+      // ---- inputs ----
+      var yrs=document.getElementById('years'), mos=document.getElementById('months');
       for(var y=5;y<=19;y++){ var o=document.createElement('option'); o.value=y; o.textContent=y; if(y===8)o.selected=true; yrs.appendChild(o); }
       for(var m=0;m<=11;m++){ var o2=document.createElement('option'); o2.value=m; o2.textContent=m; mos.appendChild(o2); }
+      document.getElementById('sex').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b)return; sex=b.getAttribute('data-sex');
+        [].forEach.call(this.querySelectorAll('button'),function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); }); });
 
-      // sex segmented control
-      document.getElementById('sex').addEventListener('click', function(e){
-        var b = e.target.closest('button'); if(!b) return;
-        sex = b.getAttribute('data-sex');
-        [].forEach.call(this.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
-      });
-
-      function ordinal(n){
-        n = Math.round(n);
-        if(n<1) return '<1st'; if(n>99) return '>99th';
-        var s=['th','st','nd','rd'], v=n%100;
-        return n + (s[(v-20)%10] || s[v] || s[0]);
-      }
+      function ordinal(n){ n=Math.round(n); if(n<1)return '<1'; if(n>99)return '>99'; var s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+      function ordFull(n){ n=Math.round(n); if(n<1)return '<1st'; if(n>99)return '>99th'; var s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
       function ageBand(a){ return a<7?'5-6':a<10?'7-9':a<13?'10-12':a<16?'13-15':'16-19'; }
       function pctBand(p){ return p<3?'<3':p<15?'3-15':p<50?'15-50':p<85?'50-85':p<97?'85-97':'>97'; }
 
-      document.getElementById('go').addEventListener('click', function(){
-        var height = parseFloat(document.getElementById('height').value);
-        var ageYears = parseInt(yrs.value,10) + parseInt(mos.value,10)/12;
-        var hint = document.getElementById('hint');
-        if(!height || height<60 || height>230){ hint.textContent = 'Please enter a height in centimetres (e.g. 128.5).'; hint.style.color='var(--flag)'; return; }
-        hint.textContent = 'Nothing you type leaves your device. This tool covers ages 5–19 (WHO 2007 reference).'; hint.style.color='';
+      function countUp(el,to){
+        if(reduce){ el.textContent=ordFull(to); return; }
+        var start=performance.now(), dur=900;
+        function fr(t){ var k=Math.min(1,(t-start)/dur); var e=1-Math.pow(1-k,3); var v=to*e;
+          el.textContent = k<1 ? ordinal(v) : ordFull(to); if(k<1) requestAnimationFrame(fr); }
+        requestAnimationFrame(fr);
+        // guaranteed final value even if rAF is throttled (e.g. background tab)
+        setTimeout(function(){ el.textContent=ordFull(to); }, dur+80);
+      }
+      function drawCurve(){
+        if(reduce){ curveEl.style.strokeDasharray='none'; curveEl.style.strokeDashoffset='0'; return; }
+        var len=curveEl.getTotalLength();
+        curveEl.style.transition='none'; curveEl.style.strokeDasharray=len; curveEl.style.strokeDashoffset=len;
+        curveEl.getBoundingClientRect();
+        curveEl.style.transition='stroke-dashoffset .9s ease'; curveEl.style.strokeDashoffset='0';
+      }
+      function reveal(zc,x,yv){
+        var area=document.getElementById('area'), mk=document.getElementById('marker'), dot=document.getElementById('dot');
+        area.setAttribute('d', areaTo(zc));
+        mk.setAttribute('x1',x); mk.setAttribute('x2',x); dot.setAttribute('cx',x); dot.setAttribute('cy',yv);
+        if(reduce){ area.style.opacity=1; mk.style.opacity=1; dot.style.opacity=1; return; }
+        area.style.opacity=0; mk.style.opacity=0; dot.style.opacity=0;
+        area.style.transition='none'; area.style.transform='scaleY(.6)'; area.style.transformOrigin='center bottom'; area.getBoundingClientRect();
+        setTimeout(function(){ area.style.transition='opacity .5s ease .25s, transform .6s cubic-bezier(.2,.7,.2,1) .25s'; area.style.opacity=1; area.style.transform='none'; },0);
+        setTimeout(function(){ mk.style.transition='opacity .4s ease'; mk.style.opacity=1;
+          dot.style.transition='opacity .4s ease, r .4s cubic-bezier(.2,.9,.3,1.4)'; dot.style.opacity=1; },560);
+      }
 
-        var r = window.calculateHeightPercentile(height, ageYears, sex);
-        var result = document.getElementById('result');
-        if(!r || r.outOfRange){
+      document.getElementById('go').addEventListener('click',function(){
+        var height=parseFloat(document.getElementById('height').value);
+        var ageYears=parseInt(yrs.value,10)+parseInt(mos.value,10)/12;
+        var hint=document.getElementById('hint');
+        if(!height||height<60||height>230){ hint.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="var(--flag)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg> Please enter a height in centimetres (e.g. 128.5).'; return; }
+        var r=window.calculateHeightPercentile(height,ageYears,sex);
+        var result=document.getElementById('result');
+        var read=document.getElementById('read');
+        if(!r||r.outOfRange){
           result.classList.add('on');
-          document.getElementById('ord').textContent = '—';
-          document.getElementById('subline').textContent = 'Ages 5–19 only';
-          document.getElementById('pin').style.left = '50%';
-          document.getElementById('read').className = 'read warn';
-          document.getElementById('read').innerHTML = '<b>Outside this tool’s range.</b> It covers ages 5–19 on the WHO 2007 reference. Under 5 uses a different WHO standard — your pediatrician or the GrowSense app can chart it.';
-          track('tool_result', { tool:'height-percentile', out_of_range:true });
-          return;
+          document.getElementById('num').textContent='—'; document.getElementById('lbl').textContent='ages 5–19 only';
+          document.getElementById('subline').textContent=''; document.getElementById('caption').textContent='';
+          read.className='read warn'; read.innerHTML='<b>Outside this tool’s range.</b> It covers ages 5–19 on the WHO 2007 reference. Under 5 uses a different WHO standard — your pediatrician or the GrowSense app can chart it.';
+          track('tool_result',{tool:'height-percentile',out_of_range:true}); result.scrollIntoView({block:'nearest'}); return;
         }
-        var p = r.percentile;
+        var p=r.percentile, zc=r.zScore, x=xForZ(zc), yv=yForZ(zc);
         result.classList.add('on');
-        document.getElementById('ord').textContent = ordinal(p);
-        document.getElementById('subline').textContent =
-          (sex==='male'?'Boy':'Girl') + ', ' + (Math.round(ageYears*10)/10) + ' yr · height ' + height + ' cm · z-score ' + (Math.round(r.zScore*100)/100);
-        // pin position on the 0–100 visual scale (clamp for the tails)
-        document.getElementById('pin').style.left = Math.max(1.5, Math.min(98.5, p)) + '%';
+        document.getElementById('lbl').textContent='percentile';
+        document.getElementById('subline').textContent=(sex==='male'?'Boy':'Girl')+' · '+(Math.round(ageYears*10)/10)+' yr · '+height+' cm · z-score '+(Math.round(zc*100)/100);
+        document.getElementById('caption').textContent='Taller than about '+Math.max(1,Math.min(99,Math.round(p)))+'% of '+(sex==='male'?'boys':'girls')+' this age.';
+        drawCurve(); reveal(zc,x,yv); countUp(document.getElementById('num'),p);
 
-        var read = document.getElementById('read'), msg, cls='read';
-        if(p < 3){
-          cls='read flag';
-          msg = '<b>Below the 3rd percentile.</b> This can be perfectly healthy — short parents, a later-maturing child — but it’s worth a check, especially if the curve is drifting downward. A pediatrician can look at the <em>trend</em> and the family pattern. See <a href="https://www.growsense.life/blog/is-my-child-too-short.html">is my child too short?</a>';
-        } else if(p > 97){
-          cls='read warn';
-          msg = '<b>Above the 97th percentile.</b> Often simply a tall, healthy child (tall parents, early growth). Worth a mention at a routine check if it’s a sudden jump. The pattern over time matters more than one point.';
-        } else if(p < 15){
-          cls='read warn';
-          msg = '<b>On the lower side of typical.</b> Plenty of healthy children sit here. What matters is the curve: a steady low line is reassuring; a dropping one is worth a look.';
-        } else {
-          msg = '<b>Within the typical range.</b> A single measurement is a snapshot, not a verdict — healthy children sit at every percentile. The shape of the curve over months is what actually tells the story.';
-        }
-        read.className = cls; read.innerHTML = msg;
-        track('tool_result', { tool:'height-percentile', sex:sex, age_band:ageBand(ageYears), percentile_band:pctBand(p) });
-        result.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        var msg,cls='read';
+        if(p<3){ cls='read flag'; msg='<b>Below the 3rd percentile.</b> This can be perfectly healthy — short parents, a later-maturing child — but it’s worth a check, especially if the curve is drifting downward. A pediatrician can look at the <em>trend</em> and the family pattern. See <a href="https://www.growsense.life/blog/is-my-child-too-short.html">is my child too short?</a>'; }
+        else if(p>97){ cls='read warn'; msg='<b>Above the 97th percentile.</b> Often simply a tall, healthy child (tall parents, early growth). Worth a mention at a routine check if it’s a sudden jump — the pattern over time matters more than one point.'; }
+        else if(p<15){ cls='read warn'; msg='<b>On the lower side of typical.</b> Plenty of healthy children sit here. What matters is the curve: a steady low line is reassuring; a dropping one is worth a look.'; }
+        else { msg='<b>Within the typical range.</b> A single measurement is a snapshot, not a verdict — healthy children sit at every percentile. The shape of the curve over months is what actually tells the story.'; }
+        read.className=cls; read.innerHTML=msg;
+        track('tool_result',{tool:'height-percentile',sex:sex,age_band:ageBand(ageYears),percentile_band:pctBand(p)});
+        setTimeout(function(){ result.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'}); },80);
       });
 
-      document.getElementById('cta').addEventListener('click', function(){
-        track('app_link_click', { source_slug:'height-percentile-calculator', cta_position:'result', target_module:'measure', utm_campaign:'height-percentile-calculator' });
+      document.getElementById('cta').addEventListener('click',function(){
+        track('app_link_click',{source_slug:'height-percentile-calculator',cta_position:'result',target_module:'measure',utm_campaign:'height-percentile-calculator'});
       });
-
-      track('tool_view', { tool:'height-percentile', lang:'en' });
+      track('tool_view',{tool:'height-percentile',lang:'en'});
     })();
   </script>
 </body>
