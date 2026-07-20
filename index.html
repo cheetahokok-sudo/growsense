@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.gsTrack=window.gsTrack||function(){};</script>
+<script>window.gsTrack=window.gsTrack||function(){};window.gsOpenPreview=window.gsOpenPreview||function(){window.__gsOpenQueued=1;};</script>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -1500,8 +1500,8 @@
   </div>
 </div>
 
-<script src="who-reference-data.js"></script>
-<script src="growth-percentile.js"></script>
+<script defer src="who-reference-data.js"></script>
+<script defer src="growth-percentile.js"></script>
 <script>
 (function(){
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1511,12 +1511,13 @@
   var input=document.getElementById("gspInput"), result=document.getElementById("gspResult");
 
   // ---- open / close ----
-  window.gsOpenPreview=function(){
+  function openPreview(){
     showState("input");
     ov.classList.add("on"); document.body.style.overflow="hidden";
     T("preview_tool_view",{source:"hero"});
-    setTimeout(function(){ var h=document.getElementById("gspH"); },50);
-  };
+  }
+  window.gsOpenPreview=openPreview;
+  if(window.__gsOpenQueued){ window.__gsOpenQueued=0; openPreview(); }
   function close(){ ov.classList.remove("on"); document.body.style.overflow=""; }
   document.getElementById("gspClose").addEventListener("click",close);
   ov.addEventListener("click",function(e){ if(e.target===ov) close(); });
