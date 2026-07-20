@@ -252,17 +252,16 @@
   .final-badges{margin-top:40px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,.6)}
   .final-badges span{display:inline-flex;align-items:center;gap:7px}
 
-  /* TESTIMONIALS */
+  /* TESTIMONIALS → the moments GrowSense is built for */
   .voices{background:var(--cream)}
-  .voice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:8px}
+  .voices .sub{text-align:center;max-width:60ch;margin:14px auto 0;font-size:15px;line-height:1.6;color:var(--ink2)}
+  .voice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:32px}
   .voice{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:28px;display:flex;flex-direction:column}
-  .voice .stars{display:flex;gap:2px;margin-bottom:14px}
-  .voice .stars svg{width:15px;height:15px}
-  .voice .q{font-family:'Fraunces',serif;font-size:18px;line-height:1.4;color:var(--ink);font-weight:500;flex:1}
-  .voice .who{display:flex;align-items:center;gap:11px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
-  .voice .av{width:38px;height:38px;border-radius:50%;background:var(--okbg);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px}
-  .voice .nm{font-size:13.5px;font-weight:600;color:var(--ink)}
-  .voice .rl{font-size:12px;color:var(--ink3)}
+  .voice .micon{width:44px;height:44px;border-radius:13px;background:var(--okbg);color:var(--green);display:flex;align-items:center;justify-content:center;margin-bottom:16px;flex-shrink:0}
+  .voice .micon svg{width:22px;height:22px}
+  .voice .micon.gold{background:var(--watchbg);color:var(--gold)}
+  .voice .q{font-family:'Fraunces',serif;font-size:18px;line-height:1.42;color:var(--ink);font-weight:500;flex:1}
+  .voice .note{text-align:center;font-size:12.5px;color:var(--ink3);margin-top:24px}
   @media(max-width:760px){.voice-grid{grid-template-columns:1fr}}
 
   /* footer */
@@ -776,67 +775,33 @@
 <section class="voices">
   <div class="wrap">
     <div class="sec-head center reveal">
-      <div class="eyebrow" data-i18n="voices.eyebrow">Trusted by parents</div>
-      <h2 data-i18n="voices.h2">Peace of mind, one measurement at a time.</h2>
+      <div class="eyebrow" data-i18n="voices.eyebrow">Honest by design</div>
+      <h2 data-i18n="voices.h2">The moments GrowSense is built for</h2>
+      <p class="sub" data-i18n="voices.sub">Every number comes with an honest range and evidence you can open — see what that looks like, day to day.</p>
     </div>
     <div class="voice-grid">
       <div class="voice reveal">
-        <div class="stars">
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-        </div>
-        <div class="q">"For the first time I actually understand my son's growth chart. The predicted height gave me real reassurance before our check-up."</div>
-        <div class="who"><div class="av">N</div><div><div class="nm">Nut</div><div class="rl">Parent · Bangkok</div></div></div>
+        <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 13l4-4 3 3 5-6"/></svg></div>
+        <div class="q">Walk into the check-up already understanding the chart — with an honest predicted range, not a scary single number.</div>
       </div>
       <div class="voice reveal">
-        <div class="stars">
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-        </div>
-        <div class="q">"The sleep insight was eye-opening — I never connected bedtime with growth. We shifted it earlier and her readiness went up."</div>
-        <div class="who"><div class="av">M</div><div><div class="nm">Minh</div><div class="rl">Parent · Hanoi</div></div></div>
+        <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div>
+        <div class="q">See how bedtime connects to growth and recovery — and what shifting it earlier could do.</div>
       </div>
       <div class="voice reveal">
-        <div class="stars">
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-        </div>
-        <div class="q">"Being able to hand my pediatrician a clean PDF of everything — labs, height, bone age — made our visit so much more useful."</div>
-        <div class="who"><div class="av">S</div><div><div class="nm">Somchai</div><div class="rl">Parent · Chiang Mai</div></div></div>
+        <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></div>
+        <div class="q">Hand your pediatrician one clean PDF — labs, height, bone age — so the visit actually moves forward.</div>
       </div>
       <div class="voice reveal">
-        <div class="stars">
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-        </div>
-        <div class="q">"On the days I forgot to log, it filled them from her usual patterns and marked them clearly as estimates. I finally trust the trend instead of second-guessing it."</div>
-        <div class="who"><div class="av">L</div><div><div class="nm">Li Wei</div><div class="rl">Parent · Shanghai</div></div></div>
+        <div class="micon gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></div>
+        <div class="q">Miss a day? GrowSense fills it from your usual patterns and marks it clearly as an estimate — so you trust the trend instead of second-guessing it.</div>
       </div>
       <div class="voice reveal">
-        <div class="stars">
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <svg viewBox="0 0 24 24" fill="#9C7A3D"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-        </div>
-        <div class="q">"We track his bone age across two hospitals in one timeline. For the first time our endocrinologist could see the whole growth picture at a glance."</div>
-        <div class="who"><div class="av">J</div><div><div class="nm">Jiwon</div><div class="rl">Parent · Seoul</div></div></div>
+        <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="14" rx="1.5"/><path d="M9 21v-4h6v4"/><path d="M12 3.5v4M10 5.5h4"/></svg></div>
+        <div class="q">Track bone age across hospitals in one timeline — the whole growth picture your endocrinologist rarely gets to see.</div>
       </div>
     </div>
-    <p style="text-align:center;font-size:12px;color:var(--ink3);margin-top:24px" class="reveal">Illustrative examples. We'll feature real member stories as our community grows.</p>
+    <p class="note reveal" data-i18n="voices.note">As real families share their stories, they will appear here — with their permission.</p>
   </div>
 </section>
 
@@ -1083,7 +1048,7 @@
       'portion.eyebrow':'Logging that fits real family life',
       'portion.h2':'No kitchen scale. No calorie math.',
       'portion.p':'Track growth nutrients with simple visual portions that work across every food culture — from a bowl of rice porridge to a piece of grilled fish.',
-      'voices.eyebrow':'Trusted by parents','voices.h2':'Peace of mind, one measurement at a time.',
+      'voices.eyebrow':'Honest by design','voices.h2':'The moments GrowSense is built for','voices.sub':'Every number comes with an honest range and evidence you can open — see what that looks like, day to day.','voices.note':'As real families share their stories, they will appear here — with their permission.',
       'trust.eyebrow':'Why parents trust us',
       'trust.h2':"Serious about your child's data. Honest about the science.",
       'trust.priv.h4':'Private by design','trust.research.h4':'Grounded in research','trust.clinic.h4':'Clinician-ready','trust.honest.h4':'Measured, never guessed',
@@ -1126,7 +1091,7 @@
       'portion.eyebrow':'การบันทึกที่เหมาะกับชีวิตครอบครัวจริงๆ',
       'portion.h2':'ไม่ต้องชั่ง ไม่ต้องคำนวณแคลอรี',
       'portion.p':'ติดตามสารอาหารที่สำคัญต่อการเจริญเติบโตด้วยภาพส่วนง่ายๆ ที่ใช้ได้ทุกวัฒนธรรมอาหาร ตั้งแต่ข้าวต้มไปจนถึงปลาย่าง',
-      'voices.eyebrow':'ได้รับความไว้วางใจจากพ่อแม่','voices.h2':'ความสบายใจ ทีละการวัด',
+      'voices.eyebrow':'ซื่อตรงตั้งแต่การออกแบบ','voices.h2':'สร้างมาเพื่อช่วงเวลาที่สำคัญที่สุด','voices.sub':'ทุกตัวเลขมาพร้อมช่วงค่าที่ซื่อตรงและหลักฐานที่คุณเปิดดูได้ — มาดูกันว่าในแต่ละวันเป็นอย่างไร','voices.note':'เมื่อครอบครัวจริงมาแบ่งปันเรื่องราว เราจะนำมาแสดงที่นี่ — โดยได้รับอนุญาต',
       'trust.eyebrow':'ทำไมพ่อแม่ถึงไว้ใจเรา',
       'trust.h2':'จริงจังกับข้อมูลของลูกคุณ ซื่อสัตย์กับวิทยาศาสตร์',
       'trust.priv.h4':'ออกแบบมาเพื่อความเป็นส่วนตัว','trust.research.h4':'อิงงานวิจัย','trust.clinic.h4':'พร้อมสำหรับคลินิก','trust.honest.h4':'วัดจริง ไม่ใช่การเดา',
@@ -1169,7 +1134,7 @@
       'portion.eyebrow':'适合真实家庭生活的记录方式',
       'portion.h2':'无需厨房秤，无需计算卡路里。',
       'portion.p':'用简单的视觉份量追踪成长所需营养素，适用于各种饮食文化——从一碗米粥到一块烤鱼。',
-      'voices.eyebrow':'家长的信赖','voices.h2':'安心，一次测量一次。',
+      'voices.eyebrow':'诚实为本','voices.h2':'为真实的育儿时刻而打造','voices.sub':'每个数字都附带诚实的范围和可查阅的证据——看看它在日常中是什么样子。','voices.note':'当真实的家庭分享他们的故事时，会在征得许可后展示在这里。',
       'trust.eyebrow':'为什么家长信任我们',
       'trust.h2':'认真对待您孩子的数据。对科学诚实。',
       'trust.priv.h4':'隐私优先设计','trust.research.h4':'基于研究','trust.clinic.h4':'临床就绪','trust.honest.h4':'实测，绝不臆测',
@@ -1212,7 +1177,7 @@
       'portion.eyebrow':'실제 가족 생활에 맞는 기록',
       'portion.h2':'주방 저울도, 칼로리 계산도 필요 없습니다.',
       'portion.p':'간단한 시각적 분량으로 성장에 필요한 영양소를 추적하세요. 죽 한 그릇부터 생선구이까지 모든 식문화에서 사용 가능합니다.',
-      'voices.eyebrow':'부모님들의 신뢰','voices.h2':'안심, 한 번의 측정에서부터.',
+      'voices.eyebrow':'정직한 설계','voices.h2':'GrowSense가 만들어진 순간들','voices.sub':'모든 수치에는 정직한 범위와 직접 확인할 수 있는 근거가 함께합니다 — 일상에서 어떤 모습인지 살펴보세요.','voices.note':'실제 가족들이 이야기를 들려주면, 허락을 받아 이곳에 실릴 예정입니다.',
       'trust.eyebrow':'왜 부모님들이 신뢰하나요',
       'trust.h2':'아이의 데이터에 진지하게. 과학에 솔직하게.',
       'trust.priv.h4':'프라이버시 우선 설계','trust.research.h4':'연구 기반','trust.clinic.h4':'클리닉 준비 완료','trust.honest.h4':'측정값, 추측 아님',
@@ -1255,7 +1220,7 @@
       'portion.eyebrow':'Ghi chép phù hợp với cuộc sống gia đình thực tế',
       'portion.h2':'Không cần cân nhà bếp. Không cần tính calo.',
       'portion.p':'Theo dõi chất dinh dưỡng tăng trưởng bằng khẩu phần hình ảnh đơn giản hoạt động trong mọi nền văn hóa ẩm thực — từ bát cháo gạo đến miếng cá nướng.',
-      'voices.eyebrow':'Được cha mẹ tin tưởng','voices.h2':'Yên tâm, từng lần đo một.',
+      'voices.eyebrow':'Trung thực từ trong thiết kế','voices.h2':'Những khoảnh khắc GrowSense được tạo ra để phục vụ','voices.sub':'Mỗi con số đều đi kèm một khoảng tin cậy trung thực và bằng chứng bạn có thể mở ra xem — hãy xem điều đó diễn ra hằng ngày như thế nào.','voices.note':'Khi các gia đình thực sự chia sẻ câu chuyện của họ, chúng sẽ xuất hiện ở đây — với sự cho phép của họ.',
       'trust.eyebrow':'Tại sao cha mẹ tin tưởng chúng tôi',
       'trust.h2':'Nghiêm túc với dữ liệu của con bạn. Trung thực với khoa học.',
       'trust.priv.h4':'Thiết kế bảo mật riêng tư','trust.research.h4':'Dựa trên nghiên cứu','trust.clinic.h4':'Sẵn sàng cho phòng khám','trust.honest.h4':'Đo thật, không phỏng đoán',
@@ -1298,7 +1263,7 @@
       'portion.eyebrow':'تسجيل يناسب الحياة الأسرية الحقيقية',
       'portion.h2':'لا حاجة لميزان المطبخ. لا حاجة لحساب السعرات.',
       'portion.p':'تابع العناصر الغذائية الداعمة للنمو بحصص بصرية بسيطة تناسب جميع ثقافات الطعام — من طبق الأرز إلى السمك المشوي.',
-      'voices.eyebrow':'ثقة الآباء','voices.h2':'راحة بال، قياسًا بعد قياس.',
+      'voices.eyebrow':'الصدق في التصميم','voices.h2':'اللحظات التي صُمم GrowSense من أجلها','voices.sub':'كل رقم يأتي مع نطاق صادق وأدلة يمكنك فتحها — شاهد كيف يبدو ذلك يومًا بعد يوم.','voices.note':'عندما تشارك العائلات الحقيقية قصصها، ستظهر هنا — بعد الحصول على إذنها.',
       'trust.eyebrow':'لماذا يثق بنا الآباء',
       'trust.h2':'جدية مع بيانات طفلك. أمانة مع العلم.',
       'trust.priv.h4':'تصميم يحمي الخصوصية','trust.research.h4':'مستند إلى الأبحاث','trust.clinic.h4':'جاهز للعيادة','trust.honest.h4':'مقاس، لا مُخمَّن',
