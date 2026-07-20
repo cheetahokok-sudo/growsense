@@ -268,16 +268,27 @@ class _AuthScreenState extends State<AuthScreen> {
                         label: t('flutter.auth.google',
                             'Continue with Google'),
                       ),
-                      const SizedBox(height: 10),
-                      _SocialButton(
-                        onPressed: _busy ? null : _appleSignIn,
-                        background: Colors.black,
-                        foreground: Colors.white,
-                        icon: const Icon(Icons.apple,
-                            size: 20, color: Colors.white),
-                        label:
-                            t('flutter.auth.apple', 'Continue with Apple'),
-                      ),
+                      // Apple sign-in only where the NATIVE flow works
+                      // (signInWithIdToken, iOS/macOS). On web + Android it
+                      // would fall back to signInWithOAuth, which needs the
+                      // Apple Services ID + .p8 web secret that isn't set up —
+                      // so hide it there to avoid a dead-end. Guideline 4.8 is
+                      // iOS-app-only; Google + email is fine on web/Play.
+                      if (!kIsWeb &&
+                          (defaultTargetPlatform == TargetPlatform.iOS ||
+                              defaultTargetPlatform ==
+                                  TargetPlatform.macOS)) ...[
+                        const SizedBox(height: 10),
+                        _SocialButton(
+                          onPressed: _busy ? null : _appleSignIn,
+                          background: Colors.black,
+                          foreground: Colors.white,
+                          icon: const Icon(Icons.apple,
+                              size: 20, color: Colors.white),
+                          label:
+                              t('flutter.auth.apple', 'Continue with Apple'),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       Row(children: [
                         const Expanded(
