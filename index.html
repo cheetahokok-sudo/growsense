@@ -300,6 +300,98 @@
   .plan.featured .plan-note{color:rgba(255,255,255,.55)}
   @media(max-width:760px){.plan-grid{grid-template-columns:1fr}}
 
+  /* ── Interactive preview: iPhone shell (hero demo + modal) ───────── */
+  .gs-phone{width:268px;background:#0b0e0c;border-radius:42px;padding:9px;position:relative;
+    box-shadow:0 44px 90px -34px rgba(0,0,0,.62), 0 0 0 1px rgba(255,255,255,.05) inset,
+    0 0 0 2px rgba(0,0,0,.35);}
+  .gs-phone .notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:92px;
+    height:20px;background:#0b0e0c;border-radius:0 0 13px 13px;z-index:4}
+  .gs-screen{background:#fff;border-radius:33px;overflow:hidden;position:relative;height:500px}
+  .gs-status{display:flex;justify-content:space-between;align-items:center;padding:13px 22px 2px;
+    font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+  .gs-status .sig{display:flex;gap:4px;align-items:center;opacity:.85}
+  .gs-status .sig svg{width:15px;height:11px}
+  .gs-stage{position:relative;height:calc(100% - 30px)}
+  .gs-state{position:absolute;inset:0;padding:8px 18px 18px;opacity:0;transform:translateX(14px);
+    pointer-events:none;transition:opacity .38s ease,transform .45s cubic-bezier(.2,.7,.2,1);
+    overflow-y:auto;display:flex;flex-direction:column}
+  .gs-state.on{opacity:1;transform:none;pointer-events:auto}
+  .gs-appbar{display:flex;align-items:center;gap:8px;margin:2px 0 12px}
+  .gs-appbar .lm{width:26px;height:26px;border-radius:7px;background:var(--green);display:flex;
+    align-items:center;justify-content:center;flex:none}
+  .gs-appbar .lm svg{width:15px;height:15px}
+  .gs-appbar b{font-size:14px;font-weight:700}
+  .gs-appbar .tag{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink3);background:#f2f0ea;padding:3px 7px;border-radius:6px}
+  /* inputs */
+  .gs-h{font-size:15px;font-weight:700;margin:0 0 3px}
+  .gs-hint{font-size:11.5px;color:var(--ink3);margin:0 0 12px}
+  .gs-lab{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--ink3);margin:10px 0 5px;
+    text-transform:uppercase}
+  .gs-seg{display:flex;background:#f2f0ea;border-radius:10px;padding:3px;gap:3px}
+  .gs-seg button{flex:1;border:0;background:transparent;color:var(--ink3);font:inherit;font-weight:600;
+    font-size:13px;padding:8px 6px;border-radius:8px;cursor:pointer;transition:.15s}
+  .gs-seg button[aria-pressed="true"]{background:#fff;color:var(--green);box-shadow:0 1px 3px rgba(20,32,27,.14)}
+  .gs-two{display:flex;gap:8px}
+  .gs-two > *{flex:1;min-width:0}
+  .gs-in{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;font:inherit;
+    font-size:15px;background:#fff;color:var(--ink)}
+  .gs-in:focus,.gs-seg button:focus-visible{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(47,107,79,.15)}
+  .gs-hgt{position:relative}
+  .gs-hgt .u{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--ink3);font-weight:600}
+  .gs-hgt .gs-in{padding-right:38px}
+  .gs-age{font-size:12px;color:var(--green);font-weight:600;margin:8px 2px 0}
+  .gs-go{margin-top:auto;width:100%;border:0;border-radius:12px;background:var(--green);color:#fff;
+    font:inherit;font-weight:700;font-size:15px;padding:13px;cursor:pointer;transition:.15s;
+    display:flex;align-items:center;justify-content:center;gap:8px}
+  .gs-go:hover{background:#2a5f47}
+  .gs-go svg{width:16px;height:16px}
+  /* result */
+  .gs-sub{font-size:12px;color:var(--ink3);margin:0 0 2px}
+  .gs-track{display:flex;align-items:baseline;gap:8px;margin:0 0 2px}
+  .gs-pct{font-family:var(--serif,"Fraunces",Georgia,serif);font-size:44px;font-weight:600;
+    line-height:.95;color:var(--green);font-variant-numeric:tabular-nums}
+  .gs-pctl{font-size:14px;color:var(--ink3);font-weight:600}
+  .gs-cap{font-size:11.5px;color:var(--ink3);margin:2px 0 6px}
+  .gs-curve{width:100%;height:auto;display:block;margin:2px 0}
+  .gs-read{font-size:12px;border-radius:10px;padding:9px 11px;margin:6px 0;display:flex;gap:7px;align-items:flex-start}
+  .gs-read.ok{background:var(--okbg);color:#245}
+  .gs-read.ok b{color:var(--green)}
+  .gs-read.watch{background:var(--watchbg);color:#5a4420}
+  .gs-read .rd{width:9px;height:9px;border-radius:50%;flex:none;margin-top:3px}
+  .gs-read.ok .rd{background:var(--green)} .gs-read.watch .rd{background:var(--gold)}
+  .gs-tiles{display:flex;gap:8px;margin:4px 0 12px}
+  .gs-tile{flex:1;border-radius:10px;padding:9px 11px}
+  .gs-tile .tl{font-size:9.5px;letter-spacing:.05em;font-weight:700}
+  .gs-tile .tv{font-family:var(--serif,"Fraunces",Georgia,serif);font-size:19px;font-weight:600;margin-top:2px}
+  .gs-tile.locked{background:var(--watchbg);position:relative}
+  .gs-tile.locked .tl{color:var(--gold)} .gs-tile.locked .tv{color:var(--gold);font-size:12.5px;line-height:1.25;font-family:var(--sans)}
+  .gs-tile.meas{background:var(--okbg)} .gs-tile.meas .tl{color:var(--green)} .gs-tile.meas .tv{color:var(--green)}
+  .gs-save{display:block;text-align:center;text-decoration:none;background:var(--green);color:#fff;
+    font-weight:700;font-size:14.5px;padding:12px;border-radius:12px;margin-top:auto}
+  .gs-save small{display:block;font-weight:500;font-size:11px;color:rgba(255,255,255,.72);margin-top:2px}
+  .gs-restart{background:none;border:0;color:var(--ink3);font:inherit;font-size:12px;text-decoration:underline;
+    cursor:pointer;margin:9px auto 0;display:block}
+  /* hero demo phone (desktop only, replaces the forecast card) */
+  #heroPhoneDemo{position:absolute;right:5.5%;top:11%;z-index:4;cursor:pointer;transform:scale(.9);
+    transform-origin:top right;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+  #heroPhoneDemo:hover{transform:scale(.93)}
+  #heroPhoneDemo .gs-tapcue{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);
+    background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:6px 13px;border-radius:999px;
+    white-space:nowrap;box-shadow:0 8px 18px -8px rgba(47,107,79,.7)}
+  html[dir="rtl"] #heroPhoneDemo{right:auto;left:5.5%;transform-origin:top left}
+  @media(max-width:900px){#heroPhoneDemo{display:none}}
+  /* modal */
+  .gsp-overlay{position:fixed;inset:0;z-index:200;background:rgba(8,12,10,.74);display:none;
+    align-items:center;justify-content:center;padding:20px}
+  .gsp-overlay.on{display:flex}
+  .gsp-modal{position:relative;animation:gspin .42s cubic-bezier(.2,.7,.2,1)}
+  @keyframes gspin{from{opacity:0;transform:translateY(26px) scale(.95)}to{opacity:1;transform:none}}
+  .gsp-close{position:absolute;top:-6px;right:-6px;z-index:6;width:34px;height:34px;border-radius:50%;
+    border:0;background:#fff;color:#0b0e0c;font-size:19px;cursor:pointer;box-shadow:0 6px 18px -6px rgba(0,0,0,.5)}
+  @media(max-width:480px){.gs-phone{width:min(300px,86vw)} .gsp-close{top:-10px;right:0}}
+  @media(prefers-reduced-motion:reduce){.gs-state,.gsp-modal,#heroPhoneDemo{transition:none;animation:none}}
+
   .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
   .reveal.in{opacity:1;transform:none}
   @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
@@ -348,15 +440,32 @@
 <header class="hero">
   <div class="hero-orbit" id="orbit"></div>
 
-  <div class="forecast-card reveal">
-    <div class="fc-label">Predicted adult height</div>
-    <div class="fc-num">172<small>cm</small></div>
-    <div class="fc-range">likely range 167–177 cm</div>
-    <div class="fc-bar"><i></i></div>
-    <div class="fc-foot">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9fe3c2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-      On track · based on Mali's growth
+  <div id="heroPhoneDemo" class="reveal" role="button" tabindex="0" aria-label="Try the interactive growth preview" onclick="gsOpenPreview()">
+    <div class="gs-phone">
+      <div class="notch"></div>
+      <div class="gs-screen">
+        <div class="gs-status"><span>9:41</span><span class="sig"><svg viewBox="0 0 24 16" fill="none" aria-hidden="true"><rect x="1" y="9" width="3" height="5" rx="1" fill="#14201b"/><rect x="6" y="6" width="3" height="8" rx="1" fill="#14201b"/><rect x="11" y="3" width="3" height="11" rx="1" fill="#14201b"/><rect x="17" y="2" width="6" height="12" rx="2.2" fill="#14201b" opacity=".4"/></svg></span></div>
+        <div class="gs-stage">
+          <div class="gs-state on" style="position:relative">
+            <div class="gs-appbar"><span class="lm"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg></span><b>Mali · 8y</b><span class="tag">Sample</span></div>
+            <div class="gs-track"><span class="gs-pct" style="font-size:29px">On&nbsp;track</span></div>
+            <div class="gs-cap">a healthy trajectory for age</div>
+            <svg class="gs-curve" viewBox="0 0 300 128" aria-hidden="true">
+              <defs><linearGradient id="hband" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f6b4f" stop-opacity=".16"/><stop offset="1" stop-color="#2f6b4f" stop-opacity=".05"/></linearGradient></defs>
+              <path d="M10 40 Q80 34 150 26 T290 14 L290 90 Q220 98 150 104 T10 112 Z" fill="url(#hband)"/>
+              <polyline points="10,96 55,88 100,80 150,71 200,61 250,52 290,43" fill="none" stroke="#2A5C8A" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="290" cy="43" r="4.5" fill="#2A5C8A"/>
+            </svg>
+            <div class="gs-tiles">
+              <div class="gs-tile meas"><div class="tl">HEIGHT</div><div class="tv">128<span style="font-size:12px">cm</span></div></div>
+              <div class="gs-tile meas"><div class="tl">PERCENTILE</div><div class="tv">50th</div></div>
+            </div>
+            <div class="gs-save" style="pointer-events:none;margin-top:auto">Tap to try with your child</div>
+          </div>
+        </div>
+      </div>
     </div>
+    <div class="gs-tapcue">Try it with your child →</div>
   </div>
 
   <div class="hero-content">
@@ -364,7 +473,7 @@
     <h1 class="hero-h1 reveal" data-i18n="hero.title">Know if your child is <em>growing to their potential.</em></h1>
     <p class="hero-sub reveal" data-i18n="hero.sub">GrowSense turns height, sleep, nutrition, and clinical labs into one clear answer — and a research-backed projection of your child's adult height. Not another tracker. A growth companion.</p>
     <div class="hero-cta">
-      <a href="app/" class="btn btn-light reveal" id="heroPrimary" data-i18n="hero.cta_start" onclick="gsTrack('cta_hero_click',{label:'trajectory'})">See my child's trajectory</a>
+      <a href="app/" class="btn btn-light reveal" id="heroPrimary" data-i18n="hero.cta_start" onclick="gsTrack('cta_hero_click',{label:'trajectory'});gsOpenPreview();return false;">See my child's trajectory</a>
       <a href="#how" class="btn btn-outline reveal" data-i18n="hero.cta_explore" onclick="gsTrack('cta_hero_click',{label:'explore'})">Explore GrowSense →</a>
     </div>
     <a href="app/" class="hero-login reveal" id="heroLogin" data-i18n="hero.have_account" onclick="gsTrack('cta_hero_click',{label:'login'})" style="display:inline-block;margin-top:12px;font-size:13.5px;color:rgba(26,36,30,.62);text-decoration:underline;text-underline-offset:3px">Already have an account? Log in</a>
@@ -1339,6 +1448,159 @@
   }, { passive:true });
   dots.forEach((d,i) => d.addEventListener('click', () =>
     car.scrollTo({ left: i*(cards[0].offsetWidth+18), behavior:'smooth' })));
+</script>
+
+<!-- ── Interactive growth preview (hero "See my child's trajectory") ── -->
+<div class="gsp-overlay" id="gspOverlay" role="dialog" aria-modal="true" aria-label="Growth preview">
+  <div class="gsp-modal">
+    <button class="gsp-close" id="gspClose" aria-label="Close preview">✕</button>
+    <div class="gs-phone">
+      <div class="notch"></div>
+      <div class="gs-screen">
+        <div class="gs-status"><span>9:41</span><span class="sig"><svg viewBox="0 0 24 16" fill="none" aria-hidden="true"><rect x="1" y="9" width="3" height="5" rx="1" fill="#14201b"/><rect x="6" y="6" width="3" height="8" rx="1" fill="#14201b"/><rect x="11" y="3" width="3" height="11" rx="1" fill="#14201b"/><rect x="17" y="2" width="6" height="12" rx="2.2" fill="#14201b" opacity=".4"/></svg></span></div>
+        <div class="gs-stage">
+          <!-- INPUT -->
+          <div class="gs-state on" id="gspInput">
+            <div class="gs-appbar"><span class="lm"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg></span><b>Add your child</b></div>
+            <div class="gs-h">Where do they sit today?</div>
+            <div class="gs-hint">Free · no account · nothing you type leaves your device.</div>
+            <div class="gs-lab">Child</div>
+            <div class="gs-seg" id="gspSex"><button type="button" data-sex="male" aria-pressed="true">Boy</button><button type="button" data-sex="female" aria-pressed="false">Girl</button></div>
+            <div class="gs-lab" style="display:flex;justify-content:space-between;align-items:center;gap:8px">Age <span class="gs-seg" id="gspMode" style="padding:2px;flex:none"><button type="button" data-mode="dob" aria-pressed="true" style="padding:4px 10px;font-size:10.5px">Birthday</button><button type="button" data-mode="age" aria-pressed="false" style="padding:4px 10px;font-size:10.5px">Age</button></span></div>
+            <div class="gs-two" id="gspDob"><select class="gs-in" id="gspBM" aria-label="Birth month"></select><select class="gs-in" id="gspBY" aria-label="Birth year"></select></div>
+            <div class="gs-two" id="gspAge" hidden><select class="gs-in" id="gspYr" aria-label="Age in years"></select><select class="gs-in" id="gspMo" aria-label="Age in months"></select></div>
+            <div class="gs-age" id="gspAgeCalc"></div>
+            <div class="gs-lab">Height</div>
+            <div class="gs-hgt"><input class="gs-in" id="gspH" type="number" inputmode="decimal" min="70" max="220" step="0.1" placeholder="e.g. 128.5"><span class="u">cm</span></div>
+            <button class="gs-go" id="gspGo" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg>Show where they sit</button>
+          </div>
+          <!-- RESULT -->
+          <div class="gs-state" id="gspResult">
+            <div class="gs-appbar"><span class="lm"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><circle cx="20" cy="7" r="1.4" fill="#fff" stroke="none"/></svg></span><b>Your child</b><span class="tag" id="gspMeta"></span></div>
+            <div class="gs-track"><span class="gs-pct" id="gspPct">—</span><span class="gs-pctl">percentile</span></div>
+            <div class="gs-cap" id="gspCap"></div>
+            <svg class="gs-curve" id="gspCurve" viewBox="0 0 300 120" aria-hidden="true">
+              <path class="area" id="gspArea" d="" fill="rgba(47,107,79,.14)"></path>
+              <path class="line" id="gspLine" d="" fill="none" stroke="#2f6b4f" stroke-width="2.3" stroke-linecap="round"></path>
+              <line id="gspMk" x1="150" y1="16" x2="150" y2="96" stroke="#2A5C8A" stroke-width="1.6" stroke-dasharray="3 3" style="opacity:0"></line>
+              <circle id="gspDot" cx="150" cy="60" r="5" fill="#2A5C8A" stroke="#fff" stroke-width="2.5" style="opacity:0"></circle>
+              <line x1="8" y1="96" x2="292" y2="96" stroke="#e2ddd1" stroke-width="1"></line>
+            </svg>
+            <div class="gs-read ok" id="gspRead"><span class="rd"></span><span id="gspReadTxt"></span></div>
+            <div class="gs-tiles">
+              <div class="gs-tile meas"><div class="tl">PERCENTILE</div><div class="tv" id="gspTileP">—</div></div>
+              <div class="gs-tile locked"><div class="tl">🔒 ADULT HEIGHT</div><div class="tv">Projected once you track over time</div></div>
+            </div>
+            <a class="gs-save" id="gspSave" href="app/?utm_source=landing&amp;utm_medium=hero-preview&amp;utm_campaign=hero-preview&amp;open=measure">Save &amp; track the trajectory →<small>One point is a snapshot — the app follows the whole curve</small></a>
+            <button class="gs-restart" id="gspRestart" type="button">← Try another child</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="who-reference-data.js"></script>
+<script src="growth-percentile.js"></script>
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function T(ev,p){ try{ if(window.gsTrack) window.gsTrack(ev,p||{}); }catch(e){} }
+  var ov=document.getElementById("gspOverlay");
+  if(!ov) return;
+  var input=document.getElementById("gspInput"), result=document.getElementById("gspResult");
+
+  // ---- open / close ----
+  window.gsOpenPreview=function(){
+    showState("input");
+    ov.classList.add("on"); document.body.style.overflow="hidden";
+    T("preview_tool_view",{source:"hero"});
+    setTimeout(function(){ var h=document.getElementById("gspH"); },50);
+  };
+  function close(){ ov.classList.remove("on"); document.body.style.overflow=""; }
+  document.getElementById("gspClose").addEventListener("click",close);
+  ov.addEventListener("click",function(e){ if(e.target===ov) close(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&ov.classList.contains("on")) close(); });
+  function showState(which){
+    input.classList.toggle("on",which==="input");
+    result.classList.toggle("on",which==="result");
+  }
+
+  // ---- inputs: birthday <-> age (same pattern as the calculator tool) ----
+  var now=new Date(), nowY=now.getFullYear(), nowM=now.getMonth();
+  var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var sex="male", currentAgeMonths=96;
+  var bm=document.getElementById("gspBM"), by=document.getElementById("gspBY");
+  var yr=document.getElementById("gspYr"), mo=document.getElementById("gspMo");
+  var ageCalc=document.getElementById("gspAgeCalc");
+  MONTHS.forEach(function(n,i){ var o=document.createElement("option"); o.value=i; o.textContent=n; bm.appendChild(o); });
+  for(var y=nowY-4;y>=nowY-20;y--){ var o=document.createElement("option"); o.value=y; o.textContent=y; by.appendChild(o); }
+  for(var a=5;a<=19;a++){ var o2=document.createElement("option"); o2.value=a; o2.textContent=a; yr.appendChild(o2); }
+  for(var m=0;m<=11;m++){ var o3=document.createElement("option"); o3.value=m; o3.textContent=m; mo.appendChild(o3); }
+  function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+  function fmtAge(am){ var y=Math.floor(am/12), mm=((am%12)+12)%12; return "≈ "+y+" year"+(y===1?"":"s")+(mm?(" "+mm+" month"+(mm===1?"":"s")):"")+" old"; }
+  function renderAge(){ var oor=(currentAgeMonths<60||currentAgeMonths>=228); ageCalc.style.color=oor?"var(--gold)":"var(--green)"; ageCalc.textContent=fmtAge(currentAgeMonths)+(oor?" · this preview covers ages 5–19":""); }
+  function syncDob(){ currentAgeMonths=(nowY-(+by.value))*12+(nowM-(+bm.value)); yr.value=clamp(Math.floor(currentAgeMonths/12),5,19); mo.value=clamp(((currentAgeMonths%12)+12)%12,0,11); renderAge(); }
+  function syncAge(){ currentAgeMonths=(+yr.value)*12+(+mo.value); var tot=nowY*12+nowM-currentAgeMonths; by.value=Math.floor(tot/12); bm.value=((tot%12)+12)%12; renderAge(); }
+  bm.addEventListener("change",syncDob); by.addEventListener("change",syncDob);
+  yr.addEventListener("change",syncAge); mo.addEventListener("change",syncAge);
+  by.value=nowY-8; bm.value=nowM; syncDob();
+  document.getElementById("gspSex").addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b)return; sex=b.getAttribute("data-sex"); [].forEach.call(this.querySelectorAll("button"),function(x){ x.setAttribute("aria-pressed",x===b?"true":"false"); }); });
+  document.getElementById("gspMode").addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b)return; var md=b.getAttribute("data-mode"); [].forEach.call(this.querySelectorAll("button"),function(x){ x.setAttribute("aria-pressed",x===b?"true":"false"); }); document.getElementById("gspDob").hidden=(md!=="dob"); document.getElementById("gspAge").hidden=(md!=="age"); });
+
+  // ---- bell curve geometry (normal distribution) ----
+  var W=300,padL=8,padR=8,base=96,top=16,zMin=-3.2,zMax=3.2;
+  function xz(z){ z=Math.max(zMin,Math.min(zMax,z)); return padL+(z-zMin)/(zMax-zMin)*(W-padL-padR); }
+  function yz(z){ return base-Math.exp(-z*z/2)*(base-top); }
+  var lineD="M"+xz(zMin).toFixed(1)+" "+yz(zMin).toFixed(1);
+  for(var zz=zMin+0.1; zz<=zMax+1e-9; zz+=0.1) lineD+=" L"+xz(zz).toFixed(1)+" "+yz(zz).toFixed(1);
+  function areaTo(zc){ zc=Math.max(zMin,Math.min(zMax,zc)); var d="M"+xz(zMin).toFixed(1)+" "+base; for(var z=zMin; z<=zc+1e-9; z+=0.1){ var v=Math.min(z,zc); d+=" L"+xz(v).toFixed(1)+" "+yz(v).toFixed(1); } d+=" L"+xz(zc).toFixed(1)+" "+base+" Z"; return d; }
+  function ord(n){ n=Math.round(n); if(n<1)return "<1st"; if(n>99)return ">99th"; var s=["th","st","nd","rd"],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+  function ordN(n){ n=Math.round(n); if(n<1)return "<1"; if(n>99)return ">99"; var s=["th","st","nd","rd"],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+  function pband(p){ return p<3?"<3":p<15?"3-15":p<50?"15-50":p<85?"50-85":p<97?"85-97":">97"; }
+  function ageBand(a){ return a<7?"5-6":a<10?"7-9":a<13?"10-12":a<16?"13-15":"16-19"; }
+
+  document.getElementById("gspGo").addEventListener("click",function(){
+    var h=parseFloat(document.getElementById("gspH").value);
+    if(!h||h<60||h>230){ var hh=document.getElementById("gspH"); hh.style.borderColor="var(--flag,#a23b3b)"; hh.focus(); return; }
+    document.getElementById("gspH").style.borderColor="";
+    var ageYears=currentAgeMonths/12;
+    if(typeof window.calculateHeightPercentile!=="function"){ return; }
+    var r=window.calculateHeightPercentile(h,ageYears,sex);
+    if(!r||r.outOfRange){ document.getElementById("gspPct").textContent="—"; document.getElementById("gspCap").textContent="This preview covers ages 5–19."; document.getElementById("gspReadTxt").textContent="Under 5 uses a different WHO standard — the app or your pediatrician can chart it."; document.getElementById("gspRead").className="gs-read watch"; showState("result"); T("preview_result_shown",{out_of_range:true}); return; }
+    var p=r.percentile, zc=r.zScore;
+    // fill result
+    document.getElementById("gspMeta").textContent=(sex==="male"?"Boy":"Girl")+" · "+(Math.round(ageYears*10)/10)+" yr";
+    document.getElementById("gspCap").textContent="Taller than about "+clamp(Math.round(p),1,99)+"% of "+(sex==="male"?"boys":"girls")+" this age.";
+    document.getElementById("gspTileP").textContent=ordN(p);
+    document.getElementById("gspLine").setAttribute("d",lineD);
+    document.getElementById("gspArea").setAttribute("d",areaTo(zc));
+    var x=xz(zc), yv=yz(zc);
+    var mk=document.getElementById("gspMk"), dot=document.getElementById("gspDot");
+    mk.setAttribute("x1",x); mk.setAttribute("x2",x); dot.setAttribute("cx",x); dot.setAttribute("cy",yv);
+    // read
+    var rd=document.getElementById("gspRead"), rt=document.getElementById("gspReadTxt");
+    if(p<3){ rd.className="gs-read watch"; rt.innerHTML="<b>Below the 3rd percentile.</b> Often perfectly healthy — but worth a check. The trend over time is what matters."; }
+    else if(p>97){ rd.className="gs-read watch"; rt.innerHTML="<b>Above the 97th.</b> Usually a tall, healthy child. The pattern over time matters more than one point."; }
+    else if(p<15){ rd.className="gs-read ok"; rt.innerHTML="<b>On the lower side of typical.</b> Plenty of healthy children sit here — the curve over time tells the story."; }
+    else { rd.className="gs-read ok"; rt.innerHTML="<b>Within the typical range.</b> This is one snapshot — track it over time to see the real trajectory."; }
+    showState("result");
+    // animations
+    var pctEl=document.getElementById("gspPct");
+    if(reduce){ pctEl.textContent=ord(p); mk.style.opacity=1; dot.style.opacity=1; }
+    else {
+      var st=performance.now();
+      (function up(t){ var k=Math.min(1,(t-st)/850); var e=1-Math.pow(1-k,3); pctEl.textContent = k<1?ordN(p*e):ord(p); if(k<1) requestAnimationFrame(up); })(st);
+      setTimeout(function(){ pctEl.textContent=ord(p); },920);
+      mk.style.transition="opacity .4s ease"; dot.style.transition="opacity .4s ease .1s";
+      mk.style.opacity=0; dot.style.opacity=0; setTimeout(function(){ mk.style.opacity=1; dot.style.opacity=1; },420);
+    }
+    T("preview_result_shown",{sex:sex,age_band:ageBand(ageYears),percentile_band:pband(p)});
+  });
+
+  document.getElementById("gspRestart").addEventListener("click",function(){ showState("input"); });
+  document.getElementById("gspSave").addEventListener("click",function(){ T("preview_to_signup_click",{source:"hero_preview"}); });
+})();
 </script>
 </body>
 </html>
