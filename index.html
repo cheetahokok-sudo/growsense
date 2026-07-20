@@ -186,6 +186,8 @@
   .fr-points{margin-top:22px;display:flex;flex-direction:column;gap:14px}
   .fr-points li{list-style:none;display:flex;gap:12px;font-size:14.5px;color:var(--ink)}
   .fr-points .ic{flex-shrink:0;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .fr-link{display:inline-block;margin-top:20px;font-size:14px;font-weight:600;color:var(--green);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .15s}
+  .fr-link:hover{border-color:var(--green)}
   .fr-visual{border-radius:26px;overflow:hidden}
   @media(max-width:760px){.frow{grid-template-columns:1fr;gap:28px}.frow.rev .fr-visual{order:0}}
 
@@ -199,7 +201,7 @@
   .tier .name{width:118px;font-size:13px;font-weight:600;color:var(--ink)}
   .tier .track{flex:1;height:12px;border-radius:6px;background:#eef1ec;overflow:hidden}
   .tier .fill{height:100%;border-radius:6px}
-  .tier .mult{width:40px;text-align:right;font-size:12.5px;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums}
+  .tier .mult{width:72px;text-align:right;font-size:12px;font-weight:600;color:var(--ink3)}
   .tier .sub{font-size:11px;color:var(--ink3);margin-top:2px}
 
   /* TRUST band */
@@ -658,11 +660,12 @@
       <div class="fr-copy reveal">
         <div class="eyebrow" data-i18n="activity.eyebrow">Honest by design</div>
         <h3 style="margin-top:14px" data-i18n="activity.h3">Not all exercise builds bone. We won't pretend it does.</h3>
-        <p data-i18n="activity.p">Swimming and cycling are wonderful for the heart — but they don't load the growth plates. GrowSense scores activities by their real osteogenic evidence, so you know which movement actually supports height. Most apps reward any activity equally. That's not science.</p>
+        <p data-i18n="activity.p">Swimming and cycling are wonderful for the heart — but they don't load the growth plates. GrowSense scores activities by their real osteogenic evidence, so you know which give a stronger bone-loading stimulus. Most apps reward any activity equally. That's not science.</p>
         <ul class="fr-points">
           <li><span class="ic" style="background:var(--okbg);color:var(--green)">✓</span><div>30+ activities across four evidence tiers, from high-impact to flexibility.</div></li>
           <li><span class="ic" style="background:var(--okbg);color:var(--green)">✓</span><div>Add your own — Muay Thai, ballet, anything — with the right tier.</div></li>
         </ul>
+        <a class="fr-link" href="blog/can-exercise-make-children-taller.html" data-i18n="activity.evidence">See the evidence →</a>
       </div>
       <div class="fr-visual reveal">
         <div class="mock">
@@ -671,19 +674,19 @@
             <div style="font-size:11.5px;color:var(--ink3);margin-bottom:18px">Scored by osteogenic evidence</div>
             <div class="tierbars">
               <div>
-                <div class="tier"><span class="name">High impact</span><span class="track"><span class="fill" style="width:100%;background:#2F6B4F"></span></span><span class="mult">1.0×</span></div>
+                <div class="tier"><span class="name">High impact</span><span class="track"><span class="fill" style="width:100%;background:#2F6B4F"></span></span><span class="mult">High</span></div>
                 <div class="sub" style="margin-left:130px">Gymnastics, jumping, martial arts</div>
               </div>
               <div>
-                <div class="tier"><span class="name">Weight-bearing</span><span class="track"><span class="fill" style="width:65%;background:#4a8a6b"></span></span><span class="mult">0.65×</span></div>
+                <div class="tier"><span class="name">Weight-bearing</span><span class="track"><span class="fill" style="width:65%;background:#4a8a6b"></span></span><span class="mult">Moderate</span></div>
                 <div class="sub" style="margin-left:130px">Running, football, tennis</div>
               </div>
               <div>
-                <div class="tier"><span class="name">Cardio</span><span class="track"><span class="fill" style="width:35%;background:#2A5C8A"></span></span><span class="mult">0.35×</span></div>
-                <div class="sub" style="margin-left:130px">Swimming, cycling — great heart, no bone load</div>
+                <div class="tier"><span class="name">Cardio</span><span class="track"><span class="fill" style="width:35%;background:#2A5C8A"></span></span><span class="mult">Low</span></div>
+                <div class="sub" style="margin-left:130px">Swimming, cycling — great for the heart, lower bone-loading</div>
               </div>
               <div>
-                <div class="tier"><span class="name">Flexibility</span><span class="track"><span class="fill" style="width:15%;background:#9C7A3D"></span></span><span class="mult">0.15×</span></div>
+                <div class="tier"><span class="name">Flexibility</span><span class="track"><span class="fill" style="width:15%;background:#9C7A3D"></span></span><span class="mult">Mobility</span></div>
                 <div class="sub" style="margin-left:130px">Yoga, stretching</div>
               </div>
             </div>
@@ -891,7 +894,7 @@
       <div class="bc-body">
         <div class="bc-eyebrow">Sleep &amp; growth</div>
         <div class="bc-title">Protect the hours that grow them</div>
-        <div class="bc-desc">Growth hormone peaks in deep sleep. Track it from a Fitbit or by hand, and see when bedtime is quietly costing your child height.</div>
+        <div class="bc-desc">Growth hormone peaks in deep sleep. Track it from a Fitbit or by hand, and see when sleep patterns may be working against healthy growth and recovery.</div>
       </div>
     </div>
 
@@ -902,7 +905,7 @@
       <div class="bc-body">
         <div class="bc-eyebrow">Movement that matters</div>
         <div class="bc-title">Know which activity builds bone</div>
-        <div class="bc-desc">Not all exercise loads the growth plates. See exactly which movement supports height — scored by real osteogenic evidence, not guesswork.</div>
+        <div class="bc-desc">Not all exercise loads the growth plates. See which activities give a stronger bone-loading stimulus — scored by real osteogenic evidence, not guesswork.</div>
       </div>
     </div>
 
@@ -987,7 +990,7 @@
 <section class="final" id="login">
   <div class="wrap">
     <div class="reveal">
-      <h2 data-i18n="final.h2">Give your child every centimeter they're meant to reach.</h2>
+      <h2 data-i18n="final.h2">Understand the growth story early — while there is still time to act.</h2>
       <p data-i18n="final.p">Start free today. Add your child, log a first measurement, and see their growth story come to life in minutes.</p>
       <div class="final-cta">
         <a href="app/" class="btn btn-light">Log in to your account</a>
@@ -1056,7 +1059,8 @@
       'science.h3':'See the whole picture in seconds',
       'activity.eyebrow':'Honest by design',
       'activity.h3':"Not all exercise builds bone. We won't pretend it does.",
-      'activity.p':"Swimming and cycling are wonderful for the heart — but they don't load the growth plates. GrowSense scores activities by their real osteogenic evidence, so you know which movement actually supports height. Most apps reward any activity equally. That's not science.",
+      'activity.p':"Swimming and cycling are wonderful for the heart — but they don't load the growth plates. GrowSense scores activities by their real osteogenic evidence, so you know which give a stronger bone-loading stimulus. Most apps reward any activity equally. That's not science.",
+      'activity.evidence':'See the evidence →',
       'clinic.eyebrow':'Built for the clinic, too',
       'clinic.h3':"The only place your child's growth story lives in full.",
       'clinic.p':'Height, IGF-1 and lab panels, bone age, puberty stage, illness episodes — organized into one record you can hand to your pediatrician as a clean PDF. Plus an AI coach that answers using your child\'s actual data, and a bone-age second opinion from a hand X-ray.',
@@ -1070,7 +1074,7 @@
       'carousel.eyebrow':"What you'll understand",'carousel.h2':'Smarter decisions for your child, every day.',
       'plans.eyebrow':'Start free, upgrade when ready','plans.h2':'Choose how far you want to go.',
       'plans.p':"Everything you need to start understanding your child's growth is free. Premium unlocks the full clinical picture and unlimited history.",
-      'final.h2':"Give your child every centimeter they're meant to reach.",
+      'final.h2':"Understand the growth story early — while there is still time to act.",
       'final.p':'Start free today. Add your child, log a first measurement, and see their growth story come to life in minutes.',
       'footer.copy':'© 2026 GrowSense · Pediatric growth intelligence',
       'nav.learn':'Growth science','footer.learn':'Growth science','footer.how':'How it works','footer.science':'The science','footer.privacy':'Privacy','footer.terms':'Terms','footer.support':'Support',
@@ -1099,6 +1103,7 @@
       'activity.eyebrow':'ซื่อสัตย์โดยการออกแบบ',
       'activity.h3':'ไม่ใช่การออกกำลังกายทุกชนิดที่สร้างกระดูก เราจะไม่แกล้งทำเป็นว่าทำได้',
       'activity.p':'การว่ายน้ำและปั่นจักรยานดีต่อหัวใจ แต่ไม่ได้สร้างแรงกดต่อแผ่นการเจริญเติบโต GrowSense ให้คะแนนกิจกรรมตามหลักฐานจริง ไม่ใช่เดาสุ่ม',
+      'activity.evidence':'ดูหลักฐาน →',
       'clinic.eyebrow':'สร้างมาเพื่อคลินิกด้วย',
       'clinic.h3':'สถานที่เดียวที่เรื่องราวการเจริญเติบโตของลูกอยู่ครบ',
       'clinic.p':'ส่วนสูง ผล IGF-1 อายุกระดูก ระยะวัยเจริญพันธุ์ และประวัติการเจ็บป่วย รวมในบันทึกเดียวที่ส่งให้กุมารแพทย์เป็น PDF ได้ทันที พร้อม AI Coach และความเห็นที่สองด้านอายุกระดูก',
@@ -1112,7 +1117,7 @@
       'carousel.eyebrow':'สิ่งที่คุณจะเข้าใจ','carousel.h2':'การตัดสินใจที่ฉลาดขึ้นเพื่อลูก ทุกวัน',
       'plans.eyebrow':'เริ่มฟรี อัปเกรดเมื่อพร้อม','plans.h2':'เลือกว่าต้องการไปไกลแค่ไหน',
       'plans.p':'ทุกอย่างที่คุณต้องการเพื่อเริ่มเข้าใจการเจริญเติบโตของลูกนั้นฟรี Premium ปลดล็อกภาพทางคลินิกแบบเต็มและประวัติไม่จำกัด',
-      'final.h2':'ให้ลูกคุณเติบโตเต็มทุกเซนติเมตรที่ควรได้รับ',
+      'final.h2':'เข้าใจการเติบโตของลูกตั้งแต่เนิ่น ๆ — ในขณะที่ยังมีเวลาดูแล',
       'final.p':'เริ่มฟรีวันนี้ เพิ่มข้อมูลลูก บันทึกการวัดครั้งแรก และดูเรื่องราวการเจริญเติบโตเปิดตัวในไม่กี่นาที',
       'footer.copy':'© 2026 GrowSense · ระบบวิเคราะห์การเจริญเติบโตเด็ก',
       'nav.learn':'ความรู้การเติบโต','footer.learn':'ความรู้การเติบโต','footer.how':'วิธีการทำงาน','footer.science':'วิทยาศาสตร์','footer.privacy':'ความเป็นส่วนตัว','footer.terms':'ข้อกำหนด','footer.support':'ช่วยเหลือ',
@@ -1141,6 +1146,7 @@
       'activity.eyebrow':'诚实设计',
       'activity.h3':'不是所有运动都能促进骨骼发育。我们不会假装它能。',
       'activity.p':'游泳和骑车对心脏很好——但不会对生长板产生负荷。GrowSense 根据真实的骨骼证据为活动评分，而非随意猜测。',
+      'activity.evidence':'查看证据 →',
       'clinic.eyebrow':'同样为诊所而生',
       'clinic.h3':'孩子成长故事的唯一完整记录地。',
       'clinic.p':'身高、IGF-1 及实验室检验、骨龄、青春期阶段、疾病记录——整合为一份可随时提交给儿科医生的 PDF。还有基于孩子真实数据的 AI 教练和骨龄第二意见。',
@@ -1154,7 +1160,7 @@
       'carousel.eyebrow':'您将了解到的内容','carousel.h2':'每天为孩子做出更明智的决定。',
       'plans.eyebrow':'免费开始，准备好再升级','plans.h2':'选择您想走多远。',
       'plans.p':'开始了解孩子成长所需的一切都是免费的。Premium 解锁完整临床记录和无限历史。',
-      'final.h2':'让您的孩子长到他们应有的每一厘米。',
+      'final.h2':'及早了解孩子的成长轨迹——趁还有时间采取行动。',
       'final.p':'今天免费开始。添加孩子，记录第一次测量，几分钟内看到他们的成长故事。',
       'footer.copy':'© 2026 GrowSense · 儿童成长智能平台',
       'footer.how':'工作原理','footer.science':'科学依据','footer.privacy':'隐私政策',
@@ -1183,6 +1189,7 @@
       'activity.eyebrow':'솔직한 설계',
       'activity.h3':'모든 운동이 뼈를 성장시키지는 않습니다. 우리는 그런 척하지 않습니다.',
       'activity.p':'수영과 자전거는 심장에 좋지만 성장판에 부하를 주지 않습니다. GrowSense는 실제 골격 근거에 따라 활동을 평가합니다. 추측이 아닙니다.',
+      'activity.evidence':'근거 보기 →',
       'clinic.eyebrow':'클리닉을 위해서도 만들었습니다',
       'clinic.h3':'아이의 성장 이야기가 완전히 담긴 유일한 곳.',
       'clinic.p':'키, IGF-1 및 검사 수치, 골 연령, 사춘기 단계, 질병 기록 — 소아과 의사에게 PDF로 전달할 수 있는 하나의 기록으로 정리됩니다. AI 코치와 골 연령 제2의견도 제공됩니다.',
@@ -1196,7 +1203,7 @@
       'carousel.eyebrow':'이해하게 될 것들','carousel.h2':'매일 아이를 위한 더 현명한 결정.',
       'plans.eyebrow':'무료로 시작, 준비되면 업그레이드','plans.h2':'얼마나 멀리 갈지 선택하세요.',
       'plans.p':'아이의 성장을 이해하는 데 필요한 모든 것은 무료입니다. Premium은 전체 임상 기록과 무제한 히스토리를 제공합니다.',
-      'final.h2':'아이가 받아야 할 모든 센티미터를 누릴 수 있도록.',
+      'final.h2':'아이의 성장 흐름을 일찍 파악하세요 — 아직 늦지 않았을 때.',
       'final.p':'오늘 무료로 시작하세요. 아이를 추가하고, 첫 측정을 기록하면 몇 분 안에 성장 이야기가 시작됩니다.',
       'footer.copy':'© 2026 GrowSense · 소아 성장 인텔리전스',
       'footer.how':'작동 방식','footer.science':'과학적 근거','footer.privacy':'개인정보',
@@ -1225,6 +1232,7 @@
       'activity.eyebrow':'Trung thực trong thiết kế',
       'activity.h3':'Không phải mọi bài tập đều xây dựng xương. Chúng tôi sẽ không giả vờ như vậy.',
       'activity.p':'Bơi lội và đạp xe tốt cho tim — nhưng không tạo tải cho đĩa tăng trưởng. GrowSense chấm điểm hoạt động theo bằng chứng tạo xương thực tế, không phải đoán mò.',
+      'activity.evidence':'Xem bằng chứng →',
       'clinic.eyebrow':'Được xây dựng cho phòng khám cũng vậy',
       'clinic.h3':'Nơi duy nhất lưu trữ đầy đủ câu chuyện tăng trưởng của con bạn.',
       'clinic.p':'Chiều cao, IGF-1 và kết quả xét nghiệm, tuổi xương, giai đoạn dậy thì, các đợt bệnh — được tổ chức thành một hồ sơ có thể gửi cho bác sĩ nhi khoa dưới dạng PDF. Kèm AI Coach và ý kiến thứ hai về tuổi xương.',
@@ -1238,7 +1246,7 @@
       'carousel.eyebrow':'Những gì bạn sẽ hiểu','carousel.h2':'Quyết định thông minh hơn cho con mỗi ngày.',
       'plans.eyebrow':'Bắt đầu miễn phí, nâng cấp khi sẵn sàng','plans.h2':'Chọn bạn muốn đi xa đến đâu.',
       'plans.p':'Mọi thứ bạn cần để bắt đầu hiểu sự tăng trưởng của con đều miễn phí. Premium mở khóa hồ sơ lâm sàng đầy đủ và lịch sử không giới hạn.',
-      'final.h2':'Cho con bạn từng centimet mà chúng xứng đáng được nhận.',
+      'final.h2':'Hiểu hành trình tăng trưởng của con từ sớm — khi vẫn còn thời gian để hành động.',
       'final.p':'Bắt đầu miễn phí hôm nay. Thêm con của bạn, ghi lại lần đo đầu tiên và xem câu chuyện tăng trưởng của chúng bắt đầu trong vài phút.',
       'footer.copy':'© 2026 GrowSense · Trí tuệ tăng trưởng nhi khoa',
       'footer.how':'Cách hoạt động','footer.science':'Khoa học','footer.privacy':'Quyền riêng tư',
@@ -1267,6 +1275,7 @@
       'activity.eyebrow':'أمانة في التصميم',
       'activity.h3':'ليست كل التمارين تبني العظام. لن نتظاهر بخلاف ذلك.',
       'activity.p':'السباحة وركوب الدراجة مفيدان للقلب — لكنهما لا يضغطان على صفائح النمو. يُصنّف GrowSense الأنشطة وفق أدلة تكوين العظام الحقيقية، لا التخمين.',
+      'activity.evidence':'عرض الأدلة ←',
       'clinic.eyebrow':'مبني للعيادة أيضًا',
       'clinic.h3':'المكان الوحيد الذي تعيش فيه قصة نمو طفلك كاملة.',
       'clinic.p':'الطول وفحوصات IGF-1 وعمر العظام ومرحلة البلوغ وحوادث المرض — منظّمة في سجل واحد يمكن تسليمه لطبيب الأطفال بصيغة PDF، مع مدرّب ذكاء اصطناعي ورأي ثانٍ حول عمر العظام.',
@@ -1280,7 +1289,7 @@
       'carousel.eyebrow':'ما ستفهمه','carousel.h2':'قرارات أذكى لطفلك، كل يوم.',
       'plans.eyebrow':'ابدأ مجانًا، قم بالترقية عندما تكون مستعدًا','plans.h2':'اختر إلى أي مدى تريد أن تذهب.',
       'plans.p':'كل ما تحتاجه للبدء في فهم نمو طفلك مجاني. Premium يفتح السجل السريري الكامل والتاريخ غير المحدود.',
-      'final.h2':'امنح طفلك كل سنتيمتر يستحقه أن يصله.',
+      'final.h2':'افهم رحلة نمو طفلك مبكرًا — بينما لا يزال هناك وقت للعمل.',
       'final.p':'ابدأ مجانًا اليوم. أضف طفلك، سجّل القياس الأول، وشاهد قصة نموه تنطلق في دقائق.',
       'footer.copy':'© 2026 GrowSense · منصة ذكاء نمو الأطفال',
       'footer.how':'كيف يعمل','footer.science':'العلم','footer.privacy':'الخصوصية',
