@@ -1,0 +1,257 @@
+---
+// Free lead-magnet tool: child height percentile calculator.
+// Reuses the APP'S OWN verified math (growth-percentile.js) and the official
+// WHO 2007 5–19y reference data (who-reference-data.js) — read at build time
+// and inlined as classic scripts, exactly as the app loads them, so the tool
+// can never disagree with the product.
+import { readFileSync } from 'node:fs';
+const whoSrc  = readFileSync(new URL('../../../who-reference-data.js', import.meta.url), 'utf8');
+const mathSrc = readFileSync(new URL('../../../growth-percentile.js', import.meta.url), 'utf8');
+
+const APP = 'https://www.growsense.life/?utm_source=blog&utm_medium=tool&utm_campaign=height-percentile-calculator&utm_content=result&open=measure';
+const canonical = 'https://www.growsense.life/blog/height-percentile-calculator.html';
+const title = 'Child Height Percentile Calculator (Ages 5–19) — GrowSense';
+const desc  = 'Free, instant height percentile for children and teens (5–19), on the official WHO 2007 reference. See where your child sits, what it means, and why the curve over time matters more than one number.';
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={desc} />
+  <link rel="canonical" href={canonical} />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={desc} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content="https://www.growsense.life/blog/gs-085-hero.jpg" />
+  <meta name="robots" content="index,follow" />
+  <style>
+    :root{
+      --paper:#f6f4ef; --card:#ffffff; --ink:#14201b; --ink-soft:#4a5852; --line:#e2ddd1;
+      --accent:#2f6b4f; --deep:#0e2a20; --measured:#2a5c8a; --estimated:#9c7a3d; --flag:#a23b3b;
+      --serif:"Fraunces",Georgia,serif; --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+      line-height:1.6;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent)}
+    .wrap{max-width:720px;margin:0 auto;padding:0 22px}
+    header.bar{background:var(--deep);color:#e8efe6;padding:14px 0}
+    header.bar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-weight:600;
+      font-size:18px;color:#fff;text-decoration:none}
+    .brand .leaf{width:22px;height:22px}
+    .bar a.back{color:rgba(232,239,230,.8);font-size:13px;text-decoration:none}
+    main{padding:34px 0 60px}
+    .eyebrow{font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
+    h1{font-family:var(--serif);font-weight:600;font-size:clamp(27px,5vw,38px);line-height:1.12;
+      letter-spacing:-.01em;margin:12px 0 10px;text-wrap:balance}
+    .lede{font-size:18px;color:var(--ink-soft);margin:0 0 26px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 22px;
+      box-shadow:0 1px 0 rgba(20,32,27,.03)}
+    .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+    .field{flex:1;min-width:130px}
+    label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px}
+    .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+    .seg button{flex:1;padding:11px 8px;border:0;background:var(--card);color:var(--ink-soft);
+      font:inherit;font-weight:600;cursor:pointer}
+    .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+    select,input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
+      font:inherit;background:var(--card);color:var(--ink)}
+    input:focus,select:focus,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+    .calc{width:100%;margin-top:6px;padding:13px;border:0;border-radius:11px;background:var(--accent);
+      color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer}
+    .calc:hover{background:#2a5f47}
+    .hint{font-size:12.5px;color:var(--ink-soft);margin:10px 2px 0}
+    /* result */
+    .result{margin-top:22px;display:none}
+    .result.on{display:block}
+    .big{font-family:var(--serif);font-size:clamp(28px,6vw,42px);font-weight:600;line-height:1.05;margin:0}
+    .big .ord{color:var(--accent)}
+    .sub{color:var(--ink-soft);margin:6px 0 18px}
+    .track{position:relative;height:46px;margin:20px 0 8px}
+    .track .base{position:absolute;left:0;right:0;top:19px;height:8px;border-radius:6px;
+      background:linear-gradient(90deg,#cdd7cf,#eadfc7 50%,#cdd7cf)}
+    .tick{position:absolute;top:8px;transform:translateX(-50%);text-align:center}
+    .tick i{display:block;width:2px;height:14px;background:#c4bdae;margin:0 auto}
+    .tick span{font-size:10px;color:var(--ink-soft);display:block;margin-top:2px}
+    .pin{position:absolute;top:2px;transform:translateX(-50%);transition:left .5s cubic-bezier(.2,.7,.2,1)}
+    .pin b{display:block;width:16px;height:16px;border-radius:50%;background:var(--measured);
+      border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);margin:0 auto}
+    .read{border-left:3px solid var(--accent);background:#f0f4f1;border-radius:0 12px 12px 0;
+      padding:14px 16px;margin:18px 0;font-size:15px}
+    .read.warn{border-left-color:var(--estimated);background:#f7f2e8}
+    .read.flag{border-left-color:var(--flag);background:#f7edec}
+    .read b{color:var(--ink)}
+    .cta{display:block;text-align:center;background:var(--deep);color:#fff;text-decoration:none;
+      padding:16px;border-radius:13px;font-weight:700;margin-top:8px}
+    .cta span{display:block;font-weight:500;font-size:13px;color:rgba(232,239,230,.75);margin-top:3px}
+    .note{font-size:13px;color:var(--ink-soft);margin-top:26px;padding-top:18px;border-top:1px solid var(--line)}
+    .disclaimer{font-size:12.5px;color:var(--ink-soft);opacity:.9;margin-top:12px}
+    footer{padding:26px 0 46px;color:var(--ink-soft);font-size:13px;text-align:center}
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <div class="wrap">
+      <a class="brand" href="https://www.growsense.life/blog/">
+        <svg class="leaf" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M16 29C9 25 5 19 6 10c6 1 11 3 13 8-3-1-6-1-8 0 4 0 8 2 5 11z" fill="#8fceac"/>
+          <path d="M16 29c1-8 5-15 12-18-1 9-5 15-12 18z" fill="#c6a05f"/>
+        </svg>GrowSense</a>
+      <a class="back" href="https://www.growsense.life/blog/">← Growth Science</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="eyebrow">Free tool · Ages 5–19</div>
+      <h1>Child height percentile calculator</h1>
+      <p class="lede">See where your child sits on the official WHO 2007 growth reference —
+        instantly, and with an honest read of what the number does and doesn't mean.</p>
+
+      <div class="card">
+        <div class="row">
+          <div class="field">
+            <label>Child is a…</label>
+            <div class="seg" id="sex">
+              <button type="button" data-sex="male" aria-pressed="true">Boy</button>
+              <button type="button" data-sex="female" aria-pressed="false">Girl</button>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="years">Age — years</label>
+            <select id="years"></select>
+          </div>
+          <div class="field">
+            <label for="months">Age — months</label>
+            <select id="months"></select>
+          </div>
+          <div class="field">
+            <label for="height">Height (cm)</label>
+            <input id="height" type="number" inputmode="decimal" min="70" max="220" step="0.1" placeholder="e.g. 128.5" />
+          </div>
+        </div>
+        <button class="calc" id="go" type="button">Show percentile</button>
+        <p class="hint" id="hint">Nothing you type leaves your device. This tool covers ages 5–19 (WHO 2007 reference).</p>
+      </div>
+
+      <section class="result" id="result" aria-live="polite">
+        <p class="big"><span class="ord" id="ord">—</span> percentile</p>
+        <p class="sub" id="subline"></p>
+        <div class="track" aria-hidden="true">
+          <div class="base"></div>
+          <div class="tick" style="left:3%"><i></i><span>3rd</span></div>
+          <div class="tick" style="left:15%"><i></i><span>15th</span></div>
+          <div class="tick" style="left:50%"><i></i><span>50th</span></div>
+          <div class="tick" style="left:85%"><i></i><span>85th</span></div>
+          <div class="tick" style="left:97%"><i></i><span>97th</span></div>
+          <div class="pin" id="pin" style="left:50%"><b></b></div>
+        </div>
+        <div class="read" id="read"></div>
+        <a class="cta" id="cta" href={APP}>Track this over time in GrowSense
+          <span>One measurement is a snapshot — GrowSense follows the curve.</span></a>
+      </section>
+
+      <p class="note"><b>How it works.</b> The WHO publishes height-for-age as five percentile
+        bands (3rd / 15th / 50th / 85th / 97th). This tool interpolates those bands to your
+        child's exact age, places their height between them, and converts to a percentile — the
+        same method GrowSense uses inside the app. Under 5? That age needs a different WHO
+        standard; ask your pediatrician. Worried about a low or dropping curve? Read
+        <a href="https://www.growsense.life/blog/is-my-child-too-short.html">is my child too short?</a></p>
+      <p class="disclaimer">Educational only — not a diagnosis. A single percentile is a
+        snapshot, not a verdict; healthy children sit at every percentile, and the trend over
+        time matters far more than one point. If your child's height is very low, very high, or
+        crossing downward through the bands, see a pediatrician.</p>
+    </div>
+  </main>
+
+  <footer><div class="wrap">GrowSense · pediatric growth intelligence · growsense.life</div></footer>
+
+  <script is:inline set:html={whoSrc}></script>
+  <script is:inline set:html={mathSrc}></script>
+  <script is:inline>
+    (function(){
+      var sex = 'male';
+      var ph = window.posthog; // present if analytics is wired; safe if not
+      function track(ev, props){ try{ if(ph && ph.capture) ph.capture(ev, props||{}); }catch(e){} }
+
+      // populate age selects
+      var yrs = document.getElementById('years'), mos = document.getElementById('months');
+      for(var y=5;y<=19;y++){ var o=document.createElement('option'); o.value=y; o.textContent=y; if(y===8)o.selected=true; yrs.appendChild(o); }
+      for(var m=0;m<=11;m++){ var o2=document.createElement('option'); o2.value=m; o2.textContent=m; mos.appendChild(o2); }
+
+      // sex segmented control
+      document.getElementById('sex').addEventListener('click', function(e){
+        var b = e.target.closest('button'); if(!b) return;
+        sex = b.getAttribute('data-sex');
+        [].forEach.call(this.querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+      });
+
+      function ordinal(n){
+        n = Math.round(n);
+        if(n<1) return '<1st'; if(n>99) return '>99th';
+        var s=['th','st','nd','rd'], v=n%100;
+        return n + (s[(v-20)%10] || s[v] || s[0]);
+      }
+      function ageBand(a){ return a<7?'5-6':a<10?'7-9':a<13?'10-12':a<16?'13-15':'16-19'; }
+      function pctBand(p){ return p<3?'<3':p<15?'3-15':p<50?'15-50':p<85?'50-85':p<97?'85-97':'>97'; }
+
+      document.getElementById('go').addEventListener('click', function(){
+        var height = parseFloat(document.getElementById('height').value);
+        var ageYears = parseInt(yrs.value,10) + parseInt(mos.value,10)/12;
+        var hint = document.getElementById('hint');
+        if(!height || height<60 || height>230){ hint.textContent = 'Please enter a height in centimetres (e.g. 128.5).'; hint.style.color='var(--flag)'; return; }
+        hint.textContent = 'Nothing you type leaves your device. This tool covers ages 5–19 (WHO 2007 reference).'; hint.style.color='';
+
+        var r = window.calculateHeightPercentile(height, ageYears, sex);
+        var result = document.getElementById('result');
+        if(!r || r.outOfRange){
+          result.classList.add('on');
+          document.getElementById('ord').textContent = '—';
+          document.getElementById('subline').textContent = 'Ages 5–19 only';
+          document.getElementById('pin').style.left = '50%';
+          document.getElementById('read').className = 'read warn';
+          document.getElementById('read').innerHTML = '<b>Outside this tool’s range.</b> It covers ages 5–19 on the WHO 2007 reference. Under 5 uses a different WHO standard — your pediatrician or the GrowSense app can chart it.';
+          track('tool_result', { tool:'height-percentile', out_of_range:true });
+          return;
+        }
+        var p = r.percentile;
+        result.classList.add('on');
+        document.getElementById('ord').textContent = ordinal(p);
+        document.getElementById('subline').textContent =
+          (sex==='male'?'Boy':'Girl') + ', ' + (Math.round(ageYears*10)/10) + ' yr · height ' + height + ' cm · z-score ' + (Math.round(r.zScore*100)/100);
+        // pin position on the 0–100 visual scale (clamp for the tails)
+        document.getElementById('pin').style.left = Math.max(1.5, Math.min(98.5, p)) + '%';
+
+        var read = document.getElementById('read'), msg, cls='read';
+        if(p < 3){
+          cls='read flag';
+          msg = '<b>Below the 3rd percentile.</b> This can be perfectly healthy — short parents, a later-maturing child — but it’s worth a check, especially if the curve is drifting downward. A pediatrician can look at the <em>trend</em> and the family pattern. See <a href="https://www.growsense.life/blog/is-my-child-too-short.html">is my child too short?</a>';
+        } else if(p > 97){
+          cls='read warn';
+          msg = '<b>Above the 97th percentile.</b> Often simply a tall, healthy child (tall parents, early growth). Worth a mention at a routine check if it’s a sudden jump. The pattern over time matters more than one point.';
+        } else if(p < 15){
+          cls='read warn';
+          msg = '<b>On the lower side of typical.</b> Plenty of healthy children sit here. What matters is the curve: a steady low line is reassuring; a dropping one is worth a look.';
+        } else {
+          msg = '<b>Within the typical range.</b> A single measurement is a snapshot, not a verdict — healthy children sit at every percentile. The shape of the curve over months is what actually tells the story.';
+        }
+        read.className = cls; read.innerHTML = msg;
+        track('tool_result', { tool:'height-percentile', sex:sex, age_band:ageBand(ageYears), percentile_band:pctBand(p) });
+        result.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      });
+
+      document.getElementById('cta').addEventListener('click', function(){
+        track('app_link_click', { source_slug:'height-percentile-calculator', cta_position:'result', target_module:'measure', utm_campaign:'height-percentile-calculator' });
+      });
+
+      track('tool_view', { tool:'height-percentile', lang:'en' });
+    })();
+  </script>
+</body>
+</html>
