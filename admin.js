@@ -404,6 +404,7 @@ function setAdminSection(section, btn) {
   if (section === 'metrics') loadMetrics();
   if (section === 'codes')   loadCodesSection();
   if (section === 'bugs')    loadBugReports();
+  if (section === 'support') loadSupportArticles();
 }
 
 // ══════════════════════════════════════════
@@ -558,6 +559,149 @@ async function updateBugStatus(id, status, btn) {
   const { error } = await sb.from('bug_reports').update({ status }).eq('report_id', id);
   if (error) { showToast('⚠️', 'Could not update: ' + error.message); if (btn) btn.disabled = false; return; }
   await loadBugReports();
+}
+
+// ══════════════════════════════════════════
+// TROUBLESHOOTING LIBRARY (support_articles) — admin-internal knowledge
+// base of symptom → fix-ladder articles (Apple-support editorial model:
+// one problem per article, steps in escalating order, explicit
+// escalation hand-off). Articles are DATA with a status column:
+// 'internal' shows only here; flipping to 'public' is the future user-
+// menu door (RLS read policy for it already exists in the migration).
+// steps is plain text, ONE STEP PER LINE — rendered as an <ol>.
+// ══════════════════════════════════════════
+let _supportRows = [];
+let _supportOpen = null;   // slug of the expanded article
+
+async function loadSupportArticles() {
+  const { data, error } = await sb.from('support_articles').select('*').order('title');
+  if (error) {
+    showToast('⚠️', 'Could not load articles: ' + error.message);
+    _supportRows = [];
+  } else {
+    _supportRows = data || [];
+  }
+  renderSupportList();
+}
+
+function renderSupportList() {
+  const el = document.getElementById('supportList');
+  const q = (document.getElementById('supportSearch').value || '').trim().toLowerCase();
+  const rows = _supportRows.filter(r =>
+    !q || [r.title, r.symptom, r.steps, r.slug].join('\n').toLowerCase().includes(q));
+  if (rows.length === 0) {
+    el.innerHTML = '<div class="log-list-empty">' + (q
+      ? 'No articles match.'
+      : 'No articles yet — run migrations/2026-07-22_support_articles.sql in the Supabase SQL editor, then reload.') + '</div>';
+    return;
+  }
+  el.innerHTML = rows.map(r => {
+    const open = _supportOpen === r.slug;
+    const statusChip = r.status === 'public'
+      ? '<span style="font-size:10px; font-weight:700; color:var(--accent);">PUBLIC</span>'
+      : '<span style="font-size:10px; font-weight:700; color:var(--text3);">INTERNAL</span>';
+    const platChip = r.platform !== 'all'
+      ? `<span style="font-size:10px; font-weight:700; color:var(--measured);">${escHtml(r.platform.toUpperCase())}</span>` : '';
+    let body = '';
+    if (open) {
+      const steps = (r.steps || '').split('\n').map(s => s.trim()).filter(Boolean)
+        .map(s => `<li style="margin-bottom:6px;">${escHtml(s)}</li>`).join('');
+      const esc = r.escalation ? `
+        <div style="margin-top:8px; padding:8px 10px; background:var(--surface2); border-radius:8px; font-size:12px; line-height:1.5;">
+          <span style="font-weight:700; font-size:10.5px; color:var(--text2);">IF THAT DIDN'T WORK</span><br>${escHtml(r.escalation)}
+        </div>` : '';
+      body = `
+      <ol style="margin:10px 0 0; padding-left:20px; font-size:12.5px; line-height:1.55;">${steps}</ol>${esc}
+      <div style="display:flex; gap:10px; margin-top:8px; align-items:center;">
+        <button class="btn-link" onclick="editSupportArticle('${escHtml(r.slug)}')">Edit</button>
+        <span style="font-size:10px; color:var(--text3);">updated ${escHtml((r.updated_at || '').slice(0, 10))}</span>
+      </div>`;
+    }
+    return `
+    <div style="background:var(--surface2); border-radius:12px; padding:12px 14px;">
+      <div style="cursor:pointer;" onclick="toggleSupportArticle('${escHtml(r.slug)}')">
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:baseline;">
+          <span style="font-weight:700; font-size:13px;">${escHtml(r.title)}</span>
+          <span style="display:flex; gap:8px; white-space:nowrap;">${platChip}${statusChip}</span>
+        </div>
+        <div style="font-size:11.5px; color:var(--text2); margin-top:3px;">${escHtml(r.symptom)}</div>
+      </div>${body}
+    </div>`;
+  }).join('');
+}
+
+function toggleSupportArticle(slug) {
+  _supportOpen = _supportOpen === slug ? null : slug;
+  renderSupportList();
+}
+
+function editSupportArticle(slug) {
+  const r = slug ? _supportRows.find(x => x.slug === slug) : null;
+  const wrap = document.getElementById('supportEditorWrap');
+  const taStyle = 'width:100%; box-sizing:border-box; background:var(--surface2); color:inherit; border:1px solid var(--border2); border-radius:8px; padding:8px 10px; font:inherit; font-size:12px; line-height:1.45; resize:vertical;';
+  wrap.innerHTML = `
+    <div style="background:var(--surface2); border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:10px;">
+      <div style="font-weight:700; font-size:12px;">${r ? 'Edit article' : 'New article'}</div>
+      <input class="text-input" id="supTitle" maxlength="160" placeholder="Title — the symptom as a user would say it" value="${r ? escHtml(r.title) : ''}">
+      <input class="text-input" id="supSlug" maxlength="80" placeholder="slug-like-this (lowercase, hyphens)" value="${r ? escHtml(r.slug) : ''}">
+      <input class="text-input" id="supSymptom" maxlength="400" placeholder="One line: what the user sees" value="${r ? escHtml(r.symptom) : ''}">
+      <div style="display:flex; gap:10px;">
+        <select class="text-input" id="supPlatform" style="flex:1;">
+          ${['all', 'web', 'ios', 'android'].map(p => `<option value="${p}"${r && r.platform === p ? ' selected' : ''}>${p}</option>`).join('')}
+        </select>
+        <select class="text-input" id="supStatus" style="flex:1;">
+          <option value="internal"${!r || r.status === 'internal' ? ' selected' : ''}>internal (admin only)</option>
+          <option value="public"${r && r.status === 'public' ? ' selected' : ''}>public (user menu, later)</option>
+        </select>
+      </div>
+      <textarea id="supSteps" rows="8" maxlength="4000" placeholder="Fix ladder — ONE STEP PER LINE, easiest first" style="${taStyle}">${r ? escHtml(r.steps) : ''}</textarea>
+      <textarea id="supEscalation" rows="2" maxlength="1000" placeholder="If that didn't work — what to collect / where it goes (optional)" style="${taStyle}">${r && r.escalation ? escHtml(r.escalation) : ''}</textarea>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span>${r ? `<button class="btn-link" style="color:var(--flag);" onclick="deleteSupportArticle('${escHtml(r.id)}')">Delete</button>` : ''}</span>
+        <div style="display:flex; gap:12px;">
+          <button class="btn-link" style="color:var(--text3);" onclick="closeSupportEditor()">Cancel</button>
+          <button class="btn-link" onclick="saveSupportArticle(${r ? `'${escHtml(r.id)}'` : 'null'})">Save article</button>
+        </div>
+      </div>
+    </div>`;
+  wrap.classList.remove('hidden');
+  document.getElementById('supTitle').focus();
+}
+
+function closeSupportEditor() {
+  const wrap = document.getElementById('supportEditorWrap');
+  wrap.classList.add('hidden');
+  wrap.innerHTML = '';
+}
+
+async function saveSupportArticle(id) {
+  const val = x => (document.getElementById(x).value || '').trim();
+  const row = {
+    slug: val('supSlug'), title: val('supTitle'), symptom: val('supSymptom'),
+    platform: val('supPlatform'), status: val('supStatus'),
+    steps: val('supSteps'), escalation: val('supEscalation') || null,
+    updated_at: new Date().toISOString(),
+    updated_by: ADMIN.account ? ADMIN.account.user_id : null
+  };
+  if (!row.title || !row.symptom || !row.steps) { showToast('⚠️', 'Title, symptom, and steps are required'); return; }
+  if (!/^[a-z0-9][a-z0-9-]{1,79}$/.test(row.slug)) { showToast('⚠️', 'Slug must be lowercase letters, digits, and hyphens'); return; }
+  const { error } = id
+    ? await sb.from('support_articles').update(row).eq('id', id)
+    : await sb.from('support_articles').insert(row);
+  if (error) { showToast('⚠️', 'Could not save: ' + error.message); return; }
+  showToast('✅', 'Article saved');
+  closeSupportEditor();
+  _supportOpen = row.slug;
+  await loadSupportArticles();
+}
+
+async function deleteSupportArticle(id) {
+  if (!confirm('Delete this article? This cannot be undone.')) return;
+  const { error } = await sb.from('support_articles').delete().eq('id', id);
+  if (error) { showToast('⚠️', 'Could not delete: ' + error.message); return; }
+  showToast('✅', 'Article deleted');
+  closeSupportEditor();
+  await loadSupportArticles();
 }
 
 // ══════════════════════════════════════════
