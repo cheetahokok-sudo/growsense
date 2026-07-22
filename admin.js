@@ -585,7 +585,11 @@ const SUPPORT_SECTIONS = [
   ['medical',   'Medical records'],
   ['premium',   'Premium & codes'],
   ['devices',   'Wearables & sync'],
-  ['technical', 'App & technical']
+  ['technical', 'App & technical'],
+  // 'dev' is the operator runbook — CONFIDENTIAL-internal. A DB CHECK
+  // (support_articles_dev_never_public) makes status='public' impossible
+  // for it; the save guard below is just the friendly front door.
+  ['dev',       'Dev & internal ops — never public']
 ];
 
 async function loadSupportArticles() {
@@ -713,6 +717,7 @@ async function saveSupportArticle(id) {
   };
   if (!row.title || !row.symptom || !row.steps) { showToast('⚠️', 'Title, symptom, and steps are required'); return; }
   if (!/^[a-z0-9][a-z0-9-]{1,79}$/.test(row.slug)) { showToast('⚠️', 'Slug must be lowercase letters, digits, and hyphens'); return; }
+  if (row.section === 'dev' && row.status === 'public') { showToast('⚠️', 'Dev articles are internal-only and can never be public'); return; }
   const { error } = id
     ? await sb.from('support_articles').update(row).eq('id', id)
     : await sb.from('support_articles').insert(row);
