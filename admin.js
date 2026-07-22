@@ -357,14 +357,14 @@ async function initAdminDashboard() {
   ]);
 
   ADMIN.adminUsers = (!usersRes.error && usersRes.data) ? usersRes.data : [];
-  if (usersRes.error) showToast('⚠️', 'Could not load users: ' + usersRes.error.message);
+  if (usersRes.error) showToast('⚠️', 'Could not load families: ' + usersRes.error.message);
 
   const auditRows = (!logRes.error && logRes.data) ? logRes.data : [];
 
   renderAdminUserList();
   renderAdminAuditLog(auditRows);
   renderAdminAuditLog(auditRows.slice(0, 5), 'adminAuditLogPreview');
-  renderAdminOverviewStats();
+  await renderAdminOverviewStats();
 
   await loadAndRenderAdminAIModePanel();
   await loadAndRenderAdminArchivePanel();
@@ -377,12 +377,21 @@ function setAdminGreeting() {
   document.getElementById('adminGreeting').textContent = `${timeOfDay}, ${name}`;
 }
 
-function renderAdminOverviewStats() {
+// Overview answers "what needs me today?", so it carries the things that imply
+// an action. The subscription-tier split is NOT repeated here — renderTierChart()
+// under Metrics already owns that breakdown.
+async function renderAdminOverviewStats() {
   const users = ADMIN.adminUsers || [];
-  document.getElementById('statTotalUsers').textContent = users.length;
-  document.getElementById('statFree').textContent = users.filter(u => u.subscription_tier === 'free').length;
-  document.getElementById('statPremium').textContent = users.filter(u => u.subscription_tier === 'premium').length;
-  document.getElementById('statPro').textContent = users.filter(u => u.subscription_tier === 'pro').length;
+  document.getElementById('statFamilies').textContent = users.length;
+
+  // head:true asks PostgREST for the count only — no rows cross the wire.
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [newRes, bugRes] = await Promise.all([
+    sb.from('user_accounts').select('*', { count: 'exact', head: true }).gte('created_at', since),
+    sb.from('bug_reports').select('*', { count: 'exact', head: true }).in('status', ['new', 'triaged'])
+  ]);
+  document.getElementById('statNew7d').textContent = newRes.error ? '—' : (newRes.count || 0);
+  document.getElementById('statOpenIssues').textContent = bugRes.error ? '—' : (bugRes.count || 0);
 }
 
 function setAdminSection(section, btn) {
@@ -740,7 +749,6 @@ async function applyTierChange(userId, email, currentTier) {
   const userRecord = (ADMIN.adminUsers || []).find(u => u.user_id === userId);
   if (userRecord) userRecord.subscription_tier = newTier;
   renderAdminUserList();
-  renderAdminOverviewStats();
   const logRes = await sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(30);
   if (!logRes.error) {
     renderAdminAuditLog(logRes.data);

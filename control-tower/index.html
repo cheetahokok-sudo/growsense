@@ -67,9 +67,9 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         <span class="nav-label">Overview</span>
       </button>
-      <button class="admin-nav-item" data-section="users" data-tooltip="Users" onclick="setAdminSection('users', this)">
+      <button class="admin-nav-item" data-section="users" data-tooltip="Families" onclick="setAdminSection('users', this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2"/><path d="M19 8l2 2 4-4" stroke-width="2"/></svg>
-        <span class="nav-label">Users</span>
+        <span class="nav-label">Families</span>
       </button>
       <button class="admin-nav-item" data-section="archive" data-tooltip="Archived" onclick="setAdminSection('archive', this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
@@ -87,13 +87,13 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         <span class="nav-label">Metrics</span>
       </button>
-      <button class="admin-nav-item" data-section="codes" data-tooltip="Activation Codes" onclick="setAdminSection('codes', this)">
+      <button class="admin-nav-item" data-section="codes" data-tooltip="Activation codes" onclick="setAdminSection('codes', this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h2m4 0h4"/></svg>
-        <span class="nav-label">Codes</span>
+        <span class="nav-label">Activation codes</span>
       </button>
-      <button class="admin-nav-item" data-section="bugs" data-tooltip="Bug reports" onclick="setAdminSection('bugs', this)">
+      <button class="admin-nav-item" data-section="bugs" data-tooltip="Issues" onclick="setAdminSection('bugs', this)">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="6" width="8" height="12" rx="4"/><path d="M12 2v2M5 9H3m18 0h-2M5 15H3m18 0h-2M8 6L6 4m10 2l2-2"/></svg>
-        <span class="nav-label">Bugs</span>
+        <span class="nav-label">Issues</span>
       </button>
       <button class="admin-nav-item disabled" disabled>
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -112,16 +112,15 @@
 
       <div class="section-hd">
         <h2 id="adminGreeting">Admin dashboard</h2>
-        <p>Accounts, tiers, and the trail of every admin action</p>
+        <p>Families, tiers, and the trail of every admin action</p>
       </div>
 
       <!-- OVERVIEW -->
       <div class="admin-section active" id="adminSectionOverview">
         <div class="admin-stat-strip">
-          <div class="admin-stat"><div class="admin-stat-num" id="statTotalUsers">—</div><div class="admin-stat-lbl">Total users</div></div>
-          <div class="admin-stat"><div class="admin-stat-num tier-free" id="statFree">—</div><div class="admin-stat-lbl">Free</div></div>
-          <div class="admin-stat"><div class="admin-stat-num tier-premium" id="statPremium">—</div><div class="admin-stat-lbl">Premium</div></div>
-          <div class="admin-stat"><div class="admin-stat-num tier-pro" id="statPro">—</div><div class="admin-stat-lbl">Pro</div></div>
+          <div class="admin-stat"><div class="admin-stat-num" id="statFamilies">—</div><div class="admin-stat-lbl">Families</div></div>
+          <div class="admin-stat"><div class="admin-stat-num" id="statNew7d">—</div><div class="admin-stat-lbl">New this week</div></div>
+          <div class="admin-stat"><div class="admin-stat-num" id="statOpenIssues">—</div><div class="admin-stat-lbl">Open issues</div></div>
         </div>
         <div class="card">
           <div class="card-header"><span class="card-title">Latest admin activity</span></div>
@@ -135,7 +134,7 @@
       <!-- USERS -->
       <div class="admin-section" id="adminSectionUsers">
         <div class="card">
-          <div class="card-header"><span class="card-title">All users</span></div>
+          <div class="card-header"><span class="card-title">All families</span></div>
           <div class="card-body">
             <input type="text" id="adminUserSearch" class="text-input" placeholder="Search by email…" oninput="renderAdminUserList()" style="margin-bottom:12px;">
             <div id="adminUserListMeta" class="setup-note" style="margin-bottom:10px;"></div>
@@ -182,7 +181,7 @@
         </div>
         <div class="card">
           <div class="card-header">
-            <span class="card-title">User bug reports</span>
+            <span class="card-title">Issue reports</span>
             <div class="seg" id="bugFilterSeg">
               <button class="seg-btn active" onclick="setBugFilter('open', this)">Open</button>
               <button class="seg-btn" onclick="setBugFilter('all', this)">All</button>
@@ -211,7 +210,7 @@
       <!-- METRICS -->
       <div class="admin-section" id="adminSectionMetrics">
         <div class="card">
-          <div class="card-header"><span class="card-title">User signups — last 8 weeks</span></div>
+          <div class="card-header"><span class="card-title">New families — last 8 weeks</span></div>
           <div class="card-body">
             <div id="metricsSignupChart" class="metrics-chart-wrap"></div>
           </div>

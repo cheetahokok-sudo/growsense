@@ -205,12 +205,9 @@ body {
 .setup-note { font-size: 12px; color: var(--text2); line-height: 1.45; background: var(--surface2); padding: 10px 12px; border-radius: 10px; }
 
 /* ── Stat strip ─────────────────────────────────────────────────── */
-.admin-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.admin-stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
 .admin-stat { background: var(--surface); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px; }
 .admin-stat-num { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
-.admin-stat-num.tier-free { color: var(--text3); }
-.admin-stat-num.tier-premium { color: var(--measured-dark); }
-.admin-stat-num.tier-pro { color: #92400E; }
 .admin-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 6px; font-weight: 600; }
 
 /* ── Lists ──────────────────────────────────────────────────────── */
