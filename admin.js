@@ -573,6 +573,21 @@ async function updateBugStatus(id, status, btn) {
 let _supportRows = [];
 let _supportOpen = null;   // slug of the expanded article
 
+// Browse taxonomy in user-journey order (mirrors the section CHECK in
+// 2026-07-22_support_articles_journey.sql). Rows with an unknown/older
+// section value fall back to 'technical' at render time.
+const SUPPORT_SECTIONS = [
+  ['account',   'Account & sign-in'],
+  ['children',  'Child profiles & family'],
+  ['logging',   'Daily logging'],
+  ['estimates', 'Estimates & the calendar'],
+  ['growth',    'Growth charts & analytics'],
+  ['medical',   'Medical records'],
+  ['premium',   'Premium & codes'],
+  ['devices',   'Wearables & sync'],
+  ['technical', 'App & technical']
+];
+
 async function loadSupportArticles() {
   const { data, error } = await sb.from('support_articles').select('*').order('title');
   if (error) {
@@ -595,7 +610,18 @@ function renderSupportList() {
       : 'No articles yet — run migrations/2026-07-22_support_articles.sql in the Supabase SQL editor, then reload.') + '</div>';
     return;
   }
-  el.innerHTML = rows.map(r => {
+  const known = SUPPORT_SECTIONS.map(s => s[0]);
+  el.innerHTML = SUPPORT_SECTIONS.map(([sec, label]) => {
+    const group = rows.filter(r =>
+      (known.includes(r.section) ? r.section : 'technical') === sec);
+    if (group.length === 0) return '';   // hide empty sections (incl. under search)
+    return `
+    <div style="font-size:10.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text2); margin:6px 2px 0;">${label}</div>`
+      + group.map(r => renderSupportCard(r)).join('');
+  }).join('');
+}
+
+function renderSupportCard(r) {
     const open = _supportOpen === r.slug;
     const statusChip = r.status === 'public'
       ? '<span style="font-size:10px; font-weight:700; color:var(--accent);">PUBLIC</span>'
@@ -627,7 +653,6 @@ function renderSupportList() {
         <div style="font-size:11.5px; color:var(--text2); margin-top:3px;">${escHtml(r.symptom)}</div>
       </div>${body}
     </div>`;
-  }).join('');
 }
 
 function toggleSupportArticle(slug) {
@@ -646,6 +671,9 @@ function editSupportArticle(slug) {
       <input class="text-input" id="supSlug" maxlength="80" placeholder="slug-like-this (lowercase, hyphens)" value="${r ? escHtml(r.slug) : ''}">
       <input class="text-input" id="supSymptom" maxlength="400" placeholder="One line: what the user sees" value="${r ? escHtml(r.symptom) : ''}">
       <div style="display:flex; gap:10px;">
+        <select class="text-input" id="supSection" style="flex:1.4;">
+          ${SUPPORT_SECTIONS.map(([sec, label]) => `<option value="${sec}"${(r ? r.section : 'technical') === sec ? ' selected' : ''}>${label}</option>`).join('')}
+        </select>
         <select class="text-input" id="supPlatform" style="flex:1;">
           ${['all', 'web', 'ios', 'android'].map(p => `<option value="${p}"${r && r.platform === p ? ' selected' : ''}>${p}</option>`).join('')}
         </select>
@@ -678,7 +706,7 @@ async function saveSupportArticle(id) {
   const val = x => (document.getElementById(x).value || '').trim();
   const row = {
     slug: val('supSlug'), title: val('supTitle'), symptom: val('supSymptom'),
-    platform: val('supPlatform'), status: val('supStatus'),
+    section: val('supSection'), platform: val('supPlatform'), status: val('supStatus'),
     steps: val('supSteps'), escalation: val('supEscalation') || null,
     updated_at: new Date().toISOString(),
     updated_by: ADMIN.account ? ADMIN.account.user_id : null
