@@ -16,6 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'analytics.dart' show calcSleepTargetMin;
 import 'app_meta.dart';
+import 'platform.dart' show kIsApplePhone;
 import 'recall_engine.dart' show manualEntryMeta;
 import 'wearables.dart' show googleHealthRedirectUri;
 
@@ -356,8 +357,13 @@ class AppState extends ChangeNotifier {
   /// Custom-food cap: keeps "Mine" curated and blocks garbage growth.
   /// Storage is a non-issue (~200 bytes/row) — this is a UX/abuse cap
   /// and a natural free/premium boundary, mirroring addChild's gating.
-  int get customFoodLimit =>
-      ((account?['subscription_tier'] as String?) ?? 'free') == 'free' ? 5 : 50;
+  /// iOS ships free-MVP: the generous cap applies so no "upgrade" prompt
+  /// can fire (App Store Guideline 3.1.1) — see [[platform.dart]].
+  int get customFoodLimit => kIsApplePhone
+      ? 50
+      : (((account?['subscription_tier'] as String?) ?? 'free') == 'free'
+          ? 5
+          : 50);
 
   Future<String?> addCustomFood({
     required String name,
@@ -372,7 +378,8 @@ class AppState extends ChangeNotifier {
     final limit = customFoodLimit;
     if (customFoods.length >= limit) {
       final tier = (account?['subscription_tier'] as String?) ?? 'free';
-      return tier == 'free'
+      // No "upgrade" wording on iOS (free-MVP; Guideline 3.1.1).
+      return (tier == 'free' && !kIsApplePhone)
           ? 'Free plan supports up to $limit custom foods — remove one or upgrade'
           : 'Your plan supports up to $limit custom foods — remove one first';
     }
@@ -1364,12 +1371,16 @@ class AppState extends ChangeNotifier {
           .eq('tier', tier)
           .maybeSingle();
       final tierLimit = (limitRow?['max_children'] as num?)?.toInt();
-      final limit = math.min(tierLimit ?? 4, 4);
+      // iOS free-MVP: allow the app's hard max (4) with no tier-implying
+      // wording, so no upgrade prompt can fire (Guideline 3.1.1).
+      final limit = kIsApplePhone ? 4 : math.min(tierLimit ?? 4, 4);
       final activeCount = children
           .where((c) => c['status'] != 'archived')
           .length;
       if (activeCount >= limit) {
-        return 'Your $tier plan supports up to $limit child profiles';
+        return kIsApplePhone
+            ? 'You can add up to $limit child profiles'
+            : 'Your $tier plan supports up to $limit child profiles';
       }
 
       final payload = <String, dynamic>{

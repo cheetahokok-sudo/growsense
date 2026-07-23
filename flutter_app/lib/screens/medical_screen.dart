@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../analytics.dart';
 import '../app_state.dart';
+import '../citations.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
@@ -1315,6 +1316,10 @@ class _TargetHeightCardState extends State<_TargetHeightCard> {
                     '${t('flutter.target_method')} ${formatHeight(target.tannerMidParentalCm, units)}.',
                     style: const TextStyle(
                         fontSize: 10, color: GsColors.estimatedDark)),
+                const Padding(
+                  padding: EdgeInsets.only(top: 3),
+                  child: SourcesLink(topicId: 'target_height'),
+                ),
                 const SizedBox(height: 10),
                 InkWell(
                   onTap: () => setState(() => _expanded = !_expanded),

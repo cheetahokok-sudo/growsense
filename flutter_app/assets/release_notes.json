@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.4.1",
+      "build": 25,
+      "date": "2026-07-24",
+      "title": "Sources you can open",
+      "highlights": [
+        "Every growth calculation now shows its sources: tap “Sources” next to a percentile, target-height range, bone-age reading or nutrition target to see the WHO, Dietary Reference Intake and clinical references behind it.",
+        "A new Medical information & sources library lives under Account → Support & legal, with the educational-use limitations in one place.",
+        "Clearer message if Sign in with Apple can’t complete, so you always have a next step."
+      ]
+    },
+    {
       "version": "1.4.0",
       "build": 7,
       "date": "2026-07-16",

@@ -117,10 +117,21 @@ class _AuthScreenState extends State<AuthScreen> {
     } on SignInWithAppleAuthorizationException catch (e) {
       // Tapping "Cancel" on the system sheet isn't an error worth showing.
       if (e.code == AuthorizationErrorCode.canceled) return;
-      setState(() => _error = e.message);
+      setState(() => _error = _appleErr('AUTH_APPLE_AUTHZ', e.message));
     } on AuthException catch (e) {
-      setState(() => _error = e.message);
+      // The backend rejected Apple's token (e.g. provider not enabled) —
+      // give the user a clear next step, not a raw server string.
+      setState(() => _error = _appleErr('AUTH_APPLE_EXCHANGE', e.message));
     }
+  }
+
+  /// Friendly, actionable message for a failed Sign in with Apple, with a
+  /// small internal code appended for support/diagnostics. The raw detail
+  /// goes to the debug console only (never a token — only the SDK message).
+  String _appleErr(String code, String detail) {
+    debugPrint('[GrowSense] $code: $detail');
+    final t = widget.i18n.t;
+    return '${t('flutter.auth.apple_error', 'We could not complete Sign in with Apple. Please try again, or use another sign-in method.')} ($code)';
   }
 
   /// Cryptographically-random URL-safe nonce for Sign in with Apple.

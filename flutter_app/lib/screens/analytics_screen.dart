@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../analytics.dart';
 import '../app_state.dart';
+import '../citations.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
@@ -965,6 +966,10 @@ class _GrowthStripState extends State<_GrowthStrip> {
                         color: GsColors.text3,
                       ),
                     ),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 3),
+                    child: SourcesLink(topicId: 'percentile'),
+                  ),
                 ],
               ),
             ),

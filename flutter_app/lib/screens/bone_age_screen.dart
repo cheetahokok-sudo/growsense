@@ -22,8 +22,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../app_state.dart';
+import '../citations.dart';
 import '../growth_math.dart' show ageYearsAt;
 import '../i18n.dart';
+import '../platform.dart';
 import '../theme.dart';
 import '../widgets/gs_icons.dart';
 import '../widgets/premium_gate.dart';
@@ -791,8 +793,15 @@ class _BoneAgeCardState extends State<_BoneAgeCard> {
                 style:
                     const TextStyle(fontSize: 11, color: GsColors.text2)),
           ],
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: SourcesLink(
+                topicId: 'bone_age', label: 'Method: Greulich–Pyle · Sources'),
+          ),
 
-          // AI second opinion
+          // AI second opinion — Premium; hidden on iOS (Guideline 3.1.1).
+          // The multi-hospital bone-age timeline above stays free.
+          if (kShowPaidUi) ...[
           const SizedBox(height: 10),
           if (xrayPath == null)
             Text(
@@ -841,6 +850,7 @@ class _BoneAgeCardState extends State<_BoneAgeCard> {
             const SizedBox(height: 10),
             _AiPanel(result: aiResult, record: r, i18n: widget.i18n),
           ],
+          ], // end kShowPaidUi (AI second opinion)
         ],
       ),
     );

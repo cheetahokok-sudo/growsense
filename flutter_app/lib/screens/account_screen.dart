@@ -7,10 +7,12 @@ import '../app_state.dart';
 import '../export/download.dart';
 import '../export/visit_pdf.dart';
 import '../i18n.dart';
+import '../platform.dart';
 import '../theme.dart';
 import '../widgets/gs_icons.dart';
 import 'bug_report_screen.dart';
 import 'devices_screen.dart';
+import 'medical_references_screen.dart';
 import 'settings_modules.dart';
 import 'welcome_screen.dart';
 import 'whats_new_screen.dart';
@@ -208,8 +210,12 @@ class AccountScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              _SubscriptionCard(appState: appState, i18n: i18n),
+              // Subscription + activation-code UI is hidden on iOS (App
+              // Store Guideline 3.1.1 — no paid surface outside IAP).
+              if (kShowPaidUi) ...[
+                const SizedBox(height: 12),
+                _SubscriptionCard(appState: appState, i18n: i18n),
+              ],
               const SizedBox(height: 12),
               InkWell(
                 onTap: () => Navigator.of(context).push(
@@ -313,8 +319,12 @@ class AccountScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _ExportTile(appState: appState, i18n: i18n),
-              const SizedBox(height: 12),
-              _VisitPdfTile(appState: appState, i18n: i18n),
+              // Visit-summary PDF is a Premium feature — hidden on iOS for
+              // v1 (returns as a free/IAP feature later). Guideline 3.1.1.
+              if (kShowPaidUi) ...[
+                const SizedBox(height: 12),
+                _VisitPdfTile(appState: appState, i18n: i18n),
+              ],
               const SizedBox(height: 12),
               InkWell(
                 onTap: () => Navigator.of(context).push(
@@ -395,6 +405,16 @@ class AccountScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) =>
                             BugReportScreen(appState: appState, i18n: i18n),
+                      ),
+                    ),
+                  ),
+                  _LinkRow(
+                    icon: Icons.menu_book_outlined,
+                    label: t('flutter.legal.references',
+                        'Medical information & sources'),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => MedicalReferencesScreen(i18n: i18n),
                       ),
                     ),
                   ),

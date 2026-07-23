@@ -17,6 +17,29 @@ new"), and add the full entry here.
 
 _Work in progress lands here before it's tagged._
 
+## [1.4.1] — 2026-07-24 · build 25
+
+### Added
+- **Medical citations, easy to find.** Inline "Sources" links next to the
+  key results (height/weight percentile, genetic target & adult-height
+  range, bone-age reading, nutrition targets) open a sheet with the exact
+  published sources — WHO Child Growth Standards, NASEM/IOM Dietary
+  Reference Intakes, AASM sleep consensus, Greulich–Pyle, NCD-RisC
+  (eLife 2016). A central **Medical information & sources** screen lives
+  under Account → Support & legal with the educational-use limitations.
+  All sources are real and verified — nothing is generated. (App Store
+  Guideline 1.4.1.)
+
+### Changed
+- **iOS ships as a free build.** On iPhone/iPad the subscription card,
+  activation codes, the visit-summary PDF and the AI features (bone-age
+  second opinion, lab interpretation) are not shown, and the free-tier
+  caps are lifted so no "upgrade on the web" prompt can appear. Web and
+  Android are unchanged. Paid features return via In-App Purchase in a
+  later version. (App Store Guideline 3.1.1.)
+- **Clearer Sign in with Apple failure message** with an internal
+  diagnostic code, instead of a raw server string. (Guideline 2.1a.)
+
 ## [1.4.0] — 2026-07-16 · build 7
 
 ### Added

@@ -12,6 +12,7 @@ import '../app_state.dart';
 import '../growth_evidence.dart';
 import '../i18n.dart';
 import '../illness_reference.dart';
+import '../platform.dart';
 import '../theme.dart';
 import '../widgets/evidence_refs.dart';
 import '../widgets/gs_icons.dart';
@@ -527,8 +528,12 @@ class _LabAnalytePanelState extends State<_LabAnalytePanel> {
               style: const TextStyle(
                   fontSize: 10.5, color: GsColors.text3, height: 1.4)),
         ),
-        const SizedBox(height: 14),
-        _LabAiCard(appState: widget.appState, i18n: widget.i18n),
+        // AI lab interpretation is Premium — hidden on iOS (Guideline
+        // 3.1.1). Logging, charting and evidence cards stay free.
+        if (kShowPaidUi) ...[
+          const SizedBox(height: 14),
+          _LabAiCard(appState: widget.appState, i18n: widget.i18n),
+        ],
       ],
     );
   }

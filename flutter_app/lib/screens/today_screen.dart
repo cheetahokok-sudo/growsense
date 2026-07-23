@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../analytics.dart'
     show calcCalciumTargetMg, calcZincTargetMg, calcWaterTargetMl;
 import '../app_state.dart';
+import '../citations.dart';
 import '../i18n.dart';
 import '../theme.dart';
 import 'gap_fill_card.dart';
@@ -407,6 +408,15 @@ class _NutritionEditorCardState extends State<NutritionEditorCard> {
                     ? () => setState(() => _water = _water! - 1)
                     : null,
                 onPlus: () => setState(() => _water = _water! + 1),
+              ),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: SourcesLink(
+                      topicId: 'nutrition',
+                      label: 'Targets based on Dietary Reference Intakes · Sources'),
+                ),
               ),
               const SizedBox(height: 10),
               ElevatedButton(
