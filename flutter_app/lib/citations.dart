@@ -106,8 +106,8 @@ const List<CitationTopic> kMedicalCitations = [
         'Dietary Reference Intakes',
         'National Academies (IOM/NASEM): protein & water 2005; '
             'calcium & vitamin D 2011; zinc & iron 2001',
-        'https://www.nationalacademies.org/our-work/'
-            'dietary-reference-intakes-tables-and-application',
+        'https://nap.nationalacademies.org/collection/57/'
+            'dietary-reference-intakes',
       ),
       Citation(
         'USDA FoodData Central',
@@ -144,7 +144,8 @@ const List<CitationTopic> kMedicalCitations = [
         'Greulich WW, Pyle SI',
         'Radiographic Atlas of Skeletal Development of the Hand and '
             'Wrist, 2nd ed. Stanford University Press, 1959',
-        'https://www.sup.org/books/title/?id=6363',
+        'https://books.google.com/books/about/'
+            'Radiographic_Atlas_of_Skeletal_Developme.html?id=olezJFYxM6oC',
       ),
     ],
   ),
@@ -158,12 +159,12 @@ const List<CitationTopic> kMedicalCitations = [
       Citation(
         'Inhaled glucocorticoids & adult height',
         'N Engl J Med, 2012',
-        'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3517799/',
+        'https://pmc.ncbi.nlm.nih.gov/articles/PMC3517799/',
       ),
       Citation(
         'Stimulants & final adult height',
         '2022',
-        'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9627528/',
+        'https://pmc.ncbi.nlm.nih.gov/articles/PMC9627528/',
       ),
       Citation(
         'Corticosteroids — growth effects',
