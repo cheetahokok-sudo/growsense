@@ -317,8 +317,13 @@ class AccountScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              _ExportTile(appState: appState, i18n: i18n),
+              // CSV export writes a file — only implemented on web (native
+              // download shows a "web app" message), so hide the tile on iOS
+              // to avoid a dead-end / web steering. Guideline 3.1.1 / 2.1.
+              if (!kIsApplePhone) ...[
+                const SizedBox(height: 12),
+                _ExportTile(appState: appState, i18n: i18n),
+              ],
               // Visit-summary PDF is a Premium feature — hidden on iOS for
               // v1 (returns as a free/IAP feature later). Guideline 3.1.1.
               if (kShowPaidUi) ...[
@@ -1349,7 +1354,7 @@ class _ChildEditorSheetState extends State<_ChildEditorSheet> {
               Text(
                 t(
                   'flutter.parent_heights',
-                  'Parent heights — unlocks the genetic target & trajectory',
+                  'Parent heights — reveal the genetic target & trajectory',
                 ),
                 style: const TextStyle(
                   fontSize: 11.5,
