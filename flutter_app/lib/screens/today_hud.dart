@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import '../analytics.dart';
 import '../app_state.dart';
+import '../citations.dart';
 import '../i18n.dart';
 import '../theme.dart';
 
@@ -924,6 +925,12 @@ class _SleepEditorCardState extends State<SleepEditorCard> {
                       ],
                     ),
                     _napsSection(),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: SourcesLink(
+                          topicId: 'sleep',
+                          label: 'Sleep targets · Sources'),
+                    ),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: _busy ? null : _save,

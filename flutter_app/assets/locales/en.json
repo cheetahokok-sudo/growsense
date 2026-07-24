@@ -396,7 +396,7 @@
  "flutter.dev.title": "Devices & sensors",
  "flutter.dev.intro": "Connect a wearable so sleep, HRV, and activity flow into the growth model automatically. Sleep quality is the single biggest lever on growth hormone — so a sleep-tracking device is the most valuable to connect.",
  "flutter.dev.connect": "Connect",
- "flutter.dev.connect_web": "Open the web app to connect this device.",
+ "flutter.dev.connect_web": "Wearable connection is set up at growsense.life.",
  "flutter.dev.sync_now": "Sync now",
  "flutter.dev.nights_synced": "nights synced",
  "flutter.dev.last_sync": "last sync",

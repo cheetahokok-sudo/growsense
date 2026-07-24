@@ -448,6 +448,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                     ],
                   ),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: SourcesLink(
+                        topicId: 'percentile',
+                        label: 'Velocity vs WHO reference · Sources'),
+                  ),
                   const SizedBox(height: 14),
                   _TrendCard(
                     title: t('common.protein', 'Protein'),

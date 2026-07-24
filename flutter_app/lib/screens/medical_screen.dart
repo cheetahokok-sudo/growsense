@@ -633,6 +633,10 @@ class _ChartCardState extends State<_ChartCard> {
               ),
             ],
           ),
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: SourcesLink(topicId: 'percentile'),
+          ),
           const SizedBox(height: 8),
           SizedBox(
             height: 260,

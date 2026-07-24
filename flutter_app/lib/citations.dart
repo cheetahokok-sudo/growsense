@@ -58,11 +58,12 @@ const String kMedicalDisclaimer =
 const List<CitationTopic> kMedicalCitations = [
   CitationTopic(
     id: 'percentile',
-    title: 'Height & weight percentiles',
+    title: 'Percentiles, BMI-for-age & growth velocity',
     summary:
-        'Percentiles compare your child\'s measurement with a healthy '
-        'reference population of the same age and sex. A position on the '
-        'chart is not a diagnosis.',
+        'Percentiles, BMI-for-age and height-velocity all compare your '
+        'child\'s measurement with the same WHO reference population of '
+        'the same age and sex. A position on the chart — or a velocity '
+        'between two visits — is context, not a diagnosis.',
     sources: [
       Citation(
         'WHO Child Growth Standards',

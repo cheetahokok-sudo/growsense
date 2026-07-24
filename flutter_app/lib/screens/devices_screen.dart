@@ -71,7 +71,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(t('flutter.dev.connect_web',
-                'Open the web app to connect this device.'))));
+                'Wearable connection is set up at growsense.life.'))));
       }
     }
   }
