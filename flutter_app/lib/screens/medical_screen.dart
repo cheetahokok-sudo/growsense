@@ -1300,6 +1300,14 @@ class _TargetHeightCardState extends State<_TargetHeightCard> {
   }
 
   Future<void> _removeSibling(Map<String, dynamic> s) async {
+    if (!await confirmDelete(
+      context,
+      i18n: widget.i18n,
+      message: widget.i18n.t('flutter.fam.confirm_delete',
+          'Remove this family height? This cannot be undone.'),
+    )) {
+      return;
+    }
     await widget.appState.deleteFamilyRecord(s['record_id']);
     if (mounted) setState(() => _siblings.remove(s));
   }

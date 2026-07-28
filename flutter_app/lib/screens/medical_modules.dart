@@ -1381,8 +1381,23 @@ class _IllnessLogScreenState extends State<IllnessLogScreen> {
         history: _HistoryList(
           i18n: widget.i18n,
           items: widget.appState.illnessEvents,
-          onDelete: (r) =>
-              widget.appState.deleteIllnessEvent(r['event_id']),
+          onDelete: (r) async {
+            if (!await confirmDelete(
+              context,
+              i18n: widget.i18n,
+              message: t('flutter.ill.confirm_delete',
+                  'Remove this illness record? This cannot be undone.'),
+              // Illness rows also draw the shaded periods on the growth
+              // chart (medical_screen.dart's illnessSpans), so deleting
+              // one silently changes a chart the parent may be reading
+              // for a different reason.
+              note: t('flutter.ill.confirm_delete_note',
+                  'The illness period will also disappear from the growth chart.'),
+            )) {
+              return null;
+            }
+            return widget.appState.deleteIllnessEvent(r['event_id']);
+          },
           rowBuilder: (r) {
             final ill = ref.illness(r['illness_type'] as String? ?? '');
             final details =
