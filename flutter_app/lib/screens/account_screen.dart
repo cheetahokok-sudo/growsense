@@ -1017,11 +1017,13 @@ class _VisitPdfTile extends StatefulWidget {
 class _VisitPdfTileState extends State<_VisitPdfTile> {
   bool _busy = false;
 
-  bool get _isPaid {
-    final tier =
-        (widget.appState.account?['subscription_tier'] as String?) ?? 'free';
-    return tier == 'premium' || tier == 'pro';
-  }
+  // Use the shared entitlement getter, which honours tier_expires_at.
+  // This tile used to re-implement the tier check and ignore expiry, so a
+  // lapsed subscriber kept PDF export indefinitely. Unlike the bone-age
+  // and lab AI features, buildVisitPdf runs entirely client-side and never
+  // calls an Edge Function — so there is no server-side re-check behind
+  // this, and it is the only gate on the feature.
+  bool get _isPaid => widget.appState.isPremium;
 
   Future<void> _make() async {
     final t = widget.i18n.t;
