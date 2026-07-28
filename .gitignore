@@ -1,0 +1,4 @@
+# Supabase CLI scratch state — machine-local, must never be committed.
+# (flutter_app/, web/, android/ and ios/ carry their own .gitignore files;
+# app/ IS tracked on purpose — it is the deployed Flutter web bundle.)
+supabase/.temp/
