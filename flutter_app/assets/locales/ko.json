@@ -461,6 +461,7 @@
  "flutter.ba.need_fields": "검사 날짜와 골연령이 필요합니다",
  "flutter.ba.doctor_hospital": "의사 / 병원 (선택)",
  "flutter.ba.empty": "아직 골연령 검사가 없습니다. 첫 판독 결과를 추가하세요 — 기록하는 모든 필름이 어떤 병원도 보관하지 않는 성숙 이력을 만듭니다.",
+ "flutter.ba.overlay_caption": "AI 주석 오버레이 · 해부학적 위치는 근사값입니다",
  "flutter.ba.confirm_delete": "이 골연령 기록을 삭제할까요? X-ray 이미지도 삭제됩니다.",
  "flutter.lab.confirm_delete": "이 검사 결과를 삭제할까요? 되돌릴 수 없습니다.",
  "flutter.pub.confirm_delete": "이 사춘기 기록을 삭제할까요? 되돌릴 수 없습니다.",

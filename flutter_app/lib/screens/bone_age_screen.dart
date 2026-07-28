@@ -29,6 +29,7 @@ import '../platform.dart';
 import '../theme.dart';
 import '../widgets/gs_icons.dart';
 import '../widgets/premium_gate.dart';
+import '../widgets/xray_annotation.dart';
 
 String _fmtYM(num months) {
   final m = months.round();
@@ -870,7 +871,13 @@ class _BoneAgeCardState extends State<_BoneAgeCard> {
           ],
           if (aiResult != null) ...[
             const SizedBox(height: 10),
-            _AiPanel(result: aiResult, record: r, i18n: widget.i18n),
+            _AiPanel(
+              result: aiResult,
+              record: r,
+              i18n: widget.i18n,
+              appState: widget.appState,
+              xrayPath: xrayPath,
+            ),
           ],
           ], // end kShowPaidUi (AI second opinion)
         ],
@@ -940,11 +947,21 @@ class _XrayThumb extends StatelessWidget {
 // ── AI second-opinion panel ─────────────────────────────────────────
 
 class _AiPanel extends StatelessWidget {
-  const _AiPanel(
-      {required this.result, required this.record, required this.i18n});
+  const _AiPanel({
+    required this.result,
+    required this.record,
+    required this.i18n,
+    required this.appState,
+    this.xrayPath,
+  });
   final Map<String, dynamic> result;
   final Map<String, dynamic> record;
   final I18n i18n;
+  final AppState appState;
+
+  /// Null when the reading was typed in without a film — the panel
+  /// still renders, just without the annotated image.
+  final String? xrayPath;
 
   @override
   Widget build(BuildContext context) {
@@ -1006,6 +1023,19 @@ class _AiPanel extends StatelessWidget {
                     color: confColor)),
           ),
         ]),
+
+        // The findings drawn back onto the film. Sits directly under the
+        // header so the picture is read before the numbers describing it.
+        if (xrayPath != null) ...[
+          const SizedBox(height: 10),
+          XrayAnnotationOverlay(
+            appState: appState,
+            xrayPath: xrayPath!,
+            result: result,
+            i18n: i18n,
+          ),
+        ],
+
         const SizedBox(height: 10),
         Row(children: [
           if (best != null)

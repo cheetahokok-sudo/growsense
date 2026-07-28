@@ -461,6 +461,7 @@
  "flutter.ba.need_fields": "需要检查日期和骨龄",
  "flutter.ba.doctor_hospital": "医生/医院（可选）",
  "flutter.ba.empty": "还没有骨龄检查记录。添加第一份判读结果——您记录的每张片子都在构建任何单一诊所都不会保存的成熟历史。",
+ "flutter.ba.overlay_caption": "AI 标注图层 · 解剖位置为近似值",
  "flutter.ba.confirm_delete": "删除此骨龄记录？X光图像也会被删除。",
  "flutter.lab.confirm_delete": "删除此化验结果？此操作无法撤销。",
  "flutter.pub.confirm_delete": "删除此青春期发育记录？此操作无法撤销。",

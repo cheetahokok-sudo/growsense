@@ -461,6 +461,7 @@
  "flutter.ba.need_fields": "Cần ngày chụp và tuổi xương",
  "flutter.ba.doctor_hospital": "Bác sĩ / bệnh viện (tùy chọn)",
  "flutter.ba.empty": "Chưa có lần chụp tuổi xương nào. Thêm kết quả đầu tiên — mỗi phim bạn lưu xây nên lịch sử trưởng thành mà không phòng khám nào giữ.",
+ "flutter.ba.overlay_caption": "Lớp chú thích AI · Vị trí giải phẫu chỉ là ước lượng",
  "flutter.ba.confirm_delete": "Xóa bản ghi tuổi xương này? Ảnh X-quang cũng bị xóa.",
  "flutter.lab.confirm_delete": "Xóa kết quả xét nghiệm này? Không thể hoàn tác.",
  "flutter.pub.confirm_delete": "Xóa mốc dậy thì này? Không thể hoàn tác.",
