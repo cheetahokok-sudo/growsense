@@ -191,21 +191,41 @@ export async function fetchSubscriptionState(
       }>;
     };
 
-    // Find the entry for this OTI (a group can hold several).
+    // Collect candidates. Apple's path parameter accepts ANY transaction
+    // id belonging to the subscription, not only the original — so what
+    // we passed in may not equal the originalTransactionId that comes
+    // back. Prefer an exact match, otherwise fall back to the single
+    // entry Apple returned, and always report the ORIGINAL id Apple
+    // states rather than whatever we happened to ask with.
+    const candidates: Array<{
+      originalTransactionId?: string;
+      status?: number;
+      signedTransactionInfo?: string;
+      signedRenewalInfo?: string;
+    }> = [];
     for (const group of parsed.data ?? []) {
-      for (const item of group.lastTransactions ?? []) {
-        if (item.originalTransactionId !== originalTransactionId) continue;
-        return {
+      for (const item of group.lastTransactions ?? []) candidates.push(item);
+    }
+
+    const item =
+      candidates.find((c) => c.originalTransactionId === originalTransactionId) ??
+      (candidates.length === 1 ? candidates[0] : undefined);
+
+    if (item) {
+      const transaction =
+        decodeJwsPayload<AppleTransaction>(item.signedTransactionInfo ?? "") ?? {};
+      return {
+        originalTransactionId:
+          item.originalTransactionId ??
+          transaction.originalTransactionId ??
           originalTransactionId,
-          environment: host === SANDBOX_HOST ? "Sandbox" : "Production",
-          status: item.status ?? null,
-          transaction:
-            decodeJwsPayload<AppleTransaction>(item.signedTransactionInfo ?? "") ?? {},
-          renewal:
-            decodeJwsPayload<AppleRenewalInfo>(item.signedRenewalInfo ?? "") ?? {},
-          raw: parsed,
-        };
-      }
+        environment: host === SANDBOX_HOST ? "Sandbox" : "Production",
+        status: item.status ?? null,
+        transaction,
+        renewal:
+          decodeJwsPayload<AppleRenewalInfo>(item.signedRenewalInfo ?? "") ?? {},
+        raw: parsed,
+      };
     }
   }
 
