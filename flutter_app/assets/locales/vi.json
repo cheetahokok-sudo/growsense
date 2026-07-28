@@ -699,5 +699,8 @@
  "flutter.child.remove_note": "Hồ sơ trẻ này sẽ bị xóa khỏi ứng dụng.",
  "flutter.child.removed": "Đã xóa hồ sơ",
  "flutter.child.remove_last": "Giữ ít nhất một hồ sơ trẻ đang hoạt động.",
+ "flutter.cap.meas_title": "Bạn đã dùng hết 5 lần đo miễn phí",
+ "flutter.cap.meas_body": "Premium mở khóa số lần đo không giới hạn và toàn bộ lịch sử tăng trưởng của con — tốc độ tăng chiều cao qua nhiều năm cho thấy con thực sự phát triển thế nào.",
+ "flutter.cap.meas_free": "Mọi dữ liệu bạn đã ghi vẫn là của bạn, và việc ghi ăn uống, hoạt động và giấc ngủ luôn miễn phí.",
  "flutter.cofactor.collapsed": "Sắt · Vitamin D"
 }

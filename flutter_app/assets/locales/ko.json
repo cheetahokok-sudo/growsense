@@ -699,5 +699,8 @@
  "flutter.child.remove_note": "이 자녀 프로필이 앱에서 삭제됩니다.",
  "flutter.child.removed": "프로필이 삭제되었습니다",
  "flutter.child.remove_last": "활성 자녀 프로필을 최소 하나는 유지하세요.",
+ "flutter.cap.meas_title": "무료 측정 5회를 모두 사용했습니다",
+ "flutter.cap.meas_body": "프리미엄에서는 측정 횟수 제한이 없고 아이의 전체 성장 기록을 볼 수 있습니다 — 수년간의 키 성장 속도가 아이의 실제 성장 추이를 보여줍니다.",
+ "flutter.cap.meas_free": "이미 기록한 데이터는 그대로 남아 있으며, 음식·활동·수면 기록은 언제나 무료입니다.",
  "flutter.cofactor.collapsed": "철분 · 비타민 D"
 }

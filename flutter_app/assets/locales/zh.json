@@ -699,5 +699,8 @@
  "flutter.child.remove_note": "这个孩子的档案将从应用中移除。",
  "flutter.child.removed": "已移除档案",
  "flutter.child.remove_last": "请至少保留一个使用中的孩子档案。",
+ "flutter.cap.meas_title": "您已用完 5 次免费测量",
+ "flutter.cap.meas_body": "高级版可无限次测量并查看孩子的完整成长记录——多年的身高增长速度才能真正反映孩子的成长趋势。",
+ "flutter.cap.meas_free": "已记录的数据始终属于您，饮食、活动和睡眠记录永远免费。",
  "flutter.cofactor.collapsed": "铁 · 维生素 D"
 }

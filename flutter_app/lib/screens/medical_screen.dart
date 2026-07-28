@@ -10,6 +10,7 @@ import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
 import '../widgets/gs_icons.dart';
+import '../widgets/premium_gate.dart';
 import '../units.dart';
 import '../beta_flags.dart';
 import 'bone_age_screen.dart';
@@ -1615,6 +1616,29 @@ class _EntryCardState extends State<_EntryCard> {
         date: _date, heightCm: entryToCm(h, u), weightKg: entryToKg(w, u));
     if (!mounted) return;
     setState(() => _busy = false);
+    // The free-tier cap is a prompt, not a failure. Surfacing the raw
+    // sentinel in a red "Not saved" snackbar would read as a bug on the
+    // app's core action — the fastest route to a one-star review.
+    if (err == AppState.measurementCapError) {
+      showPremiumSheet(
+        context,
+        appState: widget.appState,
+        i18n: widget.i18n,
+        emoji: '📈',
+        title: t('flutter.cap.meas_title',
+            'You\'ve used your 5 free measurements'),
+        body: t(
+            'flutter.cap.meas_body',
+            'Premium unlocks unlimited measurements and your child\'s full '
+                'history — the multi-year height velocity that shows how '
+                'they\'re really tracking.'),
+        freeNote: t(
+            'flutter.cap.meas_free',
+            'Everything you\'ve logged stays yours, and logging food, '
+                'activity and sleep stays free — always.'),
+      );
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         backgroundColor: err == null ? GsColors.accentDark : GsColors.flag,
         content: Text(err == null

@@ -395,6 +395,37 @@ class AppState extends ChangeNotifier {
   /// True when there is history the current tier cannot see.
   bool get hasLockedHistory => lockedMeasurementCount > 0;
 
+  /// Lifetime measurement slots on the free tier.
+  ///
+  /// Counts lifetime inserts, not current rows, so deleting a measurement
+  /// does not hand a slot back — otherwise the cap is trivially bypassed
+  /// by delete-and-re-add. The counter lives in
+  /// `user_accounts.total_measurements_logged` and is maintained by a
+  /// database trigger; no client writes it.
+  static const int kFreeMeasurementLimit = 5;
+
+  int get measurementsLogged =>
+      (account?['total_measurements_logged'] as num?)?.toInt() ?? 0;
+
+  /// Remaining free slots. `null` on premium, which is unlimited.
+  int? get measurementsRemaining => isPremium
+      ? null
+      : math.max(0, kFreeMeasurementLimit - measurementsLogged);
+
+  bool get canAddMeasurement =>
+      isPremium || measurementsLogged < kFreeMeasurementLimit;
+
+  /// Whether logging [date] would create a NEW row rather than update an
+  /// existing one. [addMeasurement] upserts on (child_id, recorded_date),
+  /// so re-saving a date that already has a measurement is an edit.
+  ///
+  /// Edits must never be blocked by the cap: a parent who has used all
+  /// five slots still has to be able to correct a height they typed
+  /// wrong. This also keeps the client correct regardless of whether the
+  /// database trigger counts UPDATEs as well as INSERTs.
+  bool isNewMeasurementDate(String date) => !measurements
+      .any((m) => (m['recorded_date'] as Object?)?.toString() == date);
+
   static bool _recordedOnOrAfter(Map<String, dynamic> m, DateTime cutoff) {
     final raw = m['recorded_date'];
     if (raw == null) return false;
@@ -1611,6 +1642,12 @@ class AppState extends ChangeNotifier {
   /// paywall). The UI matches on this to show the upgrade sheet.
   static const premiumRequiredError = 'premium_required';
 
+  /// Returned by [addMeasurement] when a free account has used all of its
+  /// lifetime measurement slots. The UI matches on this to open the
+  /// paywall — it must never surface as a raw error, because failing
+  /// silently on the app's core action reads as a bug, not a prompt.
+  static const measurementCapError = 'measurement_cap';
+
   bool boneAgeAiRunning = false;
   Future<String?> runBoneAgeAI(Map<String, dynamic> record) async {
     final path = record['xray_storage_path'] as String?;
@@ -1800,6 +1837,12 @@ class AppState extends ChangeNotifier {
   }) async {
     final childId = activeChildId;
     if (childId == null) return 'No child selected';
+    // Free-tier cap. Only a NEW date consumes a slot — editing a date that
+    // already has a measurement is an upsert-update, and a capped parent
+    // must still be able to fix a value they typed wrong.
+    if (isNewMeasurementDate(date) && !canAddMeasurement) {
+      return measurementCapError;
+    }
     try {
       await sb.from('measurements').upsert({
         'child_id': childId,

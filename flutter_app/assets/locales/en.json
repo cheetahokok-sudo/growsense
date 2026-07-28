@@ -699,5 +699,8 @@
  "flutter.child.remove_note": "This child's profile will be removed from the app.",
  "flutter.child.removed": "Profile removed",
  "flutter.child.remove_last": "Keep at least one active child profile.",
+ "flutter.cap.meas_title": "You've used your 5 free measurements",
+ "flutter.cap.meas_body": "Premium unlocks unlimited measurements and your child's full history — the multi-year height velocity that shows how they're really tracking.",
+ "flutter.cap.meas_free": "Everything you've logged stays yours, and logging food, activity and sleep stays free — always.",
  "flutter.cofactor.collapsed": "Iron · Vitamin D"
 }
