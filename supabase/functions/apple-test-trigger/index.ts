@@ -21,6 +21,30 @@
 //
 // This function must exist only briefly: it can make Apple send
 // notifications. Deleted immediately after use.
+//
+// ── STATUS 2026-07-28: loop NOT yet green ─────────────────────────
+// Apple returns 404 errorCode 4040007 "No App Store Server Notification
+// URL found for provided app", consistently over ~10 minutes, on BOTH
+// hosts. Ruled out:
+//   · auth — the same JWT gets 4000006 "Invalid transaction id" from
+//     the subscriptions endpoint, so Apple resolves the app and accepts
+//     the token; a bad JWT returns 401.
+//   · a failed save — both URLs persist in ASC across a full page
+//     reload, and the edit dialog's character counter confirms stored
+//     content.
+//   · a missed Version 1/2 selector — the dialog has no select, no
+//     radio, and no version wording anywhere in the section.
+// Most likely remaining causes: Apple-side propagation measured in
+// hours, or the endpoint requiring an APPROVED in-app purchase (ours
+// are still "Prepare for Submission" and cannot be approved until they
+// ship with the v1.1 build).
+//
+// To retry:
+//   supabase functions deploy apple-test-trigger \
+//     --project-ref ogpkmcqaulohexanucng --no-verify-jwt
+//   curl "https://ogpkmcqaulohexanucng.supabase.co/functions/v1/apple-test-trigger?env=sandbox"
+//   supabase functions delete apple-test-trigger --project-ref ogpkmcqaulohexanucng
+// Look for sendAttempts[].sendAttemptResult === "SUCCESS".
 // ══════════════════════════════════════════════════════════════════
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
