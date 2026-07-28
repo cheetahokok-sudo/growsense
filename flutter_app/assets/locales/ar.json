@@ -319,7 +319,7 @@
  "flutter.iw.sheet.velocity.title": "معدل نمو الطول يحتاج ستة أشهر ليكون صادقًا",
  "flutter.iw.sheet.velocity.body": "الفترات القصيرة في معظمها ضوضاء قياس، لذا نفضّل الانتظار على التخمين. يفتح بريميوم السجل الكامل والنوافذ الزمنية التي يثق بها طبيب الأطفال.",
  "flutter.iw.sheet.free_note": "التسجيل اليومي وعرض الثلاثين يومًا يبقيان مجانيين دائمًا.",
- "flutter.growth_strip.locked_n": "{n} قياسات سابقة 🔒",
+ "flutter.growth_strip.locked_n": "{n} قياسات سابقة",
  "flutter.percentile": "المئين",
  "flutter.no_measurements_hint": "لا توجد قياسات بعد — أضف واحدًا أدناه.",
  "flutter.no_measurements_chart": "لا توجد قياسات مسجلة",

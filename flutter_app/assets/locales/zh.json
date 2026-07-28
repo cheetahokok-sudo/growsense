@@ -319,7 +319,7 @@
  "flutter.iw.sheet.velocity.title": "身高增速要看满六个月才可信",
  "flutter.iw.sheet.velocity.body": "短间隔大多是测量误差，我们宁可等待也不猜测。高级版解锁完整历史和儿科医生信赖的时间窗。",
  "flutter.iw.sheet.free_note": "每日记录和30天视图永远免费。",
- "flutter.growth_strip.locked_n": "{n}次更早的测量 🔒",
+ "flutter.growth_strip.locked_n": "{n}次更早的测量",
  "flutter.percentile": "百分位",
  "flutter.no_measurements_hint": "还没有测量数据 — 请在下方添加。",
  "flutter.no_measurements_chart": "尚无测量记录",

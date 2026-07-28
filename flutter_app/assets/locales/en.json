@@ -319,7 +319,7 @@
  "flutter.iw.sheet.velocity.title": "Height velocity needs six months to be honest",
  "flutter.iw.sheet.velocity.body": "Short intervals are mostly measuring noise, so we would rather wait than guess. Premium unlocks the full history and the windows a pediatrician would trust.",
  "flutter.iw.sheet.free_note": "Daily logging and the 30-day view stay free, always.",
- "flutter.growth_strip.locked_n": "{n} earlier measurements 🔒",
+ "flutter.growth_strip.locked_n": "{n} earlier measurements",
  "flutter.percentile": "percentile",
  "flutter.no_measurements_hint": "No measurements yet — add one below.",
  "flutter.no_measurements_chart": "No measurements logged yet",

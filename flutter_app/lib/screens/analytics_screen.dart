@@ -8,6 +8,7 @@ import '../citations.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import '../widgets/gs_icons.dart';
 import '../widgets/premium_gate.dart';
 import 'medical_screen.dart' show GrowthJourneyScreen;
 import 'trust_calendar.dart';
@@ -312,7 +313,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       onTap: () => _showWindowSheet(cardKey: 'velocity', windowDays: 180),
       child: _StatTile(
         label: label,
-        value: '🔒',
+        value: '',
+        valueWidget: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 2),
+          child: GsIcon('lock', size: 24),
+        ),
         suffix: t('flutter.iw.premium_window',
             'Premium · the clinically valid window'),
         color: GsColors.estimatedDark,
@@ -667,11 +672,17 @@ class _StatTile extends StatelessWidget {
     required this.value,
     required this.color,
     this.suffix,
+    this.valueWidget,
   });
   final String label;
   final String value;
   final String? suffix;
   final Color color;
+
+  /// Rendered in place of [value] when set — e.g. the house lock glyph
+  /// on the free tier's velocity tile, where a text emoji would break
+  /// the icon language.
+  final Widget? valueWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -695,14 +706,15 @@ class _StatTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
+          valueWidget ??
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
           if (suffix != null)
             Text(
               suffix!,
@@ -1319,9 +1331,10 @@ class _GrowthStripState extends State<_GrowthStrip> {
         ),
       // "Recent + locked count": the free tier sees its window, and
       // this line names exactly what is behind the paywall — their own
-      // real measurements, counted, not a vague "more".
+      // real measurements, counted, not a vague "more". The lock is
+      // drawn as the house glyph after the text, not an emoji in it.
       if (widget.appState.hasLockedHistory)
-        t('flutter.growth_strip.locked_n', '{n} earlier measurements 🔒',
+        t('flutter.growth_strip.locked_n', '{n} earlier measurements',
             {'n': '${widget.appState.lockedMeasurementCount}'}),
     ];
     final summary = parts.isEmpty
@@ -1362,12 +1375,24 @@ class _GrowthStripState extends State<_GrowthStrip> {
                     ),
                   ),
                   const SizedBox(height: 1),
-                  Text(
-                    summary,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: GsColors.text2,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          summary,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: GsColors.text2,
+                          ),
+                        ),
+                      ),
+                      if (widget.appState.hasLockedHistory)
+                        const Padding(
+                          padding: EdgeInsetsDirectional.only(start: 4),
+                          child: GsIcon('lock', size: 12),
+                        ),
+                    ],
                   ),
                   if (_latestDate != null)
                     Text(

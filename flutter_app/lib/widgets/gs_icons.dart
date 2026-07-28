@@ -18,6 +18,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 const Map<String, String> _gsIcons = {
   'add':
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.3" cy="8" r="3.6" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><path d="M3.5 20.4a5.9 5.9 0 0 1 11.6 0Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><circle cx="18" cy="6.3" r="3.1" fill="#2f7d74"/><path d="M18 4.9v2.8M16.6 6.3h2.8" stroke="#fff" stroke-width="1.4"/></svg>',
+  // Padlock for locked premium windows/history. Same duotone grammar as
+  // the rest of the set; gold keyhole ties it to 'premium'/'billing'
+  // (gold = paid) rather than red (red = clinical alert, never money).
+  'lock':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10.2V8a4 4 0 0 1 8 0v2.2" stroke="#153a2b" stroke-width="1.5"/><rect x="5.8" y="10.2" width="12.4" height="9.6" rx="2.4" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><circle cx="12" cy="14.2" r="1.5" fill="#b98d3e"/><path d="M12 15.4v2" stroke="#b98d3e" stroke-width="1.5"/></svg>',
   'premium':
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5.6 16.6 5 9l3.8 3.4L12 7l3.2 5.4L19 9l-.6 7.6Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><path d="M6 19h12" stroke="#153a2b" stroke-width="1.4"/><circle cx="12" cy="12.5" r="1.25" fill="#b98d3e"/></svg>',
   'share':

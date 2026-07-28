@@ -319,7 +319,7 @@
  "flutter.iw.sheet.velocity.title": "신장 증가 속도는 6개월은 봐야 정직한 숫자가 됩니다",
  "flutter.iw.sheet.velocity.body": "짧은 간격은 대부분 측정 오차이기에, 우리는 추측하기보다 기다립니다. 프리미엄은 전체 기록과 소아과 의사가 신뢰할 기간을 열어줍니다.",
  "flutter.iw.sheet.free_note": "매일 기록과 30일 보기는 언제나 무료입니다.",
- "flutter.growth_strip.locked_n": "이전 측정 {n}건 🔒",
+ "flutter.growth_strip.locked_n": "이전 측정 {n}건",
  "flutter.percentile": "백분위",
  "flutter.no_measurements_hint": "아직 측정값이 없습니다 — 아래에서 추가하세요.",
  "flutter.no_measurements_chart": "기록된 측정값 없음",

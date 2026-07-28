@@ -319,7 +319,7 @@
  "flutter.iw.sheet.velocity.title": "อัตราการสูงต้องดูอย่างน้อย 6 เดือนถึงจะแม่นจริง",
  "flutter.iw.sheet.velocity.body": "ช่วงสั้น ๆ ส่วนใหญ่คือความคลาดเคลื่อนจากการวัด เราขอรอ ไม่ขอเดา พรีเมียมปลดล็อกประวัติทั้งหมดและช่วงเวลาที่กุมารแพทย์เชื่อถือ",
  "flutter.iw.sheet.free_note": "การบันทึกรายวันและมุมมอง 30 วันยังฟรีเสมอ",
- "flutter.growth_strip.locked_n": "การวัดก่อนหน้า {n} ครั้ง 🔒",
+ "flutter.growth_strip.locked_n": "การวัดก่อนหน้า {n} ครั้ง",
  "flutter.percentile": "percentile",
  "flutter.no_measurements_hint": "ยังไม่มีการวัด — เพิ่มด้านล่าง",
  "flutter.no_measurements_chart": "ยังไม่มีบันทึกการวัด",
