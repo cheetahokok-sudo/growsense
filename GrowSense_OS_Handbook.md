@@ -276,7 +276,7 @@ Parent's browser (iOS Safari / Android Chrome / desktop)
 GitHub Pages  ── index.html · app.js (vanilla JS) · locales/*.json · ar-rtl.css
         │  supabase-js client
         ▼
-Supabase (Singapore region, free plan)
+Supabase (ap-northeast-2 / Seoul, free plan)
    ├── PostgreSQL (RLS-enforced)
    ├── Auth (JWT sessions)
    ├── Storage (X-ray images, documents)
