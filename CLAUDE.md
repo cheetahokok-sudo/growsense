@@ -16,7 +16,7 @@ Repo: https://github.com/cheetahokok-sudo/growsense
 
 \- Frontend: Vanilla JS PWA, GitHub Pages
 
-\- Backend: Supabase (ogpkmcqaulohexanucng.supabase.co, Singapore)
+\- Backend: Supabase (ogpkmcqaulohexanucng.supabase.co, ap-northeast-2 / Seoul — NOT Singapore; ap-southeast-1 is the separate "nimit" project)
 
 \- Fonts: Inter, Fraunces, Sarabun (Thai)
 
