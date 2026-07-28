@@ -1083,11 +1083,15 @@ Error contract (HTTP-status-meaningful): 400 invalid input · 401 auth · 403 re
 ### Other functions
 
 - **`ai-coach-proxy`** — holds the Anthropic key, enforces the monthly live-AI cap as the real gate, forwards grounded prompts.
-- **`bone-age-analysis`** — v1 vision LLM; planned ONNX CNN runtime. (Source lives loose at repo root as `bone-age-ai-index.ts`.)
+- **`bone-age-analysis`** — v1 vision LLM; planned ONNX CNN runtime.
 - **`google-health-auth`** — `POST {code, child_id, redirect_uri}`. Verifies the session JWT + child ownership, exchanges the auth code for Google OAuth tokens, fetches the linked account email, upserts `google_health_connections` (`onConflict: child_id`). **The token exchange must send the same `redirect_uri` the client used to start the flow** — clients now pass it (allowlisted server-side) because Flutter (`/app/`) and the PWA (`/webapp.html`) differ; a mismatch → Google `redirect_uri_mismatch`.
 - **`google-health-sync`** — `POST {child_id, days_back}`. Refreshes the stored token, pulls sleep dataPoints from `health.googleapis.com`, parses stages, writes `daily_sleep`. **Refresh failures are operational, not code bugs** — `invalid_grant` = dead refresh token (usually the consent screen was in "Testing" → 7-day expiry; fix = publish to production + reconnect), `invalid_client` = stale `GOOGLE_CLIENT_SECRET`. Full runbook: **Appendix C**.
 
-> **Edge-function source location.** `google-health-auth` / `google-health-sync` live in Supabase (not this repo) — to change them, edit in the Supabase dashboard and Deploy. Only `bone-age-ai-index.ts` is checked in.
+> **Edge-function source location.** All seven functions are checked in under
+> `supabase/functions/<name>/index.ts` — edit them there, not in the dashboard.
+> Deployment is still manual (`supabase functions deploy <name> --project-ref
+> ogpkmcqaulohexanucng`), so the repo is the source of truth but **not** proof of
+> what is currently deployed.
 
 ## Rate limits
 
@@ -1458,8 +1462,10 @@ exercised in the **web build**, not just analyzed. (Memory: `dart-web-int-footgu
 
 ## C.4 — Supabase edge functions & migrations
 
-- `google-health-*` edge functions live **in Supabase, not the repo** — edit +
-  Deploy in the dashboard; only `bone-age-ai-index.ts` is checked in.
+- All edge functions are checked in under `supabase/functions/<name>/index.ts`
+  — edit there, then `supabase functions deploy <name> --project-ref
+  ogpkmcqaulohexanucng`. The repo is the source of truth but not proof of what
+  is deployed; deploys are manual.
 - DB migrations are **hand-run** in the Supabase SQL editor from
   `migrations/*.sql` (dated). Client code that reads a not-yet-migrated table
   must fail soft (e.g. nap loading catches the error and returns empty).
