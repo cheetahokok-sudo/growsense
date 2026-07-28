@@ -8,9 +8,11 @@
 -- --------
 -- live_ai_usage_monthly had policy [ALL] USING (auth.uid() = user_id)
 -- with no WITH CHECK, and `authenticated` held INSERT/UPDATE/DELETE.
--- So any signed-in user could reset (or delete) their own call_count and
--- call the AI coach without limit. That is direct Anthropic spend, and
+-- A signed-in user could therefore rewrite their own usage counter and
+-- use the AI coach without limit — direct Anthropic spend, since
 -- ai-coach-proxy reads this very table to enforce live_ai_monthly_cap.
+-- (Stated by category rather than as a runnable request: this repository
+-- is public and the path is now closed.)
 --
 -- Why revoking is safe
 -- -------------------

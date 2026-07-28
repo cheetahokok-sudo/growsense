@@ -5,9 +5,10 @@
 -- Part 1 is migrations/2026-07-28_user_accounts_column_grants.sql.
 --
 -- Part 1 closed the UPDATE vector with column-level grants. The same
--- escalation remained reachable at signup: register directly against
--- the API supplying account_role = 'system_admin' (or subscription_tier
--- = 'pro') in the initial insert.
+-- escalation remained reachable at signup, because the initial insert
+-- accepted client-supplied values for the privilege and entitlement
+-- columns. (Described by category rather than as a runnable request —
+-- this repository is public and the path is now closed.)
 --
 -- Why a trigger and not a REVOKE
 -- ------------------------------

@@ -14,19 +14,25 @@
 -- enum VALUES (subscription_tier IN free|premium|pro) — not who may set
 -- them. account_role has no CHECK at all.
 --
--- That gave every signed-in user two one-request exploits:
+-- That let a signed-in user rewrite two categories of column on their
+-- own row, each in a single API request:
 --
---   PATCH /rest/v1/user_accounts?user_id=eq.<self> {"subscription_tier":"pro"}
---     -> free Premium forever. The server-side guards in
---        bone-age-analysis / lab-ai-analysis / ai-coach-proxy do NOT help:
---        they re-verify by reading this same column with the service role.
+--   ENTITLEMENT (subscription_tier, tier_expires_at)
+--     -> free Premium indefinitely. The server-side guards in
+--        bone-age-analysis / lab-ai-analysis / ai-coach-proxy do NOT
+--        help, because they re-verify by reading these same columns with
+--        the service role. Defence in depth that reads a forgeable value
+--        is not defence in depth.
 --
---   PATCH /rest/v1/user_accounts?user_id=eq.<self> {"account_role":"system_admin"}
---     -> full admin, because is_system_admin() is literally
---        SELECT EXISTS (SELECT 1 FROM user_accounts
---                       WHERE user_id = auth.uid() AND account_role = 'system_admin')
---        The "admins read all accounts" / "admins update accounts" policies
---        then honour it.
+--   PRIVILEGE (account_role)
+--     -> administrator access, because the admin check resolves from
+--        this column, and the admin-scoped policies then honour it. On a
+--        children's health product that reaches every family's records.
+--
+-- (Deliberately described by category rather than as a ready-to-run
+-- request: this repository is public, and while both paths are closed
+-- and verified, there is no reason to publish a recipe that would work
+-- again if the shape were ever reintroduced.)
 --
 -- The fix
 -- -------
