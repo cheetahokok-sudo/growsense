@@ -240,13 +240,132 @@ class SmartInsight {
   });
 }
 
+// ── Insight Windows ─────────────────────────────────────────────────
+// Candidate trend windows, in days. 7 and 30 are free; anything longer
+// is premium. Mirrors AppState.kFreeHistoryDays — the free cap is
+// enforced IN THE FETCH (loadWeeklyAnalytics only requests 2×30 days
+// for free accounts), not by slicing in the widget, so a free client
+// never holds locked history in memory.
+const List<int> kTrendWindows = [7, 30, 90, 180];
+const int kFreeTrendWindowDays = 30;
+
+/// A window chip is only offered once the family's record actually
+/// spans ~60% of it. A parent who unlocks "6 months" onto 40 days of
+/// data sees a mostly-empty chart — the unlock moment becomes a refund
+/// moment. Locked chips appearing as the record grows is the better
+/// mechanic.
+bool windowHasEnoughRecord(int windowDays, int recordSpanDays) =>
+    windowDays <= kFreeTrendWindowDays ||
+    recordSpanDays >= (windowDays * 0.6).round();
+
+/// Stats for one card over one window — pure, computed client-side
+/// from the already-fetched [WeeklyAnalytics.allDays] slice, so chip
+/// taps never refetch.
+class WindowStats {
+  final int windowDays;
+  final List<DayMetrics> days; // the window slice, oldest → newest
+  final double? avg; // over logged days only
+  final int loggedCount;
+  final int estimatedCount;
+  final double? deltaVsPrior; // avg minus the prior same-length window
+  WindowStats({
+    required this.windowDays,
+    required this.days,
+    required this.avg,
+    required this.loggedCount,
+    required this.estimatedCount,
+    required this.deltaVsPrior,
+  });
+}
+
+WindowStats computeWindowStats(
+  List<DayMetrics> allDays, // oldest → newest
+  int windowDays,
+  double? Function(DayMetrics) valueOf, {
+  bool Function(DayMetrics)? estimatedOf,
+}) {
+  final n = allDays.length;
+  final start = math.max(0, n - windowDays);
+  final window = allDays.sublist(start);
+  final prior = allDays.sublist(
+      math.max(0, start - windowDays), start);
+
+  double? avgOf(List<DayMetrics> slice) {
+    final vals = [
+      for (final d in slice)
+        if (valueOf(d) != null) valueOf(d)!,
+    ];
+    if (vals.isEmpty) return null;
+    return vals.reduce((a, b) => a + b) / vals.length;
+  }
+
+  final avg = avgOf(window);
+  final priorAvg = avgOf(prior);
+  return WindowStats(
+    windowDays: windowDays,
+    days: window,
+    avg: avg,
+    loggedCount: window.where((d) => valueOf(d) != null).length,
+    estimatedCount: estimatedOf == null
+        ? 0
+        : window
+            .where((d) => valueOf(d) != null && estimatedOf(d))
+            .length,
+    deltaVsPrior: (avg != null && priorAvg != null) ? avg - priorAvg : null,
+  );
+}
+
+/// Height velocity (cm/yr) from the earliest and latest measurement
+/// inside [windowDays], or null when the pair spans less than
+/// [minSpanDays]. The floor is the clinical validity rule, not a
+/// technicality: velocity over a short interval is mostly measuring
+/// noise (a 0.5 cm error over 3 months reads as 2 cm/yr), so we refuse
+/// to print a number a pediatrician wouldn't trust.
+double? velocityOverWindow(
+  List<Map<String, dynamic>> measurements, // newest-first, like AppState
+  int windowDays, {
+  int minSpanDays = 90,
+  DateTime? now,
+}) {
+  final cutoff = (now ?? DateTime.now()).subtract(Duration(days: windowDays));
+  Map<String, dynamic>? newest, oldest;
+  for (final m in measurements) {
+    final dateStr = m['recorded_date'] as String?;
+    final h = (m['stature_height_cm'] as num?)?.toDouble();
+    if (dateStr == null || h == null || h <= 0) continue;
+    final date = DateTime.tryParse(dateStr);
+    if (date == null || date.isBefore(cutoff)) continue;
+    newest ??= m;
+    oldest = m; // list is newest-first, so the last hit is the oldest
+  }
+  if (newest == null || oldest == null || identical(newest, oldest)) {
+    return null;
+  }
+  final span = DateTime.parse(newest['recorded_date'] as String)
+      .difference(DateTime.parse(oldest['recorded_date'] as String))
+      .inDays;
+  if (span < minSpanDays) return null;
+  final delta = ((newest['stature_height_cm'] as num).toDouble()) -
+      ((oldest['stature_height_cm'] as num).toDouble());
+  return delta / span * 365.25;
+}
+
 class WeeklyAnalytics {
   final List<DayMetrics> days; // oldest → newest, always 7 entries
+
+  /// Every fetched day slot, oldest → newest — 2× the widest window
+  /// this tier may open, so any chip (and its vs-prior-period delta)
+  /// slices from here without another fetch.
+  final List<DayMetrics> allDays;
+
+  /// Days since the family's earliest daily log, for the
+  /// [windowHasEnoughRecord] chip rule.
+  final int recordSpanDays;
+
   final double? avgScore; // over logged days only, like the PWA
   final double? avgSleepHours;
   final double? velocityCmPerYear;
   final String velocityLabel; // 'on pace' | 'stable' | 'below range' | 'not enough data'
-  final double? heightGain30dCm;
 
   // 7-day lever averages (0..1, over logged days) — feed the
   // separated mini-rings at the top of the Analytics screen, where
@@ -268,11 +387,12 @@ class WeeklyAnalytics {
 
   WeeklyAnalytics({
     required this.days,
+    required this.allDays,
+    required this.recordSpanDays,
     required this.avgScore,
     required this.avgSleepHours,
     required this.velocityCmPerYear,
     required this.velocityLabel,
-    required this.heightGain30dCm,
     required this.avgNutPct,
     required this.avgActPct,
     required this.avgSlpPct,
@@ -403,13 +523,29 @@ SmartInsight? _pickInsight(
 }
 
 Future<WeeklyAnalytics> loadWeeklyAnalytics(
-    SupabaseClient sb, Map<String, dynamic> child) async {
+    SupabaseClient sb, Map<String, dynamic> child,
+    {bool premium = false}) async {
   final childId = child['child_id'] as String;
   final now = DateTime.now();
-  final since = localISO(now.subtract(const Duration(days: 13)));
-  final since30 = localISO(now.subtract(const Duration(days: 30)));
 
-  final results = await Future.wait([
+  // One fetch at 2× the widest window this tier may open (the ×2 is
+  // what makes "vs prior period" computable for every chip). This is
+  // the free-tier lock: a free account's request never asks for more
+  // than 60 days, so the locked history is absent, not hidden.
+  final maxWindow = premium ? kTrendWindows.last : kFreeTrendWindowDays;
+  final fetchDays = maxWindow * 2;
+  final since = localISO(now.subtract(Duration(days: fetchDays - 1)));
+
+  // Earliest-ever log per lever, for the record-span chip rule. Three
+  // one-row probes — cheaper than widening the main fetch to forever.
+  Future<dynamic> earliest(String table) => sb
+      .from(table)
+      .select('log_date')
+      .eq('child_id', childId)
+      .order('log_date', ascending: true)
+      .limit(1);
+
+  final results = await Future.wait(<Future<dynamic>>[
     sb
         .from('daily_nutrition')
         .select(
@@ -422,34 +558,49 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
             'estimation_method')
         .eq('child_id', childId)
         .gte('log_date', since),
+    // Activity is per-ITEM, not per-day, so a premium 360-day fetch
+    // can brush PostgREST's 1000-row cap (~3 items/day). Order newest
+    // first so if the cap ever truncates, it eats the oldest tail of
+    // the chart — deterministic and visibly "record fades out", never
+    // silent holes in this week.
     sb
         .from('daily_activity_items')
         .select('log_date, tier, duration_min, estimation_method')
         .eq('child_id', childId)
-        .gte('log_date', since),
+        .gte('log_date', since)
+        .order('log_date', ascending: false),
     sb
         .from('child_growth_analytics_ledger')
         .select('recorded_date, height_delta_cm, days_between_measurements')
         .eq('child_id', childId)
         .order('recorded_date', ascending: false)
         .limit(1),
-    sb
-        .from('measurements')
-        .select('recorded_date, stature_height_cm')
-        .eq('child_id', childId)
-        .gte('recorded_date', since30)
-        .order('recorded_date', ascending: false),
+    earliest('daily_nutrition'),
+    earliest('daily_sleep'),
+    earliest('daily_activity_items'),
   ]);
 
-  // Fourteen day slots, oldest first — the trailing 7 are "this week",
-  // the leading 7 are last week, for the week-over-week deltas.
+  // fetchDays slots oldest first. The trailing 7 are "this week", the
+  // 7 before those are last week (for the ring deltas); trend cards
+  // slice any window from the full list via computeWindowStats.
   final days = [
-    for (var i = 13; i >= 0; i--)
+    for (var i = fetchDays - 1; i >= 0; i--)
       DayMetrics(localISO(now.subtract(Duration(days: i)))),
   ];
   final byDate = {for (final d in days) d.date: d};
-  final currentWeek = days.sublist(7);
-  final priorWeek = days.sublist(0, 7);
+  final currentWeek = days.sublist(days.length - 7);
+  final priorWeek = days.sublist(days.length - 14, days.length - 7);
+  final tail14 = days.sublist(days.length - 14);
+
+  var recordSpanDays = 0;
+  for (final probe in results.sublist(4)) {
+    final rows = probe as List;
+    if (rows.isEmpty) continue;
+    final first = DateTime.tryParse(rows[0]['log_date'] as String? ?? '');
+    if (first == null) continue;
+    final span = now.difference(first).inDays + 1;
+    if (span > recordSpanDays) recordSpanDays = span;
+  }
 
   for (final r in results[0] as List) {
     final d = byDate[r['log_date']];
@@ -535,14 +686,9 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     }
   }
 
-  // 30-day height gain from raw measurements
-  double? gain;
-  final meas = results[4] as List;
-  if (meas.length >= 2) {
-    final newest = (meas.first['stature_height_cm'] as num?)?.toDouble();
-    final oldest = (meas.last['stature_height_cm'] as num?)?.toDouble();
-    if (newest != null && oldest != null) gain = newest - oldest;
-  }
+  // (The old 30-day height gain stat is retired: over one month the
+  // number was mostly measurement noise. Windowed velocity via
+  // velocityOverWindow replaces it with intervals that mean something.)
 
   final insight = _pickInsight(
     currentWeek,
@@ -551,18 +697,19 @@ Future<WeeklyAnalytics> loadWeeklyAnalytics(
     dAct: deltaAct,
     dSlp: deltaSlp,
     nutritionHasEstimates:
-        days.any((d) => d.nutritionEstimated), // both weeks feed deltas
-    activityHasEstimates: days.any((d) => d.activityEstimated),
-    sleepHasEstimates: days.any((d) => d.sleepEstimated),
+        tail14.any((d) => d.nutritionEstimated), // both weeks feed deltas
+    activityHasEstimates: tail14.any((d) => d.activityEstimated),
+    sleepHasEstimates: tail14.any((d) => d.sleepEstimated),
   );
 
   return WeeklyAnalytics(
     days: currentWeek,
+    allDays: days,
+    recordSpanDays: recordSpanDays,
     avgScore: avgScore,
     avgSleepHours: avgSleepHours,
     velocityCmPerYear: velocity,
     velocityLabel: velocityLabel,
-    heightGain30dCm: gain,
     avgNutPct: avgNut,
     avgActPct: avgAct,
     avgSlpPct: avgSlp,
