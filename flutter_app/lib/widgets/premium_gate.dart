@@ -9,9 +9,12 @@
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../billing/purchase_service.dart';
 import '../i18n.dart';
+import '../platform.dart';
 import '../theme.dart';
 import '../screens/account_screen.dart';
+import '../screens/paywall_screen.dart';
 
 void showPremiumSheet(
   BuildContext context, {
@@ -105,9 +108,19 @@ void showPremiumSheet(
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(sheetContext);
+                  // On iOS this MUST reach the StoreKit paywall. Pushing
+                  // AccountScreen there was a dead end while the
+                  // subscription card was hidden, and would be again if
+                  // the CTA ever drifted back.
+                  final purchases = gPurchases;
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) =>
-                        AccountScreen(appState: appState, i18n: i18n),
+                    builder: (_) => kUseIap && purchases != null
+                        ? PaywallScreen(
+                            appState: appState,
+                            i18n: i18n,
+                            purchases: purchases,
+                          )
+                        : AccountScreen(appState: appState, i18n: i18n),
                   ));
                 },
                 child: Text(

@@ -6,6 +6,7 @@
 // yet — the first prototype is read-only over the day's data.
 // ══════════════════════════════════════════════════════════════════
 
+import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -1569,6 +1570,57 @@ class AppState extends ChangeNotifier {
                   .toString()
             : (e.reasonPhrase ?? 'Redemption failed'),
       );
+    }
+  }
+
+  /// Hand a completed StoreKit purchase to the server for verification.
+  ///
+  /// Returns null on success, or an error string. Mirrors
+  /// [redeemActivationCode]'s shape and error handling.
+  ///
+  /// The client is deliberately not trusted: the payload only tells the
+  /// server WHICH subscription to ask Apple about. Entitlement comes back
+  /// from Apple's own API, is written to apple_subscriptions, and a
+  /// database trigger recomputes the tier — so we mirror what the server
+  /// decided rather than what we hoped for.
+  ///
+  /// [transactionId] is sent alongside because a StoreKit 1 receipt is
+  /// opaque without ASN.1 parsing; the server falls back to it when the
+  /// payload is not a signed JWS.
+  Future<String?> verifyApplePurchase({
+    required String payload,
+    String? transactionId,
+  }) async {
+    try {
+      final res = await sb.functions.invoke(
+        'apple-verify-purchase',
+        body: {
+          'payload': payload,
+          'transactionId': ?transactionId,
+        },
+      );
+      final data = res.data as Map<String, dynamic>?;
+      if (data == null || data['error'] != null) {
+        return (data?['message'] ?? data?['error'] ?? 'Verification failed')
+            .toString();
+      }
+      account?['subscription_tier'] = data['tier'];
+      account?['tier_expires_at'] = data['expires_at'];
+      account?['billing_source'] = data['billing_source'] ?? 'apple';
+      notifyListeners();
+      // Re-read so anything not echoed in the response (usage counters,
+      // manual grant fields) is consistent too.
+      unawaited(loadAccount());
+      return null;
+    } on FunctionException catch (e) {
+      final detail = e.details;
+      return detail is Map
+          ? (detail['message'] ?? detail['error'] ?? e.reasonPhrase ??
+                  'Verification failed')
+              .toString()
+          : (e.reasonPhrase ?? 'Verification failed');
+    } catch (e) {
+      return e.toString();
     }
   }
 

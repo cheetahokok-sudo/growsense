@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app_meta.dart';
 import '../app_state.dart';
+import '../billing/purchase_service.dart';
 import '../export/download.dart';
 import '../export/visit_pdf.dart';
 import '../i18n.dart';
@@ -12,6 +13,7 @@ import '../theme.dart';
 import '../widgets/gs_icons.dart';
 import 'bug_report_screen.dart';
 import 'devices_screen.dart';
+import 'paywall_screen.dart';
 import 'medical_references_screen.dart';
 import 'settings_modules.dart';
 import 'welcome_screen.dart';
@@ -317,19 +319,16 @@ class AccountScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              // CSV export writes a file — only implemented on web (native
-              // download shows a "web app" message), so hide the tile on iOS
-              // to avoid a dead-end / web steering. Guideline 3.1.1 / 2.1.
-              if (!kIsApplePhone) ...[
-                const SizedBox(height: 12),
-                _ExportTile(appState: appState, i18n: i18n),
-              ],
-              // Visit-summary PDF is a Premium feature — hidden on iOS for
-              // v1 (returns as a free/IAP feature later). Guideline 3.1.1.
-              if (kShowPaidUi) ...[
-                const SizedBox(height: 12),
-                _VisitPdfTile(appState: appState, i18n: i18n),
-              ],
+              // CSV export was hidden on iOS only because writing a file
+              // was unimplemented there and the stub returned a "web app"
+              // message. download_io.dart (share sheet) fixed that, so it
+              // is available everywhere now.
+              const SizedBox(height: 12),
+              _ExportTile(appState: appState, i18n: i18n),
+              // Visit-summary PDF: Premium, gated by _VisitPdfTile's own
+              // isPremium check rather than by platform.
+              const SizedBox(height: 12),
+              _VisitPdfTile(appState: appState, i18n: i18n),
               const SizedBox(height: 12),
               InkWell(
                 onTap: () => Navigator.of(context).push(
@@ -770,16 +769,79 @@ class _SubscriptionCard extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 8),
-        Text(
-          t(
-            'flutter.sub.manage_web',
-            'Upgrade & billing are managed in the web app.',
+
+        // ⚠️ Guideline 3.1.1. Both of the following were named reasons in
+        // the v1.0(3) rejection and must NEVER render on Apple:
+        //   · copy pointing at the web app for billing (steering)
+        //   · activation-code redemption (unlocking paid content outside
+        //     In-App Purchase)
+        // They live inside this card, so un-gating the card for IAP
+        // re-exposes them unless each is guarded separately.
+        // test/platform_gate_test.dart locks the predicates down.
+        if (kShowWebBillingCopy)
+          Text(
+            t(
+              'flutter.sub.manage_web',
+              'Upgrade & billing are managed in the web app.',
+            ),
+            style: const TextStyle(fontSize: 10.5, color: GsColors.text3),
           ),
-          style: const TextStyle(fontSize: 10.5, color: GsColors.text3),
-        ),
-        const SizedBox(height: 10),
-        _RedeemRow(appState: appState, i18n: i18n),
+        if (kShowActivationCodes) ...[
+          const SizedBox(height: 10),
+          _RedeemRow(appState: appState, i18n: i18n),
+        ],
+
+        // StoreKit path: purchase and restore live here on iOS. Apple
+        // requires restore to be reachable without buying.
+        if (kUseIap) ...[
+          const SizedBox(height: 10),
+          _IapActions(appState: appState, i18n: i18n),
+        ],
       ],
+    );
+  }
+}
+
+/// Upgrade / Manage plus Restore, for the StoreKit build.
+class _IapActions extends StatelessWidget {
+  const _IapActions({required this.appState, required this.i18n});
+  final AppState appState;
+  final I18n i18n;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = i18n.t;
+    final purchases = gPurchases;
+    if (purchases == null) return const SizedBox.shrink();
+
+    return ListenableBuilder(
+      listenable: purchases,
+      builder: (context, _) => Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PaywallScreen(
+                    appState: appState,
+                    i18n: i18n,
+                    purchases: purchases,
+                  ),
+                ),
+              ),
+              child: Text(appState.isPremium
+                  ? t('flutter.sub.manage', 'Manage subscription')
+                  : t('flutter.sub.upgrade', 'Upgrade to Premium')),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: purchases.busy ? null : purchases.restore,
+            child: Text(t('flutter.paywall.restore', 'Restore purchases'),
+                style: const TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
     );
   }
 }

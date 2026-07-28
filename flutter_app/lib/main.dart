@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app_state.dart';
+import 'billing/purchase_service.dart';
 import 'i18n.dart';
 import 'screens/auth_screen.dart';
 import 'screens/onboarding_gate.dart';
@@ -68,6 +69,28 @@ Future<void> handleFitbitCallback(AppState appState) async {
 
 class _GrowSenseAppState extends State<GrowSenseApp> {
   late final AppState appState = AppState(Supabase.instance.client);
+
+  /// Owned here, at the top of the tree, deliberately.
+  ///
+  /// StoreKit delivers interrupted purchases and Ask-to-Buy approvals on
+  /// LAUNCH, not when a paywall happens to be open. A purchase service
+  /// that only existed while the paywall was on screen would mean a
+  /// parent gets charged and never entitled — so the stream must be
+  /// listening before any UI asks for it. No-ops on web and Android.
+  late final PurchaseService purchases = PurchaseService(appState);
+
+  @override
+  void initState() {
+    super.initState();
+    gPurchases = purchases;
+    purchases.init();
+  }
+
+  @override
+  void dispose() {
+    purchases.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
