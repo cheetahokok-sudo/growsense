@@ -899,7 +899,12 @@ function renderAdminUserList() {
           </div>
         </div>
         <div class="log-item-right" style="display:flex; align-items:center; gap:6px;">
-          <select class="num-input" style="width:110px;" id="tierSelect-${u.user_id}">${tierSelectOptions}</select>
+          <select class="num-input" style="width:100px;" id="tierSelect-${u.user_id}">${tierSelectOptions}</select>
+          <select class="num-input" style="width:110px;" id="durSelect-${u.user_id}" title="How long this grant lasts">
+            <option value="month">1 month</option>
+            <option value="year">1 year</option>
+            <option value="lifetime">lifetime</option>
+          </select>
           <button class="btn-link" onclick="applyTierChange('${u.user_id}', '${u.email}', '${u.subscription_tier}')">Apply</button>
         </div>
       </div>
@@ -910,19 +915,41 @@ function renderAdminUserList() {
 async function applyTierChange(userId, email, currentTier) {
   const select = document.getElementById('tierSelect-' + userId);
   const newTier = select.value;
+  const duration = (document.getElementById('durSelect-' + userId) || {}).value || 'month';
 
-  if (newTier === currentTier) { showToast('⚠️', 'Already on that tier'); return; }
-  if (!confirm(`Change ${email}'s subscription tier from ${currentTier} to ${newTier}?`)) return;
+  // Re-applying the SAME tier is allowed on purpose — it is how a grant
+  // gets renewed or its length changed. Only a no-op free->free is silly.
+  if (newTier === 'free' && currentTier === 'free') {
+    showToast('⚠️', 'Already on free'); return;
+  }
 
-  const { error } = await sb.rpc('change_user_subscription_tier', {
+  // Show the resulting end date, because the grant REPLACES any existing
+  // one rather than extending it — picking "1 month" for someone who
+  // already has a year would shorten them, and that should not be a
+  // surprise.
+  const endsOn = newTier === 'free' || duration === 'lifetime'
+    ? null
+    : new Date(Date.now() + (duration === 'year' ? 365 : 30) * 86400000);
+
+  const what = newTier === 'free'
+    ? `Remove ${email}'s manual grant (back to free)?`
+    : `Grant ${email} ${newTier} for ${duration === 'lifetime' ? 'LIFETIME' : '1 ' + duration}` +
+      (endsOn ? `, ending ~${endsOn.toISOString().split('T')[0]}?` : '?') +
+      `\n\nThis REPLACES any existing manual grant.`;
+  if (!confirm(what)) return;
+
+  const { data: expiresAt, error } = await sb.rpc('admin_set_manual_tier', {
     p_target_user_id: userId,
     p_new_tier: newTier,
+    p_duration: duration,
     p_notes: null
   });
 
   if (error) { showToast('⚠️', 'Could not change tier: ' + error.message); return; }
 
-  showToast('✅', `${email} moved to ${newTier}`);
+  showToast('✅', newTier === 'free'
+    ? `${email} grant removed`
+    : `${email} → ${newTier}${expiresAt ? ' until ' + String(expiresAt).split('T')[0] : ' (lifetime)'}`);
   const userRecord = (ADMIN.adminUsers || []).find(u => u.user_id === userId);
   if (userRecord) userRecord.subscription_tier = newTier;
   renderAdminUserList();
