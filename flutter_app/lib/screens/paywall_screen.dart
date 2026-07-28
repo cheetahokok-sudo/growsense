@@ -261,7 +261,16 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ],
               ),
             ),
+            // ⚠️ The app theme sets minimumSize: Size.fromHeight(48),
+            // which is Size(double.infinity, 48) — every ElevatedButton
+            // demands INFINITE width. Inside a Row that starves the
+            // Expanded beside it, and the price renders one character
+            // per line. Override with a real bounded size here.
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(104, 44),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
               onPressed: p.busy ? null : () => p.buy(prod),
               child: Text(p.busy
                   ? t('flutter.paywall.working', 'Working…')

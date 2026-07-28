@@ -9,6 +9,7 @@ import '../citations.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import '../widgets/confirm_delete.dart';
 import '../widgets/gs_icons.dart';
 import '../widgets/premium_gate.dart';
 import '../units.dart';
@@ -599,37 +600,35 @@ class _ChartCardState extends State<_ChartCard> {
                         fontSize: 11.5, color: GsColors.text2)),
               ),
               const SizedBox(width: 8),
-              // Focus ↔ full-history zoom toggle.
-              GestureDetector(
-                onTap: () => setState(() => _fullRange = !_fullRange),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: GsColors.surface2,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: GsColors.border2),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                          _fullRange
-                              ? Icons.center_focus_strong
-                              : Icons.timeline,
-                          size: 12,
-                          color: GsColors.measured),
-                      const SizedBox(width: 4),
-                      Text(
-                          _fullRange
-                              ? t('flutter.chart.focus_recent', 'Focus')
-                              : t('flutter.chart.all_years', 'All years'),
-                          style: const TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              color: GsColors.measured)),
-                    ],
-                  ),
+              // Focus ↔ full-history zoom. This used to be a single chip
+              // whose label was the *action* ("All years" while focused),
+              // so tapping it flipped the label to "Focus" — indis-
+              // tinguishable from a control that had put you back in
+              // focus mode, especially when a short record makes the two
+              // windows look alike. Both options are now always visible
+              // and the active one is filled.
+              Container(
+                decoration: BoxDecoration(
+                  color: GsColors.surface2,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: GsColors.border2),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _RangeSegment(
+                      icon: Icons.center_focus_strong,
+                      label: t('flutter.chart.focus_recent', 'Focus'),
+                      selected: !_fullRange,
+                      onTap: () => setState(() => _fullRange = false),
+                    ),
+                    _RangeSegment(
+                      icon: Icons.timeline,
+                      label: t('flutter.chart.all_years', 'All years'),
+                      selected: _fullRange,
+                      onTap: () => setState(() => _fullRange = true),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -681,6 +680,49 @@ class _ChartCardState extends State<_ChartCard> {
             style: const TextStyle(fontSize: 10, color: GsColors.text3),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// One half of the chart's Focus / All-years segmented control.
+class _RangeSegment extends StatelessWidget {
+  const _RangeSegment({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected ? GsColors.measured : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon,
+                size: 12,
+                color: selected ? GsColors.surface : GsColors.text3),
+            const SizedBox(width: 4),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? GsColors.surface : GsColors.text3)),
+          ],
+        ),
       ),
     );
   }
@@ -1807,6 +1849,23 @@ class _HistoryCard extends StatelessWidget {
                     icon: const Icon(Icons.close,
                         size: 16, color: GsColors.text3),
                     onPressed: () async {
+                      if (!await confirmDelete(
+                        context,
+                        i18n: i18n,
+                        message: t('flutter.meas.confirm_delete',
+                            'Remove this measurement? This cannot be undone.'),
+                        // total_measurements_logged is a lifetime counter
+                        // and is never decremented, so deleting does NOT
+                        // hand back a free slot. Say so rather than let a
+                        // parent discover it.
+                        note: appState.isPremium
+                            ? null
+                            : t('flutter.meas.confirm_delete_note',
+                                'This does not give back a free measurement slot.'),
+                      )) {
+                        return;
+                      }
+                      if (!context.mounted) return;
                       final err = await appState
                           .deleteMeasurement(m['measurement_id']);
                       if (err != null && context.mounted) {

@@ -35,6 +35,23 @@ String _fmtYM(num months) {
   return '${m ~/ 12}y ${m % 12}m';
 }
 
+/// Rows can come from the web app ('GP'/'TW3'/'AI'/'other') or from an
+/// older Flutter build that wrote lowercase names before the CHECK
+/// constraint rejected them, so match case-insensitively.
+String _methodLabel(String? method) {
+  switch (method?.toLowerCase()) {
+    case 'tw3':
+      return 'TW3';
+    case 'ai':
+      return 'AI';
+    case 'other':
+    case null:
+      return '—';
+    default:
+      return 'GP';
+  }
+}
+
 /// advanced → estimated (gold, ahead of calendar), delayed → measured
 /// (blue, behind), within ±6 mo → accent (green).
 Color _deltaColor(double deltaMonths) => deltaMonths.abs() <= 6
@@ -58,7 +75,12 @@ class _BoneAgeScreenState extends State<BoneAgeScreen> {
   final _sd = TextEditingController();
   final _doctor = TextEditingController();
   final _notes = TextEditingController();
-  String _method = 'greulich_pyle';
+  // ⚠️ These strings go straight into bone_age_assessments.method, which
+  // carries a CHECK constraint written around the web app's vocabulary
+  // (webapp.html:963 — GP / TW3 / AI / other). Flutter used to send
+  // 'greulich_pyle' and every save failed on
+  // bone_age_assessments_method_check. Keep these two lists identical.
+  String _method = 'GP';
   bool _busy = false;
 
   // X-ray picked but not yet uploaded (raw bytes + preview)
@@ -317,11 +339,11 @@ class _BoneAgeScreenState extends State<BoneAgeScreen> {
             decoration: _dec(t('common.method', 'Method')),
             items: const [
               DropdownMenuItem(
-                  value: 'greulich_pyle',
+                  value: 'GP',
                   child: Text('Greulich-Pyle (GP)',
                       style: TextStyle(fontSize: 13))),
               DropdownMenuItem(
-                  value: 'tw3',
+                  value: 'TW3',
                   child: Text('TW3 (Tanner-Whitehouse)',
                       style: TextStyle(fontSize: 13))),
               DropdownMenuItem(
@@ -754,7 +776,7 @@ class _BoneAgeCardState extends State<_BoneAgeCard> {
                     Text(
                         '${r['study_date'] ?? ''}'
                         '${r['report_doctor'] != null ? ' · ${r['report_doctor']}' : ''}'
-                        ' · ${r['method'] == 'tw3' ? 'TW3' : r['method'] == 'other' ? '—' : 'GP'}',
+                        ' · ${_methodLabel(r['method'] as String?)}',
                         style: const TextStyle(
                             fontSize: 11, color: GsColors.text3)),
                   ]),
