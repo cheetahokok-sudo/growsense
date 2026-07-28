@@ -15,9 +15,9 @@
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-const String kAppVersion = '1.4.1';
-const int kAppBuild = 25;
-const String kBuildDate = '2026-07-24';
+const String kAppVersion = '1.5.0';
+const int kAppBuild = 26;
+const String kBuildDate = '2026-07-28';
 
 /// Where this build runs — used for triaging platform-specific bugs.
 String get kAppChannel => kIsWeb ? 'web' : 'app';

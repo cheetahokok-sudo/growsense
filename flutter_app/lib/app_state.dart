@@ -6,6 +6,7 @@
 // yet — the first prototype is read-only over the day's data.
 // ══════════════════════════════════════════════════════════════════
 
+import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -67,6 +68,11 @@ class AppState extends ChangeNotifier {
 
   // measurements rows for the active child, newest first (per-child,
   // not per-logDate — reloaded on child switch)
+  //
+  // This always holds the FULL history regardless of tier. The free-tier
+  // window is applied by `visibleMeasurements` at read time, so the data
+  // is never lost and `lockedMeasurementCount` can tell the parent
+  // exactly how much history is waiting behind an upgrade.
   List<Map<String, dynamic>> measurements = [];
 
   /// Dates (YYYY-MM-DD) in the current Mon–Sun week that have any log
@@ -352,6 +358,82 @@ class AppState extends ChangeNotifier {
       if (until != null && until.isBefore(DateTime.now())) return false;
     }
     return true;
+  }
+
+  /// How far back a free account can chart and analyse its history.
+  /// Multi-year height velocity is the paid value, so free sees a recent
+  /// slice; the rest is locked, not deleted.
+  static const int kFreeHistoryDays = 30;
+
+  /// The measurements the UI should chart and analyse for this tier.
+  ///
+  /// Premium sees everything. Free sees the last [kFreeHistoryDays].
+  ///
+  /// **Never empty while [measurements] is non-empty.** A parent who
+  /// measures every couple of months would otherwise open the app to a
+  /// blank chart and reasonably conclude their child's data was lost —
+  /// which earns a one-star review, not an upgrade. So if nothing falls
+  /// inside the window we still surface the most recent point, and
+  /// [lockedMeasurementCount] tells them what's behind the paywall.
+  List<Map<String, dynamic>> get visibleMeasurements {
+    if (isPremium || measurements.isEmpty) return measurements;
+    final cutoff =
+        DateTime.now().subtract(const Duration(days: kFreeHistoryDays));
+    final inWindow = [
+      for (final m in measurements)
+        if (_recordedOnOrAfter(m, cutoff)) m,
+    ];
+    // `measurements` is newest-first, so index 0 is the latest.
+    return inWindow.isEmpty ? [measurements.first] : inWindow;
+  }
+
+  /// How many measurements sit outside the free window — drives the
+  /// "N earlier measurements — unlock full history" affordance. Always 0
+  /// for premium.
+  int get lockedMeasurementCount =>
+      measurements.length - visibleMeasurements.length;
+
+  /// True when there is history the current tier cannot see.
+  bool get hasLockedHistory => lockedMeasurementCount > 0;
+
+  /// Lifetime measurement slots on the free tier.
+  ///
+  /// Counts lifetime inserts, not current rows, so deleting a measurement
+  /// does not hand a slot back — otherwise the cap is trivially bypassed
+  /// by delete-and-re-add. The counter lives in
+  /// `user_accounts.total_measurements_logged` and is maintained by a
+  /// database trigger; no client writes it.
+  static const int kFreeMeasurementLimit = 5;
+
+  int get measurementsLogged =>
+      (account?['total_measurements_logged'] as num?)?.toInt() ?? 0;
+
+  /// Remaining free slots. `null` on premium, which is unlimited.
+  int? get measurementsRemaining => isPremium
+      ? null
+      : math.max(0, kFreeMeasurementLimit - measurementsLogged);
+
+  bool get canAddMeasurement =>
+      isPremium || measurementsLogged < kFreeMeasurementLimit;
+
+  /// Whether logging [date] would create a NEW row rather than update an
+  /// existing one. [addMeasurement] upserts on (child_id, recorded_date),
+  /// so re-saving a date that already has a measurement is an edit.
+  ///
+  /// Edits must never be blocked by the cap: a parent who has used all
+  /// five slots still has to be able to correct a height they typed
+  /// wrong. This also keeps the client correct regardless of whether the
+  /// database trigger counts UPDATEs as well as INSERTs.
+  bool isNewMeasurementDate(String date) => !measurements
+      .any((m) => (m['recorded_date'] as Object?)?.toString() == date);
+
+  static bool _recordedOnOrAfter(Map<String, dynamic> m, DateTime cutoff) {
+    final raw = m['recorded_date'];
+    if (raw == null) return false;
+    final d = DateTime.tryParse(raw.toString());
+    // An unparseable date is kept rather than silently dropped — losing a
+    // real measurement is worse than showing one extra.
+    return d == null || !d.isBefore(cutoff);
   }
 
   /// Custom-food cap: keeps "Mine" curated and blocks garbage growth.
@@ -1491,6 +1573,57 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Hand a completed StoreKit purchase to the server for verification.
+  ///
+  /// Returns null on success, or an error string. Mirrors
+  /// [redeemActivationCode]'s shape and error handling.
+  ///
+  /// The client is deliberately not trusted: the payload only tells the
+  /// server WHICH subscription to ask Apple about. Entitlement comes back
+  /// from Apple's own API, is written to apple_subscriptions, and a
+  /// database trigger recomputes the tier — so we mirror what the server
+  /// decided rather than what we hoped for.
+  ///
+  /// [transactionId] is sent alongside because a StoreKit 1 receipt is
+  /// opaque without ASN.1 parsing; the server falls back to it when the
+  /// payload is not a signed JWS.
+  Future<String?> verifyApplePurchase({
+    required String payload,
+    String? transactionId,
+  }) async {
+    try {
+      final res = await sb.functions.invoke(
+        'apple-verify-purchase',
+        body: {
+          'payload': payload,
+          'transactionId': ?transactionId,
+        },
+      );
+      final data = res.data as Map<String, dynamic>?;
+      if (data == null || data['error'] != null) {
+        return (data?['message'] ?? data?['error'] ?? 'Verification failed')
+            .toString();
+      }
+      account?['subscription_tier'] = data['tier'];
+      account?['tier_expires_at'] = data['expires_at'];
+      account?['billing_source'] = data['billing_source'] ?? 'apple';
+      notifyListeners();
+      // Re-read so anything not echoed in the response (usage counters,
+      // manual grant fields) is consistent too.
+      unawaited(loadAccount());
+      return null;
+    } on FunctionException catch (e) {
+      final detail = e.details;
+      return detail is Map
+          ? (detail['message'] ?? detail['error'] ?? e.reasonPhrase ??
+                  'Verification failed')
+              .toString()
+          : (e.reasonPhrase ?? 'Verification failed');
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
   Future<String?> deleteBoneAge(dynamic id) async {
     // Remove the stored X-ray first (same as the PWA) — non-fatal if
     // it fails, the DB row is the source of truth.
@@ -1560,6 +1693,12 @@ class AppState extends ChangeNotifier {
   /// account reaches the server guard (stale client that skipped the
   /// paywall). The UI matches on this to show the upgrade sheet.
   static const premiumRequiredError = 'premium_required';
+
+  /// Returned by [addMeasurement] when a free account has used all of its
+  /// lifetime measurement slots. The UI matches on this to open the
+  /// paywall — it must never surface as a raw error, because failing
+  /// silently on the app's core action reads as a bug, not a prompt.
+  static const measurementCapError = 'measurement_cap';
 
   bool boneAgeAiRunning = false;
   Future<String?> runBoneAgeAI(Map<String, dynamic> record) async {
@@ -1750,6 +1889,12 @@ class AppState extends ChangeNotifier {
   }) async {
     final childId = activeChildId;
     if (childId == null) return 'No child selected';
+    // Free-tier cap. Only a NEW date consumes a slot — editing a date that
+    // already has a measurement is an upsert-update, and a capped parent
+    // must still be able to fix a value they typed wrong.
+    if (isNewMeasurementDate(date) && !canAddMeasurement) {
+      return measurementCapError;
+    }
     try {
       await sb.from('measurements').upsert({
         'child_id': childId,

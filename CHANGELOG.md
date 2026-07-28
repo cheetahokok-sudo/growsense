@@ -13,9 +13,28 @@ On every release, bump `kAppVersion` / `kAppBuild` / `kBuildDate` in
 `flutter_app/assets/release_notes.json` (what users see in "What's
 new"), and add the full entry here.
 
-## [Unreleased]
+## [Unreleased] — 1.5.0 · build 26
 
-_Work in progress lands here before it's tagged._
+_In-app purchases. Work in progress; entries here are tagged as 1.5.0 when
+the release is cut._
+
+### Added
+- **Export on the phone.** The visit-summary PDF and CSV export now save
+  and share from the device instead of only working in the web app.
+
+### Fixed
+- Korean, Vietnamese, Chinese and Arabic no longer tell you to go to the
+  web app to add your first child, add parent heights, or connect a
+  wearable — those screens had kept the pre-app wording.
+
+### Internal
+- Version numbers unified. The store binary reported `1.0.0` while the
+  app reported `1.4.1`, because `codemagic.yaml` overrides only the build
+  number. Both are now `1.5.0`. Note 1.1.0 was already released on
+  2026-07-12, so the next free number above the in-app history is 1.5.0.
+- iOS deployment target 13.0 → 15.0 (StoreKit 2).
+- Removed `bone-age-ai-index.ts` / `lab-ai-index.ts`, duplicate copies of
+  two edge functions that sat at the repo root.
 
 ## [1.4.1] — 2026-07-24 · build 25
 
