@@ -2,7 +2,16 @@
 // GrowSense Edge Function: redeem-code
 //
 // Called when a parent submits an activation code in the Account screen.
-// Validates the code, sets the user's tier + expiry, marks code as used.
+// Validates the code, records a MANUAL grant, marks the code as used.
+//
+// ⚠️ Entitlement model (since the v1.1 IAP work):
+//   This function writes manual_tier / manual_tier_expires_at /
+//   manual_tier_source ONLY. It must never touch subscription_tier or
+//   tier_expires_at — those are owned exclusively by
+//   recompute_user_entitlement(), which combines the manual grant with
+//   any Apple subscription and picks the winner. Writing them directly
+//   again would resurrect the clobbering bug the split was built to fix.
+//   See migrations/2026-07-28_iap_entitlement_foundation.sql.
 //
 // Security guarantees:
 //   · Requires valid session JWT — unauthenticated users cannot redeem
@@ -13,8 +22,11 @@
 //   · Checks app_config.redemption_enabled before processing
 //
 // DEPLOY:
-//   Supabase Dashboard → Edge Functions → New → name: redeem-code
-//   Paste this file → Deploy
+//   supabase functions deploy redeem-code --project-ref ogpkmcqaulohexanucng
+//
+//   (This file was called redeem-code.ts and was dashboard-pasted, unlike
+//   the other six functions. The CLI requires <name>/index.ts, so it is
+//   now named to match and deploys like everything else.)
 // ══════════════════════════════════════════════════════════════════
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -99,39 +111,62 @@ Deno.serve(async (req) => {
     return json({ error: "This code has expired and is no longer valid." }, 410);
   }
 
-  // ── 7. Compute new tier expiry ─────────────────────────────────
-  // Redemption date + duration_days.
-  // If the user already has a future expiry (stacking codes), extend from that.
+  // ── 7. Compute new MANUAL tier expiry ──────────────────────────
+  // Redemption date + duration_days, stacking on any existing future
+  // manual grant.
+  //
+  // ⚠️ Stacks from manual_tier_expires_at, NOT tier_expires_at.
+  // tier_expires_at is the EFFECTIVE entitlement and may come from an
+  // Apple subscription. Stacking a code onto Apple's expiry would hand
+  // out free months and, worse, the next recompute would overwrite the
+  // result with Apple's own date — silently destroying the granted time.
+  // Codes own manual_*; Apple owns apple_subscriptions; the two are
+  // combined by recompute_user_entitlement().
   const { data: currentAccount } = await admin
     .from("user_accounts")
-    .select("tier_expires_at, subscription_tier")
+    .select("manual_tier, manual_tier_expires_at")
     .eq("user_id", user.id)
     .maybeSingle();
 
   const base = (
-    currentAccount?.tier_expires_at &&
-    new Date(currentAccount.tier_expires_at) > new Date()
+    currentAccount?.manual_tier_expires_at &&
+    new Date(currentAccount.manual_tier_expires_at) > new Date()
   )
-    ? new Date(currentAccount.tier_expires_at)  // extend from current expiry
-    : new Date();                                // start from today
+    ? new Date(currentAccount.manual_tier_expires_at)  // stack on the grant
+    : new Date();                                      // start from today
 
   const newExpiry = new Date(base);
   newExpiry.setDate(newExpiry.getDate() + codeRow.duration_days);
 
-  // ── 8. Upgrade the user ────────────────────────────────────────
+  // ── 8. Record the manual grant ─────────────────────────────────
+  // Never writes subscription_tier / tier_expires_at / billing_source —
+  // recompute_user_entitlement() is the only thing allowed to do that.
   const { error: upgradeErr } = await admin
     .from("user_accounts")
     .update({
-      subscription_tier:  codeRow.tier,
-      tier_expires_at:    newExpiry.toISOString(),
-      billing_source:     "code",
-      signup_promo_user:  true,
+      manual_tier:            codeRow.tier,
+      manual_tier_expires_at: newExpiry.toISOString(),
+      manual_tier_source:     "code",
+      signup_promo_user:      true,
     })
     .eq("user_id", user.id);
 
   if (upgradeErr) {
-    console.error("[redeem-code] Upgrade failed:", upgradeErr);
+    console.error("[redeem-code] Grant failed:", upgradeErr);
     return json({ error: "Could not apply upgrade. Please try again." }, 500);
+  }
+
+  // ── 8b. Fold the grant into the effective entitlement ──────────
+  const { error: recomputeErr } = await admin
+    .rpc("recompute_user_entitlement", { p_user_id: user.id });
+
+  if (recomputeErr) {
+    // The grant IS recorded, so this is recoverable rather than lost —
+    // but the user would not see it yet, so fail loudly.
+    console.error("[redeem-code] Recompute failed:", recomputeErr);
+    return json({
+      error: "Your code was accepted but access could not be activated. Please contact contact@growsense.life.",
+    }, 500);
   }
 
   // ── 9. Mark code as redeemed ───────────────────────────────────
@@ -147,16 +182,37 @@ Deno.serve(async (req) => {
     })
     .eq("code_id", codeRow.code_id);
 
+  // ── 10. Report the EFFECTIVE entitlement, not the raw grant ─────
+  // Both clients mirror this response into local state (app.js:1571,
+  // app_state.dart:1474), so it has to match what recompute actually
+  // decided. They can differ: a user with an Apple subscription running
+  // longer than the code keeps the later date, and telling them their
+  // access ends sooner than it does would be simply wrong.
+  const { data: effective } = await admin
+    .from("user_accounts")
+    .select("subscription_tier, tier_expires_at, billing_source")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const tier = effective?.subscription_tier ?? codeRow.tier;
+  const expiresAt = effective?.tier_expires_at ?? newExpiry.toISOString();
+  const expiresDate = new Date(expiresAt);
+
   console.log(
-    `[redeem-code] ✓ Code ${rawCode} (${codeRow.batch_name}) redeemed by ${user.id} → ${codeRow.tier} until ${newExpiry.toISOString().split("T")[0]}`
+    `[redeem-code] ✓ Code ${rawCode} (${codeRow.batch_name}) redeemed by ${user.id} → granted ${codeRow.tier} until ${newExpiry.toISOString().split("T")[0]}; effective ${tier} until ${expiresAt?.split?.("T")[0] ?? expiresAt} (source ${effective?.billing_source})`
   );
 
   return json({
-    success:    true,
-    tier:       codeRow.tier,
-    expires_at: newExpiry.toISOString(),
-    expires_date: newExpiry.toISOString().split("T")[0],
+    success:       true,
+    tier,
+    expires_at:    expiresAt,
+    expires_date:  typeof expiresAt === "string" ? expiresAt.split("T")[0] : null,
+    billing_source: effective?.billing_source ?? "code",
     duration_days: codeRow.duration_days,
-    message: `Welcome to GrowSense ${codeRow.tier === 'pro' ? 'Pro 👑' : 'Premium ⭐'}! Your access is active until ${newExpiry.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })}.`,
+    // What the code itself was worth, so the UI can say "added 365 days"
+    // even when a longer Apple subscription is what is actually in force.
+    granted_tier:       codeRow.tier,
+    granted_expires_at: newExpiry.toISOString(),
+    message: `Welcome to GrowSense ${tier === 'pro' ? 'Pro 👑' : 'Premium ⭐'}! Your access is active until ${expiresDate.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })}.`,
   });
 });
