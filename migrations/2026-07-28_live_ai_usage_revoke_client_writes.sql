@@ -1,0 +1,62 @@
+-- ═══════════════════════════════════════════════════════════════════
+-- SECURITY: clients may no longer write their own AI usage counter
+--
+-- APPLIED TO PRODUCTION 2026-07-28. Same class of hole as
+-- 2026-07-28_user_accounts_column_grants.sql, found by the same audit.
+--
+-- The hole
+-- --------
+-- live_ai_usage_monthly had policy [ALL] USING (auth.uid() = user_id)
+-- with no WITH CHECK, and `authenticated` held INSERT/UPDATE/DELETE.
+-- So any signed-in user could reset (or delete) their own call_count and
+-- call the AI coach without limit. That is direct Anthropic spend, and
+-- ai-coach-proxy reads this very table to enforce live_ai_monthly_cap.
+--
+-- Why revoking is safe
+-- -------------------
+-- ai-coach-proxy is already fully authoritative (index.ts:145-180): with
+-- the service role it reads the cap from subscription_tier_limits, reads
+-- the current count, returns 429 MONTHLY_CAP_EXCEEDED when the cap is
+-- reached, and increments BEFORE the Anthropic call so an aborted call
+-- still counts.
+--
+-- The web client's own check/increment (app.js:7421-7466
+-- checkAndIncrementLiveAIUsage) is therefore pure redundancy. Its upsert
+-- result is never error-checked — the function proceeds and returns
+-- regardless — so losing write permission fails silently and the AI call
+-- still goes through, with the server doing the real accounting.
+--
+-- This also FIXES a live double-count bug: both the client and the edge
+-- function incremented, so every web AI call counted twice and a Premium
+-- user effectively got 25 of their 50 monthly calls.
+--
+-- SELECT is deliberately kept: the client reads its own count to display
+-- how many calls remain, and RLS still restricts that to its own rows.
+-- ═══════════════════════════════════════════════════════════════════
+
+REVOKE INSERT, UPDATE, DELETE ON public.live_ai_usage_monthly
+  FROM anon, authenticated;
+
+-- Verified on production 2026-07-28:
+--   authenticated INSERT / UPDATE / DELETE .. false
+--   authenticated SELECT ..................... true   (kept on purpose)
+--   anon UPDATE .............................. false
+--   service_role INSERT / UPDATE ............. true   (ai-coach-proxy unaffected)
+
+-- ═══════════════════════════════════════════════════════════════════
+-- FOLLOW-UPS (code, not schema — deliberately not done here)
+--
+-- 1. app.js checkAndIncrementLiveAIUsage() is now dead weight for the
+--    increment half. Its cap CHECK is still useful as a fast local
+--    pre-check, but the upsert should be deleted so the intent is clear.
+--
+-- 2. Month-key divergence. The client builds year_month from LOCAL time
+--    (app.js:7442 getFullYear/getMonth) while ai-coach-proxy uses UTC
+--    (index.ts:145 getUTCFullYear/getUTCMonth) — despite the comment at
+--    app.js:7420 claiming they share a convention. In Bangkok (UTC+7) on
+--    the 1st of a month between 00:00 and 07:00 local they disagree and
+--    address different rows. Same family as the todayISO() UTC bug.
+--    Now that only the server writes, the server's UTC key is the only
+--    one that matters for accounting — but the client's READ still uses
+--    the local key, so "calls remaining" can be wrong in that window.
+-- ═══════════════════════════════════════════════════════════════════
