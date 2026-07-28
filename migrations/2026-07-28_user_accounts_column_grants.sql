@@ -1,0 +1,73 @@
+-- ═══════════════════════════════════════════════════════════════════
+-- SECURITY: stop clients writing privileged columns on user_accounts
+--
+-- APPLIED TO PRODUCTION 2026-07-28 via the Supabase SQL editor.
+--
+-- The hole
+-- --------
+-- The RLS policy "Allow individual account data reading" is
+--   FOR ALL USING (auth.uid() = user_id)   -- with NO WITH CHECK
+-- For UPDATE, Postgres falls back to the USING expression as the check,
+-- so a user could rewrite ANY column of their own row provided user_id
+-- still matched. `authenticated` held UPDATE on all 17 columns, there
+-- are no triggers on the table, and the CHECK constraints only validate
+-- enum VALUES (subscription_tier IN free|premium|pro) — not who may set
+-- them. account_role has no CHECK at all.
+--
+-- That gave every signed-in user two one-request exploits:
+--
+--   PATCH /rest/v1/user_accounts?user_id=eq.<self> {"subscription_tier":"pro"}
+--     -> free Premium forever. The server-side guards in
+--        bone-age-analysis / lab-ai-analysis / ai-coach-proxy do NOT help:
+--        they re-verify by reading this same column with the service role.
+--
+--   PATCH /rest/v1/user_accounts?user_id=eq.<self> {"account_role":"system_admin"}
+--     -> full admin, because is_system_admin() is literally
+--        SELECT EXISTS (SELECT 1 FROM user_accounts
+--                       WHERE user_id = auth.uid() AND account_role = 'system_admin')
+--        The "admins read all accounts" / "admins update accounts" policies
+--        then honour it.
+--
+-- The fix
+-- -------
+-- Column-level grants. The ONLY legitimate client-side UPDATE in the whole
+-- codebase is the account-archive flow (app.js:2291), which writes
+-- account_status, archived_at and permanent_delete_after. Everything else
+-- that changes a tier goes through service_role (redeem-code edge function)
+-- or the change_user_subscription_tier admin RPC, neither of which is
+-- affected by these grants.
+-- ═══════════════════════════════════════════════════════════════════
+
+REVOKE UPDATE ON public.user_accounts FROM anon, authenticated;
+
+GRANT UPDATE (account_status, archived_at, permanent_delete_after)
+  ON public.user_accounts TO authenticated;
+
+-- Verification (all four must be false, the rest true):
+--
+--   select has_column_privilege('authenticated','public.user_accounts','subscription_tier','UPDATE');         -- false
+--   select has_column_privilege('authenticated','public.user_accounts','account_role','UPDATE');              -- false
+--   select has_column_privilege('authenticated','public.user_accounts','tier_expires_at','UPDATE');           -- false
+--   select has_column_privilege('authenticated','public.user_accounts','total_measurements_logged','UPDATE'); -- false
+--   select has_column_privilege('authenticated','public.user_accounts','account_status','UPDATE');            -- true
+--   select has_column_privilege('authenticated','public.user_accounts','subscription_tier','SELECT');         -- true
+--   select has_column_privilege('service_role','public.user_accounts','subscription_tier','UPDATE');          -- true
+--
+-- Confirmed on production 2026-07-28: all of the above hold.
+
+-- ═══════════════════════════════════════════════════════════════════
+-- STILL OPEN — Part 2: the same escalation is reachable via INSERT.
+--
+-- A user signing up directly against the API can supply
+-- account_role = 'system_admin' in the initial insert. It cannot simply be
+-- revoked: clients legitimately insert account_role (app.js:2236,
+-- app_state.dart:131) and the web uses it for clinician onboarding — and
+-- the LIVE iOS build performs a self-heal insert, so revoking the column
+-- would break new signups on a shipped app.
+--
+-- Needs a BEFORE INSERT trigger that clamps account_role (reject
+-- 'system_admin'), subscription_tier, tier_expires_at and
+-- total_measurements_logged unless the caller is service_role, e.g.
+--   current_setting('request.jwt.claims', true)::json ->> 'role' = 'service_role'
+-- Write and test that separately before relying on it.
+-- ═══════════════════════════════════════════════════════════════════
