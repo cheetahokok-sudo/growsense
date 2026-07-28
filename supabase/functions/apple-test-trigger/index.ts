@@ -22,24 +22,24 @@
 // This function must exist only briefly: it can make Apple send
 // notifications. Deleted immediately after use.
 //
-// ── STATUS 2026-07-28: loop NOT yet green ─────────────────────────
-// Apple returns 404 errorCode 4040007 "No App Store Server Notification
-// URL found for provided app", consistently over ~10 minutes, on BOTH
-// hosts. Ruled out:
-//   · auth — the same JWT gets 4000006 "Invalid transaction id" from
-//     the subscriptions endpoint, so Apple resolves the app and accepts
-//     the token; a bad JWT returns 401.
-//   · a failed save — both URLs persist in ASC across a full page
-//     reload, and the edit dialog's character counter confirms stored
-//     content.
-//   · a missed Version 1/2 selector — the dialog has no select, no
-//     radio, and no version wording anywhere in the section.
-// Most likely remaining causes: Apple-side propagation measured in
-// hours, or the endpoint requiring an APPROVED in-app purchase (ours
-// are still "Prepare for Submission" and cannot be approved until they
-// ship with the v1.1 build).
+// ── STATUS 2026-07-28: ✅ LOOP GREEN, on both environments ────────
+// Both TEST notifications were delivered and recorded:
+//   apple_notification_log: TEST env=Sandbox    processed=true err=none
+//                           TEST env=Production processed=true err=none
 //
-// To retry:
+// That single result validates the whole chain without an app build:
+// the .p8 key, ES256 JWT signing, ASC URL registration, Apple actually
+// reaching Supabase, JWT verification genuinely being off, our payload
+// parsing, the DB insert, and the 200 we return — in BOTH environments.
+//
+// It first failed for ~10 minutes with 404 errorCode 4040007 "No App
+// Store Server Notification URL found". That was purely Apple-side
+// propagation of the newly registered URLs; nothing needed changing.
+// Auth was never the problem (the same JWT returned 4000006 from the
+// subscriptions endpoint, so the app resolved and the token was
+// accepted). If you hit 4040007 after setting a URL, just wait.
+//
+// To re-run later (e.g. after changing the receiver):
 //   supabase functions deploy apple-test-trigger \
 //     --project-ref ogpkmcqaulohexanucng --no-verify-jwt
 //   curl "https://ogpkmcqaulohexanucng.supabase.co/functions/v1/apple-test-trigger?env=sandbox"
