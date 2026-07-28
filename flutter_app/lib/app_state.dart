@@ -67,6 +67,11 @@ class AppState extends ChangeNotifier {
 
   // measurements rows for the active child, newest first (per-child,
   // not per-logDate — reloaded on child switch)
+  //
+  // This always holds the FULL history regardless of tier. The free-tier
+  // window is applied by `visibleMeasurements` at read time, so the data
+  // is never lost and `lockedMeasurementCount` can tell the parent
+  // exactly how much history is waiting behind an upgrade.
   List<Map<String, dynamic>> measurements = [];
 
   /// Dates (YYYY-MM-DD) in the current Mon–Sun week that have any log
@@ -352,6 +357,51 @@ class AppState extends ChangeNotifier {
       if (until != null && until.isBefore(DateTime.now())) return false;
     }
     return true;
+  }
+
+  /// How far back a free account can chart and analyse its history.
+  /// Multi-year height velocity is the paid value, so free sees a recent
+  /// slice; the rest is locked, not deleted.
+  static const int kFreeHistoryDays = 30;
+
+  /// The measurements the UI should chart and analyse for this tier.
+  ///
+  /// Premium sees everything. Free sees the last [kFreeHistoryDays].
+  ///
+  /// **Never empty while [measurements] is non-empty.** A parent who
+  /// measures every couple of months would otherwise open the app to a
+  /// blank chart and reasonably conclude their child's data was lost —
+  /// which earns a one-star review, not an upgrade. So if nothing falls
+  /// inside the window we still surface the most recent point, and
+  /// [lockedMeasurementCount] tells them what's behind the paywall.
+  List<Map<String, dynamic>> get visibleMeasurements {
+    if (isPremium || measurements.isEmpty) return measurements;
+    final cutoff =
+        DateTime.now().subtract(const Duration(days: kFreeHistoryDays));
+    final inWindow = [
+      for (final m in measurements)
+        if (_recordedOnOrAfter(m, cutoff)) m,
+    ];
+    // `measurements` is newest-first, so index 0 is the latest.
+    return inWindow.isEmpty ? [measurements.first] : inWindow;
+  }
+
+  /// How many measurements sit outside the free window — drives the
+  /// "N earlier measurements — unlock full history" affordance. Always 0
+  /// for premium.
+  int get lockedMeasurementCount =>
+      measurements.length - visibleMeasurements.length;
+
+  /// True when there is history the current tier cannot see.
+  bool get hasLockedHistory => lockedMeasurementCount > 0;
+
+  static bool _recordedOnOrAfter(Map<String, dynamic> m, DateTime cutoff) {
+    final raw = m['recorded_date'];
+    if (raw == null) return false;
+    final d = DateTime.tryParse(raw.toString());
+    // An unparseable date is kept rather than silently dropped — losing a
+    // real measurement is worse than showing one extra.
+    return d == null || !d.isBefore(cutoff);
   }
 
   /// Custom-food cap: keeps "Mine" curated and blocks garbage growth.
