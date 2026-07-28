@@ -1,7 +1,17 @@
 -- ═══════════════════════════════════════════════════════════════════
 -- v1.1 IAP — entitlement foundation
 --
--- ⚠️  NOT YET APPLIED. Written for review.
+-- ✅ APPLIED TO PRODUCTION 2026-07-28, verified (see the bottom of this file).
+--
+-- ⚠️  HOW TO APPLY THIS FILE — do NOT paste it in one go.
+-- The Supabase SQL editor SILENTLY DROPS statements from multi-statement
+-- scripts containing dollar-quoted function bodies. It reports
+-- "Success. No rows returned" while creating nothing. During this apply
+-- it swallowed three CREATE FUNCTIONs and both CREATE TRIGGERs, twice,
+-- and only a follow-up existence query caught it.
+-- Apply section by section, ONE function or ONE trigger per run, and
+-- verify each object exists in pg_proc / pg_trigger before moving on.
+-- Never trust the editor's success message.
 --
 -- Creates the Apple-side tables and, more importantly, fixes the fact
 -- that user_accounts.subscription_tier / tier_expires_at are about to
@@ -423,6 +433,19 @@ update public.user_accounts
 -- Guard: no one should be entitled without a source.
 --   select count(*) from user_accounts
 --    where subscription_tier <> 'free' and manual_tier is null;   -- 0
+--
+-- ── ACTUAL RESULT, production, 2026-07-28 ───────────────────────────
+-- Backfill:
+--   cheetahokok@gmail.com  tier=premium exp=2027-07-04 src=code
+--                          manual=premium mexp=2027-07-04 msrc=code
+--   peempatpi@gmail.com    tier=premium exp=2026-08-14 src=code
+--                          manual=premium mexp=2026-08-14 msrc=code
+--   entitled-without-source = 0      free-rows-touched = 0
+--
+-- recompute_user_entitlement() then run across ALL 7 accounts:
+--   PAID COUNT = 2 (both expiries UNCHANGED)   FREE COUNT = 5
+--   free rows carrying a stale expiry = 0
+-- i.e. a clean no-op for existing users, which is the whole point.
 -- ═══════════════════════════════════════════════════════════════════
 
 
