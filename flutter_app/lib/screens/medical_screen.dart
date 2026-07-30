@@ -14,7 +14,9 @@ import '../widgets/gs_icons.dart';
 import '../widgets/premium_gate.dart';
 import '../units.dart';
 import '../beta_flags.dart';
+import '../height_scan.dart';
 import 'bone_age_screen.dart';
+import 'height_scan_screen.dart';
 import 'health_story_screen.dart';
 import 'medical_modules.dart';
 
@@ -1641,6 +1643,41 @@ class _EntryCardState extends State<_EntryCard> {
   String _date = todayISO();
   bool _busy = false;
 
+  // Height Scan (AR). Availability is probed once; _scannedHeight marks
+  // the height field as camera-sourced. Hand-editing the field drops
+  // the provenance back to 'manual' — we never label a typed number
+  // as a scan.
+  bool _scanSupported = false;
+  double? _scannedHeight;
+
+  @override
+  void initState() {
+    super.initState();
+    HeightScan.isSupported().then((ok) {
+      if (mounted && ok) setState(() => _scanSupported = true);
+    });
+    _height.addListener(() {
+      if (_scannedHeight == null) return;
+      final displayed = widget.appState.units == 'imperial'
+          ? (_scannedHeight! / 2.54).toStringAsFixed(1)
+          : _scannedHeight!.toStringAsFixed(1);
+      if (_height.text != displayed) setState(() => _scannedHeight = null);
+    });
+  }
+
+  Future<void> _scanHeight() async {
+    final median = await Navigator.of(context).push<double>(
+        MaterialPageRoute(
+            builder: (_) => HeightScanScreen(i18n: widget.i18n)));
+    if (median == null || !mounted) return;
+    setState(() {
+      _scannedHeight = median;
+      _height.text = widget.appState.units == 'imperial'
+          ? (median / 2.54).toStringAsFixed(1)
+          : median.toStringAsFixed(1);
+    });
+  }
+
   @override
   void dispose() {
     _height.dispose();
@@ -1662,8 +1699,14 @@ class _EntryCardState extends State<_EntryCard> {
     setState(() => _busy = true);
     // Entry values follow the display units; storage is always metric.
     final u = widget.appState.units;
+    // A scanned height saves the exact AR median, not the re-parsed
+    // display text (imperial rounding would shave precision off it).
+    final scanned = _scannedHeight;
     final err = await widget.appState.addMeasurement(
-        date: _date, heightCm: entryToCm(h, u), weightKg: entryToKg(w, u));
+        date: _date,
+        heightCm: scanned ?? entryToCm(h, u),
+        weightKg: entryToKg(w, u),
+        dataSource: scanned != null ? 'camera_ar' : 'manual');
     if (!mounted) return;
     setState(() => _busy = false);
     // The free-tier cap is a prompt, not a failure. Surfacing the raw
@@ -1697,6 +1740,7 @@ class _EntryCardState extends State<_EntryCard> {
     if (err == null) {
       _height.clear();
       _weight.clear();
+      _scannedHeight = null;
     }
   }
 
@@ -1760,6 +1804,9 @@ class _EntryCardState extends State<_EntryCard> {
                       labelText: widget.appState.units == 'imperial'
                           ? '${widget.i18n.t('flutter.height', 'Height')} (in)'
                           : widget.i18n.t('common.height_cm', 'Height (cm)'),
+                      // Camera-provenance chip while the value is the
+                      // untouched scan median; typing clears it.
+                      suffixText: _scannedHeight != null ? '📷' : null,
                       isDense: true),
                 ),
               ),
@@ -1778,6 +1825,21 @@ class _EntryCardState extends State<_EntryCard> {
               ),
             ],
           ),
+          if (_scanSupported) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 44),
+                side: const BorderSide(color: GsColors.border2),
+                foregroundColor: GsColors.accent,
+              ),
+              icon: const Icon(Icons.camera_alt_outlined, size: 16),
+              label: Text(
+                  widget.i18n.t('flutter.hscan.button', 'Scan height'),
+                  style: const TextStyle(fontSize: 12.5)),
+              onPressed: _busy ? null : _scanHeight,
+            ),
+          ],
           const SizedBox(height: 10),
           ElevatedButton(
             onPressed: _busy ? null : _save,

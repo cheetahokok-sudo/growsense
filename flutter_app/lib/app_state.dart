@@ -1893,6 +1893,9 @@ class AppState extends ChangeNotifier {
     required String date,
     required double heightCm,
     required double weightKg,
+    // 'manual' (typed) or 'camera_ar' (Height Scan). Provenance matters:
+    // analytics must be able to tell instrument tiers apart later.
+    String dataSource = 'manual',
   }) async {
     final childId = activeChildId;
     if (childId == null) return 'No child selected';
@@ -1908,7 +1911,7 @@ class AppState extends ChangeNotifier {
         'recorded_date': date,
         'stature_height_cm': heightCm,
         'mass_weight_kg': weightKg,
-        'data_source': 'manual',
+        'data_source': dataSource,
       }, onConflict: 'child_id,recorded_date');
       await loadMeasurements();
       return null;

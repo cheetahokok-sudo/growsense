@@ -12,5 +12,13 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    // Height Scan (AR height measurement) — platform view + availability probe.
+    let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "HeightScan")!
+    registrar.register(
+      HeightScanViewFactory(messenger: registrar.messenger()),
+      withId: "growsense/height_scan_view"
+    )
+    HeightScanViewFactory.registerAvailabilityChannel(messenger: registrar.messenger())
   }
 }
