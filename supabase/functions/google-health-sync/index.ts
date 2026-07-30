@@ -24,9 +24,8 @@
 //   night_wakes         ← same as wake_count (existing column)
 //   data_source         ← 'google_health_fitbit'
 //
-// DEPLOY:
-//   Supabase Dashboard → Edge Functions → Create new → name: google-health-sync
-//   Paste this file → Deploy
+// DEPLOY (from the repo root):
+//   supabase functions deploy google-health-sync --project-ref ogpkmcqaulohexanucng
 // ══════════════════════════════════════════════════════════════════
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";

@@ -39,6 +39,12 @@ ALLOWED_ORIGIN
 
 ## Working with these
 
+Every function's entrypoint **must** be `supabase/functions/<name>/index.ts` —
+that is the only path the CLI looks for. A differently-named file deploys as
+`400 Entrypoint path does not exist`. Run these from the **repo root**, not
+your home directory; the CLI resolves `supabase/functions/…` relative to the
+working directory.
+
 ```bash
 # Pull the current live source back down (overwrites local — commit first):
 supabase functions download <name> --project-ref ogpkmcqaulohexanucng
