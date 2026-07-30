@@ -705,6 +705,13 @@ class AppState extends ChangeNotifier {
         // inferred from how far back the night is.
         'estimation_method': meta.method,
         'confidence': meta.confidence,
+        // Sleep stages come from the wearable and nowhere else. If this
+        // night was previously synced, an unlisted column would keep its
+        // old value, leaving Fitbit's deep/REM minutes attached to a
+        // hand-entered total they no longer describe (and possibly
+        // summing past it). Clear them with the night they belonged to.
+        'deep_sleep_min': null,
+        'rem_sleep_min': null,
       }, onConflict: 'child_id,log_date');
       await loadDay();
       loadWeekConsistency();

@@ -10,6 +10,8 @@
 //   · De-duplication (upsert on child_id + log_date)
 //   · Multiple sessions on one date — longest = the night, the rest
 //     are routed to sleep_naps (see section 8)
+//   · Manual wins — a night the parent entered by hand is never
+//     overwritten by the device (see section 8b)
 //   · Per-night log_date attribution (uses the civil WAKE date — the
 //     morning the night ended, same convention as manual entry)
 //
@@ -179,6 +181,12 @@ function toDailySleepRow(s: ParsedSleep, childId: string) {
     rem_sleep_min: s.rem_sleep_min,
     night_wakes: s.night_wakes,
     data_source: s.data_source,
+    // A device measured this night, so it is never a recall estimate.
+    // Stated explicitly rather than left to whatever a previous manual
+    // save wrote — an unlisted column keeps its old value on conflict,
+    // which would tag wearable data with a parent-memory trust tier.
+    estimation_method: "measured",
+    confidence: 1.0,
   };
 }
 
@@ -316,7 +324,7 @@ Deno.serve(async (req) => {
     byDate.set(p.log_date, list);
   }
 
-  const rows: ReturnType<typeof toDailySleepRow>[] = [];
+  let rows: ReturnType<typeof toDailySleepRow>[] = [];
   const napRows: Record<string, unknown>[] = [];
 
   for (const [logDate, sessions] of byDate) {
@@ -345,6 +353,45 @@ Deno.serve(async (req) => {
   }
 
   console.log(`[google-health-sync] ${rows.length} nights, ${napRows.length} naps from ${parsed.length} sessions`);
+
+  // ── 8b. Manual wins ──────────────────────────────────────────
+  // A night the parent typed themselves is a deliberate correction —
+  // the strap was off, or someone else wore the watch. Device data must
+  // not silently overwrite it, and this function re-pulls a 14-day
+  // window on every sync, so without this the correction would be
+  // clobbered again and again.
+  //
+  // Recall ESTIMATES are the opposite case: pattern_fill and friends are
+  // the engine's guesses at a night nobody recorded, and a real
+  // measurement is strictly better, so those are replaced.
+  const PARENT_AUTHORED = ["measured", "recalled_manual"];
+  let skippedManual: string[] = [];
+
+  if (rows.length > 0) {
+    const { data: existing, error: existErr } = await admin
+      .from("daily_sleep")
+      .select("log_date, data_source, estimation_method")
+      .eq("child_id", child_id)
+      .in("log_date", rows.map(r => r.log_date));
+
+    if (existErr) {
+      // Better to skip the guard than to fail the sync outright, but say
+      // so — this is the one path that can overwrite a parent's entry.
+      console.error("[google-health-sync] Manual-wins check failed, writing anyway:", existErr.message);
+    } else {
+      const keep = new Set(
+        (existing ?? [])
+          .filter(r => r.data_source === "manual" &&
+                       PARENT_AUTHORED.includes(r.estimation_method as string))
+          .map(r => r.log_date as string),
+      );
+      if (keep.size > 0) {
+        skippedManual = rows.filter(r => keep.has(r.log_date)).map(r => r.log_date);
+        rows = rows.filter(r => !keep.has(r.log_date));
+        console.log(`[google-health-sync] Kept parent-entered nights, skipped: ${skippedManual.join(", ")}`);
+      }
+    }
+  }
 
   if (rows.length > 0) {
     const { error: upsertErr } = await admin
@@ -389,6 +436,7 @@ Deno.serve(async (req) => {
     success: true,
     nights_synced: rows.length,
     naps_synced: napsSynced,
+    skipped_manual: skippedManual,
     dates: rows.map(r => r.log_date),
   });
 });

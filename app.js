@@ -4322,7 +4322,13 @@ async function saveDay() {
       wake_time: s.wake,
       data_source: 'manual',
       estimation_method: estMeta.method,
-      confidence: estMeta.confidence
+      confidence: estMeta.confidence,
+      // Stages are wearable-only. On conflict an unlisted column keeps
+      // its old value, so a previously-synced night would leave Fitbit's
+      // deep/REM minutes attached to a hand-entered total — and the
+      // 30-day deep-sleep average above reads exactly this column.
+      deep_sleep_min: null,
+      rem_sleep_min: null
     }, { onConflict: 'child_id,log_date' })
     // Activity is now saved per-item in real-time via confirmLogActivity().
     // The daily_activity table (bar_hanging/box_jumps/yoga) is kept for
