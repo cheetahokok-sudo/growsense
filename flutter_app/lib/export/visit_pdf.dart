@@ -538,13 +538,17 @@ List<pw.Widget> _clinicalSections(
           return [
             (r['analyte_name'] ?? '-').toString(),
             '${_fmt(v)} ${r['unit'] ?? ''}',
+            // ASCII only in PDF text: the pdf package's built-in
+            // Helvetica has no glyphs for – • − and prints a ⊠ tofu
+            // box instead (seen on device in the reference-range
+            // column). Plain hyphen everywhere until a TTF is embedded.
             (lo != null || hi != null)
-                ? '${_fmt(lo)}–${_fmt(hi)}'
+                ? '${_fmt(lo)} - ${_fmt(hi)}'
                 : '-',
             statusOf(v, lo, hi),
             sds == null
                 ? '-'
-                : '${sds >= 0 ? '+' : '−'}${sds.abs().toStringAsFixed(1)}',
+                : '${sds >= 0 ? '+' : '-'}${sds.abs().toStringAsFixed(1)}',
           ];
         }()
     ], flex: [3, 2, 3, 2, 1]));
@@ -569,7 +573,7 @@ List<pw.Widget> _clinicalSections(
       if (hint == null) continue;
       hints.add(pw.Padding(
         padding: const pw.EdgeInsets.only(top: 3),
-        child: pw.Text('• ${r['analyte_name']}: $hint',
+        child: pw.Text('- ${r['analyte_name']}: $hint',
             style: const pw.TextStyle(fontSize: 8, color: _muted)),
       ));
     }

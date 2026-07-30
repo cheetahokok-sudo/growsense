@@ -14,6 +14,7 @@ import '../i18n.dart';
 import '../illness_reference.dart';
 import '../platform.dart';
 import '../theme.dart';
+import '../widgets/confirm_delete.dart';
 import '../widgets/evidence_refs.dart';
 import '../widgets/gs_icons.dart';
 import '../widgets/growth_systems.dart';
@@ -898,6 +899,15 @@ class _LabDetailSheetState extends State<_LabDetailSheet> {
                   icon: const Icon(Icons.close,
                       size: 16, color: GsColors.text3),
                   onPressed: () async {
+                    if (!await confirmDelete(
+                      context,
+                      i18n: widget.i18n,
+                      message: t('flutter.lab.confirm_delete',
+                          'Remove this lab result? This cannot be undone.'),
+                    )) {
+                      return;
+                    }
+                    if (!context.mounted) return;
                     final err = await widget.appState
                         .deleteLabResult(r['lab_result_id']);
                     if (!context.mounted) return;
@@ -1371,8 +1381,23 @@ class _IllnessLogScreenState extends State<IllnessLogScreen> {
         history: _HistoryList(
           i18n: widget.i18n,
           items: widget.appState.illnessEvents,
-          onDelete: (r) =>
-              widget.appState.deleteIllnessEvent(r['event_id']),
+          onDelete: (r) async {
+            if (!await confirmDelete(
+              context,
+              i18n: widget.i18n,
+              message: t('flutter.ill.confirm_delete',
+                  'Remove this illness record? This cannot be undone.'),
+              // Illness rows also draw the shaded periods on the growth
+              // chart (medical_screen.dart's illnessSpans), so deleting
+              // one silently changes a chart the parent may be reading
+              // for a different reason.
+              note: t('flutter.ill.confirm_delete_note',
+                  'The illness period will also disappear from the growth chart.'),
+            )) {
+              return null;
+            }
+            return widget.appState.deleteIllnessEvent(r['event_id']);
+          },
           rowBuilder: (r) {
             final ill = ref.illness(r['illness_type'] as String? ?? '');
             final details =
@@ -1536,8 +1561,17 @@ class _PubertyScreenState extends State<PubertyScreen> {
         history: _HistoryList(
           i18n: widget.i18n,
           items: widget.appState.pubertyEvents,
-          onDelete: (r) =>
-              widget.appState.deletePubertyEvent(r['event_id']),
+          onDelete: (r) async {
+            if (!await confirmDelete(
+              context,
+              i18n: widget.i18n,
+              message: t('flutter.pub.confirm_delete',
+                  'Remove this puberty milestone? This cannot be undone.'),
+            )) {
+              return null;
+            }
+            return widget.appState.deletePubertyEvent(r['event_id']);
+          },
           rowBuilder: (r) {
             final stage = (r['tanner_stage'] as num?)?.toInt();
             return _TwoLine(

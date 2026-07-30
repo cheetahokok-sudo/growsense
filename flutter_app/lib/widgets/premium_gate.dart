@@ -24,6 +24,7 @@ void showPremiumSheet(
   required String title,
   required String body,
   required String freeNote,
+  String? highlightBenefitKey,
 }) {
   final t = i18n.t;
   showModalBottomSheet<void>(
@@ -119,6 +120,7 @@ void showPremiumSheet(
                             appState: appState,
                             i18n: i18n,
                             purchases: purchases,
+                            highlightBenefit: highlightBenefitKey,
                           )
                         : AccountScreen(appState: appState, i18n: i18n),
                   ));

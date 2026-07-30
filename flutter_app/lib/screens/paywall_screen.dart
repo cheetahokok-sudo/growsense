@@ -39,11 +39,18 @@ class PaywallScreen extends StatefulWidget {
     required this.appState,
     required this.i18n,
     required this.purchases,
+    this.highlightBenefit,
   });
 
   final AppState appState;
   final I18n i18n;
   final PurchaseService purchases;
+
+  /// When the parent arrived from a specific locked feature, that
+  /// benefit's key ('history', 'bone', 'labs', 'pdf', 'wearable',
+  /// 'meas') — its row moves to the top and reads as the reason they
+  /// came, with the rest of premium beneath as a bonus.
+  final String? highlightBenefit;
 
   @override
   State<PaywallScreen> createState() => _PaywallScreenState();
@@ -132,19 +139,25 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Widget _benefits(String Function(String, [String?]) t) {
-    final items = <(String, String)>[
-      ('📈', t('flutter.paywall.b_history',
+    final items = <(String, String, String)>[
+      ('history', '📈', t('flutter.paywall.b_history',
           'Your child\'s full growth history and height-velocity trend, not just the last 30 days')),
-      ('🦴', t('flutter.paywall.b_bone',
+      ('bone', '🦴', t('flutter.paywall.b_bone',
           'AI second opinion on bone-age X-rays, alongside your multi-hospital timeline')),
-      ('🧪', t('flutter.paywall.b_labs',
+      ('labs', '🧪', t('flutter.paywall.b_labs',
           'Plain-language interpretation of growth labs, with the evidence behind it')),
-      ('📄', t('flutter.paywall.b_pdf',
+      ('pdf', '📄', t('flutter.paywall.b_pdf',
           'Visit-summary PDF to hand your pediatrician')),
-      ('⌚', t('flutter.paywall.b_wearable',
+      ('wearable', '⌚', t('flutter.paywall.b_wearable',
           'Wearable sync for sleep and activity')),
-      ('♾️', t('flutter.paywall.b_meas', 'Unlimited measurements')),
+      ('meas', '♾️', t('flutter.paywall.b_meas', 'Unlimited measurements')),
     ];
+    // The benefit the parent tapped through from leads the list.
+    final hl = widget.highlightBenefit;
+    if (hl != null) {
+      final i = items.indexWhere((it) => it.$1 == hl);
+      if (i > 0) items.insert(0, items.removeAt(i));
+    }
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -154,9 +167,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
       ),
       child: Column(
         children: [
-          for (final (emoji, text) in items)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5),
+          for (final (key, emoji, text) in items)
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 2),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 5, horizontal: 6),
+              decoration: key == hl
+                  ? BoxDecoration(
+                      color: GsColors.estimatedLight,
+                      borderRadius: BorderRadius.circular(8),
+                    )
+                  : null,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -164,10 +185,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(text,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12.5,
                             height: 1.4,
-                            color: GsColors.text2)),
+                            fontWeight: key == hl
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                            color: key == hl
+                                ? GsColors.text
+                                : GsColors.text2)),
                   ),
                 ],
               ),
@@ -261,7 +287,16 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ],
               ),
             ),
+            // ⚠️ The app theme sets minimumSize: Size.fromHeight(48),
+            // which is Size(double.infinity, 48) — every ElevatedButton
+            // demands INFINITE width. Inside a Row that starves the
+            // Expanded beside it, and the price renders one character
+            // per line. Override with a real bounded size here.
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(104, 44),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
               onPressed: p.busy ? null : () => p.buy(prod),
               child: Text(p.busy
                   ? t('flutter.paywall.working', 'Working…')

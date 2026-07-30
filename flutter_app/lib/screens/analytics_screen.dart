@@ -8,6 +8,8 @@ import '../citations.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import '../widgets/gs_icons.dart';
+import '../widgets/premium_gate.dart';
 import 'medical_screen.dart' show GrowthJourneyScreen;
 import 'trust_calendar.dart';
 
@@ -272,14 +274,106 @@ class AnalyticsScreen extends StatefulWidget {
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Future<WeeklyAnalytics>? _future;
   String? _loadedChildId;
+  bool? _loadedPremium;
 
   void _loadIfNeeded() {
     final child = widget.appState.activeChildRow;
     if (child == null) return;
     final id = child['child_id'] as String;
-    if (id == _loadedChildId) return;
+    final premium = widget.appState.isPremium;
+    // Reload when the tier flips too — the parent who buys from a
+    // locked chip comes straight back here expecting the long window,
+    // and the free fetch only holds 60 days.
+    if (id == _loadedChildId && premium == _loadedPremium) return;
     _loadedChildId = id;
-    _future = loadWeeklyAnalytics(widget.appState.sb, child);
+    _loadedPremium = premium;
+    _future = loadWeeklyAnalytics(widget.appState.sb, child, premium: premium);
+  }
+
+  /// Velocity over the 6-month window — the shortest interval the
+  /// clinical literature actually trusts. Premium computes it from the
+  /// full measurement history; free sees the locked tile, and tapping
+  /// it opens the sheet that explains WHY the honest window is paid.
+  Widget _velocityWindowTile(String Function(String, [String?, Map<String, String>?]) t) {
+    final label =
+        '${t('analytics.insight.height_velocity', 'Height velocity')} · ${t('flutter.6mo', '6mo')}';
+    if (widget.appState.isPremium) {
+      final v = velocityOverWindow(widget.appState.measurements, 180);
+      return _StatTile(
+        label: label,
+        value: v == null ? '—' : v.toStringAsFixed(1),
+        suffix: v == null
+            ? t('flutter.iw.velocity_needs_span',
+                'needs measurements 3+ months apart')
+            : 'cm/yr',
+        color: GsColors.measured,
+      );
+    }
+    return GestureDetector(
+      onTap: () => _showWindowSheet(cardKey: 'velocity', windowDays: 180),
+      child: _StatTile(
+        label: label,
+        value: '',
+        valueWidget: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 2),
+          child: GsIcon('lock', size: 24),
+        ),
+        suffix: t('flutter.iw.premium_window',
+            'Premium · the clinically valid window'),
+        color: GsColors.estimatedDark,
+      ),
+    );
+  }
+
+  /// Locked-chip tap → the app's one premium sheet, with copy naming
+  /// the specific benefit of THIS card at THIS window — never a
+  /// generic "Go Premium".
+  void _showWindowSheet({required String cardKey, required int windowDays}) {
+    final t = widget.i18n.t;
+    final window = windowDays >= 180
+        ? t('flutter.window.6mo', '6 months')
+        : t('flutter.window.90d', '90 days');
+    final args = {'window': window};
+    final (emoji, title, body) = switch (cardKey) {
+      'sleep' => (
+          '🌙',
+          t('flutter.iw.sheet.sleep.title', 'See {window} of sleep, next to growth', args),
+          t('flutter.iw.sheet.sleep.body',
+              'One late bedtime is nothing. A short-sleep season is a growth lever. Premium keeps the whole record so the pattern can show itself.'),
+        ),
+      'protein' || 'calcium' || 'zinc' => (
+          '🥚',
+          t('flutter.iw.sheet.nutrition.title',
+              'Was it a low week — or a low season?', args),
+          t('flutter.iw.sheet.nutrition.body',
+              'A {window} view shows whether nutrition is holding or drifting — something no single month can tell you.', args),
+        ),
+      'activity' => (
+          '⚽',
+          t('flutter.iw.sheet.activity.title',
+              'See {window} of activity, next to growth', args),
+          t('flutter.iw.sheet.activity.body',
+              'Term time vs holidays, seasons of sport and rest — the {window} view shows the rhythm a month hides.', args),
+        ),
+      _ => (
+          '📏',
+          t('flutter.iw.sheet.velocity.title',
+              'Height velocity needs six months to be honest'),
+          t('flutter.iw.sheet.velocity.body',
+              'Short intervals are mostly measuring noise, so we would rather wait than guess. Premium unlocks the full history and the windows a pediatrician would trust.'),
+        ),
+    };
+    showPremiumSheet(
+      context,
+      appState: widget.appState,
+      i18n: widget.i18n,
+      emoji: emoji,
+      title: title,
+      body: body,
+      freeNote: t('flutter.iw.sheet.free_note',
+          'Daily logging and the 30-day view stay free, always.'),
+      highlightBenefitKey: 'history',
+    );
   }
 
   @override
@@ -430,26 +524,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Expanded(
-                        child: _StatTile(
-                          label:
-                              '${t('analytics.stats.height_gain', 'Height gain')} · ${t('flutter.30d', '30d')}',
-                          value: a.heightGain30dCm == null
-                              ? '—'
-                              : '${a.heightGain30dCm! >= 0 ? '+' : ''}${a.heightGain30dCm!.toStringAsFixed(1)}',
-                          suffix: a.heightGain30dCm == null
-                              ? t(
-                                  'flutter.needs_two_measurements',
-                                  'needs 2+ measurements',
-                                )
-                              : 'cm',
-                          color: GsColors.measured,
-                        ),
-                      ),
+                      // The 30-day height-gain tile is retired: one
+                      // month of growth is smaller than home measuring
+                      // error, so the number was noise wearing a unit.
+                      // Its replacement is velocity over a clinically
+                      // valid window — premium, because only premium
+                      // history reaches that far back.
+                      Expanded(child: _velocityWindowTile(t)),
                     ],
                   ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      t('flutter.iw.velocity_edu',
+                          'Height velocity needs 3+ months between measurements to mean anything — over a single month it is mostly measuring noise.'),
+                      style: const TextStyle(
+                          fontSize: 10.5,
+                          height: 1.4,
+                          color: GsColors.text3),
+                    ),
+                  ),
                   const Padding(
-                    padding: EdgeInsets.only(top: 8),
+                    padding: EdgeInsets.only(top: 6),
                     child: SourcesLink(
                         topicId: 'percentile',
                         label: 'Velocity vs WHO reference · Sources'),
@@ -459,7 +555,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     title: t('common.protein', 'Protein'),
                     unit: 'g',
                     color: GsColors.accent,
-                    days: a.days,
+                    a: a,
+                    cardKey: 'protein',
+                    isPremium: widget.appState.isPremium,
+                    onLockedTap: (k, w) =>
+                        _showWindowSheet(cardKey: k, windowDays: w),
                     valueOf: (d) => d.proteinG,
                     i18n: widget.i18n,
                     estimatedOf: (d) => d.nutritionEstimated,
@@ -474,7 +574,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     title: t('common.calcium', 'Calcium'),
                     unit: 'mg',
                     color: GsColors.accent,
-                    days: a.days,
+                    a: a,
+                    cardKey: 'calcium',
+                    isPremium: widget.appState.isPremium,
+                    onLockedTap: (k, w) =>
+                        _showWindowSheet(cardKey: k, windowDays: w),
                     valueOf: (d) => d.calciumMg,
                     i18n: widget.i18n,
                     estimatedOf: (d) => d.nutritionEstimated,
@@ -487,7 +591,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     title: t('common.zinc', 'Zinc'),
                     unit: 'mg',
                     color: GsColors.accent,
-                    days: a.days,
+                    a: a,
+                    cardKey: 'zinc',
+                    isPremium: widget.appState.isPremium,
+                    onLockedTap: (k, w) =>
+                        _showWindowSheet(cardKey: k, windowDays: w),
                     valueOf: (d) => d.zincMg,
                     i18n: widget.i18n,
                     estimatedOf: (d) => d.nutritionEstimated,
@@ -503,7 +611,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     title: t('common.sleep', 'Sleep'),
                     unit: 'h',
                     color: GsColors.estimated,
-                    days: a.days,
+                    a: a,
+                    cardKey: 'sleep',
+                    isPremium: widget.appState.isPremium,
+                    onLockedTap: (k, w) =>
+                        _showWindowSheet(cardKey: k, windowDays: w),
                     valueOf: (d) =>
                         d.sleepMin == null ? null : d.sleepMin! / 60,
                     i18n: widget.i18n,
@@ -518,7 +630,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         '${t('common.activity', 'Activity')} (${t('flutter.weighted', 'weighted')})',
                     unit: t('flutter.min', 'min'),
                     color: GsColors.measured,
-                    days: a.days,
+                    a: a,
+                    cardKey: 'activity',
+                    isPremium: widget.appState.isPremium,
+                    onLockedTap: (k, w) =>
+                        _showWindowSheet(cardKey: k, windowDays: w),
                     valueOf: (d) => d.weightedActivityMin == 0
                         ? null
                         : d.weightedActivityMin,
@@ -556,11 +672,17 @@ class _StatTile extends StatelessWidget {
     required this.value,
     required this.color,
     this.suffix,
+    this.valueWidget,
   });
   final String label;
   final String value;
   final String? suffix;
   final Color color;
+
+  /// Rendered in place of [value] when set — e.g. the house lock glyph
+  /// on the free tier's velocity tile, where a text emoji would break
+  /// the icon language.
+  final Widget? valueWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -584,14 +706,15 @@ class _StatTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
+          valueWidget ??
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
           if (suffix != null)
             Text(
               suffix!,
@@ -603,47 +726,80 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _TrendCard extends StatelessWidget {
+class _TrendCard extends StatefulWidget {
   const _TrendCard({
     required this.title,
     required this.unit,
     required this.color,
-    required this.days,
+    required this.a,
     required this.valueOf,
     required this.i18n,
+    required this.isPremium,
+    required this.cardKey,
+    required this.onLockedTap,
     this.target,
     this.estimatedOf,
   });
   final String title;
   final String unit;
   final Color color;
-  final List<DayMetrics> days;
+  final WeeklyAnalytics a;
   final double? Function(DayMetrics) valueOf;
   final I18n i18n;
+  final bool isPremium;
+  final String cardKey; // 'protein' | 'calcium' | 'zinc' | 'sleep' | 'activity'
+  final void Function(String cardKey, int windowDays) onLockedTap;
   final double? target; // per-day goal for the insight line + goal marker
 
   /// Per-lever flag: recall-engine estimated days render gold with an
-  /// "N of 7 estimated" note, never the measured colour.
+  /// "N of D estimated" note, never the measured colour.
   final bool Function(DayMetrics)? estimatedOf;
 
+  @override
+  State<_TrendCard> createState() => _TrendCardState();
+}
+
+class _TrendCardState extends State<_TrendCard> {
   static const _weekdayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  int _window = 7;
+
+  String _windowLabel(String Function(String, [String?, Map<String, String>?]) t,
+          int w) =>
+      switch (w) {
+        7 => t('flutter.7d', '7d'),
+        30 => t('flutter.30d', '30d'),
+        90 => t('flutter.90d', '90d'),
+        _ => t('flutter.6mo', '6mo'),
+      };
 
   @override
   Widget build(BuildContext context) {
-    final t = i18n.t;
-    final values = [for (final d in days) valueOf(d)];
-    final estimated = [for (final d in days) estimatedOf?.call(d) ?? false];
-    final estCount = estimated.where((e) => e).length;
+    final t = widget.i18n.t;
+    final color = widget.color;
+    final unit = widget.unit;
+    final target = widget.target;
+
+    final stats = computeWindowStats(
+      widget.a.allDays,
+      _window,
+      widget.valueOf,
+      estimatedOf: widget.estimatedOf,
+    );
+    final days = stats.days;
+    final values = [for (final d in days) widget.valueOf(d)];
+    final estimated = [
+      for (final d in days) widget.estimatedOf?.call(d) ?? false,
+    ];
+    final estCount = stats.estimatedCount;
     final logged = values.whereType<double>().toList();
     final maxVal = logged.fold<double>(target ?? 0, (m, v) => v > m ? v : m);
-    final avg = logged.isEmpty
-        ? null
-        : logged.reduce((a, b) => a + b) / logged.length;
-    // Insight: average vs target, and simple direction (first vs last half).
+    final avg = stats.avg;
+    // Insight: average vs target.
     String? insight;
     Color insightColor = GsColors.text3;
-    if (avg != null && target != null && target! > 0) {
-      final pct = (avg / target! * 100).round();
+    if (avg != null && target != null && target > 0) {
+      final pct = (avg / target * 100).round();
       final onTrack = pct >= 90;
       insight =
           '${t('flutter.analytics.avg', 'avg')} ${_fmt(avg)} $unit · $pct% ${t('flutter.analytics.of_target', 'of target')}';
@@ -652,29 +808,42 @@ class _TrendCard extends StatelessWidget {
       insight = '${t('flutter.analytics.avg', 'avg')} ${_fmt(avg)} $unit';
     }
 
-    // Direction: mean of the logged first half vs last half of the week.
-    // Finishes the intent noted above — a bare average hides whether the
-    // week is climbing or slipping.
+    // Direction. For the 7-day view keep the within-week halves
+    // comparison; longer windows say "vs prior <window>" from
+    // WindowStats, which is the Whoop-style like-for-like delta.
     String? trendLabel;
     Color trendColor = GsColors.measured;
-    final firstHalf = <double>[];
-    final lastHalf = <double>[];
-    for (var i = 0; i < values.length; i++) {
-      final v = values[i];
-      if (v == null) continue;
-      (i < values.length / 2 ? firstHalf : lastHalf).add(v);
-    }
-    if (firstHalf.isNotEmpty && lastHalf.isNotEmpty) {
-      final f = firstHalf.reduce((a, b) => a + b) / firstHalf.length;
-      final l = lastHalf.reduce((a, b) => a + b) / lastHalf.length;
-      final rel = f == 0 ? (l > 0 ? 1.0 : 0.0) : (l - f) / f;
-      if (rel >= 0.1) {
-        trendLabel = '↗ ${t('flutter.analytics.trending_up', 'trending up')}';
-        trendColor = GsColors.measured;
-      } else if (rel <= -0.1) {
+    if (_window == 7) {
+      final firstHalf = <double>[];
+      final lastHalf = <double>[];
+      for (var i = 0; i < values.length; i++) {
+        final v = values[i];
+        if (v == null) continue;
+        (i < values.length / 2 ? firstHalf : lastHalf).add(v);
+      }
+      if (firstHalf.isNotEmpty && lastHalf.isNotEmpty) {
+        final f = firstHalf.reduce((a, b) => a + b) / firstHalf.length;
+        final l = lastHalf.reduce((a, b) => a + b) / lastHalf.length;
+        final rel = f == 0 ? (l > 0 ? 1.0 : 0.0) : (l - f) / f;
+        if (rel >= 0.1) {
+          trendLabel =
+              '↗ ${t('flutter.analytics.trending_up', 'trending up')}';
+          trendColor = GsColors.measured;
+        } else if (rel <= -0.1) {
+          trendLabel =
+              '↘ ${t('flutter.analytics.trending_down', 'trending down')}';
+          trendColor = GsColors.estimatedDark;
+        }
+      }
+    } else if (stats.deltaVsPrior != null && avg != null && avg > 0) {
+      final rel = stats.deltaVsPrior! / avg;
+      if (rel.abs() >= 0.05) {
+        final up = rel > 0;
         trendLabel =
-            '↘ ${t('flutter.analytics.trending_down', 'trending down')}';
-        trendColor = GsColors.estimatedDark;
+            '${up ? '↗' : '↘'} ${_fmt(stats.deltaVsPrior!.abs())} $unit ${t('flutter.iw.vs_prior', 'vs prior {window}', {
+              'window': _windowLabel(t, _window)
+            })}';
+        trendColor = up ? GsColors.measured : GsColors.estimatedDark;
       }
     }
 
@@ -693,7 +862,7 @@ class _TrendCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                title,
+                widget.title,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -705,6 +874,28 @@ class _TrendCard extends StatelessWidget {
                   '${t('flutter.max', 'max')} ${_fmt(maxVal)} $unit',
                   style: const TextStyle(fontSize: 10.5, color: GsColors.text3),
                 ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (final w in kTrendWindows)
+                if (windowHasEnoughRecord(w, widget.a.recordSpanDays))
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: _WindowChip(
+                      label: _windowLabel(t, w),
+                      selected: _window == w,
+                      locked: w > kFreeTrendWindowDays && !widget.isPremium,
+                      onTap: () {
+                        if (w > kFreeTrendWindowDays && !widget.isPremium) {
+                          widget.onLockedTap(widget.cardKey, w);
+                        } else {
+                          setState(() => _window = w);
+                        }
+                      },
+                    ),
+                  ),
             ],
           ),
           if (insight != null)
@@ -733,8 +924,10 @@ class _TrendCard extends StatelessWidget {
                     ),
                   if (estCount > 0)
                     Text(
-                      t('flutter.analytics.n_estimated', '{n} of 7 estimated', {
+                      t('flutter.analytics.n_of_days_estimated',
+                          '{n} of {d} days estimated', {
                         'n': '$estCount',
+                        'd': '${stats.loggedCount}',
                       }),
                       style: const TextStyle(
                         fontSize: 11,
@@ -746,91 +939,315 @@ class _TrendCard extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 10),
-          SizedBox(
-            height: 82,
-            child: Stack(
-              children: [
-                // Dashed goal line
-                if (target != null && target! > 0 && maxVal > 0)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 18 + 40 * (target! / maxVal),
-                    child: _DashedLine(color: color.withValues(alpha: 0.5)),
-                  ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    for (var i = 0; i < days.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 6),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            if (values[i] != null)
+          if (_window == 7)
+            SizedBox(
+              height: 82,
+              child: Stack(
+                children: [
+                  // Dashed goal line
+                  if (target != null && target > 0 && maxVal > 0)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 18 + 40 * (target / maxVal),
+                      child: _DashedLine(color: color.withValues(alpha: 0.5)),
+                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (var i = 0; i < days.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 6),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              if (values[i] != null)
+                                Text(
+                                  _fmt(values[i]!),
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    color: GsColors.text2,
+                                  ),
+                                ),
+                              const SizedBox(height: 2),
+                              TweenAnimationBuilder<double>(
+                                tween: Tween(
+                                  begin: 0,
+                                  end: values[i] == null || maxVal == 0
+                                      ? 3
+                                      : 3 + 40 * (values[i]! / maxVal),
+                                ),
+                                duration:
+                                    Duration(milliseconds: 450 + i * 60),
+                                curve: Curves.easeOutCubic,
+                                builder: (context, h, _) => Container(
+                                  height: h,
+                                  decoration: BoxDecoration(
+                                    // Estimated days are gold, never the
+                                    // measured colour — same rule as the
+                                    // brand's measured/estimated split.
+                                    color: values[i] == null
+                                        ? GsColors.surface2
+                                        : estimated[i]
+                                        ? GsColors.estimated.withValues(
+                                            alpha: 0.6,
+                                          )
+                                        : (target != null &&
+                                              target > 0 &&
+                                              values[i]! >= target)
+                                        ? color
+                                        : color.withValues(alpha: 0.55),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
                               Text(
-                                _fmt(values[i]!),
+                                _weekdayLetters[(DateTime.parse(
+                                          days[i].date,
+                                        ).weekday -
+                                        1) %
+                                    7],
                                 style: const TextStyle(
-                                  fontSize: 9,
-                                  color: GsColors.text2,
+                                  fontSize: 9.5,
+                                  color: GsColors.text3,
                                 ),
                               ),
-                            const SizedBox(height: 2),
-                            TweenAnimationBuilder<double>(
-                              tween: Tween(
-                                begin: 0,
-                                end: values[i] == null || maxVal == 0
-                                    ? 3
-                                    : 3 + 40 * (values[i]! / maxVal),
-                              ),
-                              duration: Duration(milliseconds: 450 + i * 60),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, h, _) => Container(
-                                height: h,
-                                decoration: BoxDecoration(
-                                  // Estimated days are gold, never the
-                                  // measured colour — same rule as the
-                                  // brand's measured/estimated split.
-                                  color: values[i] == null
-                                      ? GsColors.surface2
-                                      : estimated[i]
-                                      ? GsColors.estimated.withValues(
-                                          alpha: 0.6,
-                                        )
-                                      : (target != null &&
-                                            target! > 0 &&
-                                            values[i]! >= target!)
-                                      ? color
-                                      : color.withValues(alpha: 0.55),
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _weekdayLetters[(DateTime.parse(
-                                        days[i].date,
-                                      ).weekday -
-                                      1) %
-                                  7],
-                              style: const TextStyle(
-                                fontSize: 9.5,
-                                color: GsColors.text3,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              height: 92,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _WindowSparklinePainter(
+                  days: days,
+                  values: values,
+                  estimated: estimated,
+                  color: color,
+                  target: target,
+                  emptyLabel: t('flutter.iw.no_data_window',
+                      'Nothing logged in this window yet'),
                 ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );
   }
+}
+
+/// One range chip. Locked chips render dashed-gold with a lock — the
+/// visible advertisement for the longer window — and route their tap
+/// to the contextual premium sheet instead of switching.
+class _WindowChip extends StatelessWidget {
+  const _WindowChip({
+    required this.label,
+    required this.selected,
+    required this.locked,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final bool locked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected
+              ? GsColors.accent
+              : locked
+                  ? Colors.transparent
+                  : GsColors.surface2,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? GsColors.accent
+                : locked
+                    ? GsColors.estimated
+                    : GsColors.border2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: selected
+                    ? GsColors.surface
+                    : locked
+                        ? GsColors.estimatedDark
+                        : GsColors.text2,
+              ),
+            ),
+            if (locked) ...[
+              const SizedBox(width: 3),
+              const Icon(Icons.lock,
+                  size: 9, color: GsColors.estimatedDark),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Line sparkline for the 30d+ windows — bars stop working past a
+/// week. Whoop/Apple-style: faint target dash, one line, estimated
+/// days as gold dots (the brand's measured/estimated split at chart
+/// scale), emphasized endpoint, month ticks on long windows.
+class _WindowSparklinePainter extends CustomPainter {
+  _WindowSparklinePainter({
+    required this.days,
+    required this.values,
+    required this.estimated,
+    required this.color,
+    required this.target,
+    required this.emptyLabel,
+  });
+  final List<DayMetrics> days;
+  final List<double?> values;
+  final List<bool> estimated;
+  final Color color;
+  final double? target;
+  final String emptyLabel;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const padL = 2.0, padR = 10.0, padT = 8.0, padB = 16.0;
+    final w = size.width - padL - padR;
+    final h = size.height - padT - padB;
+    final logged = values.whereType<double>().toList();
+    if (logged.isEmpty) {
+      final tp = TextPainter(
+        text: TextSpan(
+            text: emptyLabel,
+            style: const TextStyle(fontSize: 11, color: GsColors.text3)),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: size.width);
+      tp.paint(canvas,
+          Offset((size.width - tp.width) / 2, (size.height - tp.height) / 2));
+      return;
+    }
+    var maxV = logged.reduce(math.max);
+    if (target != null && target! > maxV) maxV = target!;
+    if (maxV <= 0) maxV = 1;
+
+    double x(int i) =>
+        padL + (days.length <= 1 ? 0 : w * i / (days.length - 1));
+    double y(double v) => padT + h - h * (v / maxV);
+
+    // Month ticks: a faint rule + numeric month label wherever a month
+    // starts inside the window. Numeric so it reads in all six locales.
+    final tickPaint = Paint()
+      ..color = GsColors.border
+      ..strokeWidth = 1;
+    for (var i = 0; i < days.length; i++) {
+      final d = DateTime.parse(days[i].date);
+      final isFirst = i == 0;
+      final isLast = i == days.length - 1;
+      final monthStart = d.day == 1 && days.length > 45;
+      if (!monthStart && !isFirst && !isLast) continue;
+      if (monthStart) {
+        canvas.drawLine(Offset(x(i), padT), Offset(x(i), padT + h), tickPaint);
+      }
+      if (monthStart || isFirst || isLast) {
+        final label = monthStart ? '${d.month}' : '${d.day}/${d.month}';
+        final tp = TextPainter(
+          text: TextSpan(
+              text: label,
+              style: const TextStyle(fontSize: 9, color: GsColors.text3)),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        var lx = x(i) - tp.width / 2;
+        lx = lx.clamp(0.0, size.width - tp.width);
+        tp.paint(canvas, Offset(lx, padT + h + 3));
+      }
+    }
+
+    // Target dash
+    if (target != null && target! > 0) {
+      final ty = y(target!);
+      final dash = Paint()
+        ..color = color.withValues(alpha: 0.45)
+        ..strokeWidth = 1;
+      for (var dx = padL; dx < padL + w; dx += 8) {
+        canvas.drawLine(Offset(dx, ty), Offset(dx + 4, ty), dash);
+      }
+    }
+
+    // The line — broken at unlogged days rather than interpolated
+    // through them: a gap is data too.
+    final line = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final path = Path();
+    var penDown = false;
+    int? lastLogged;
+    for (var i = 0; i < values.length; i++) {
+      final v = values[i];
+      if (v == null) {
+        penDown = false;
+        continue;
+      }
+      if (penDown) {
+        path.lineTo(x(i), y(v));
+      } else {
+        path.moveTo(x(i), y(v));
+        penDown = true;
+      }
+      lastLogged = i;
+    }
+    canvas.drawPath(path, line);
+
+    // Estimated days: gold dots on the line, never the measured colour.
+    final goldDot = Paint()..color = GsColors.estimated;
+    for (var i = 0; i < values.length; i++) {
+      if (values[i] != null && estimated[i]) {
+        canvas.drawCircle(Offset(x(i), y(values[i]!)), 2.2, goldDot);
+      }
+    }
+
+    // Emphasized endpoint + its value.
+    if (lastLogged != null) {
+      final ex = x(lastLogged), ey = y(values[lastLogged]!);
+      canvas.drawCircle(Offset(ex, ey), 3.4, Paint()..color = color);
+      final tp = TextPainter(
+        text: TextSpan(
+            text: _fmt(values[lastLogged]!),
+            style: TextStyle(
+                fontSize: 9.5, fontWeight: FontWeight.w700, color: color)),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(
+          canvas,
+          Offset((ex - tp.width).clamp(0.0, size.width - tp.width),
+              math.max(0, ey - tp.height - 4)));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WindowSparklinePainter old) =>
+      old.days != days || old.color != color || old.target != target;
 }
 
 /// Growth summary strip — bottom of Analytics because height changes
@@ -912,8 +1329,13 @@ class _GrowthStripState extends State<_GrowthStrip> {
           'flutter.velocity.${a.velocityLabel.replaceAll(' ', '_')}',
           a.velocityLabel,
         ),
-      if (a.heightGain30dCm != null)
-        '${a.heightGain30dCm! >= 0 ? '+' : ''}${a.heightGain30dCm!.toStringAsFixed(1)} cm · ${t('flutter.30d', '30d')}',
+      // "Recent + locked count": the free tier sees its window, and
+      // this line names exactly what is behind the paywall — their own
+      // real measurements, counted, not a vague "more". The lock is
+      // drawn as the house glyph after the text, not an emoji in it.
+      if (widget.appState.hasLockedHistory)
+        t('flutter.growth_strip.locked_n', '{n} earlier measurements',
+            {'n': '${widget.appState.lockedMeasurementCount}'}),
     ];
     final summary = parts.isEmpty
         ? t(
@@ -953,12 +1375,24 @@ class _GrowthStripState extends State<_GrowthStrip> {
                     ),
                   ),
                   const SizedBox(height: 1),
-                  Text(
-                    summary,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: GsColors.text2,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          summary,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: GsColors.text2,
+                          ),
+                        ),
+                      ),
+                      if (widget.appState.hasLockedHistory)
+                        const Padding(
+                          padding: EdgeInsetsDirectional.only(start: 4),
+                          child: GsIcon('lock', size: 12),
+                        ),
+                    ],
                   ),
                   if (_latestDate != null)
                     Text(

@@ -83,5 +83,16 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Export compliance. GrowSense's only cryptography is HTTPS/TLS
+	     provided by the operating system (Supabase, the Edge Functions,
+	     StoreKit) and one SHA-256 hash of the Sign-in-with-Apple nonce
+	     (auth_screen.dart:96). Both are standard published algorithms used
+	     for authentication, and the app implements no encryption of its
+	     own — the Category 5 Part 2 exemption. Declaring it here stops App
+	     Store Connect asking on every upload and clears the "Missing
+	     Compliance" state on the build. If a future feature ever encrypts
+	     data itself, this key has to be revisited. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
