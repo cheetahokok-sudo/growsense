@@ -8,6 +8,8 @@
 //   · Token refresh (access tokens expire after 1 hour)
 //   · Sleep stage parsing → deep_sleep_min, rem_sleep_min, night wakes
 //   · De-duplication (upsert on child_id + log_date)
+//   · Multiple sessions on one date — longest = the night, the rest
+//     are routed to sleep_naps (see section 8)
 //   · Per-night log_date attribution (uses civil start date — the
 //     date the child went to bed, even if they woke up the next day)
 //
@@ -148,6 +150,33 @@ function parseSleepDataPoint(dp: Record<string, unknown>) {
     rem_sleep_min:  Math.round(remMs  / 60000),
     night_wakes: wakeCount,
     data_source: "google_health_fitbit",
+    // Not a daily_sleep column — used only to tell a night from a nap.
+    _startHour: localStart.getUTCHours(),
+  };
+}
+
+type ParsedSleep = NonNullable<ReturnType<typeof parseSleepDataPoint>>;
+
+// A session counts as the main night if it is long enough to be one, or
+// if it began in the night window. A lone 20-minute afternoon session is
+// a nap, and that day simply gets no daily_sleep row — better than
+// filing a nap as a night and deflating the sleep score.
+function isMainNight(s: ParsedSleep) {
+  return s.total_sleep_min >= 120 || s._startHour >= 18 || s._startHour < 6;
+}
+
+function toDailySleepRow(s: ParsedSleep, childId: string) {
+  return {
+    child_id: childId,
+    log_date: s.log_date,
+    total_sleep_min: s.total_sleep_min,
+    bedtime: s.bedtime,
+    wake_time: s.wake_time,
+    sleep_efficiency_score: s.sleep_efficiency_score,
+    deep_sleep_min: s.deep_sleep_min,
+    rem_sleep_min: s.rem_sleep_min,
+    night_wakes: s.night_wakes,
+    data_source: s.data_source,
   };
 }
 
@@ -266,23 +295,79 @@ Deno.serve(async (req) => {
     return json({ success: true, nights_synced: 0, message: "No sleep data found in this period" });
   }
 
-  // ── 8. Parse and upsert each sleep record ────────────────────
-  const rows = dataPoints
+  // ── 8. Parse, then split each day's sessions ─────────────────
+  // Fitbit can return MORE THAN ONE session for the same date — a main
+  // night plus a daytime nap. daily_sleep is UNIQUE(child_id, log_date),
+  // so upserting both in one batch raises Postgres 21000 "ON CONFLICT DO
+  // UPDATE cannot affect row a second time" and NOTHING is saved (the
+  // whole sync fails on a single napped day). Per date: the longest
+  // qualifying session is the night; every other session is a nap, kept
+  // in sleep_naps so its minutes survive without touching the score.
+  const parsed = dataPoints
     .map(parseSleepDataPoint)
-    .filter(Boolean)
-    .map(row => ({ ...row, child_id }));
+    .filter(Boolean) as ParsedSleep[];
 
-  const { error: upsertErr } = await admin
-    .from("daily_sleep")
-    .upsert(rows, { onConflict: "child_id,log_date" });
+  const byDate = new Map<string, ParsedSleep[]>();
+  for (const p of parsed) {
+    const list = byDate.get(p.log_date) ?? [];
+    list.push(p);
+    byDate.set(p.log_date, list);
+  }
 
-  if (upsertErr) {
-    console.error("[google-health-sync] DB upsert error:", upsertErr);
-    await admin
-      .from("google_health_connections")
-      .update({ last_sync_status: "error", last_sync_error: upsertErr.message })
-      .eq("child_id", child_id);
-    return json({ error: "Failed to save sleep data", detail: upsertErr.message }, 500);
+  const rows: ReturnType<typeof toDailySleepRow>[] = [];
+  const napRows: Record<string, unknown>[] = [];
+
+  for (const [logDate, sessions] of byDate) {
+    sessions.sort((a, b) => b.total_sleep_min - a.total_sleep_min);
+    const nightIdx = sessions.findIndex(isMainNight); // longest first → longest night wins
+    const seenStarts = new Set<string>();
+
+    sessions.forEach((s, i) => {
+      if (i === nightIdx) {
+        rows.push(toDailySleepRow(s, child_id));
+        return;
+      }
+      // sleep_naps is UNIQUE(child_id, log_date, start_time) — two
+      // sessions sharing a start minute would re-raise the same 21000.
+      if (seenStarts.has(s.bedtime)) return;
+      seenStarts.add(s.bedtime);
+      napRows.push({
+        child_id,
+        log_date: logDate,
+        start_time: s.bedtime,
+        end_time: s.wake_time,
+        total_sleep_min: s.total_sleep_min,
+        data_source: "google_health_fitbit",
+      });
+    });
+  }
+
+  console.log(`[google-health-sync] ${rows.length} nights, ${napRows.length} naps from ${parsed.length} sessions`);
+
+  if (rows.length > 0) {
+    const { error: upsertErr } = await admin
+      .from("daily_sleep")
+      .upsert(rows, { onConflict: "child_id,log_date" });
+
+    if (upsertErr) {
+      console.error("[google-health-sync] DB upsert error:", upsertErr);
+      await admin
+        .from("google_health_connections")
+        .update({ last_sync_status: "error", last_sync_error: upsertErr.message })
+        .eq("child_id", child_id);
+      return json({ error: "Failed to save sleep data", detail: upsertErr.message }, 500);
+    }
+  }
+
+  // Naps are a bonus, never a reason to fail the sync — and the
+  // sleep_naps migration may not have been run on this project yet.
+  let napsSynced = 0;
+  if (napRows.length > 0) {
+    const { error: napErr } = await admin
+      .from("sleep_naps")
+      .upsert(napRows, { onConflict: "child_id,log_date,start_time" });
+    if (napErr) console.error("[google-health-sync] Nap upsert skipped:", napErr.message);
+    else napsSynced = napRows.length;
   }
 
   // ── 9. Update connection status ───────────────────────────────
@@ -301,6 +386,7 @@ Deno.serve(async (req) => {
   return json({
     success: true,
     nights_synced: rows.length,
-    dates: rows.map(r => r!.log_date),
+    naps_synced: napsSynced,
+    dates: rows.map(r => r.log_date),
   });
 });
