@@ -10,8 +10,8 @@
 //   · De-duplication (upsert on child_id + log_date)
 //   · Multiple sessions on one date — longest = the night, the rest
 //     are routed to sleep_naps (see section 8)
-//   · Per-night log_date attribution (uses civil start date — the
-//     date the child went to bed, even if they woke up the next day)
+//   · Per-night log_date attribution (uses the civil WAKE date — the
+//     morning the night ended, same convention as manual entry)
 //
 // Sleep data mapped to daily_sleep columns:
 //   total_sleep_min     ← total duration minus awake minutes
@@ -108,11 +108,14 @@ function parseSleepDataPoint(dp: Record<string, unknown>) {
   const localStart   = new Date(localStartMs);
   const localEnd     = new Date(localEndMs);
 
-  // log_date = local date when they went to sleep (bedtime date)
+  // log_date = local WAKE date. A night that runs 21:00 → 06:00 belongs
+  // to the morning it ended, matching how a parent logs sleep by hand
+  // (filed under the day being viewed) and how sleep_naps is keyed. It
+  // also matches the civil_end_time filter this function queries on.
   const logDate = [
-    localStart.getUTCFullYear(),
-    String(localStart.getUTCMonth() + 1).padStart(2, "0"),
-    String(localStart.getUTCDate()).padStart(2, "0"),
+    localEnd.getUTCFullYear(),
+    String(localEnd.getUTCMonth() + 1).padStart(2, "0"),
+    String(localEnd.getUTCDate()).padStart(2, "0"),
   ].join("-");
 
   // HH:MM strings in local time
