@@ -1,6 +1,20 @@
 {
   "releases": [
     {
+      "version": "1.5.0",
+      "build": 27,
+      "date": "2026-07-30",
+      "title": "Premium, right here in the app",
+      "highlights": [
+        "GrowSense Premium can now be started from the app itself, monthly or yearly, and restored on any device you sign in to.",
+        "Daily logging stays free and unlimited — food, activity and sleep. Premium is for the long record: unlimited measurements and the full growth history behind them.",
+        "Read your analytics over 90 days or six months instead of the last 30, so a slow trend has room to show itself.",
+        "Mark up a bone-age X-ray right on the image — the carpals and growth plates you or your doctor looked at, saved with the scan.",
+        "Save and share the visit summary PDF and your CSV export straight from your phone.",
+        "Deleting a lab result, measurement, puberty entry or illness record now asks first."
+      ]
+    },
+    {
       "version": "1.4.1",
       "build": 25,
       "date": "2026-07-24",

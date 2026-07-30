@@ -13,26 +13,90 @@ On every release, bump `kAppVersion` / `kAppBuild` / `kBuildDate` in
 `flutter_app/assets/release_notes.json` (what users see in "What's
 new"), and add the full entry here.
 
-## [Unreleased] — 1.5.0 · build 26
+## [1.5.0] — 2026-07-30 · build 27
 
-_In-app purchases. Work in progress; entries here are tagged as 1.5.0 when
-the release is cut._
+_Premium, purchasable in the app. v1.0 shipped to the App Store with every
+paid surface hidden on iPhone and iPad (Guideline 3.1.1 — a paid feature may
+not be sold outside the App Store). This release brings them back through
+In-App Purchase._
 
 ### Added
+- **Premium, buyable on iPhone and iPad.** A monthly and an annual
+  subscription through the App Store, with Restore Purchases, and a
+  full-screen paywall carrying the subscription terms Apple requires.
+  Prices always come from the store, never from our own code, so every
+  storefront shows its own currency. Web and Android are unchanged.
+- **Insight Windows.** Analytics cards can be read over 90 days or six
+  months on premium; the free tier shows the last 30 days. Height velocity
+  keeps a three-month clinical floor — a shorter window cannot produce a
+  meaningful cm/year figure — and a chip appears when a window holds too
+  few measurements to trust.
+- **Annotate a bone-age X-ray.** The annotation overlay from the web app is
+  now in the phone app: mark the carpals and the growth plates on the image
+  you filed, so a serial history stays readable years later.
 - **Export on the phone.** The visit-summary PDF and CSV export now save
   and share from the device instead of only working in the web app.
+- **Confirmation before deleting clinical records** — labs, measurements,
+  puberty entries, illness records and family heights. The measurement
+  dialog says plainly that deleting does not return a free slot. Today's
+  food, activity and nap logs deliberately still delete in one tap.
+
+### Changed
+- **Free tier defined.** Daily logging — food, activity, sleep — stays
+  unlimited and always will. What premium buys is the longitudinal record:
+  measurements are capped at five for the lifetime of a free account, and
+  analytics are windowed to 30 days. Nothing is deleted; locked history is
+  counted and shown, and the most recent point always renders, so a blank
+  chart can never be mistaken for lost data.
+- **The iOS paid surface is back**: subscription card, bone-age AI second
+  opinion, lab interpretation and the visit-summary PDF. Activation codes
+  remain web and Android only — redeeming a code for digital content is
+  exactly what Guideline 3.1.1 forbids, and the platform gates now assert
+  that codes and In-App Purchase are never both offered.
+- The growth chart's Focus / All-years control is a segmented control
+  rather than a button; as a button it read as an action, not as state.
+- iOS deployment target 13.0 → 15.0 (StoreKit 2).
 
 ### Fixed
+- **Bone-age assessments failed to save.** The app sent `greulich_pyle` /
+  `tw3` where the database expects `GP` / `TW3`. Fixed, and a test now
+  parses the web app's own `<select>` so the two vocabularies cannot drift
+  apart again.
+- **The paywall's buy button could not be tapped** and the price wrapped
+  vertically — the theme's minimum button height made an infinitely wide
+  button that starved the layout.
+- **Tab-bar icons were crushed against the top border** on phones with a
+  home indicator: the bar's fixed height sat outside the safe area, so the
+  inset ate the content space.
+- The visit-summary PDF printed ⊠ boxes for dashes and bullets; it now
+  stays within the glyphs the built-in font actually has.
+- The visit-summary PDF ignored the subscription expiry date, so a lapsed
+  subscriber could still generate one.
 - Korean, Vietnamese, Chinese and Arabic no longer tell you to go to the
   web app to add your first child, add parent heights, or connect a
   wearable — those screens had kept the pre-app wording.
+- The padlock emoji is replaced by a drawn lock glyph, so a paid feature
+  never renders as a system emoji that differs per platform.
+
+### Security
+- Client write access revoked on the privileged `user_accounts` columns and
+  on `live_ai_usage_monthly`, and privileged columns are clamped on insert.
+  An account could otherwise grant itself premium or the system-admin role.
 
 ### Internal
+- Subscription state is server-owned. `recompute_user_entitlement` is the
+  only writer of a tier, fed by an Apple notification receiver and a
+  purchase-verification function; Apple's own servers are re-queried rather
+  than trusted from the device, and one Apple subscription maps to exactly
+  one GrowSense account.
 - Version numbers unified. The store binary reported `1.0.0` while the
   app reported `1.4.1`, because `codemagic.yaml` overrides only the build
   number. Both are now `1.5.0`. Note 1.1.0 was already released on
   2026-07-12, so the next free number above the in-app history is 1.5.0.
-- iOS deployment target 13.0 → 15.0 (StoreKit 2).
+- The Flutter locale files are generated; several past fixes had been made
+  to the generated output and would have been silently reverted by the next
+  regeneration. The source file is `tool/flutter_extra_keys.json`, and a
+  test now scans every locale for web-steering copy and key parity.
 - Removed `bone-age-ai-index.ts` / `lab-ai-index.ts`, duplicate copies of
   two edge functions that sat at the repo root.
 
