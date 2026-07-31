@@ -222,6 +222,62 @@ Map<String, dynamic> buildCoachContext(AppState appState, WhoReference? who) {
   return ctx;
 }
 
+/// System prompt for a LIVE coach answer, grounded in the same context
+/// the templates use so a generated answer can't contradict the rest of
+/// the app.
+///
+/// The rails matter as much as the data. This model answers parents
+/// about a real child, so it must not invent measurements, must not
+/// diagnose, and must not cite papers it hasn't been given — the answer
+/// library's own rule is that an uncited answer shows no citation
+/// rather than a fabricated one, and a generated answer is held to the
+/// same standard.
+String coachSystemPrompt(Map<String, dynamic> ctx, String lang) {
+  String? f(String key) {
+    final v = ctx[key];
+    if (v == null) return null;
+    return v is List ? v.join('; ') : '$v';
+  }
+
+  final facts = <String>[
+    if (f('name') != null) 'Name: ${f('name')}',
+    if (f('ageYears') != null) 'Age: ${f('ageYears')} years',
+    if (f('sex') != null && f('sex')!.isNotEmpty) 'Sex: ${f('sex')}',
+    if (f('latestHeightCm') != null)
+      'Latest height: ${f('latestHeightCm')} cm (${f('latestMeasurementDate')})',
+    if (f('latestWeightKg') != null) 'Latest weight: ${f('latestWeightKg')} kg',
+    if (f('heightPercentile') != null)
+      'Height-for-age: ${f('heightPercentile')}th percentile (z ${f('heightZ')})',
+    if (f('heightVelocityCmYr') != null)
+      'Height velocity: ${f('heightVelocityCmYr')} cm/year',
+    if (f('targetHeightCm') != null)
+      'Genetic target height: ${f('targetHeightCm')} cm '
+          '(range ${f('targetHeightRangeLow')}–${f('targetHeightRangeHigh')})',
+    if (f('proteinTargetG') != null)
+      'Daily protein target: ${f('proteinTargetG')} g',
+    if (f('sleepTargetH') != null) 'Sleep target: ${f('sleepTargetH')} h',
+    if (f('recentLabs') != null) 'Recent labs: ${f('recentLabs')}',
+    if (f('recentPubertyEvents') != null)
+      'Puberty notes: ${f('recentPubertyEvents')}',
+  ];
+
+  return '''
+You are the GrowSense coach, answering a parent's question about their own child's growth.
+
+What you know about this child (do not invent anything beyond it):
+${facts.isEmpty ? '- No measurements logged yet.' : facts.map((l) => '- $l').join('\n')}
+
+Rules:
+- Answer in the language of this reply code: $lang.
+- Use ONLY the facts above plus general pediatric knowledge. If the parent asks about data you have not been given (a food log, an activity history, a measurement that isn't listed), say plainly that you can't see it and tell them where in the app it lives.
+- Never invent a measurement, percentile, date, or trend.
+- Never diagnose, and never name a medication or dose. For anything that sounds clinical, say it is worth raising with their pediatrician.
+- Do not cite studies, papers, or guidelines — you have not been given sources, and an invented citation is worse than none.
+- Never tell a parent their child is "getting shorter" or use shrinking language: children do not lose height. Slower growth is "growing more slowly".
+- Be warm, concrete and brief — a few short paragraphs at most. Use the child's name only when the answer is actually about them.
+''';
+}
+
 String fillTemplate(String template, Map<String, dynamic> ctx) {
   return template.replaceAllMapped(RegExp(r'\{\{(\w+)\}\}'), (m) {
     final v = ctx[m.group(1)];

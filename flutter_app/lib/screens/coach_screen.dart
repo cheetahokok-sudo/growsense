@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -10,8 +11,19 @@ import '../theme.dart';
 import 'today_hud.dart';
 
 /// AI Coach — a chat that answers from GrowSense's own question library
-/// (Supabase ai_coach_questions + the bundled pilot batch), filling
-/// each answer template with this child's real data. No external LLM.
+/// (Supabase ai_coach_questions + the bundled pilot batch), filling each
+/// answer template with this child's real data.
+///
+/// Library first, model second. When the library has no match AND the
+/// project-wide `system_settings.ai_coach_mode` is 'live_ai' AND the
+/// account is premium, the question goes to the ai-coach-proxy Edge
+/// Function (Haiku 4.5) and the answer is labelled "Live AI" with no
+/// citation. Library answers are human-verified and carry real sources,
+/// so re-answering them with a model would spend a credit to get a
+/// worse answer — credits go only where the library falls short.
+///
+/// The monthly cap is enforced server-side; this screen shows the
+/// remaining count and the refusal reasons, but is not the gate.
 ///
 /// Warmth without over-familiarity: the greeting and daily summary
 /// address the child by name to feel caring, but individual answers
@@ -33,8 +45,16 @@ class _Msg {
   final bool thinking;
   final String? citation;
   final List<CoachQuestion> followUps;
+
+  /// Answered by the model rather than the verified library. Carries a
+  /// chip and never a citation — a generated answer must not borrow a
+  /// source it didn't earn.
+  final bool live;
   _Msg(this.text, this.fromUser,
-      {this.thinking = false, this.citation, this.followUps = const []});
+      {this.thinking = false,
+      this.citation,
+      this.followUps = const [],
+      this.live = false});
 }
 
 class _CoachScreenState extends State<CoachScreen> {
@@ -46,6 +66,17 @@ class _CoachScreenState extends State<CoachScreen> {
   String _category = 'all';
   bool _busy = false;
 
+  /// Live-AI state: the project-wide mode and this month's allowance.
+  bool _liveMode = false;
+  int? _liveCap;
+  int _liveUsed = 0;
+
+  bool get _liveAvailable =>
+      _liveMode && widget.appState.isPremium && _liveCap != 0;
+
+  int? get _liveRemaining =>
+      _liveCap == null ? null : math.max(0, _liveCap! - _liveUsed);
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +87,20 @@ class _CoachScreenState extends State<CoachScreen> {
       if (mounted) setState(() => _who = w);
     });
     widget.appState.loadClinicalIfNeeded();
+    _loadLiveState();
+  }
+
+  Future<void> _loadLiveState() async {
+    final mode = await widget.appState.aiCoachMode();
+    if (!mounted) return;
+    setState(() => _liveMode = mode == 'live_ai');
+    if (!_liveMode || !widget.appState.isPremium) return;
+    final usage = await widget.appState.liveAiUsage();
+    if (!mounted) return;
+    setState(() {
+      _liveCap = usage.cap;
+      _liveUsed = usage.used;
+    });
   }
 
   @override
@@ -111,9 +156,9 @@ class _CoachScreenState extends State<CoachScreen> {
     final answerable = _answerable;
     final matched = findBestMatch(text, answerable, exactHint: exactHint);
 
-    setState(() {
-      _messages.removeWhere((m) => m.thinking);
-      if (matched?.answerTemplate != null) {
+    if (matched?.answerTemplate != null) {
+      setState(() {
+        _messages.removeWhere((m) => m.thinking);
         final filled = fillTemplate(matched!.answerTemplate!, _ctx);
         final follows = [
           for (final q in answerable)
@@ -121,8 +166,54 @@ class _CoachScreenState extends State<CoachScreen> {
         ]..sort((a, b) => a.priority.compareTo(b.priority));
         _messages.add(_Msg(filled, false,
             citation: matched.citation, followUps: follows.take(3).toList()));
-      } else {
+        _busy = false;
+      });
+      _scrollDown();
+      return;
+    }
+
+    // Library-first, live only on a miss. Deliberately NOT the PWA's
+    // route-everything-to-the-model behaviour: the library's answers are
+    // human-verified and carry real citations, so re-answering them with
+    // a model would spend a credit to get a worse answer. Credits go
+    // exactly where the library falls short — which is the case that
+    // sent a parent here in the first place.
+    if (!_liveAvailable) {
+      setState(() {
+        _messages.removeWhere((m) => m.thinking);
         _messages.add(_Msg(t('flutter.coach.no_match'), false));
+        _busy = false;
+      });
+      _scrollDown();
+      return;
+    }
+
+    final res = await widget.appState.askCoachLive(
+      system: coachSystemPrompt(_ctx, widget.i18n.code),
+      question: text.trim(),
+    );
+    if (!mounted) return;
+    setState(() {
+      _messages.removeWhere((m) => m.thinking);
+      if (res.ok) {
+        _liveUsed += 1; // the server already counted it
+        _messages.add(_Msg(res.text!, false, live: true));
+      } else {
+        _messages.add(_Msg(
+            switch (res.reason) {
+              'cap_exceeded' => t(
+                  'flutter.coach.live_capped',
+                  'You\'ve used all your live AI answers this month. They reset on the 1st — the answer library below still works.'),
+              'not_in_plan' => t('flutter.coach.live_not_in_plan',
+                  'Live AI answers are part of Premium. The answer library is always free.'),
+              'session_expired' => t('flutter.coach.live_session_expired',
+                  'Your session expired — sign out and back in, then try again.'),
+              _ => t('flutter.coach.live_failed',
+                  'Couldn\'t reach the AI just now. The answer library below still works.'),
+            },
+            false));
+        if (res.cap != null) _liveCap = res.cap;
+        if (res.used != null) _liveUsed = res.used!;
       }
       _busy = false;
     });
@@ -218,11 +309,27 @@ class _CoachScreenState extends State<CoachScreen> {
                         }
                         return _Bubble(
                           msg: msg,
+                          i18n: widget.i18n,
                           onFollowUp: (q) => _ask(q.text, exactHint: q.text),
                         );
                       },
                     ),
             ),
+            // Only shown when live answers are actually reachable, and
+            // only when the tier has a finite allowance — a parent who
+            // can't use them shouldn't be told what they're missing on
+            // every screen.
+            if (_liveAvailable && _liveRemaining != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+                child: Text(
+                  widget.i18n.t(
+                      'flutter.coach.live_remaining',
+                      '{n} of {cap} live AI answers left this month',
+                      {'n': '${_liveRemaining!}', 'cap': '${_liveCap!}'}),
+                  style: const TextStyle(fontSize: 10.5, color: GsColors.text3),
+                ),
+              ),
             _Composer(
               controller: _input,
               hint: t('flutter.coach.not_sure', 'Ask about growth…'),
@@ -546,9 +653,11 @@ class _ThinkingBubbleState extends State<_ThinkingBubble>
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.msg, required this.onFollowUp});
+  const _Bubble(
+      {required this.msg, required this.onFollowUp, required this.i18n});
   final _Msg msg;
   final void Function(CoachQuestion) onFollowUp;
+  final I18n i18n;
 
   @override
   Widget build(BuildContext context) {
@@ -593,6 +702,25 @@ class _Bubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // A generated answer says so. Library answers carry a
+                  // verified source; this one carries a label instead.
+                  if (msg.live) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: GsColors.estimatedLight,
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Text(
+                          i18n.t('flutter.coach.live_chip', 'Live AI'),
+                          style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: GsColors.estimatedDark)),
+                    ),
+                    const SizedBox(height: 7),
+                  ],
                   Text(msg.text,
                       style: const TextStyle(
                           fontSize: 13.5, height: 1.5, color: GsColors.text)),

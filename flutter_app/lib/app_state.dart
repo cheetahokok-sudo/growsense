@@ -1845,6 +1845,126 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // ── AI Coach: live mode ─────────────────────────────────────────
+  // Two-layer gate, same shape as the PWA: this client is the UX layer
+  // (friendly messages, remaining count) and the ai-coach-proxy Edge
+  // Function is the real gate — it verifies the session JWT, checks the
+  // tier's cap, and increments the counter BEFORE calling Anthropic, so
+  // an abandoned request still counts. A client that bypasses these
+  // checks just gets a 403/429 from the function.
+
+  /// Project-wide coach mode from `system_settings.ai_coach_mode`:
+  /// 'template' (zero cost, answers from the library) or 'live_ai'.
+  /// Cached for the session — an admin toggling it takes effect on the
+  /// next app start.
+  String? _aiCoachMode;
+
+  Future<String> aiCoachMode() async {
+    if (_aiCoachMode != null) return _aiCoachMode!;
+    try {
+      final row = await sb
+          .from('system_settings')
+          .select('setting_value')
+          .eq('setting_key', 'ai_coach_mode')
+          .maybeSingle();
+      final value = row?['setting_value']?.toString().trim();
+      if (value == null || value.isEmpty) {
+        // Deliberately noisy: the PWA collapses "denied", "missing" and
+        // "broken" into a silent 'template', which cost a full debugging
+        // session to diagnose. Say which it was.
+        debugPrint('[coach] ai_coach_mode row missing/empty — using template');
+        _aiCoachMode = 'template';
+      } else {
+        _aiCoachMode = value;
+      }
+    } catch (e) {
+      debugPrint('[coach] ai_coach_mode lookup failed ($e) — using template');
+      _aiCoachMode = 'template'; // fail safe to the mode that costs nothing
+    }
+    return _aiCoachMode!;
+  }
+
+  /// This month's live-AI allowance. `cap` null means unlimited, 0 means
+  /// the tier has no live AI. Read-only: clients may SELECT these tables
+  /// but the 2026-07-28 migration revoked INSERT/UPDATE/DELETE, so the
+  /// counter is written only by the Edge Function.
+  Future<({int? cap, int used})> liveAiUsage() async {
+    try {
+      final tier = (account?['subscription_tier'] as String?) ?? 'free';
+      final limit = await sb
+          .from('subscription_tier_limits')
+          .select('live_ai_monthly_cap')
+          .eq('tier', tier)
+          .maybeSingle();
+      final cap = (limit?['live_ai_monthly_cap'] as num?)?.toInt();
+      final now = DateTime.now();
+      final ym = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+      final usage = await sb
+          .from('live_ai_usage_monthly')
+          .select('call_count')
+          .eq('user_id', sb.auth.currentUser?.id ?? '')
+          .eq('year_month', ym)
+          .maybeSingle();
+      return (cap: cap, used: (usage?['call_count'] as num?)?.toInt() ?? 0);
+    } catch (_) {
+      return (cap: null, used: 0);
+    }
+  }
+
+  /// One live coach answer via the ai-coach-proxy Edge Function.
+  ///
+  /// Never silently falls back to a template — each refusal has its own
+  /// reason so the parent learns something actionable:
+  ///   'not_in_plan'    — tier has no live AI (403)
+  ///   'cap_exceeded'   — monthly allowance used up (429), cap/used set
+  ///   'session_expired' — JWT rejected (401), sign in again
+  ///   'failed'         — anything else
+  Future<({bool ok, String? text, String? reason, int? cap, int? used})>
+      askCoachLive({required String system, required String question}) async {
+    try {
+      final res = await sb.functions.invoke('ai-coach-proxy', body: {
+        'system': system,
+        'messages': [
+          {'role': 'user', 'content': question},
+        ],
+        'max_tokens': 1000,
+      });
+      final data = res.data as Map<String, dynamic>?;
+      final content = data?['content'];
+      if (content is List) {
+        final text = content
+            .whereType<Map>()
+            .where((b) => b['type'] == 'text')
+            .map((b) => (b['text'] ?? '').toString())
+            .join()
+            .trim();
+        if (text.isNotEmpty) {
+          return (ok: true, text: text, reason: null, cap: null, used: null);
+        }
+      }
+      return (ok: false, text: null, reason: 'failed', cap: null, used: null);
+    } on FunctionException catch (e) {
+      final detail = e.details;
+      final err = detail is Map ? detail['error'] : null;
+      final code = err is Map ? err['code']?.toString() : null;
+      final reason = switch (code) {
+        'LIVE_AI_NOT_IN_PLAN' => 'not_in_plan',
+        'MONTHLY_CAP_EXCEEDED' => 'cap_exceeded',
+        _ => e.status == 401 ? 'session_expired' : 'failed',
+      };
+      return (
+        ok: false,
+        text: null,
+        reason: reason,
+        cap: err is Map ? (err['cap'] as num?)?.toInt() : null,
+        used: err is Map ? (err['used'] as num?)?.toInt() : null,
+      );
+    } catch (e) {
+      debugPrint('[coach] live call failed: $e');
+      return (ok: false, text: null, reason: 'failed', cap: null, used: null);
+    }
+  }
+
   Future<String?> addIllnessEvent({
     required String startDate,
     String? endDate,

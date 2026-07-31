@@ -1065,12 +1065,60 @@
     "ar": "تم الحفظ"
   },
   "flutter.coach.no_match": {
-    "en": "I couldn't match that to one of my prepared answers. Try rephrasing, tap a suggested question, or ask your pediatrician. (This coach answers from a verified library — no live AI model is used.)",
-    "th": "ฉันจับคู่คำถามนี้กับคำตอบที่เตรียมไว้ไม่ได้ ลองพิมพ์ใหม่ แตะคำถามที่แนะนำ หรือปรึกษากุมารแพทย์ (โค้ชนี้ตอบจากคลังข้อมูลที่ตรวจสอบแล้ว ไม่ได้ใช้ AI สด)",
-    "vi": "Tôi không khớp được câu này với câu trả lời có sẵn. Hãy diễn đạt lại, chạm vào câu hỏi gợi ý, hoặc hỏi bác sĩ nhi. (Trợ lý này trả lời từ thư viện đã kiểm chứng — không dùng AI trực tiếp.)",
-    "ko": "준비된 답변과 연결하지 못했습니다. 다시 표현하거나 추천 질문을 누르거나 소아과 의사에게 문의하세요. (이 코치는 검증된 라이브러리에서 답하며 실시간 AI를 사용하지 않습니다.)",
-    "zh": "我无法将其匹配到已准备的回答。请换个说法、点选建议问题，或咨询儿科医生。（本教练基于已核实的知识库作答，未使用实时AI。）",
-    "ar": "لم أتمكن من مطابقة ذلك مع إجاباتي المُعدّة. جرّب إعادة الصياغة، أو اضغط على سؤال مقترح، أو استشر طبيب الأطفال. (يجيب هذا المساعد من مكتبة موثّقة — دون استخدام ذكاء اصطناعي مباشر.)"
+    "en": "I couldn't match that to one of my prepared answers. Try rephrasing, tap a suggested question, or ask your pediatrician. (This answer comes from a verified library.)",
+    "th": "ฉันจับคู่คำถามนี้กับคำตอบที่เตรียมไว้ไม่ได้ ลองพิมพ์ใหม่ แตะคำถามที่แนะนำ หรือปรึกษากุมารแพทย์ (คำตอบนี้มาจากคลังข้อมูลที่ตรวจสอบแล้ว)",
+    "vi": "Tôi không khớp được câu này với câu trả lời có sẵn. Hãy diễn đạt lại, chạm vào câu hỏi gợi ý, hoặc hỏi bác sĩ nhi. (Câu trả lời này lấy từ thư viện đã kiểm chứng.)",
+    "ko": "준비된 답변과 연결하지 못했습니다. 다시 표현하거나 추천 질문을 누르거나 소아과 의사에게 문의하세요. (이 답변은 검증된 라이브러리에서 나옵니다.)",
+    "zh": "我无法将其匹配到已准备的回答。请换个说法、点选建议问题，或咨询儿科医生。（此回答来自已核实的知识库。）",
+    "ar": "لم أتمكن من مطابقة ذلك مع إجاباتي المُعدّة. جرّب إعادة الصياغة، أو اضغط على سؤال مقترح، أو استشر طبيب الأطفال. (هذه الإجابة من مكتبة موثّقة.)"
+  },
+  "flutter.coach.live_chip": {
+    "en": "Live AI",
+    "th": "AI สด",
+    "vi": "AI trực tiếp",
+    "ko": "실시간 AI",
+    "zh": "实时AI",
+    "ar": "ذكاء اصطناعي مباشر"
+  },
+  "flutter.coach.live_remaining": {
+    "en": "{n} of {cap} live AI answers left this month",
+    "th": "เหลือคำตอบจาก AI สด {n} จาก {cap} ครั้งในเดือนนี้",
+    "vi": "Còn {n}/{cap} câu trả lời AI trực tiếp trong tháng này",
+    "ko": "이번 달 실시간 AI 답변 {cap}회 중 {n}회 남음",
+    "zh": "本月实时AI回答还剩 {n}/{cap} 次",
+    "ar": "تبقّى {n} من {cap} إجابة بالذكاء الاصطناعي المباشر هذا الشهر"
+  },
+  "flutter.coach.live_capped": {
+    "en": "You've used all your live AI answers this month. They reset on the 1st — the answer library below still works.",
+    "th": "คุณใช้คำตอบจาก AI สดครบแล้วในเดือนนี้ จะรีเซ็ตวันที่ 1 ของเดือนหน้า คลังคำตอบด้านล่างยังใช้ได้ตามปกติ",
+    "vi": "Bạn đã dùng hết số câu trả lời AI trực tiếp trong tháng. Sẽ đặt lại vào ngày 1 — thư viện câu trả lời bên dưới vẫn hoạt động.",
+    "ko": "이번 달 실시간 AI 답변을 모두 사용했습니다. 매월 1일에 초기화되며, 아래 답변 라이브러리는 계속 이용할 수 있습니다.",
+    "zh": "本月的实时AI回答已用完，将于每月1日重置——下方的答案库仍可正常使用。",
+    "ar": "لقد استخدمت كل إجابات الذكاء الاصطناعي المباشر هذا الشهر. تتجدد في الأول من الشهر — ومكتبة الإجابات أدناه ما زالت تعمل."
+  },
+  "flutter.coach.live_not_in_plan": {
+    "en": "Live AI answers are part of Premium. The answer library is always free.",
+    "th": "คำตอบจาก AI สดเป็นส่วนหนึ่งของพรีเมียม ส่วนคลังคำตอบใช้ได้ฟรีเสมอ",
+    "vi": "Câu trả lời AI trực tiếp thuộc gói Premium. Thư viện câu trả lời luôn miễn phí.",
+    "ko": "실시간 AI 답변은 프리미엄 기능입니다. 답변 라이브러리는 언제나 무료입니다.",
+    "zh": "实时AI回答属于高级版功能。答案库始终免费。",
+    "ar": "إجابات الذكاء الاصطناعي المباشر جزء من بريميوم. أما مكتبة الإجابات فمجانية دائماً."
+  },
+  "flutter.coach.live_session_expired": {
+    "en": "Your session expired — sign out and back in, then try again.",
+    "th": "เซสชันหมดอายุ กรุณาออกจากระบบแล้วเข้าใหม่ จากนั้นลองอีกครั้ง",
+    "vi": "Phiên đăng nhập đã hết hạn — hãy đăng xuất rồi đăng nhập lại và thử lại.",
+    "ko": "세션이 만료되었습니다 — 로그아웃 후 다시 로그인한 뒤 시도하세요.",
+    "zh": "登录会话已过期——请退出后重新登录，然后再试一次。",
+    "ar": "انتهت صلاحية جلستك — سجّل الخروج ثم الدخول وحاول مرة أخرى."
+  },
+  "flutter.coach.live_failed": {
+    "en": "Couldn't reach the AI just now. The answer library below still works.",
+    "th": "ตอนนี้เชื่อมต่อ AI ไม่ได้ คลังคำตอบด้านล่างยังใช้ได้ตามปกติ",
+    "vi": "Hiện chưa kết nối được với AI. Thư viện câu trả lời bên dưới vẫn hoạt động.",
+    "ko": "지금은 AI에 연결할 수 없습니다. 아래 답변 라이브러리는 계속 이용할 수 있습니다.",
+    "zh": "暂时无法连接AI。下方的答案库仍可正常使用。",
+    "ar": "تعذّر الوصول إلى الذكاء الاصطناعي الآن. مكتبة الإجابات أدناه ما زالت تعمل."
   },
   "flutter.coach.no_questions": {
     "en": "No suggested questions for this category yet — ask directly below.",

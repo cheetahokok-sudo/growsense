@@ -25,7 +25,12 @@
 // DEPLOY:
 //   supabase functions deploy ai-coach-proxy
 //   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-//   supabase secrets set ALLOWED_ORIGIN=https://cheetahokok-sudo.github.io
+//   supabase secrets set ALLOWED_ORIGIN=https://www.growsense.life,https://cheetahokok-sudo.github.io
+//
+// ALLOWED_ORIGIN is a comma-separated allowlist. It MUST include
+// https://www.growsense.life or the Flutter web build at /app/ is
+// blocked by CORS — a failure that only shows in the browser console.
+// The native iOS app sends no Origin header and is unaffected.
 //
 // NOTE: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are automatically
 // injected by Supabase into every Edge Function — do NOT try to set
@@ -40,22 +45,42 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
+// Comma-separated allowlist. The Flutter WEB build is served from
+// growsense.life/app/ and runs in a browser, so it sends an Origin
+// header and is subject to CORS; the native iOS app sends none and is
+// unaffected either way. A single pinned origin silently blocked the
+// web build — hence the list.
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGIN") || "*")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+function corsFor(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin") || "";
+  const allow = ALLOWED_ORIGINS.includes("*")
+    ? "*"
+    : ALLOWED_ORIGINS.includes(origin)
+      ? origin
+      : ALLOWED_ORIGINS[0] ?? "*";
+  return {
+    "Access-Control-Allow-Origin": allow,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    // Responses differ per Origin now — keep caches honest.
+    "Vary": "Origin",
+  };
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
+
+  function jsonResponse(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -198,6 +223,15 @@ Deno.serve(async (req) => {
 
     const safeMaxTokens = Math.min(typeof max_tokens === "number" ? max_tokens : 1000, 1500);
 
+    // Haiku, not Sonnet: a coach answer is a short, grounded, single-turn
+    // reply — exactly Haiku's job — and the arithmetic decides it. At
+    // ~2k in / ~800 out, Sonnet 4.6 ($3/$15 per MTok) costs ~$0.018 a
+    // question, so the 50-call monthly allowance is ~$0.90 against a
+    // ~$0.30 AI budget on a $5/mo subscription. Haiku 4.5 ($1/$5) lands
+    // at ~$0.006, i.e. ~$0.30 for the same 50 calls. Sonnet-tier stays
+    // where the reasoning earns it: bone-age and lab interpretation.
+    const MODEL = "claude-haiku-4-5";
+
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -206,7 +240,7 @@ Deno.serve(async (req) => {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: MODEL,
         max_tokens: safeMaxTokens,
         system: typeof system === "string" ? system : undefined,
         messages,
@@ -214,6 +248,11 @@ Deno.serve(async (req) => {
     });
 
     const data = await anthropicRes.json();
+    // Tell the client which tier answered, so usage can be costed later
+    // without guessing what the function was configured with at the time.
+    if (anthropicRes.ok && data && typeof data === "object") {
+      (data as Record<string, unknown>).growsense_model = MODEL;
+    }
 
     if (!anthropicRes.ok) {
       console.log("[ai-coach-proxy] Anthropic rejected request. Status:", anthropicRes.status, "Body:", JSON.stringify(data));
