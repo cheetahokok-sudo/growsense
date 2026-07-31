@@ -13,7 +13,7 @@ On every release, bump `kAppVersion` / `kAppBuild` / `kBuildDate` in
 `flutter_app/assets/release_notes.json` (what users see in "What's
 new"), and add the full entry here.
 
-## [1.6.0] — 2026-07-31 · build 28
+## [1.6.0] — 2026-07-31 · build 29
 
 _Height Scan: measuring a child's height with the phone camera, on iPhone.
 The measurement itself went through four rounds of geometry work against a
@@ -46,6 +46,19 @@ shipped one lands within half a centimetre when the phone is held steady._
   monthly allowance is verified and counted server-side before the
   model is called, with a distinct message per refusal rather than a
   silent fall back to a template.
+- **Credit chip above the chat.** The monthly live-AI allowance shows
+  as a pinned `45/50` chip with a small depletion bar — accent green
+  normally, gold when 10 or fewer remain, red at zero with "resets on
+  the 1st" so an empty month reads as temporary, not broken. Tapping
+  it explains the rules: library answers are free, a live answer uses
+  one, the count resets monthly. It replaces the old counter line
+  above the input, and "New chat" moved up beside it so neither
+  scrolls away with the conversation.
+- **Question length capped silently.** A live answer costs one credit
+  regardless of length, but the question rides the model's input
+  bill — the composer now stops at 500 characters with no counter or
+  error, and the proxy independently truncates oversized payloads
+  server-side.
 
 ### Changed
 - The measurement entry card now offers "Scan height" on supported

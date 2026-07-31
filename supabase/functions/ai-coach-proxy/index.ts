@@ -221,6 +221,33 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: { message: "messages array is required" } }, 400);
     }
 
+    // Silent input caps. A live answer costs the user 1 credit no matter
+    // its size, but the payload rides our input-token bill — and both
+    // `system` and `messages` arrive from the client, so a pasted essay
+    // (or a hostile client) must not be able to inflate it. The Flutter
+    // composer already stops at 500 chars; these are the server's own
+    // limits, truncating rather than erroring to match that behaviour.
+    const MAX_MESSAGES = 12;
+    const MAX_CONTENT_CHARS = 2000;
+    const MAX_SYSTEM_CHARS = 8000;
+    const clip = (v: unknown): unknown => {
+      if (typeof v === "string") return v.slice(0, MAX_CONTENT_CHARS);
+      if (Array.isArray(v)) {
+        return v.map((block) =>
+          block && typeof block === "object" && typeof (block as Record<string, unknown>).text === "string"
+            ? { ...block, text: ((block as Record<string, unknown>).text as string).slice(0, MAX_CONTENT_CHARS) }
+            : block
+        );
+      }
+      return v;
+    };
+    const safeMessages = messages.slice(-MAX_MESSAGES).map((m) =>
+      m && typeof m === "object"
+        ? { ...m, content: clip((m as Record<string, unknown>).content) }
+        : m
+    );
+    const safeSystem = typeof system === "string" ? system.slice(0, MAX_SYSTEM_CHARS) : undefined;
+
     const safeMaxTokens = Math.min(typeof max_tokens === "number" ? max_tokens : 1000, 1500);
 
     // Haiku, not Sonnet: a coach answer is a short, grounded, single-turn
@@ -242,8 +269,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: MODEL,
         max_tokens: safeMaxTokens,
-        system: typeof system === "string" ? system : undefined,
-        messages,
+        system: safeSystem,
+        messages: safeMessages,
       }),
     });
 

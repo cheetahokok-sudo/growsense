@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_state.dart';
 import '../coach_library.dart';
@@ -228,6 +229,121 @@ class _CoachScreenState extends State<CoachScreen> {
     });
   }
 
+  /// Pinned above the chat in both the welcome and conversation states:
+  /// the live-AI credit chip (only when live answers are reachable — a
+  /// parent who can't use them shouldn't be told what they're missing)
+  /// and New chat (only when there's a conversation to reset). The old
+  /// in-list New chat pill scrolled away with the messages; this doesn't.
+  Widget _headerRow() {
+    final t = widget.i18n.t;
+    final showChip = _liveAvailable && _liveRemaining != null;
+    final showReset = _messages.isNotEmpty;
+    if (!showChip && !showReset) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
+      child: Row(
+        children: [
+          if (showChip)
+            _CreditChip(
+              remaining: _liveRemaining!,
+              cap: _liveCap!,
+              i18n: widget.i18n,
+              onTap: _showCreditSheet,
+            ),
+          const Spacer(),
+          if (showReset)
+            GestureDetector(
+              onTap: _resetChat,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: GsColors.accentLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: GsColors.accent.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.add_comment_outlined,
+                        size: 14, color: GsColors.accentDark),
+                    const SizedBox(width: 5),
+                    Text(t('flutter.coach.new_chat', 'New chat'),
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: GsColors.accentDark)),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showCreditSheet() {
+    final t = widget.i18n.t;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        decoration: const BoxDecoration(
+          color: GsColors.bg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: GsColors.border2,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Text(t('flutter.coach.credits_title', 'Live AI answers'),
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: GsColors.text)),
+                const SizedBox(height: 10),
+                Text(
+                    t('flutter.coach.credits_library',
+                        'Answers from the GrowSense library are free and human-verified — they never use one of your live answers.'),
+                    style: const TextStyle(
+                        fontSize: 12.5, color: GsColors.text2, height: 1.5)),
+                const SizedBox(height: 8),
+                Text(
+                    t(
+                        'flutter.coach.credits_live',
+                        'When the library has no answer, a live AI answer uses 1 of your {cap} monthly answers.',
+                        {'cap': '${_liveCap ?? 0}'}),
+                    style: const TextStyle(
+                        fontSize: 12.5, color: GsColors.text2, height: 1.5)),
+                const SizedBox(height: 8),
+                Text(
+                    t('flutter.coach.credits_reset_body',
+                        'Your count resets on the 1st of each month.'),
+                    style: const TextStyle(
+                        fontSize: 12.5, color: GsColors.text2, height: 1.5)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
@@ -244,6 +360,7 @@ class _CoachScreenState extends State<CoachScreen> {
         }
         return Column(
           children: [
+            _headerRow(),
             Expanded(
               child: _messages.isEmpty
                   ? _WelcomeView(
@@ -258,46 +375,9 @@ class _CoachScreenState extends State<CoachScreen> {
                   : ListView.builder(
                       controller: _scroll,
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      itemCount: _messages.length + 1,
+                      itemCount: _messages.length,
                       itemBuilder: (context, i) {
-                        if (i == 0) {
-                          return Align(
-                            alignment: AlignmentDirectional.centerEnd,
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: GestureDetector(
-                                onTap: _resetChat,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 7),
-                                  decoration: BoxDecoration(
-                                    color: GsColors.accentLight,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                        color: GsColors.accent
-                                            .withValues(alpha: 0.4)),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.add_comment_outlined,
-                                          size: 14, color: GsColors.accentDark),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                          t('flutter.coach.new_chat',
-                                              'New chat'),
-                                          style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
-                                              color: GsColors.accentDark)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-                        final msg = _messages[i - 1];
+                        final msg = _messages[i];
                         if (msg.thinking) {
                           return _ThinkingBubble(
                               i18n: widget.i18n,
@@ -315,21 +395,6 @@ class _CoachScreenState extends State<CoachScreen> {
                       },
                     ),
             ),
-            // Only shown when live answers are actually reachable, and
-            // only when the tier has a finite allowance — a parent who
-            // can't use them shouldn't be told what they're missing on
-            // every screen.
-            if (_liveAvailable && _liveRemaining != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
-                child: Text(
-                  widget.i18n.t(
-                      'flutter.coach.live_remaining',
-                      '{n} of {cap} live AI answers left this month',
-                      {'n': '${_liveRemaining!}', 'cap': '${_liveCap!}'}),
-                  style: const TextStyle(fontSize: 10.5, color: GsColors.text3),
-                ),
-              ),
             _Composer(
               controller: _input,
               hint: t('flutter.coach.not_sure', 'Ask about growth…'),
@@ -768,6 +833,91 @@ class _Bubble extends StatelessWidget {
   }
 }
 
+/// The monthly live-AI allowance as `remaining/cap` with a small
+/// depletion bar. Colour follows the app's data-honesty semantics:
+/// accent green while healthy, estimated gold when running low, flag
+/// red only at zero — where "resets on the 1st" tells the parent it's
+/// temporary, not broken. Tapping opens the explainer sheet.
+class _CreditChip extends StatelessWidget {
+  const _CreditChip(
+      {required this.remaining,
+      required this.cap,
+      required this.i18n,
+      required this.onTap});
+  final int remaining;
+  final int cap;
+  final I18n i18n;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final out = remaining <= 0;
+    final low = !out && remaining <= 10;
+    final bg = out
+        ? GsColors.flagLight
+        : low
+            ? GsColors.estimatedLight
+            : GsColors.accentLight;
+    final fg = out
+        ? GsColors.flagDark
+        : low
+            ? GsColors.estimatedDark
+            : GsColors.accentDark;
+    final main = out
+        ? GsColors.flag
+        : low
+            ? GsColors.estimated
+            : GsColors.accent;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: main.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.auto_awesome, size: 13, color: fg),
+            const SizedBox(width: 5),
+            Text('$remaining/$cap',
+                style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w700, color: fg)),
+            if (out) ...[
+              const SizedBox(width: 5),
+              Text(i18n.t('flutter.coach.credits_reset', 'resets on the 1st'),
+                  style: TextStyle(
+                      fontSize: 10.5, fontWeight: FontWeight.w600, color: fg)),
+            ] else ...[
+              const SizedBox(width: 6),
+              Container(
+                width: 32,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: main.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: FractionallySizedBox(
+                  alignment: AlignmentDirectional.centerStart,
+                  widthFactor: cap <= 0 ? 0 : (remaining / cap).clamp(0.0, 1.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: main,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Composer extends StatelessWidget {
   const _Composer(
       {required this.controller,
@@ -797,9 +947,16 @@ class _Composer extends StatelessWidget {
                 enabled: enabled,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => onSend(),
+                // A live answer costs 1 credit regardless of length, but
+                // the question rides the model's input bill — so cap it
+                // silently (no counter, typing just stops). 500 chars
+                // fits any real question a parent asks.
+                maxLength: 500,
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
                 decoration: InputDecoration(
                   hintText: hint,
                   isDense: true,
+                  counterText: '',
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
                 ),

@@ -1080,13 +1080,45 @@
     "zh": "实时AI",
     "ar": "ذكاء اصطناعي مباشر"
   },
-  "flutter.coach.live_remaining": {
-    "en": "{n} of {cap} live AI answers left this month",
-    "th": "เหลือคำตอบจาก AI สด {n} จาก {cap} ครั้งในเดือนนี้",
-    "vi": "Còn {n}/{cap} câu trả lời AI trực tiếp trong tháng này",
-    "ko": "이번 달 실시간 AI 답변 {cap}회 중 {n}회 남음",
-    "zh": "本月实时AI回答还剩 {n}/{cap} 次",
-    "ar": "تبقّى {n} من {cap} إجابة بالذكاء الاصطناعي المباشر هذا الشهر"
+  "flutter.coach.credits_title": {
+    "en": "Live AI answers",
+    "th": "คำตอบจาก AI สด",
+    "vi": "Câu trả lời AI trực tiếp",
+    "ko": "실시간 AI 답변",
+    "zh": "实时AI回答",
+    "ar": "إجابات الذكاء الاصطناعي المباشر"
+  },
+  "flutter.coach.credits_library": {
+    "en": "Answers from the GrowSense library are free and human-verified — they never use one of your live answers.",
+    "th": "คำตอบจากคลังของ GrowSense ฟรีและผ่านการตรวจสอบโดยผู้เชี่ยวชาญ — ไม่นับรวมในโควตาคำตอบ AI สดของคุณ",
+    "vi": "Câu trả lời từ thư viện GrowSense là miễn phí và đã được con người kiểm chứng — không bao giờ dùng đến lượt trả lời AI trực tiếp của bạn.",
+    "ko": "GrowSense 라이브러리의 답변은 무료이며 사람이 검증했습니다 — 실시간 AI 답변 횟수를 사용하지 않습니다.",
+    "zh": "来自 GrowSense 资料库的回答免费且经人工核实——不会消耗您的实时AI回答次数。",
+    "ar": "الإجابات من مكتبة GrowSense مجانية وتم التحقق منها بشرياً — ولا تستهلك أياً من إجاباتك المباشرة."
+  },
+  "flutter.coach.credits_live": {
+    "en": "When the library has no answer, a live AI answer uses 1 of your {cap} monthly answers.",
+    "th": "เมื่อคลังไม่มีคำตอบ คำตอบจาก AI สดจะใช้ 1 จากโควตา {cap} ครั้งต่อเดือนของคุณ",
+    "vi": "Khi thư viện không có câu trả lời, một câu trả lời AI trực tiếp sẽ dùng 1 trong {cap} lượt mỗi tháng của bạn.",
+    "ko": "라이브러리에 답변이 없으면 실시간 AI 답변이 월 {cap}회 중 1회를 사용합니다.",
+    "zh": "当资料库没有答案时，一次实时AI回答将使用您每月 {cap} 次中的 1 次。",
+    "ar": "عندما لا تجد المكتبة إجابة، تستهلك إجابة الذكاء الاصطناعي المباشر إجابة واحدة من {cap} إجابة شهرياً."
+  },
+  "flutter.coach.credits_reset": {
+    "en": "resets on the 1st",
+    "th": "รีเซ็ตวันที่ 1",
+    "vi": "đặt lại ngày 1",
+    "ko": "1일에 초기화",
+    "zh": "每月1日重置",
+    "ar": "يتجدد في اليوم الأول"
+  },
+  "flutter.coach.credits_reset_body": {
+    "en": "Your count resets on the 1st of each month.",
+    "th": "โควตาของคุณจะรีเซ็ตทุกวันที่ 1 ของเดือน",
+    "vi": "Số lượt của bạn được đặt lại vào ngày 1 hằng tháng.",
+    "ko": "횟수는 매월 1일에 초기화됩니다.",
+    "zh": "您的次数在每月1日重置。",
+    "ar": "يتجدد عددك في اليوم الأول من كل شهر."
   },
   "flutter.coach.live_capped": {
     "en": "You've used all your live AI answers this month. They reset on the 1st — the answer library below still works.",
