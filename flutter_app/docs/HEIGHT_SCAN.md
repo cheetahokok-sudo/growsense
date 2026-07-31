@@ -72,6 +72,80 @@ Residual error sources: floor-anchor estimate (~sub-cm, refined live),
 marker placement (~1 px ≈ 1–2 mm at 2 m), hair compression (true of
 stadiometers too), diurnal 1–2 cm.
 
+## v4.2 — reliability and pre-placed lines
+
+v4.1 measured **0.2–0.5 cm** against a known reference on device, so
+the engine above is correct and the door test guards it. v4.2 fixes
+what surrounded it.
+
+**Bursts kept refusing honest attempts** ("hold the phone still" with a
+steady hand). Two starvation causes, both in the feet raycast:
+
+- `raycastFloor` only tried `.existingPlaneGeometry`, so the ray had to
+  land inside the detected plane's *polygon* — clutter, rug edges and
+  low-texture patches leave holes. It now falls back to
+  `.existingPlaneInfinite`: the same detected plane extended, so the Y
+  datum is identical on a flat floor, but the hit rate jumps.
+- The per-burst lock compared plane **anchor identity**. ARKit merges
+  plane anchors mid-burst, and after a merge every later frame was
+  rejected. The lock is now on floor **height** (±5 cm), which survives
+  merges and still refuses a table — the datum-blending this guard
+  exists to prevent.
+
+Window widened to 10 wanted / 4 minimum / 2.5 s deadline, camera-travel
+gate 3 → 5 cm. A clean burst finishes *sooner* (it stops at 10 samples);
+only a starving one runs long. The accuracy gates — residual, stddev,
+MAD rejection — are untouched, because those are what protect the
+number; sample count never did.
+
+**Refusals name the real cause.** New `floor_patchy` fires when the ray
+found *some* floor but missed more often than it hit: the feet line is
+over bad floor, not the parent's hands. Telling someone to hold still
+when the floor was the problem is what made this feel broken.
+
+**Measuring is adaptive**: two bursts finish the scan when they agree
+within 0.5 cm (`agreeCm`); the third runs only on disagreement, and its
+chip stays dimmed until needed. A failed burst retries once silently
+before any hint appears.
+
+### Why 150 cm, and not the child's last height
+
+The head line is pre-placed at a **generic** 150 cm above the floor —
+never at the child's previous measurement, and the preset height is
+never displayed as a number. Presetting the last value would let a
+parent press Measure without adjusting and record the previous number
+again, which reads as "no growth" and is indistinguishable from a real
+flat period. The generic guess is visibly wrong for most children, so
+it forces a real adjustment, and `preset_hint` says so out loud: these
+lines are a starting guess, not a measurement. **Do not "improve" this
+by remembering the child's height.**
+
+## UX (v4.2)
+
+- **Both lines exist before the camera renders a frame** — no bare-camera
+  moment. Feet starts at `defaultFeetY = 0.72` (clear of the bottom
+  card, whose top edge lands near 0.82 on both tall and small phones),
+  head at `fallbackHeadY = 0.35` (conservative: lands on the chest,
+  never off the top).
+- **`presetHead`** then settles the head line once onto a true 150 cm
+  above the floor. Retried every 500 ms for up to 6 s while untouched,
+  because `floor_found` fires on the first small plane patch when the
+  raycast usually still misses; any drag cancels it permanently.
+  If the crown projects off-screen or the feet are nearer than 1.5 m,
+  the too-close hint fires *before* a burst is wasted.
+- **Velocity-adaptive drag**: 1:3 gain below ~250 px/s (bit-identical to
+  the validated behaviour) ramping to 1:1 above ~900 px/s, so a big move
+  is one flick. No tap-to-place — "tap moves the nearest line" would put
+  a mode boundary at the middle of the child's body.
+- **Markers clamp to 0.20–0.80 and cannot cross** (crossed lines produced
+  `h < 0.4`, surfaced as a misleading "hold still"), and a clamp that
+  bites explains itself with the framing hint.
+- **Overlay cards absorb pointers** — `Container`/`Column`/`Text` don't
+  hit-test themselves, so a tap on the guidance text used to fall
+  through and move a line.
+- **Aim detail follows the last-touched line** and persists after the
+  drag, so it's readable when the parent looks up to press Measure.
+
 ## UX (v4)
 
 - **Setup illustration** on the intro (`_SetupScenePainter`): child
@@ -108,6 +182,12 @@ Channel contract:
 - `growsense/height_scan_<viewId>` (per view):
   - `setMarkers {feetX, feetY, headX, headY}` — normalized 0–1 view
     coords; either pair may be absent while placing.
+  - `presetHead {feetX, feetY, heightCm}` →
+    `{ok, headX, headY, offScreen, distanceM}` or
+    `{ok: false, reason: no_floor|behind|invalid|implausible|not_ready}`.
+    **Pure query — never mutates native marker state**, so a preset can
+    never silently revert a parent's drag. Behind-camera is detected in
+    camera space (`pCam.z < -0.05`), not from the projected z.
   - `measure` → `{ok: true, heightCm, stddevCm, distanceM, pitchDeg}`
     or `{ok: false, reason: no_floor|hold_still|unstable|no_markers|busy|cancelled}`.
     Async on the native side (~1 s burst); the pending FlutterResult is
@@ -159,9 +239,32 @@ Strings live in `tool/flutter_extra_keys.json` (the SOURCE —
    hand-edit drops to `'manual'`.
 7. **Regressions**: cancel mid-scan, Scan again (markers clear, AR
    furniture clears), re-entering the screen.
-8. **Product validation (later)**: versus a stadiometer at
-   1.5 / 2.0 / 2.5 m across rooms and hair styles — target bias
-   < 0.5 cm, MAE < 1 cm, repeats within 1 cm.
+8. **Refusal rate (the reason v4.2 exists)**: 10 consecutive bursts on a
+   cluttered wooden floor. Pass: ≥ 8 succeed first try, and any failure
+   names the right cause (`floor_patchy`, not "hold still").
+9. **Speed**: a good scan ends after 2 bursts; the 3rd appears only when
+   the first two disagree by > 0.5 cm.
+10. **Cold open**: both lines visible in the first rendered frame.
+11. **Preset settle**: the head line snaps once within ~2 s, never after
+    you touch it; a 150 cm reference at 2.5 m lands within a few cm
+    untouched.
+12. **Drag**: a fast flick crosses the screen in one gesture; a slow drag
+    still moves ~1 px per 3 px of finger.
+13. **Hit-testing**: taps and drags starting on either overlay card do
+    nothing to the lines; every button still works; lines can't cross.
+14. **AR label**: frame the child hard against the right edge — the cm
+    label flips to the left instead of clipping.
+15. **Product validation (later)**: versus a stadiometer at
+    1.5 / 2.0 / 2.5 m across rooms and hair styles — target bias
+    < 0.5 cm, MAE < 1 cm, repeats within 1 cm. Method: Bland-Altman
+    (bias + limits of agreement), matching Thaventhiran et al. 2023
+    (*Mayo Clin Proc Digit Health* 1(4):498–509), whose AR app scored
+    0.11 cm bias / −2.21 to +2.42 cm in clinic and 0.44 cm / −5.10 to
+    +4.21 cm for parents at home. Note the floor: repeat stadiometer
+    measurements themselves carry 0.2–0.3 cm SD (Voss et al. 1990,
+    *Arch Dis Child* 65:1340) — no app can beat that, and diurnal
+    variation is ~1.9 cm with 54% lost in the first hour after rising
+    (Tyrrell et al. 1985, *Spine* 10:161).
 
 ## Phase 2 (not built)
 
