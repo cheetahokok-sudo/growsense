@@ -97,17 +97,24 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
   private static let mint = UIColor(red: 0x78/255.0, green: 0xD6/255.0, blue: 0xA0/255.0, alpha: 1)
   private static let fadedOpacity: CGFloat = 0.3
 
-  // Burst tuning. 15 samples at 30 fps is ~0.5 s of stillness; the
-  // deadline gives slow frames room without letting a bad burst drag.
-  private static let samplesWanted = 15
-  private static let samplesMinimum = 6
-  private static let burstDeadline: CFTimeInterval = 1.2
+  // Burst tuning. A clean burst finishes as soon as samplesWanted
+  // land (~0.35 s at 30 fps); the deadline only bounds a starving one.
+  // Device testing showed the old 15/6/1.2 s window refusing honest
+  // handheld bursts on cluttered floors — the accuracy gates below
+  // (residual, stddev) are what protect the number, not sample count.
+  private static let samplesWanted = 10
+  private static let samplesMinimum = 4
+  private static let burstDeadline: CFTimeInterval = 2.5
   private static let residualLimit: Float = 0.05
   private static let stddevLimit: Float = 0.015 // metres → 1.5 cm
   // Lenient by design: handheld tremor is millimetres, a real re-aim
   // is centimetres. Stricter gates (5–10 mm) refuse too many honest
   // handheld bursts.
-  private static let maxCamTravel: Float = 0.03
+  private static let maxCamTravel: Float = 0.05
+  /// A burst's floor hits must agree in height to within this — plane
+  /// MERGES change anchor identity mid-burst, so identity can't be the
+  /// lock, but a table is tens of cm away and still gets refused.
+  private static let floorLockTolerance: Float = 0.05
 
   private var hasFloorPlane = false      // fires the floor_found event once
   private var completed: [ReadingNodes] = []
@@ -124,11 +131,12 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
   private var burstFrames: [BurstFrame] = []
   private var activeFeet: CGPoint?
   private var activeHead: CGPoint?
-  private var lockedFloorAnchorID: UUID?
+  private var lockedFloorY: Float?
   private var firstCamPos: simd_float3?
   private var maxCamTravelSeen: Float = 0
   private var lastFrameTimestamp: TimeInterval = -.infinity
-  private var burstFloorHits = 0
+  private var burstFloorHits = 0   // frames where the feet ray found floor
+  private var burstFloorMisses = 0 // frames where it found nothing
   private var burstStart: CFTimeInterval = 0
   private var burstResult: FlutterResult?
   private var displayLink: CADisplayLink?
@@ -153,6 +161,7 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
       guard let self = self else { return result(nil) }
       switch call.method {
       case "setMarkers": self.setMarkers(call.arguments); result(nil)
+      case "presetHead": result(self.presetHead(call.arguments))
       case "measure":    self.measure(result: result)
       case "reset":      self.resetScan(); result(nil)
       case "dispose":
@@ -201,13 +210,77 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     CGPoint(x: p.x * arView.bounds.width, y: p.y * arView.bounds.height)
   }
 
+  /// PURE query: where would the crown of a child [heightCm] tall,
+  /// standing at the feet marker, appear on screen? Dart uses it to
+  /// give the head line a starting position that means something in
+  /// the room instead of an arbitrary screen fraction. Deliberately
+  /// does NOT touch feetMarker/headMarker — Dart owns marker state and
+  /// pushes it back via setMarkers, so a preset can never silently
+  /// revert a parent's drag.
+  private func presetHead(_ args: Any?) -> [String: Any] {
+    guard let map = args as? [String: Any],
+          let feetX = map["feetX"] as? Double,
+          let feetY = map["feetY"] as? Double else {
+      return ["ok": false, "reason": "not_ready"]
+    }
+    let heightCm = (map["heightCm"] as? Double) ?? 150
+    guard arView.bounds.width > 1, arView.pointOfView != nil,
+          let frame = arView.session.currentFrame else {
+      return ["ok": false, "reason": "not_ready"]
+    }
+    // Estimated planes allowed: this is guidance, exactly like the
+    // provisional feet line, and it roughly doubles the hit rate in
+    // the first second after the floor is found.
+    guard let hit = raycastFloor(from: denormalize(CGPoint(x: feetX, y: feetY)),
+                                 allowEstimated: true) else {
+      return ["ok": false, "reason": "no_floor"]
+    }
+    let f = simd_float3(hit.worldTransform.columns.3.x,
+                        hit.worldTransform.columns.3.y,
+                        hit.worldTransform.columns.3.z)
+    let camT = frame.camera.transform
+    let cam = simd_float3(camT.columns.3.x, camT.columns.3.y, camT.columns.3.z)
+    guard abs(f.y - cam.y) < 2.5 else { return ["ok": false, "reason": "implausible"] }
+
+    let p = f + simd_float3(0, Float(heightCm) / 100, 0)
+    // Behind-camera test in CAMERA space: ARKit's camera looks down
+    // local −Z. The projected z is not a contractual guard for this.
+    let pCam = simd_inverse(camT) * simd_float4(p, 1)
+    guard pCam.z < -0.05 else { return ["ok": false, "reason": "behind"] }
+
+    let sp = arView.projectPoint(SCNVector3(p))
+    guard sp.x.isFinite, sp.y.isFinite, sp.z >= 0, sp.z <= 1 else {
+      return ["ok": false, "reason": "invalid"]
+    }
+    let hx = Double(sp.x) / Double(arView.bounds.width)
+    let hy = Double(sp.y) / Double(arView.bounds.height)
+    guard hy < feetY - 0.05 else { return ["ok": false, "reason": "implausible"] }
+
+    return [
+      "ok": true,
+      "headX": hx,
+      "headY": hy,
+      // Landing above the frame means the child can't fit — the same
+      // physical condition the too-close hint already describes.
+      "offScreen": hy < 0.20,
+      "distanceM": Double(simd_length(simd_float2(f.x - cam.x, f.z - cam.z))),
+    ]
+  }
+
   // ── Raycast + ray helpers ───────────────────────────────────────
 
-  /// Floor hit for the feet marker. Detected plane geometry only for
-  /// the real measurement (estimated is allowed just for guidance);
-  /// prefers a hit on a .floor-classified plane when one exists.
+  /// Floor hit for the feet marker, best datum first:
+  ///   1. .existingPlaneGeometry — the detected plane's real polygon,
+  ///      preferring a .floor-classified one.
+  ///   2. .existingPlane — the SAME detected plane extended infinitely.
+  ///      A real floor is flat, so the extension carries the identical
+  ///      Y; this rescues the very common case of the ray landing in a
+  ///      hole in the mesh (clutter, rug edges, low-texture patches),
+  ///      which was starving bursts into false "hold still" refusals.
+  ///   3. .estimatedPlane — guidance only, never the saved number.
   private func raycastFloor(from screen: CGPoint, allowEstimated: Bool) -> ARRaycastResult? {
-    if let q = arView.raycastQuery(from: screen, allowing: .existingPlaneGeometry, alignment: .horizontal) {
+    for target in [ARRaycastQuery.Target.existingPlaneGeometry, .existingPlaneInfinite] {
+      guard let q = arView.raycastQuery(from: screen, allowing: target, alignment: .horizontal) else { continue }
       let hits = arView.session.raycast(q)
       if let classified = hits.first(where: {
         ($0.anchor as? ARPlaneAnchor)?.classification == .floor
@@ -271,12 +344,13 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     // different floor plane mid-burst must not mix into one reading.
     activeFeet = feet
     activeHead = head
-    lockedFloorAnchorID = nil
+    lockedFloorY = nil
     firstCamPos = nil
     maxCamTravelSeen = 0
     lastFrameTimestamp = -.infinity
     burstFrames = []
     burstFloorHits = 0
+    burstFloorMisses = 0
     burstStart = CACurrentMediaTime()
     burstResult = result
     let link = CADisplayLink(target: self, selector: #selector(burstTick))
@@ -308,30 +382,46 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
       firstCamPos = cam
     }
 
-    // Feet: detected plane geometry only, locked to ONE anchor for the
-    // whole burst — mixing hits from different planes would blend two
-    // floor datums into one reading. The hit already lies on its
-    // plane's refined surface; no cross-anchor Y correction.
+    // Feet: detected planes only (never estimated). The burst locks to
+    // the first hit's HEIGHT, not its anchor identity — ARKit merges
+    // plane anchors mid-burst, and identity-locking then rejected every
+    // later frame, starving the burst into a false "hold still". A
+    // height lock still refuses a table (tens of cm away), which is the
+    // datum-blending this guard exists to prevent.
     guard let floorHit = raycastFloor(from: denormalize(feet), allowEstimated: false),
-          let plane = floorHit.anchor as? ARPlaneAnchor else { return }
-    if let locked = lockedFloorAnchorID {
-      guard plane.identifier == locked else { return }
-    } else {
-      lockedFloorAnchorID = plane.identifier
+          floorHit.anchor is ARPlaneAnchor else {
+      burstFloorMisses += 1
+      return
     }
-    burstFloorHits += 1
     let f = simd_float3(floorHit.worldTransform.columns.3.x,
                         floorHit.worldTransform.columns.3.y,
                         floorHit.worldTransform.columns.3.z)
+    if let locked = lockedFloorY {
+      guard abs(f.y - locked) <= Self.floorLockTolerance else {
+        burstFloorMisses += 1
+        return
+      }
+    } else {
+      lockedFloorY = f.y
+    }
+    burstFloorHits += 1
 
     guard let dir = worldRay(through: denormalize(head), cameraOrigin: cam) else { return }
     burstFrames.append(BurstFrame(f: f, c: cam, d: dir))
   }
 
-  /// Decide the burst outcome from what the ~1 s window collected.
+  /// Decide the burst outcome from what the window collected. The
+  /// refusal reason must name the ACTUAL cause — telling a parent to
+  /// hold still when the floor was the problem is what made this feel
+  /// broken in device testing.
   private func burstVerdict() -> [String: Any] {
     if burstFloorHits == 0 {
       return ["ok": false, "reason": "no_floor"]
+    }
+    // Some floor, but not enough: the feet line is over patchy floor
+    // (clutter, rug edge, a step) rather than the hand being unsteady.
+    if burstFrames.count < Self.samplesMinimum && burstFloorMisses > burstFloorHits {
+      return ["ok": false, "reason": "floor_patchy"]
     }
     guard burstFrames.count >= Self.samplesMinimum else {
       return ["ok": false, "reason": "hold_still"]
@@ -396,10 +486,21 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
   private func finishBurst(_ payload: [String: Any]?) {
     displayLink?.invalidate()
     displayLink = nil
+    #if DEBUG
+    if burstResult != nil {
+      // ARKit can't run in the Simulator, so the TestFlight console is
+      // the only channel for diagnosing a refusal in the field.
+      let p = payload ?? [:]
+      NSLog("[HeightScan] burst ok=%@ reason=%@ frames=%d floorHits=%d floorMisses=%d travel=%.3fm",
+            String(describing: p["ok"] ?? "cancelled"),
+            String(describing: p["reason"] ?? "-"),
+            burstFrames.count, burstFloorHits, burstFloorMisses, maxCamTravelSeen)
+    }
+    #endif
     burstFrames = []
     activeFeet = nil
     activeHead = nil
-    lockedFloorAnchorID = nil
+    lockedFloorY = nil
     if let result = burstResult {
       burstResult = nil
       result(payload ?? ["ok": false, "reason": "cancelled"])
@@ -470,16 +571,36 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     billboard.freeAxes = .Y
     parent.constraints = [billboard]
 
+    let label = numberBadge(String(format: "%.1f", labelCm))
+    // Which side has room? The rail hangs beside the child, but a child
+    // framed off-centre pushed the label off the right edge in device
+    // testing. Measure the label and pick the first candidate whose
+    // outer edge projects inside the viewport. Y-billboarding means the
+    // sign alone flips the side — no extra rotation.
+    let (bMin, bMax) = label.boundingBox
+    let halfLabel = Float(bMax.x - bMin.x) * 0.006 / 2
+    var offset: Float = 0.25
+    if let camT = arView.session.currentFrame?.camera.transform {
+      let right = simd_normalize(simd_float3(camT.columns.0.x, 0, camT.columns.0.z))
+      let margin: Float = 24
+      let maxX = Float(arView.bounds.width) - margin
+      for candidate in [Float(0.25), -0.25, 0.16, -0.16] {
+        let edge = head + (abs(candidate) + halfLabel) * (candidate < 0 ? -right : right)
+        let sp = arView.projectPoint(SCNVector3(edge))
+        if sp.x.isFinite, sp.x > margin, sp.x < maxX {
+          offset = candidate
+          break
+        }
+      }
+    }
+
     let rail = SCNBox(width: 0.006, height: h, length: 0.006, chamferRadius: 0.003)
     rail.firstMaterial = mintMaterial()
     let railNode = SCNNode(geometry: rail)
-    // Nudge sideways so it hangs beside the child, not through them —
-    // 0.25 m keeps it inside a portrait frame at 2 m (0.35 clipped).
-    railNode.position = SCNVector3(0.25, 0, 0)
+    railNode.position = SCNVector3(offset, 0, 0)
     parent.addChildNode(railNode)
 
-    let label = numberBadge(String(format: "%.1f", labelCm))
-    label.position = SCNVector3(0.25, 0, 0.02)
+    label.position = SCNVector3(offset, 0, 0.02)
     parent.addChildNode(label)
 
     arView.scene.rootNode.addChildNode(parent)
