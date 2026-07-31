@@ -13,6 +13,47 @@ On every release, bump `kAppVersion` / `kAppBuild` / `kBuildDate` in
 `flutter_app/assets/release_notes.json` (what users see in "What's
 new"), and add the full entry here.
 
+## [1.6.0] — 2026-07-31 · build 28
+
+_Height Scan: measuring a child's height with the phone camera, on iPhone.
+The measurement itself went through four rounds of geometry work against a
+known 197 cm reference — the first version read 4–10 cm short, and the
+shipped one lands within half a centimetre when the phone is held steady._
+
+### Added
+- **Height Scan (Premium, iPhone).** An ARKit measurement of standing
+  height. The parent stands the child heels-and-back against a wall,
+  steps back until the whole child fits on screen, drags two on-screen
+  lines onto the feet and the crown, and taps Measure. The phone stays
+  still throughout; the app samples up to ten camera frames in about
+  half a second and takes the median.
+- **Adaptive measuring.** Two bursts finish a scan when they agree
+  within 0.5 cm; a third runs only when they disagree.
+- **Honest refusals.** A burst that can't find the floor, can't hold a
+  reading steady, or disagrees with itself is refused with a reason —
+  and the reason names the real cause, so "move the line onto clearer
+  floor" never masquerades as "hold the phone still".
+- **Camera provenance.** A scanned height saves with `data_source =
+  'camera_ar'`, distinct from a typed one. Hand-editing the prefilled
+  number drops it back to manual — a typed value is never labelled as
+  a scan.
+
+### Changed
+- The measurement entry card now offers "Scan height" on supported
+  iPhones. Free accounts see the button with a lock and a Premium
+  badge rather than a hidden feature.
+- The paywall lists camera height measurement among the Premium
+  benefits, and leads with it when a parent arrives from the scan
+  button.
+
+### Notes
+- Height Scan needs ARKit, so it is iPhone-only; web and Android are
+  untouched, and the button only renders when the device probe
+  succeeds.
+- Body composition from consumer smart scales was investigated for this
+  release and deliberately not shipped: the evidence says a home
+  bioimpedance scale gives one trustworthy number — weight.
+
 ## [1.5.0] — 2026-07-30 · build 27
 
 _Premium, purchasable in the app. v1.0 shipped to the App Store with every
