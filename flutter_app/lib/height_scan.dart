@@ -1,13 +1,15 @@
 // ══════════════════════════════════════════════════════════════════
-// Height Scan — camera/AR height measurement (iOS-only, MVP).
+// Height Scan — camera/AR height measurement (iOS-only).
 //
 // Thin Dart wrapper over the native ARKit module in
-// ios/Runner/HeightScanView.swift. The measurement itself is a
-// two-point raycast: mark the child's feet, mark the top of the head,
-// height = vertical delta. The guided flow (height_scan_screen.dart)
-// collects THREE readings and saves the median — single AR readings
-// carry ~1 cm noise on non-LiDAR phones, and the median of three is
-// the cheapest way to shave the tails.
+// ios/Runner/HeightScanView.swift. v4 flow: the phone stays STILL
+// with the whole child in frame; the parent taps a feet marker and a
+// head marker on screen (setMarkers, normalized coords), then
+// measure() samples ~15 frames over ~1 s natively and returns the
+// median with quality gates — an unstable burst is refused with a
+// reason code instead of returning a bad number. The guided flow
+// (height_scan_screen.dart) collects THREE bursts and saves the
+// median of medians.
 //
 // Honesty contract: results save with data_source 'camera_ar', NOT
 // 'manual' — a scan is a real measurement but a different instrument,
@@ -70,40 +72,48 @@ class HeightScanController {
     return null;
   }
 
-  /// First call marks the feet, second returns the reading. The native
-  /// side also drops the numbered AR level line at each mark, and joins
-  /// a finished pair with the vertical measure.
-  /// step values:
-  ///   'feet'        — feet anchored, now aim at the head
-  ///   'head'        — one full reading captured (heightCm set)
-  ///   'no_surface'  — nothing under the crosshair, try again
-  ///   'implausible' — mark landed somewhere absurd; scan reset
-  /// distanceM = camera→mark distance, for the "step back" hint.
-  Future<({String step, double? heightCm, double? distanceM})>
-      markPoint() async {
-    final res = await _channel.invokeMethod<Map>('markPoint');
-    if (res == null) return (step: 'no_surface', heightCm: null, distanceM: null);
-    if (res['ok'] == true) {
-      return (
-        step: res['step'] as String,
-        heightCm: (res['heightCm'] as num?)?.toDouble(),
-        distanceM: (res['distanceM'] as num?)?.toDouble(),
-      );
-    }
-    if (res['reason'] == 'implausible') {
-      await reset();
-      return (step: 'implausible', heightCm: null, distanceM: null);
-    }
-    return (step: 'no_surface', heightCm: null, distanceM: null);
+  /// Push the current marker positions (normalized 0–1 view coords) to
+  /// the native side. Either marker may be null while the parent is
+  /// still placing them; the native side draws a provisional feet
+  /// line as guidance.
+  Future<void> setMarkers({Offset? feet, Offset? head}) {
+    return _channel.invokeMethod('setMarkers', {
+      if (feet != null) 'feetX': feet.dx,
+      if (feet != null) 'feetY': feet.dy,
+      if (head != null) 'headX': head.dx,
+      if (head != null) 'headY': head.dy,
+    });
   }
 
-  /// One mark back (removes its AR line too).
-  /// 'feet' — pending feet unmarked → aim at feet again.
-  /// 'head' — last pair reopened → drop its reading, aim at head.
-  /// 'none' — nothing to undo.
-  Future<String> undoMark() async {
-    final res = await _channel.invokeMethod<Map>('undoMark');
-    return (res?['undone'] as String?) ?? 'none';
+  /// One measurement burst: the native side samples ~15 frames over
+  /// ~1 s (hold the phone still) and returns the median height with
+  /// quality gates. ok=false reasons:
+  ///   'no_floor'   — feet marker isn't over detected floor
+  ///   'hold_still' — too few clean frames (movement / bad tracking)
+  ///   'unstable'   — frames disagree by > 1.5 cm stddev
+  ///   'no_markers' — markers not set yet
+  ///   'busy'       — a burst is already running
+  ///   'cancelled'  — view reset/disposed mid-burst
+  /// distanceM = horizontal camera→feet distance, pitchDeg = head-ray
+  /// elevation — both feed the honesty hints.
+  Future<
+      ({
+        bool ok,
+        String? reason,
+        double? heightCm,
+        double? stddevCm,
+        double? distanceM,
+        double? pitchDeg,
+      })> measure() async {
+    final res = await _channel.invokeMethod<Map>('measure');
+    return (
+      ok: res?['ok'] == true,
+      reason: res?['reason'] as String?,
+      heightCm: (res?['heightCm'] as num?)?.toDouble(),
+      stddevCm: (res?['stddevCm'] as num?)?.toDouble(),
+      distanceM: (res?['distanceM'] as num?)?.toDouble(),
+      pitchDeg: (res?['pitchDeg'] as num?)?.toDouble(),
+    );
   }
 
   Future<void> reset() => _channel.invokeMethod('reset');

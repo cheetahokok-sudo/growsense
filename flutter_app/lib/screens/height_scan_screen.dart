@@ -8,12 +8,12 @@ import '../widgets/gs_icons.dart';
 /// Height Scan — guided AR height measurement (iOS-only).
 ///
 /// The camera view is the native ARKit platform view; this screen is
-/// the overlay that walks the parent through it. v2 of the flow:
-/// illustrated setup scene, an explicit six-mark sequence
-/// (①feet ①head ②feet ②head ③feet ③head) echoed as a live progress
-/// row, numbered AR level lines + a vertical measure drawn by the
-/// native side, redo of a single mark, and two honesty hints
-/// (too-close, readings-disagree). Pops with the median height in cm
+/// the overlay that walks the parent through it. v4 flow: the phone
+/// stays STILL with the whole child in frame. The parent taps a FEET
+/// marker (where the wall meets the floor, between the heels) and a
+/// HEAD marker (the crown), fine-tunes them with reduced-gain drags,
+/// then Measure runs a ~1 s native sampling burst with quality gates.
+/// Three bursts, median of medians. Pops with the median height in cm
 /// (double), or null if cancelled — the measurement entry card
 /// prefills from it and owns the actual save (weight, date, cap).
 class HeightScanScreen extends StatefulWidget {
@@ -25,23 +25,33 @@ class HeightScanScreen extends StatefulWidget {
   /// Readings further apart than this get the "scan again" nudge.
   static const spreadWarnCm = 2.0;
 
-  /// Marks closer than this (both in a pair) suggest the parent is too
-  /// close for clean raycast angles.
+  /// Feet closer than this suggests the parent can't frame the whole
+  /// child — shallow angles hurt accuracy.
   static const tooCloseM = 1.5;
+
+  /// Head-ray elevation above this means the parent is aiming steeply
+  /// upward — the step-back hint fires.
+  static const maxHeadPitchDeg = 25.0;
+
+  /// Finger-to-marker gain while fine-tuning: 3 px of finger movement
+  /// moves the line 1 px, so the crown can be hit precisely.
+  static const dragGain = 1 / 3;
 
   @override
   State<HeightScanScreen> createState() => _HeightScanScreenState();
 }
 
-enum _Phase { intro, findingFloor, aimFeet, aimHead, done }
+enum _Phase { intro, findingFloor, placeFeet, placeHead, ready, sampling, done }
 
 class _HeightScanScreenState extends State<HeightScanScreen> {
   HeightScanController? _controller;
   _Phase _phase = _Phase.intro;
   final List<double> _readings = [];
-  String? _hint; // transient guidance (no surface, implausible, too close…)
-  bool _marking = false;
-  double? _feetDistanceM; // current pair's feet mark distance
+  String? _hint; // transient guidance (no floor, hold still, too close…)
+
+  // Marker positions, normalized 0–1 against the full-screen camera.
+  Offset? _feetMarker;
+  Offset? _headMarker;
 
   @override
   void dispose() {
@@ -54,7 +64,7 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
       viewId,
       onFloorFound: () {
         if (!mounted || _phase != _Phase.findingFloor) return;
-        setState(() => _phase = _Phase.aimFeet);
+        setState(() => _phase = _Phase.placeFeet);
       },
       onError: (msg) {
         if (!mounted) return;
@@ -65,69 +75,98 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
     );
   }
 
-  Future<void> _mark() async {
-    final t = widget.i18n.t;
-    final c = _controller;
-    if (c == null || _marking) return;
+  Offset _clampMarker(Offset o) =>
+      Offset(o.dx.clamp(0.02, 0.98), o.dy.clamp(0.02, 0.98));
+
+  Future<void> _pushMarkers() async {
+    await _controller?.setMarkers(feet: _feetMarker, head: _headMarker);
+  }
+
+  void _onTapDown(TapDownDetails d, Size screen) {
+    if (_phase != _Phase.placeFeet && _phase != _Phase.placeHead) return;
+    final norm = _clampMarker(Offset(
+        d.globalPosition.dx / screen.width, d.globalPosition.dy / screen.height));
     setState(() {
-      _marking = true;
       _hint = null;
+      if (_phase == _Phase.placeFeet) {
+        _feetMarker = norm;
+        _phase = _Phase.placeHead;
+      } else {
+        _headMarker = norm;
+        _phase = _Phase.ready;
+      }
     });
-    final res = await c.markPoint();
-    if (!mounted) return;
+    _pushMarkers();
+  }
+
+  void _dragMarker(bool isFeet, double dyPx, Size screen) {
+    final current = isFeet ? _feetMarker : _headMarker;
+    if (current == null) return;
+    final moved = _clampMarker(Offset(current.dx,
+        current.dy + dyPx * HeightScanScreen.dragGain / screen.height));
     setState(() {
-      _marking = false;
-      switch (res.step) {
-        case 'feet':
-          _feetDistanceM = res.distanceM;
-          _phase = _Phase.aimHead;
-        case 'head':
-          _readings.add(res.heightCm!);
-          // Both marks of this pair very close to the phone → shallow
-          // raycast angles. Say so, but never block.
-          final feetClose = (_feetDistanceM ?? 99) < HeightScanScreen.tooCloseM;
-          final headClose = (res.distanceM ?? 99) < HeightScanScreen.tooCloseM;
-          if (feetClose && headClose) {
-            _hint = t('flutter.hscan.too_close',
-                'A little far back helps accuracy — try 2–3 steps away');
-          }
-          _feetDistanceM = null;
-          _phase = _readings.length >= HeightScanScreen.readingsNeeded
-              ? _Phase.done
-              : _Phase.aimFeet;
-        case 'implausible':
-          _feetDistanceM = null;
-          _phase = _Phase.aimFeet;
-          _hint = t('flutter.hscan.implausible',
-              'That doesn\'t look right — starting this reading over');
-        default: // no_surface
-          _hint = t('flutter.hscan.no_surface',
-              'Couldn\'t find a surface there — steady the phone and try again');
+      if (isFeet) {
+        _feetMarker = moved;
+      } else {
+        _headMarker = moved;
       }
     });
   }
 
-  Future<void> _undo() async {
+  Future<void> _measure() async {
+    final t = widget.i18n.t;
     final c = _controller;
-    if (c == null || _marking) return;
-    final undone = await c.undoMark();
+    if (c == null || _phase != _Phase.ready) return;
+    setState(() {
+      _phase = _Phase.sampling;
+      _hint = null;
+    });
+    await _pushMarkers();
+    final res = await c.measure();
     if (!mounted) return;
     setState(() {
-      _hint = null;
-      switch (undone) {
-        case 'feet':
-          _feetDistanceM = null;
-          _phase = _Phase.aimFeet;
-        case 'head':
-          if (_readings.isNotEmpty) _readings.removeLast();
-          _phase = _Phase.aimHead;
+      if (res.ok) {
+        _readings.add(res.heightCm!);
+        // Honesty hints — advisory only, never blocking.
+        if ((res.pitchDeg ?? 0) > HeightScanScreen.maxHeadPitchDeg) {
+          _hint = t('flutter.hscan.step_back_pitch',
+              'You\'re aiming steeply upward — step back until the whole child fits on screen');
+        } else if ((res.distanceM ?? 99) < HeightScanScreen.tooCloseM) {
+          _hint = t('flutter.hscan.too_close',
+              'Step back until the whole child fits on screen — about 2–2.5 m');
+        }
+        _phase = _readings.length >= HeightScanScreen.readingsNeeded
+            ? _Phase.done
+            : _Phase.ready;
+      } else {
+        _phase = _Phase.ready;
+        _hint = switch (res.reason) {
+          'no_floor' => t('flutter.hscan.no_floor',
+              'Can\'t find the floor there — aim the feet line at clear floor between the heels'),
+          'unstable' => t('flutter.hscan.unstable',
+              'Too much movement — hold the phone still and measure again'),
+          _ => t('flutter.hscan.hold_still_retry',
+              'Couldn\'t get a steady reading — hold the phone still and try again'),
+        };
       }
+    });
+  }
+
+  void _rescan() {
+    setState(() {
+      _readings.clear();
+      _feetMarker = null;
+      _headMarker = null;
+      _hint = null;
+      _phase = _Phase.placeFeet;
+      _controller?.reset();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final t = widget.i18n.t;
+    final screen = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -138,6 +177,31 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
             UiKitView(
               viewType: 'growsense/height_scan_view',
               onPlatformViewCreated: _onViewCreated,
+            ),
+          // Tap-to-place layer sits under the overlay cards, so buttons
+          // still win hit-testing.
+          if (_phase == _Phase.placeFeet || _phase == _Phase.placeHead)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (d) => _onTapDown(d, screen),
+            ),
+          if (_feetMarker != null)
+            _MarkerLine(
+              yNorm: _feetMarker!.dy,
+              color: const Color(0xFF78D6A0),
+              label: t('flutter.hscan.feet', 'feet'),
+              draggable: _phase == _Phase.ready,
+              onDrag: (dy) => _dragMarker(true, dy, screen),
+              onDragEnd: _pushMarkers,
+            ),
+          if (_headMarker != null)
+            _MarkerLine(
+              yNorm: _headMarker!.dy,
+              color: Colors.white,
+              label: t('flutter.hscan.head', 'head'),
+              draggable: _phase == _Phase.ready,
+              onDrag: (dy) => _dragMarker(false, dy, screen),
+              onDragEnd: _pushMarkers,
             ),
           if (_phase == _Phase.intro) _intro(t) else _overlay(t),
         ],
@@ -175,20 +239,25 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
               padding: const EdgeInsets.all(10),
               child: AspectRatio(
                 aspectRatio: 240 / 128,
-                child: CustomPaint(painter: _SetupScenePainter()),
+                child: CustomPaint(
+                    painter: _SetupScenePainter(
+                        distLabel: t('flutter.hscan.dist_label', '2–2.5 m'))),
               ),
             ),
             const SizedBox(height: 16),
             _introStep('hscan_wall',
-                t('flutter.hscan.intro_1', 'Barefoot, standing tall against a wall')),
+                t('flutter.hscan.intro_1',
+                    'Barefoot, heels and back touching the wall, standing tall')),
             _introStep('hscan_distance',
-                t('flutter.hscan.intro_2', 'Stand 2–3 steps back and hold the phone steady')),
+                t('flutter.hscan.intro_2',
+                    'Step back until the whole child fits on screen — about 2–2.5 m — then keep the phone still')),
             _introStep('hscan_reticle',
-                t('flutter.hscan.intro_3', 'Mark the feet, then the top of the head — 3 times')),
+                t('flutter.hscan.intro_3',
+                    'Tap the feet line, then the top of the head — the app measures 3 quick bursts')),
             _introStep('hscan_morning',
                 t('flutter.hscan.intro_4', 'Scan at the same time of day — kids are taller in the morning')),
             const SizedBox(height: 14),
-            _sequenceStrip(t, active: -1),
+            _burstStrip(active: -1),
             const SizedBox(height: 22),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: GsColors.accent),
@@ -226,22 +295,15 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
         ]),
       );
 
-  /// The six-mark rhythm: ①feet ①head ②feet ②head ③feet ③head.
-  /// [active] = 0-based index of the CURRENT mark (bold), earlier ones
-  /// tick; -1 shows the strip neutrally (intro).
-  Widget _sequenceStrip(
-      String Function(String, [String?, Map<String, String>?]) t,
-      {required int active}) {
-    final feet = t('flutter.hscan.feet', 'feet');
-    final head = t('flutter.hscan.head', 'head');
+  /// The three-burst rhythm: chips ① ② ③. [active] = 0-based index of
+  /// the burst being worked on; earlier ones tick; -1 = neutral.
+  Widget _burstStrip({required int active}) {
     final children = <Widget>[];
-    for (var i = 0; i < HeightScanScreen.readingsNeeded * 2; i++) {
-      final reading = i ~/ 2 + 1;
-      final label = i.isEven ? feet : head;
+    for (var i = 0; i < HeightScanScreen.readingsNeeded; i++) {
       final done = active >= 0 && i < active;
       final current = i == active;
       children.add(Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 3),
         decoration: BoxDecoration(
           color: current
               ? GsColors.accent
@@ -249,9 +311,9 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
           borderRadius: BorderRadius.circular(9),
         ),
         child: Text(
-          done ? '$reading $label ✓' : '$reading $label',
+          done ? '${i + 1} ✓' : '${i + 1}',
           style: TextStyle(
-            fontSize: 10.5,
+            fontSize: 11,
             color: Colors.white.withValues(alpha: current || done ? 1 : 0.65),
             fontWeight: current ? FontWeight.w700 : FontWeight.w400,
           ),
@@ -259,26 +321,28 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
       ));
     }
     return Wrap(
-        spacing: 5, runSpacing: 5, alignment: WrapAlignment.center,
+        spacing: 6, runSpacing: 5, alignment: WrapAlignment.center,
         children: children);
   }
 
-  // ── Live overlay: guidance + crosshair + progress + controls ─────
+  // ── Live overlay: guidance + progress + controls ─────────────────
   Widget _overlay(String Function(String, [String?, Map<String, String>?]) t) {
     final done = _phase == _Phase.done;
     final guidance = switch (_phase) {
       _Phase.findingFloor => t('flutter.hscan.finding_floor',
           'Move the phone slowly so it can find the floor…'),
-      _Phase.aimFeet => t('flutter.hscan.aim_feet',
-          'Aim the line where the feet touch the floor, then tap Mark'),
-      _Phase.aimHead => t('flutter.hscan.aim_head',
-          'Rest the line on the very top of the head, then tap Mark'),
+      _Phase.placeFeet => t('flutter.hscan.place_feet',
+          'Tap where the wall meets the floor, right between the heels'),
+      _Phase.placeHead => t('flutter.hscan.place_head',
+          'Tap the very top of the head — the crown, not the forehead. Flatten the hair'),
+      _Phase.ready => _readings.isEmpty
+          ? t('flutter.hscan.adjust',
+              'Drag a line to fine-tune it — slow drags move it precisely. Then tap Measure')
+          : t('flutter.hscan.between_bursts',
+              'Check the lines still sit right, then measure again'),
+      _Phase.sampling => t('flutter.hscan.hold_still', 'Hold the phone still…'),
       _ => '',
     };
-    // Current mark index for the strip: two per finished reading, +1
-    // if the feet of the current pair is already placed.
-    final activeMark =
-        _readings.length * 2 + (_phase == _Phase.aimHead ? 1 : 0);
 
     return SafeArea(
       child: Column(
@@ -307,89 +371,58 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
             ]),
           ),
           const Spacer(),
-          // Crosshair with a stadiometer bar: the horizontal line is the
-          // measuring edge — the parent aligns IT with the crown (or the
-          // floor at the feet), instead of centring the circle on the
-          // head, which reads a few cm low.
-          if (!done)
-            IgnorePointer(
-              child: SizedBox(
-                width: 150,
-                height: 56,
-                child: Stack(alignment: Alignment.center, children: [
-                  for (final a in const [Alignment.centerLeft, Alignment.centerRight])
-                    Align(
-                      alignment: a,
-                      child: Container(
-                          width: 44,
-                          height: 2,
-                          color: Colors.white.withValues(alpha: 0.9)),
-                    ),
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Center(
-                        child: Icon(Icons.remove, color: Colors.white, size: 20)),
-                  ),
-                ]),
-              ),
-            ),
-          const Spacer(),
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(14)),
-            child: done ? _result(t) : _controls(t, activeMark),
+            child: done ? _result(t) : _controls(t),
           ),
         ],
       ),
     );
   }
 
-  Widget _controls(
-      String Function(String, [String?, Map<String, String>?]) t,
-      int activeMark) {
-    final canMark = _phase == _Phase.aimFeet || _phase == _Phase.aimHead;
-    final canUndo = canMark &&
-        (_phase == _Phase.aimHead || _readings.isNotEmpty) &&
-        !_marking;
+  /// Single-line button label — long i18n strings shrink instead of
+  /// wrapping ("Can cel" / "Red o" were real field complaints).
+  static Widget _label(String text, {Color? color}) => FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(text,
+            maxLines: 1, style: color == null ? null : TextStyle(color: color)),
+      );
+
+  Widget _controls(String Function(String, [String?, Map<String, String>?]) t) {
+    final sampling = _phase == _Phase.sampling;
+    final canMeasure = _phase == _Phase.ready;
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      _sequenceStrip(t, active: activeMark),
+      _burstStrip(active: _readings.length),
       const SizedBox(height: 10),
       Row(children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: sampling ? null : () => Navigator.of(context).pop(),
             style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 side: const BorderSide(color: Colors.white38)),
-            child: Text(t('flutter.cancel', 'Cancel'),
-                style: const TextStyle(color: Colors.white)),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: OutlinedButton(
-            onPressed: canUndo ? _undo : null,
-            style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white38)),
-            child: Text(t('flutter.hscan.redo', 'Redo'),
-                style: TextStyle(
-                    color: canUndo ? Colors.white : Colors.white38)),
+            child: _label(t('flutter.cancel', 'Cancel'), color: Colors.white),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           flex: 2,
           child: FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: GsColors.accent),
-            onPressed: canMark && !_marking ? _mark : null,
-            child: Text(_marking ? '…' : t('flutter.hscan.mark', 'Mark')),
+            style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                backgroundColor: GsColors.accent),
+            onPressed: canMeasure ? _measure : null,
+            child: sampling
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : _label(t('flutter.hscan.measure', 'Measure')),
           ),
         ),
       ]),
@@ -424,28 +457,23 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
       Row(children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () {
-              setState(() {
-                _readings.clear();
-                _feetDistanceM = null;
-                _hint = null;
-                _phase = _Phase.aimFeet;
-                _controller?.reset();
-              });
-            },
+            onPressed: _rescan,
             style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 side: const BorderSide(color: Colors.white38)),
-            child: Text(t('flutter.hscan.rescan', 'Scan again'),
-                style: const TextStyle(color: Colors.white)),
+            child:
+                _label(t('flutter.hscan.rescan', 'Scan again'), color: Colors.white),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           flex: 2,
           child: FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: GsColors.accent),
+            style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                backgroundColor: GsColors.accent),
             onPressed: () => Navigator.of(context).pop(median),
-            child: Text(t('flutter.hscan.use', 'Use this height')),
+            child: _label(t('flutter.hscan.use', 'Use this height')),
           ),
         ),
       ]),
@@ -453,11 +481,93 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
   }
 }
 
-/// The intro setup scene: child against the wall, parent 2–3 steps
-/// back holding the phone upright, gold sight-lines to feet and
-/// head-top, distance bracket. Deliberately simple geometric figures —
-/// round head, capsule body — nothing anatomical to get wrong.
+/// One measuring line: full-width hairline + centre dot + label chip —
+/// per field feedback, a line and a dot, nothing circular. Draggable
+/// with reduced gain when [draggable]; the generous vertical hit area
+/// keeps the thin line grabbable.
+class _MarkerLine extends StatelessWidget {
+  const _MarkerLine({
+    required this.yNorm,
+    required this.color,
+    required this.label,
+    required this.draggable,
+    required this.onDrag,
+    required this.onDragEnd,
+  });
+
+  final double yNorm;
+  final Color color;
+  final String label;
+  final bool draggable;
+  final void Function(double dyPx) onDrag;
+  final Future<void> Function() onDragEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final h = MediaQuery.of(context).size.height;
+    const hitHeight = 44.0;
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: yNorm * h - hitHeight / 2,
+      height: hitHeight,
+      child: GestureDetector(
+        behavior: draggable ? HitTestBehavior.opaque : HitTestBehavior.translucent,
+        onVerticalDragUpdate: draggable ? (d) => onDrag(d.delta.dy) : null,
+        onVerticalDragEnd: draggable ? (_) => onDragEnd() : null,
+        child: Stack(alignment: Alignment.center, children: [
+          // Shadow line for contrast on bright scenes, then the line.
+          Container(
+              height: 2,
+              margin: const EdgeInsets.only(top: 2),
+              color: Colors.black.withValues(alpha: 0.35)),
+          Container(height: 2, color: color.withValues(alpha: 0.95)),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+              border: Border.all(
+                  color: Colors.black.withValues(alpha: 0.4), width: 1),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              margin: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Text(label,
+                  style: TextStyle(color: color, fontSize: 11)),
+            ),
+          ),
+          if (draggable)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Icon(Icons.unfold_more,
+                    size: 18, color: color.withValues(alpha: 0.85)),
+              ),
+            ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// The intro setup scene: child against the wall, parent 2–2.5 m
+/// back holding the phone still at the child's chest height, gold
+/// sight-lines to feet and head-top, distance bracket. Deliberately
+/// simple geometric figures — nothing anatomical to get wrong.
 class _SetupScenePainter extends CustomPainter {
+  _SetupScenePainter({required this.distLabel});
+  final String distLabel;
+
   @override
   void paint(Canvas canvas, Size size) {
     // Design space 240x128, scaled to fit.
@@ -501,15 +611,15 @@ class _SetupScenePainter extends CustomPainter {
               Radius.circular(2 * sx)),
           parent);
     }
-    canvas.drawLine(p(60, 52), p(82, 58),
+    canvas.drawLine(p(60, 58), p(82, 62),
         Paint()
           ..color = const Color(0xFF9AA79D)
           ..strokeWidth = 5 * sx
           ..strokeCap = StrokeCap.round);
 
-    // Phone (upright, mint edge)
+    // Phone — held still at the child's chest height.
     final phoneRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(80 * sx, 46 * sy, 13 * sx, 24 * sy),
+        Rect.fromLTWH(80 * sx, 52 * sy, 13 * sx, 24 * sy),
         Radius.circular(3 * sx));
     canvas.drawRRect(phoneRect, phoneFill);
     canvas.drawRRect(phoneRect, mint);
@@ -530,8 +640,8 @@ class _SetupScenePainter extends CustomPainter {
     }
 
     // Dashed sight-lines: phone → head-top, phone → feet
-    _dashedLine(canvas, p(93, 52), p(190, 28), sight, 4.5 * sx, 3.5 * sx);
-    _dashedLine(canvas, p(93, 64), p(191, 110), sight, 4.5 * sx, 3.5 * sx);
+    _dashedLine(canvas, p(93, 58), p(190, 28), sight, 4.5 * sx, 3.5 * sx);
+    _dashedLine(canvas, p(93, 70), p(191, 110), sight, 4.5 * sx, 3.5 * sx);
 
     // Distance bracket + label
     canvas.drawLine(p(66, 122), p(182, 122), bracket);
@@ -539,7 +649,7 @@ class _SetupScenePainter extends CustomPainter {
     canvas.drawLine(p(182, 118), p(182, 126), bracket);
     final tp = TextPainter(
       text: TextSpan(
-          text: '2–3',
+          text: distLabel,
           style: TextStyle(
               color: const Color(0xFFB9C4BB),
               fontSize: 9 * sx,
@@ -562,5 +672,6 @@ class _SetupScenePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _SetupScenePainter oldDelegate) =>
+      oldDelegate.distLabel != distLabel;
 }
