@@ -3,81 +3,78 @@
 User-facing name: **Height Scan** (สแกนส่วนสูง). Saves to `measurements`
 with `data_source: 'camera_ar'`.
 
-## Measurement algorithm (v3 — the theodolite correction)
+## Measurement algorithm (v4 — stationary markers, closest-point solve)
 
-Device testing (2026-07-31, iPhone 15 Pro) showed v1/v2 readings running
-**4–10 cm short**. Two systematic mechanisms, both geometric:
+Field test against a known 197 cm door (2026-07-31): v3 read
+192.8 / 188.8 / 188.2 — 4–9 cm short, 4.5 cm spread. Three causes:
 
-1. **Head-ray wall overshoot.** A ray aimed at the crown grazes the hair
-   and lands on the wall 10–15 cm behind — a detected plane the raycast
-   prefers (dark hair is near-invisible to LiDAR, making wall hits the
-   norm). The phone is held above a child's crown, so the ray descends;
-   by the wall it is below true crown height:
-   `error ≈ (camY − crownY)/distance × head-to-wall gap`.
-   Worse close up, worse for small children.
-2. **Foot-top feet marks.** With mesh reconstruction an `.any` raycast at
-   the feet can hit the top of the foot (3–8 cm above floor), raising the
-   floor reference.
+1. **Reticle mis-centring.** The drawn reticle sat in a Column between
+   two Spacers whose surrounding cards had different heights, so it was
+   drawn *above* the true view centre where the raycast fired — the user
+   aligned the line, the phone measured a point below it.
+2. **Move-the-phone flow.** Sweeping from feet to head added tracking
+   drift and re-aim error between marks; every mark was one jittery
+   single-frame raycast.
+3. **Grazing feet ray.** ~1° of feet-aim error moves the floor hit
+   6–8 cm horizontally, and that distance error scales into height
+   error by tan(head-ray pitch).
 
-Fix (in `markPoint`):
+v4 discards aim-and-mark entirely. The phone stays STILL with the whole
+child in frame; the parent taps a FEET marker (wall-floor junction
+between the heels) and a HEAD marker (the crown) on screen, fine-tunes
+them by dragging (1:3 reduced gain), then Measure runs a native burst:
 
-- **Feet raycast restricted to `.horizontal`** — it can only land on the
-  floor plane, which is at true floor height wherever the ray touches it.
-- **Head hit depth is discarded; only the ray direction is used.** The
-  feet mark fixed the child's horizontal distance `d_child`, so the crown
-  height is the ray evaluated at the child's plane:
+- `worldAlignment = .gravity` → world Y is true vertical.
+- Per frame (~15 frames over ~1 s via CADisplayLink, 30 fps):
+  1. Gate: `trackingState == .normal`.
+  2. **Feet**: raycast the feet marker onto `.existingPlaneGeometry`
+     (horizontal), preferring a `.floor`-classified plane; Y snapped to
+     the tracked floor anchor when within 10 cm. → `F`
+  3. **Head**: unproject the head marker into a world ray `C + s·D`
+     (never raycast the head onto environment geometry — the wall
+     behind the child must not determine the head depth).
+  4. **Closest approach** of that ray to the vertical line
+     `L(h) = F + h·(0,1,0)`. `h` is the height; the miss distance
+     (residual) is the frame's quality signal.
+  5. Per-sample gates: `s > 0`, `0.4 < h < 2.2` m, residual < 5 cm,
+     denominator guard against near-vertical rays.
+- Burst verdict: `no_floor` if the feet marker never hit detected
+  floor; `hold_still` if < 6 clean samples; else median `h` with MAD
+  outlier rejection; `unstable` if stddev > 1.5 cm. Success returns
+  `heightCm` + `stddevCm` + `distanceM` (horizontal camera→feet) +
+  `pitchDeg` (head-ray elevation) for the Dart honesty hints
+  (pitch > 25° or distance < 1.5 m → step-back tip, never blocking).
+- Three bursts (markers persist, nudge between), median of medians,
+  spread > 2 cm → estimated-gold warning.
 
-  ```
-  dir     = hit − cam            (direction; the hit may be the wall)
-  t       = d_child / ‖dir_xz‖
-  crownY  = camY + dirY · t
-  height  = crownY − floorY
-  ```
+Note: v3's "theodolite" pull-back was the same geometry as the
+closest-point solve (direction-only head, depth discarded) — v4 keeps
+that insight but gains the residual gate, multi-frame medians, the
+floor lock, and removes the mis-centred reticle by construction (the
+ray goes through the marker the user placed, not the screen centre).
 
-  If the ray hit the head itself the result is unchanged; if it overshot
-  to the wall, the overshoot term cancels exactly. The measurement is
-  purely angular — a theodolite, not a rangefinder — so head-depth error
-  (LiDAR-through-hair, wall planes, estimated-plane noise) drops out.
-  Guard: near-vertical rays (‖dir_xz‖ < 0.05) keep the raw hit.
-- **Crosshair carries a horizontal bar** (stadiometer headboard): the
-  parent rests the *line* on the crown / at the floor contact, rather
-  than centring a circle on the head — which read a few cm low.
+Residual error sources: floor-anchor estimate (~sub-cm, refined live),
+marker placement (~1 px ≈ 1–2 mm at 2 m), hair compression (true of
+stadiometers too), diurnal 1–2 cm.
 
-Residual error sources: floor-plane estimate (~sub-cm), aim (~the bar
-width), hair compression (true of stadiometers too), diurnal 1–2 cm.
+## UX (v4)
 
-## How it works
-
-Two-point AR raycast, no LiDAR required (LiDAR sharpens it for free):
-
-1. ARKit detects the floor plane.
-2. Parent aims the crosshair at the child's **feet** → tap Mark (anchors floor Y).
-3. Aims at the **top of the head** → tap Mark. Height = vertical delta.
-   The child stands against a wall, so even when hair gives no feature
-   points, the wall plane behind the head is hit *at the same Y* — which
-   is the only coordinate used.
-4. Three readings → **median** is offered as the result.
-
-Expected accuracy: ~1 cm tier on non-LiDAR phones, better on Pro (LiDAR
-mesh raycasts). Diurnal height variation is 1–2 cm, hence the intro tip
-to scan at a consistent time of day.
-
-## v2 UX (designed in the approved user-journey artifact)
-
-- **Setup illustration** on the intro (CustomPainter `_SetupScenePainter`):
-  child against the wall, parent 2–3 steps back, gold sight-lines.
-- **Six-mark sequence strip** — ①feet ①head ②feet ②head ③feet ③head —
-  static on the intro, live above the Mark button (current bold, done ✓).
-- **Numbered AR level lines**: every mark pins a dashed line with number
-  badges at both ends into the room; a completed pair is joined by a
-  **vertical measure** labelled with that reading's cm. Current reading
-  bright mint, history fades to 30%. All SceneKit, in the platform view.
-- **Redo** (`undoMark`): one mark back — pending feet unmarks, or the
-  last pair reopens (head line + measure removed, feet line restored).
-- **Honesty hints**: both marks < 1.5 m → "step back" tip; readings
-  spread > 2 cm → estimated-gold warning on the result, never blocking.
-- **No emoji** — `hscan_*` glyphs in `widgets/gs_icons.dart` (house
-  duotone grammar: #153a2b stroke, #cfe3d5 plane, teal/gold accents).
+- **Setup illustration** on the intro (`_SetupScenePainter`): child
+  against the wall, parent 2–2.5 m back, phone still at chest height.
+- **Markers**: dot + full-width hairline (no circle — field feedback),
+  mint for feet, white for head, label chips, drag handles with 1:3
+  reduced-gain vertical drag. Tap to place, drag to fine-tune.
+- **Burst chips** ① ② ③ above the buttons (current bold, done ✓).
+- **AR furniture** per successful burst: numbered dashed level lines at
+  feet + head and a vertical measure labelled with cm. Latest bright
+  mint, history fades to 30%. A provisional feet line (55% opacity,
+  estimated-plane allowed) previews where the feet tap landed.
+- **Refusals, not bad numbers**: no_floor / hold_still / unstable map
+  to plain-language hints; Measure shows a spinner + "Hold the phone
+  still…" during the burst.
+- **Single-line buttons**: labels FittedBox-shrink instead of wrapping
+  (the "Can cel" / "Red o" fix).
+- **No emoji** — `hscan_*` glyphs in `widgets/gs_icons.dart`.
 
 ## Code map
 
@@ -92,7 +89,14 @@ to scan at a consistent time of day.
 
 Channel contract:
 - `growsense/height_scan` (static): `isSupported`, `hasLidar`
-- `growsense/height_scan_<viewId>` (per view): `markPoint` → `{ok, step: feet|head, heightCm?}` or `{ok: false, reason: no_surface|implausible}`; `reset`; `dispose`. Native → Dart: `onState {state: floor_found|error}`.
+- `growsense/height_scan_<viewId>` (per view):
+  - `setMarkers {feetX, feetY, headX, headY}` — normalized 0–1 view
+    coords; either pair may be absent while placing.
+  - `measure` → `{ok: true, heightCm, stddevCm, distanceM, pitchDeg}`
+    or `{ok: false, reason: no_floor|hold_still|unstable|no_markers|busy|cancelled}`.
+    Async on the native side (~1 s burst); the pending FlutterResult is
+    always completed, including on reset/dispose (`cancelled`).
+  - `reset`; `dispose`. Native → Dart: `onState {state: floor_found|error}`.
 
 Provenance rules (the honest-data part):
 - The scan median lands in the normal entry card with a 📷 suffix; weight,
@@ -108,8 +112,7 @@ Provenance rules (the honest-data part):
 
 1. `HeightScanView.swift` is **already hand-wired into
    `project.pbxproj`** (UUIDs `A1B2C3D4…0003/0004`, same convention as
-   PrivacyInfo.xcprivacy) — no Xcode step needed. The first Codemagic
-   build after this lands validates the pbxproj parse.
+   PrivacyInfo.xcprivacy) — no Xcode step needed.
 2. Build via Codemagic as usual (TestFlight workflow, branch `main`).
    No new pods, no new permissions — `NSCameraUsageDescription`
    already exists (X-ray flow).
@@ -122,19 +125,31 @@ Provenance rules (the honest-data part):
 Strings live in `tool/flutter_extra_keys.json` (the SOURCE —
 `assets/locales/` is generated by `node tool/sync_locales.js`).
 
-## Acceptance test (the spike, on a real phone)
+## Acceptance test (real phone)
 
-1. Medical tab → Log measurement → **Scan height** appears (iPhone only).
-2. Scan a cooperative adult 3× against a wall; compare the median to a
-   tape measure. Pass: within ~1.5 cm on a non-LiDAR phone, ~0.5 cm on
-   a Pro. If it's wildly off, check the floor: reflective/patterned
-   floors defeat plane detection.
-3. Save with a weight → row in `measurements` has `data_source = 'camera_ar'`.
-4. Edit the height field by hand → 📷 suffix disappears → save →
-   `data_source = 'manual'`.
+1. **Door regression**: the 197 cm door, ~2.5 m back, phone ~1.2–1.4 m
+   high. Feet line at the wall-floor joint, head line at the door's top
+   edge, 3 bursts. Pass: median 197 ± 1.5 cm, spread < 2 cm
+   (v3 baseline: 188.8, spread 4.5).
+2. **Marker precision**: slow drag lands the head line on the door's
+   top edge; chips don't occlude the line.
+3. **Gates**: sweep the phone during Measure → unstable/hold-still hint,
+   never a silently bad number; feet marker on a wall → no_floor.
+4. **Hints**: measure from ~1 m → steep-pitch hint.
+5. **Buttons**: Cancel / Measure / Scan again / Use this height all
+   single-line in EN and TH.
+6. **Human check**: known-height adult, hair flattened — median within
+   ~1.5 cm, spread < 2 cm; save lands `data_source = 'camera_ar'`;
+   hand-edit drops to `'manual'`.
+7. **Regressions**: cancel mid-scan, Scan again (markers clear, AR
+   furniture clears), re-entering the screen.
+8. **Product validation (later)**: versus a stadiometer at
+   1.5 / 2.0 / 2.5 m across rooms and hair styles — target bias
+   < 0.5 cm, MAE < 1 cm, repeats within 1 cm.
 
 ## Phase 2 (not built)
 
-LiDAR auto-detect (Vision person segmentation + `sceneDepth`, no aiming)
-as an upgrade path inside the same Swift module; Android/ARCore twin of
-the platform view if the Android build ships.
+Person-segmentation auto-crown (find the head silhouette top from the
+ARKit person mask, median over frames — no manual head marker) and raw
+`sceneDepth` as a secondary validation source on LiDAR phones;
+Android/ARCore twin of the platform view if the Android build ships.
