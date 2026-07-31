@@ -4201,12 +4201,12 @@
     "ar": "حافي القدمين، الكعبان والظهر ملاصقان للحائط، واقفاً بشكل مستقيم"
   },
   "flutter.hscan.intro_2": {
-    "en": "Step back until the whole child fits on screen — about 2–2.5 m — then keep the phone still",
-    "th": "ถอยหลังจนเห็นตัวเด็กเต็มจอ (ประมาณ 2–2.5 ม.) แล้วถือโทรศัพท์ให้นิ่ง",
-    "vi": "Lùi lại cho đến khi thấy toàn thân bé trên màn hình — khoảng 2–2.5 m — rồi giữ điện thoại đứng yên",
-    "ko": "아이 전신이 화면에 다 보일 때까지 물러난 뒤(약 2–2.5 m) 휴대폰을 움직이지 마세요",
-    "zh": "后退到屏幕能看到孩子全身（约2–2.5米），然后保持手机不动",
-    "ar": "تراجع حتى يظهر الطفل كاملاً على الشاشة — نحو 2–2.5 متر — ثم أبقِ الهاتف ثابتاً"
+    "en": "Step back until the whole child fits on screen (about 2–2.5 m), hold the phone at the child's head height, and keep it still",
+    "th": "ถอยหลังจนเห็นตัวเด็กเต็มจอ (ประมาณ 2–2.5 ม.) ถือโทรศัพท์สูงระดับศีรษะเด็ก และถือให้นิ่ง",
+    "vi": "Lùi lại cho đến khi thấy toàn thân bé trên màn hình (khoảng 2–2.5 m), giữ điện thoại ngang tầm đầu bé và giữ yên",
+    "ko": "아이 전신이 화면에 다 보일 때까지 물러나(약 2–2.5 m), 휴대폰을 아이 머리 높이에서 움직이지 않게 잡으세요",
+    "zh": "后退到屏幕能看到孩子全身（约2–2.5米），将手机举到与孩子头部同高并保持不动",
+    "ar": "تراجع حتى يظهر الطفل كاملاً على الشاشة (نحو 2–2.5 متر)، وارفع الهاتف بمستوى رأس الطفل وأبقه ثابتاً"
   },
   "flutter.hscan.intro_3": {
     "en": "Tap the feet line, then the top of the head — the app measures 3 quick bursts",
@@ -4241,12 +4241,12 @@
     "ar": "حرك الهاتف ببطء ليتمكن من العثور على الأرضية…"
   },
   "flutter.hscan.place_feet": {
-    "en": "Tap where the wall meets the floor, right between the heels",
-    "th": "แตะตรงจุดที่ผนังจรดพื้น ตรงกลางระหว่างส้นเท้าพอดี",
-    "vi": "Chạm vào chỗ tường gặp sàn, ngay giữa hai gót chân",
-    "ko": "벽과 바닥이 만나는 지점, 두 뒤꿈치 사이를 탭하세요",
-    "zh": "点墙面与地面相接处，正好在两脚跟之间",
-    "ar": "انقر حيث يلتقي الحائط بالأرض، بين الكعبين تماماً"
+    "en": "Tap the floor between the feet, right at the ankles — not the wall edge, not the toes",
+    "th": "แตะพื้นตรงกลางระหว่างเท้า ตรงระดับข้อเท้า ไม่ใช่ขอบผนังหรือปลายเท้า",
+    "vi": "Chạm vào sàn giữa hai bàn chân, ngay chỗ mắt cá — không phải mép tường hay mũi chân",
+    "ko": "두 발 사이의 바닥, 발목 위치를 탭하세요 — 벽 모서리나 발끝이 아닙니다",
+    "zh": "点两脚之间的地面，正对脚踝——不是墙角，也不是脚尖",
+    "ar": "انقر الأرض بين القدمين عند الكاحلين — ليس حافة الحائط ولا أطراف الأصابع"
   },
   "flutter.hscan.place_head": {
     "en": "Tap the very top of the head — the crown, not the forehead. Flatten the hair",
@@ -4289,12 +4289,12 @@
     "ar": "تعذر الحصول على قراءة ثابتة — ثبّت الهاتف وحاول مرة أخرى"
   },
   "flutter.hscan.no_floor": {
-    "en": "Can't find the floor there — aim the feet line at clear floor between the heels",
-    "th": "หาพื้นตรงนั้นไม่พบ เล็งเส้นเท้าไปที่พื้นโล่ง ๆ ระหว่างส้นเท้า",
-    "vi": "Không tìm thấy sàn ở đó — nhắm vạch chân vào phần sàn trống giữa hai gót chân",
-    "ko": "그 위치에서 바닥을 찾지 못했습니다 — 발 선을 두 뒤꿈치 사이의 빈 바닥에 맞추세요",
-    "zh": "该处未识别到地面——请将脚部横线对准两脚跟之间的空地面",
-    "ar": "تعذر العثور على الأرضية هناك — وجّه خط القدمين إلى أرضية واضحة بين الكعبين"
+    "en": "Can't find the floor there — aim the feet line at clear floor between the feet",
+    "th": "หาพื้นตรงนั้นไม่พบ เล็งเส้นเท้าไปที่พื้นโล่ง ๆ ระหว่างเท้า",
+    "vi": "Không tìm thấy sàn ở đó — nhắm vạch chân vào phần sàn trống giữa hai bàn chân",
+    "ko": "그 위치에서 바닥을 찾지 못했습니다 — 발 선을 두 발 사이의 빈 바닥에 맞추세요",
+    "zh": "该处未识别到地面——请将脚部横线对准两脚之间的空地面",
+    "ar": "تعذر العثور على الأرضية هناك — وجّه خط القدمين إلى أرضية واضحة بين القدمين"
   },
   "flutter.hscan.unstable": {
     "en": "Too much movement — hold the phone still and measure again",

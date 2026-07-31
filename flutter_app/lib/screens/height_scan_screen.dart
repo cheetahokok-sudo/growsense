@@ -84,8 +84,11 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
 
   void _onTapDown(TapDownDetails d, Size screen) {
     if (_phase != _Phase.placeFeet && _phase != _Phase.placeHead) return;
+    // localPosition of the full-Stack detector == position inside the
+    // UiKitView — never normalize against global/screen coords, which
+    // can drift from the platform view's own bounds.
     final norm = _clampMarker(Offset(
-        d.globalPosition.dx / screen.width, d.globalPosition.dy / screen.height));
+        d.localPosition.dx / screen.width, d.localPosition.dy / screen.height));
     setState(() {
       _hint = null;
       if (_phase == _Phase.placeFeet) {
@@ -142,7 +145,7 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
         _phase = _Phase.ready;
         _hint = switch (res.reason) {
           'no_floor' => t('flutter.hscan.no_floor',
-              'Can\'t find the floor there — aim the feet line at clear floor between the heels'),
+              'Can\'t find the floor there — aim the feet line at clear floor between the feet'),
           'unstable' => t('flutter.hscan.unstable',
               'Too much movement — hold the phone still and measure again'),
           _ => t('flutter.hscan.hold_still_retry',
@@ -250,7 +253,7 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
                     'Barefoot, heels and back touching the wall, standing tall')),
             _introStep('hscan_distance',
                 t('flutter.hscan.intro_2',
-                    'Step back until the whole child fits on screen — about 2–2.5 m — then keep the phone still')),
+                    'Step back until the whole child fits on screen (about 2–2.5 m), hold the phone at the child\'s head height, and keep it still')),
             _introStep('hscan_reticle',
                 t('flutter.hscan.intro_3',
                     'Tap the feet line, then the top of the head — the app measures 3 quick bursts')),
@@ -332,7 +335,7 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
       _Phase.findingFloor => t('flutter.hscan.finding_floor',
           'Move the phone slowly so it can find the floor…'),
       _Phase.placeFeet => t('flutter.hscan.place_feet',
-          'Tap where the wall meets the floor, right between the heels'),
+          'Tap the floor between the feet, right at the ankles — not the wall edge, not the toes'),
       _Phase.placeHead => t('flutter.hscan.place_head',
           'Tap the very top of the head — the crown, not the forehead. Flatten the hair'),
       _Phase.ready => _readings.isEmpty
@@ -611,15 +614,16 @@ class _SetupScenePainter extends CustomPainter {
               Radius.circular(2 * sx)),
           parent);
     }
-    canvas.drawLine(p(60, 58), p(82, 62),
+    canvas.drawLine(p(60, 48), p(82, 38),
         Paint()
           ..color = const Color(0xFF9AA79D)
           ..strokeWidth = 5 * sx
           ..strokeCap = StrokeCap.round);
 
-    // Phone — held still at the child's chest height.
+    // Phone — held still, LEVEL WITH THE CHILD'S HEAD: when camera
+    // height ≈ crown height, feet-marker depth error stops mattering.
     final phoneRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(80 * sx, 52 * sy, 13 * sx, 24 * sy),
+        Rect.fromLTWH(80 * sx, 26 * sy, 13 * sx, 24 * sy),
         Radius.circular(3 * sx));
     canvas.drawRRect(phoneRect, phoneFill);
     canvas.drawRRect(phoneRect, mint);
@@ -640,8 +644,8 @@ class _SetupScenePainter extends CustomPainter {
     }
 
     // Dashed sight-lines: phone → head-top, phone → feet
-    _dashedLine(canvas, p(93, 58), p(190, 28), sight, 4.5 * sx, 3.5 * sx);
-    _dashedLine(canvas, p(93, 70), p(191, 110), sight, 4.5 * sx, 3.5 * sx);
+    _dashedLine(canvas, p(93, 32), p(190, 28), sight, 4.5 * sx, 3.5 * sx);
+    _dashedLine(canvas, p(93, 44), p(191, 110), sight, 4.5 * sx, 3.5 * sx);
 
     // Distance bracket + label
     canvas.drawLine(p(66, 122), p(182, 122), bracket);

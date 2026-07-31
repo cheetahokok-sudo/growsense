@@ -2,10 +2,69 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "blog-dist",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8093",
+        "--directory",
+        "C:/Users/user/growsense/web/dist"
+      ],
+      "port": 8093
+    },
+    {
+      "name": "icon-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8094",
+        "--directory",
+        "C:/Users/user/AppData/Local/Temp/claude/C--Users-user-growsense/0ddf4a03-3248-41f7-945a-d2811cd7b39d/scratchpad/iconpreview"
+      ],
+      "port": 8094
+    },
+    {
       "name": "flutter-web",
       "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "cd /d flutter_app && flutter run -d web-server --web-port 8087"],
+      "runtimeArgs": [
+        "/c",
+        "cd /d flutter_app && flutter run -d web-server --web-port 8087"
+      ],
       "port": 8087
+    },
+    {
+      "name": "repo-root",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8811",
+        "--directory",
+        "C:/Users/user/growsense"
+      ],
+      "port": 8811
+    },
+    {
+      "name": "journey-doc",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/user/AppData/Local/Temp/claude/C--Users-user-growsense/8475c61e-2c39-4b45-a48d-f293970f532b/scratchpad/serve.js"
+      ],
+      "port": 8123
+    },
+    {
+      "name": "scratchpad-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8737",
+        "--directory",
+        "C:/Users/user/AppData/Local/Temp/claude/C--Users-user-growsense/0ddf4a03-3248-41f7-945a-d2811cd7b39d/scratchpad"
+      ],
+      "port": 8737
     }
   ]
 }

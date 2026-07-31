@@ -12,17 +12,23 @@
 //
 // GEOMETRY (supersedes the v3 "theodolite" pull-back — same idea,
 // cleaner form, and it yields a residual quality signal): never trust
-// any raycast DEPTH at the head. Per frame:
-//   1. Raycast the FEET marker onto detected horizontal plane
-//      geometry (preferring a .floor-classified plane); snap its Y to
-//      the tracked floor anchor when they agree within 10 cm. → F
-//   2. Unproject the HEAD marker into a world ray C + s·D.
-//   3. Intersect (closest approach) that ray with the vertical line
-//      F + h·(0,1,0). h IS the height; the miss distance (residual)
-//      tells us how trustworthy the frame was.
+// any raycast DEPTH at the head.
+//   1. Per unique camera frame, raycast the FEET marker onto detected
+//      horizontal plane geometry (preferring a .floor-classified
+//      plane). The burst LOCKS to the first hit's anchor — one burst
+//      never blends two floor datums — and the burst's frozen floor
+//      point F is the component-wise median of those same-anchor hits.
+//   2. Unproject the HEAD marker into a world ray C + s·D from the
+//      AR camera origin.
+//   3. Intersect (closest approach) each frame's ray with the vertical
+//      line F + h·(0,1,0). h IS the height; the miss distance
+//      (residual) tells us how trustworthy the frame was.
 // The wall behind the child never determines the head depth, and the
-// per-frame residual + tracking-state + stddev gates mean an unstable
-// burst is refused ("hold still") instead of returning a bad number.
+// residual + tracking-state + camera-motion + stddev gates mean an
+// unstable burst is refused ("hold still") instead of returning a bad
+// number. Duplicate ARFrames are skipped (frame.timestamp) so 15
+// samples are 15 real camera frames, and both markers are snapshotted
+// at measure() so a mid-burst drag can't mix geometries.
 //
 // Channel: growsense/height_scan_<viewId>
 //   Dart → native: setMarkers, measure, reset, dispose
@@ -74,13 +80,12 @@ private struct ReadingNodes {
   let measureNode: SCNNode
 }
 
-// One accepted frame within a burst.
-private struct MeasureSample {
-  let h: Float          // height in metres (the quantity of interest)
-  let residual: Float   // ray↔vertical-line miss distance
-  let feetPos: simd_float3
-  let dChild: Float     // horizontal camera→feet distance
-  let pitchDeg: Float   // head-ray elevation above horizontal
+// One accepted camera frame within a burst: the raw geometry, solved
+// later against the burst's frozen floor point.
+private struct BurstFrame {
+  let f: simd_float3 // feet-marker floor hit (locked anchor)
+  let c: simd_float3 // AR camera origin
+  let d: simd_float3 // unit ray direction through the head marker
 }
 
 // ── The platform view ─────────────────────────────────────────────
@@ -97,12 +102,14 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
   private static let samplesWanted = 15
   private static let samplesMinimum = 6
   private static let burstDeadline: CFTimeInterval = 1.2
-  private static let floorSnapTolerance: Float = 0.10
   private static let residualLimit: Float = 0.05
   private static let stddevLimit: Float = 0.015 // metres → 1.5 cm
+  // Lenient by design: handheld tremor is millimetres, a real re-aim
+  // is centimetres. Stricter gates (5–10 mm) refuse too many honest
+  // handheld bursts.
+  private static let maxCamTravel: Float = 0.03
 
   private var hasFloorPlane = false      // fires the floor_found event once
-  private var floorAnchor: ARPlaneAnchor? // best-known floor plane, refreshed by ARKit
   private var completed: [ReadingNodes] = []
   private var nextNumber: Int { completed.count + 1 }
 
@@ -112,10 +119,16 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
   private var provisionalFeetNode: SCNNode? // guidance-only line while placing
 
   // In-flight burst. The FlutterResult MUST always be completed —
-  // a leaked result leaves Dart hanging on its await.
-  private var burstSamples: [MeasureSample] = []
+  // a leaked result leaves Dart hanging on its await. Geometry is
+  // frozen for the burst: marker snapshots, one locked floor anchor.
+  private var burstFrames: [BurstFrame] = []
+  private var activeFeet: CGPoint?
+  private var activeHead: CGPoint?
+  private var lockedFloorAnchorID: UUID?
+  private var firstCamPos: simd_float3?
+  private var maxCamTravelSeen: Float = 0
+  private var lastFrameTimestamp: TimeInterval = -.infinity
   private var burstFloorHits = 0
-  private var burstTicks = 0
   private var burstStart: CFTimeInterval = 0
   private var burstResult: FlutterResult?
   private var displayLink: CADisplayLink?
@@ -131,9 +144,9 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     let config = ARWorldTrackingConfiguration()
     config.worldAlignment = .gravity // world Y ∥ gravity — h is true vertical
     config.planeDetection = [.horizontal, .vertical]
-    if ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) {
-      config.sceneReconstruction = .mesh // LiDAR: raycast against real geometry
-    }
+    // No sceneReconstruction: this pipeline raycasts plane anchors and
+    // unprojects rays only — mesh feeds nothing here, and LiDAR
+    // already sharpens plane detection natively.
     arView.session.run(config)
 
     channel.setMethodCallHandler { [weak self] call, result in
@@ -211,24 +224,38 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     return nil
   }
 
-  /// World-space ray through a screen point (SceneKit's equivalent of
-  /// RealityKit's ray(through:)): unproject at the near and far plane.
-  private func worldRay(through screen: CGPoint) -> (origin: simd_float3, dir: simd_float3)? {
-    let near = arView.unprojectPoint(SCNVector3(Float(screen.x), Float(screen.y), 0))
+  /// Unit direction of the world ray from [cameraOrigin] through a
+  /// screen point (SceneKit's equivalent of RealityKit's ray(through:):
+  /// unproject at the far plane, aim from the AR camera).
+  private func worldRay(through screen: CGPoint, cameraOrigin: simd_float3) -> simd_float3? {
     let far = arView.unprojectPoint(SCNVector3(Float(screen.x), Float(screen.y), 1))
-    let origin = simd_float3(near.x, near.y, near.z)
-    let dir = simd_float3(far.x - near.x, far.y - near.y, far.z - near.z)
+    let dir = simd_float3(far.x, far.y, far.z) - cameraOrigin
     let len = simd_length(dir)
     guard len > 0.0001 else { return nil }
-    return (origin, dir / len)
+    return dir / len
   }
 
-  /// World Y of the tracked floor plane (its refined centre, not the
-  /// raw anchor origin), read fresh at sample time — never cached.
-  private var floorY: Float? {
-    guard let a = floorAnchor else { return nil }
-    let c = a.transform * simd_float4(a.center.x, a.center.y, a.center.z, 1)
-    return c.y
+  /// Closest-approach solve between the head ray (c, d) and the
+  /// vertical line rising from the floor point f. Nil when the
+  /// geometry is degenerate or fails the plausibility gates.
+  private func solveHeight(f: simd_float3, c: simd_float3, d: simd_float3)
+    -> (h: Float, dChild: Float, pitchDeg: Float)? {
+    let u = simd_float3(0, 1, 0)
+    let w = c - f
+    let b = simd_dot(d, u)
+    let dd = simd_dot(d, w)
+    let e = simd_dot(u, w)
+    let denom = 1 - b * b
+    guard denom > 0.05 else { return nil } // ray near-vertical → unstable solve
+    let s = (b * e - dd) / denom
+    let h = (e - b * dd) / denom
+    let residual = simd_length((c + s * d) - (f + h * u))
+    // In front of the camera, plausible child height, ray actually
+    // passes near the vertical line.
+    guard s > 0, h > 0.4, h < 2.2, residual < Self.residualLimit else { return nil }
+    let dirXZ = simd_length(simd_float2(d.x, d.z))
+    return (h, simd_length(simd_float2(f.x - c.x, f.z - c.z)),
+            atan2(d.y, dirXZ) * 180 / .pi)
   }
 
   // ── The burst ───────────────────────────────────────────────────
@@ -237,12 +264,19 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     guard burstResult == nil else {
       return result(["ok": false, "reason": "busy"])
     }
-    guard feetMarker != nil, headMarker != nil else {
+    guard let feet = feetMarker, let head = headMarker else {
       return result(["ok": false, "reason": "no_markers"])
     }
-    burstSamples = []
+    // Freeze the geometry for the whole burst: a marker drag or a
+    // different floor plane mid-burst must not mix into one reading.
+    activeFeet = feet
+    activeHead = head
+    lockedFloorAnchorID = nil
+    firstCamPos = nil
+    maxCamTravelSeen = 0
+    lastFrameTimestamp = -.infinity
+    burstFrames = []
     burstFloorHits = 0
-    burstTicks = 0
     burstStart = CACurrentMediaTime()
     burstResult = result
     let link = CADisplayLink(target: self, selector: #selector(burstTick))
@@ -253,54 +287,45 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
 
   @objc private func burstTick() {
     guard burstResult != nil else { return finishBurst(nil) }
-    burstTicks += 1
     let expired = CACurrentMediaTime() - burstStart > Self.burstDeadline
-    if burstSamples.count >= Self.samplesWanted || expired {
+    if burstFrames.count >= Self.samplesWanted || expired {
       return finishBurst(burstVerdict())
     }
-    guard let feet = feetMarker, let head = headMarker,
+    guard let feet = activeFeet, let head = activeHead,
           let frame = arView.session.currentFrame,
           case .normal = frame.camera.trackingState else { return }
+    // One sample per CAPTURED frame — polling currentFrame can hand
+    // back the same ARFrame twice, which would fake a low spread.
+    guard frame.timestamp > lastFrameTimestamp else { return }
+    lastFrameTimestamp = frame.timestamp
 
-    // Feet: detected floor geometry only. Y snaps to the tracked floor
-    // anchor when they agree — per-ray Y on an estimated-ish hit can
-    // float, the refined anchor is the stable truth.
-    guard let floorHit = raycastFloor(from: denormalize(feet), allowEstimated: false) else { return }
-    burstFloorHits += 1
-    var f = simd_float3(floorHit.worldTransform.columns.3.x,
-                        floorHit.worldTransform.columns.3.y,
-                        floorHit.worldTransform.columns.3.z)
-    if let fy = floorY, abs(f.y - fy) <= Self.floorSnapTolerance {
-      f.y = fy
+    let cam = simd_float3(frame.camera.transform.columns.3.x,
+                          frame.camera.transform.columns.3.y,
+                          frame.camera.transform.columns.3.z)
+    if let first = firstCamPos {
+      maxCamTravelSeen = Swift.max(maxCamTravelSeen, simd_length(cam - first))
+    } else {
+      firstCamPos = cam
     }
 
-    // Head: a pure direction — closest approach of the screen ray to
-    // the vertical line rising from the feet point.
-    guard let ray = worldRay(through: denormalize(head)) else { return }
-    let c = ray.origin
-    let d = ray.dir
-    let u = simd_float3(0, 1, 0)
-    let w = c - f
-    let b = simd_dot(d, u)
-    let dd = simd_dot(d, w)
-    let e = simd_dot(u, w)
-    let denom = 1 - b * b
-    guard denom > 0.05 else { return } // ray near-vertical → unstable solve
-    let s = (b * e - dd) / denom
-    let h = (e - b * dd) / denom
-    let residual = simd_length((c + s * d) - (f + h * u))
+    // Feet: detected plane geometry only, locked to ONE anchor for the
+    // whole burst — mixing hits from different planes would blend two
+    // floor datums into one reading. The hit already lies on its
+    // plane's refined surface; no cross-anchor Y correction.
+    guard let floorHit = raycastFloor(from: denormalize(feet), allowEstimated: false),
+          let plane = floorHit.anchor as? ARPlaneAnchor else { return }
+    if let locked = lockedFloorAnchorID {
+      guard plane.identifier == locked else { return }
+    } else {
+      lockedFloorAnchorID = plane.identifier
+    }
+    burstFloorHits += 1
+    let f = simd_float3(floorHit.worldTransform.columns.3.x,
+                        floorHit.worldTransform.columns.3.y,
+                        floorHit.worldTransform.columns.3.z)
 
-    // Per-sample gates: in front of the camera, plausible child
-    // height, ray actually passes near the vertical line.
-    guard s > 0, h > 0.4, h < 2.2, residual < Self.residualLimit else { return }
-
-    let dirXZ = simd_length(simd_float2(d.x, d.z))
-    burstSamples.append(MeasureSample(
-      h: h,
-      residual: residual,
-      feetPos: f,
-      dChild: simd_length(simd_float2(f.x - c.x, f.z - c.z)),
-      pitchDeg: atan2(d.y, dirXZ) * 180 / .pi))
+    guard let dir = worldRay(through: denormalize(head), cameraOrigin: cam) else { return }
+    burstFrames.append(BurstFrame(f: f, c: cam, d: dir))
   }
 
   /// Decide the burst outcome from what the ~1 s window collected.
@@ -308,16 +333,32 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     if burstFloorHits == 0 {
       return ["ok": false, "reason": "no_floor"]
     }
-    guard burstSamples.count >= Self.samplesMinimum else {
+    guard burstFrames.count >= Self.samplesMinimum else {
       return ["ok": false, "reason": "hold_still"]
     }
+    guard maxCamTravelSeen <= Self.maxCamTravel else {
+      return ["ok": false, "reason": "unstable"]
+    }
 
-    // Median h with MAD outlier rejection, then the spread gate.
-    let heights = burstSamples.map { $0.h }
+    // Freeze the floor point: component-wise median of the burst's
+    // same-anchor hits — feet-raycast jitter must not leak into the
+    // per-frame height spread.
+    let fStar = simd_float3(
+      Self.median(burstFrames.map { $0.f.x }),
+      Self.median(burstFrames.map { $0.f.y }),
+      Self.median(burstFrames.map { $0.f.z }))
+
+    // Solve every frame's ray against the SAME floor point, then
+    // median h with MAD outlier rejection and the spread gate.
+    let solved = burstFrames.compactMap { solveHeight(f: fStar, c: $0.c, d: $0.d) }
+    guard solved.count >= Self.samplesMinimum else {
+      return ["ok": false, "reason": "hold_still"]
+    }
+    let heights = solved.map { $0.h }
     let med = Self.median(heights)
     let mad = Self.median(heights.map { abs($0 - med) })
     let tolerance = Swift.max(0.01, 3 * mad)
-    let kept = burstSamples.filter { abs($0.h - med) <= tolerance }
+    let kept = solved.filter { abs($0.h - med) <= tolerance }
     guard kept.count >= Self.samplesMinimum else {
       return ["ok": false, "reason": "hold_still"]
     }
@@ -330,17 +371,15 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
       return ["ok": false, "reason": "unstable", "stddevCm": Double(stddev * 100)]
     }
 
-    // Draw this burst's furniture at the median-h sample's feet point.
-    let anchorSample = kept.min(by: { abs($0.h - finalH) < abs($1.h - finalH) }) ?? kept[0]
-    let feetPos = anchorSample.feetPos
-    let headPos = simd_float3(feetPos.x, feetPos.y + finalH, feetPos.z)
+    // Draw this burst's furniture at the frozen floor point.
+    let headPos = simd_float3(fStar.x, fStar.y + finalH, fStar.z)
     let cm = Double(finalH * 100)
 
     provisionalFeetNode?.removeFromParentNode()
     provisionalFeetNode = nil
-    let feetNode = addLevelLine(at: feetPos, number: nextNumber)
+    let feetNode = addLevelLine(at: fStar, number: nextNumber)
     let headNode = addLevelLine(at: headPos, number: nextNumber)
-    let measureNode = addVerticalMeasure(feet: feetPos, head: headPos, labelCm: cm)
+    let measureNode = addVerticalMeasure(feet: fStar, head: headPos, labelCm: cm)
     completed.append(ReadingNodes(feetNode: feetNode, headNode: headNode, measureNode: measureNode))
     updateOpacities()
 
@@ -357,7 +396,10 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
   private func finishBurst(_ payload: [String: Any]?) {
     displayLink?.invalidate()
     displayLink = nil
-    burstSamples = []
+    burstFrames = []
+    activeFeet = nil
+    activeHead = nil
+    lockedFloorAnchorID = nil
     if let result = burstResult {
       burstResult = nil
       result(payload ?? ["ok": false, "reason": "cancelled"])
@@ -483,45 +525,17 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     return node
   }
 
-  // ── Floor tracking + surface feedback ───────────────────────────
-
-  /// Adopt the best floor candidate: a .floor-classified plane wins
-  /// outright; otherwise the LOWEST horizontal plane (rejects tables
-  /// and beds detected before the actual floor).
-  private func considerFloorCandidate(_ plane: ARPlaneAnchor) {
-    guard plane.alignment == .horizontal else { return }
-    if plane.classification == .floor {
-      floorAnchor = plane
-    } else if let current = floorAnchor {
-      if current.classification != .floor {
-        let currentY = (current.transform * simd_float4(current.center.x, current.center.y, current.center.z, 1)).y
-        let candidateY = (plane.transform * simd_float4(plane.center.x, plane.center.y, plane.center.z, 1)).y
-        if candidateY < currentY { floorAnchor = plane }
-      }
-    } else {
-      floorAnchor = plane
-    }
-  }
-
-  // Delegate callbacks arrive on the render thread; floorAnchor is
-  // read by the burst on main, so hop before touching shared state.
+  // ── Surface feedback so Dart can advance past findingFloor ──────
+  // First horizontal plane is enough to let the parent start placing
+  // markers: if it was actually a table, the feet raycast simply
+  // refuses with no_floor until the real floor plane exists. Waiting
+  // for .floor classification here would strand non-LiDAR phones —
+  // classification is unsupported there and never arrives.
   func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
-    guard let plane = anchor as? ARPlaneAnchor else { return }
+    guard let plane = anchor as? ARPlaneAnchor, plane.alignment == .horizontal, !hasFloorPlane else { return }
+    hasFloorPlane = true
     DispatchQueue.main.async { [weak self] in
-      guard let self = self else { return }
-      self.considerFloorCandidate(plane)
-      guard plane.alignment == .horizontal, !self.hasFloorPlane else { return }
-      self.hasFloorPlane = true
-      self.channel.invokeMethod("onState", arguments: ["state": "floor_found"])
-    }
-  }
-
-  func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
-    guard let plane = anchor as? ARPlaneAnchor else { return }
-    // ARKit refines planes over time; re-evaluate (classification can
-    // arrive late, and the same anchor object updates in place).
-    DispatchQueue.main.async { [weak self] in
-      self?.considerFloorCandidate(plane)
+      self?.channel.invokeMethod("onState", arguments: ["state": "floor_found"])
     }
   }
 

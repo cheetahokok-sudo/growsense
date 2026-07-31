@@ -25,27 +25,42 @@ between the heels) and a HEAD marker (the crown) on screen, fine-tunes
 them by dragging (1:3 reduced gain), then Measure runs a native burst:
 
 - `worldAlignment = .gravity` → world Y is true vertical.
-- Per frame (~15 frames over ~1 s via CADisplayLink, 30 fps):
-  1. Gate: `trackingState == .normal`.
+- Both markers are **snapshotted at measure()** — a mid-burst drag
+  cannot mix geometries.
+- Per unique camera frame (~15 over ~1 s via CADisplayLink; duplicate
+  `ARFrame.timestamp`s are skipped so 15 samples are 15 real frames):
+  1. Gate: `trackingState == .normal`; camera travel tracked against
+     the first frame.
   2. **Feet**: raycast the feet marker onto `.existingPlaneGeometry`
-     (horizontal), preferring a `.floor`-classified plane; Y snapped to
-     the tracked floor anchor when within 10 cm. → `F`
-  3. **Head**: unproject the head marker into a world ray `C + s·D`
-     (never raycast the head onto environment geometry — the wall
-     behind the child must not determine the head depth).
-  4. **Closest approach** of that ray to the vertical line
-     `L(h) = F + h·(0,1,0)`. `h` is the height; the miss distance
-     (residual) is the frame's quality signal.
-  5. Per-sample gates: `s > 0`, `0.4 < h < 2.2` m, residual < 5 cm,
-     denominator guard against near-vertical rays.
+     (horizontal), preferring a `.floor`-classified plane. The burst
+     **locks to the first hit's anchor identifier** — one burst never
+     blends two floor datums, and there is deliberately NO cross-anchor
+     Y correction (a plane-geometry hit already lies on its plane's
+     refined surface).
+  3. **Head**: unproject the head marker into a world ray from the AR
+     camera origin (never raycast the head onto environment geometry —
+     the wall behind the child must not determine the head depth).
 - Burst verdict: `no_floor` if the feet marker never hit detected
-  floor; `hold_still` if < 6 clean samples; else median `h` with MAD
-  outlier rejection; `unstable` if stddev > 1.5 cm. Success returns
-  `heightCm` + `stddevCm` + `distanceM` (horizontal camera→feet) +
-  `pitchDeg` (head-ray elevation) for the Dart honesty hints
-  (pitch > 25° or distance < 1.5 m → step-back tip, never blocking).
+  floor; `hold_still` if < 6 clean frames; `unstable` if the camera
+  travelled > 3 cm. Then the floor point is **frozen**: `F*` =
+  component-wise median of the same-anchor hits, and every frame's ray
+  is solved against `F*` — **closest approach** to the vertical line
+  `L(h) = F* + h·(0,1,0)`, gated per frame (`s > 0`,
+  `0.4 < h < 2.2` m, residual < 5 cm, near-vertical guard). Median `h`
+  with MAD outlier rejection; `unstable` if stddev > 1.5 cm. Success
+  returns `heightCm` + `stddevCm` + `distanceM` (horizontal
+  camera→feet) + `pitchDeg` (head-ray elevation) for the Dart honesty
+  hints (pitch > 25° or distance < 1.5 m → step-back tip, never
+  blocking).
 - Three bursts (markers persist, nudge between), median of medians,
   spread > 2 cm → estimated-gold warning.
+- **Feet marker definition matters**: the vertical line must rise from
+  under the crown axis, so the instruction is the floor between the
+  feet AT THE ANKLES — not the wall-floor seam (behind the body axis)
+  and not the toes (in front). Marking the wall seam reads short by
+  `(camY − crownY) × gap / distance`. The stronger mitigation is in
+  the intro: hold the phone level with the child's head — when camera
+  height ≈ crown height that error term vanishes entirely.
 
 Note: v3's "theodolite" pull-back was the same geometry as the
 closest-point solve (direction-only head, depth discarded) — v4 keeps
@@ -60,7 +75,8 @@ stadiometers too), diurnal 1–2 cm.
 ## UX (v4)
 
 - **Setup illustration** on the intro (`_SetupScenePainter`): child
-  against the wall, parent 2–2.5 m back, phone still at chest height.
+  against the wall, parent 2–2.5 m back, phone still and level with
+  the child's head.
 - **Markers**: dot + full-width hairline (no circle — field feedback),
   mint for feet, white for head, label chips, drag handles with 1:3
   reduced-gain vertical drag. Tap to place, drag to fine-tune.
