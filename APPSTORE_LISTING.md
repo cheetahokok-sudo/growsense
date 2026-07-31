@@ -29,7 +29,19 @@ Child growth & height tracker
 
 ---
 
-## Version 1.5.0 — What's New
+## Version 1.6.0 — What's New
+```
+Height Scan — measure your child's height with the iPhone camera.
+• Stand them heels-and-back against a wall, line up the two on-screen markers, tap Measure
+• Measures twice and only asks for a third reading when the two disagree
+• Refuses an unsteady reading rather than guessing at a number
+• A scanned height saves as a camera measurement, kept distinct from one you type
+• The AI growth coach can now answer live — questions its sourced library doesn't cover get a fresh AI answer, counted against your monthly allowance
+• Height Scan and live AI answers are part of GrowSense Premium; typing a height in yourself stays free, and so does daily logging
+```
+
+<details><summary>Version 1.5.0 — What's New (superseded)</summary>
+
 ```
 GrowSense Premium can now be started right in the app.
 • Premium monthly or yearly, with Restore Purchases on any device
@@ -40,6 +52,7 @@ GrowSense Premium can now be started right in the app.
 • Confirmation before deleting a lab, measurement, puberty or illness record
 • Fixes: bone-age assessments now save, and the tab bar clears the home indicator
 ```
+</details>
 
 <details><summary>Version 1.0.0 — What's New (superseded)</summary>
 
@@ -55,7 +68,7 @@ First release of GrowSense.
 
 ## Promotional Text (170 max — updatable anytime without review)
 ```
-Everyday meals, sleep and activity become a clear picture of your child's growth — WHO percentiles, a daily readiness score, and a bone-age history for clinic visits.
+Measure height with just the iPhone camera. Meals, sleep and activity become a clear picture of your child's growth — WHO percentiles and a daily readiness score.
 ```
 
 ## Description (paste as-is)
@@ -67,6 +80,7 @@ Most growth worries come down to one question: is my child on track? GrowSense a
 WHAT YOU CAN DO
 • Daily readiness — nutrition, activity and sleep wrap into one score, with a plain-language insight on which lever to pull today.
 • Growth trajectory — plot measurements on WHO percentile channels and see an honest projected range, not just dots on a chart.
+• Height Scan — measure standing height with just the iPhone camera. Stand your child against a wall, line up two on-screen markers, and get a reading within about half a centimetre when the phone is held steady. It refuses an unsteady reading rather than guessing, and a scanned height is always labelled as a camera measurement.
 • Bone-age history — keep every bone-age X-ray from every clinic in one timeline, annotate the scan, and bring the full story to your next consult. An optional AI reading offers an educational second opinion as a confidence range, never a diagnosis, and always asks to be confirmed by a pediatric radiologist.
 • Fast logging — protein-first food and impact-aware activity libraries make daily consistency easy; sync sleep and activity from a connected wearable.
 • AI growth coach — practical, sourced answers about sleep, nutrition, growth trends, puberty and clinic prep.
@@ -81,7 +95,7 @@ Accounts are created and managed by a parent or guardian. Your data is encrypted
 GrowSense is educational and does not replace medical advice. For any growth concern, talk to your pediatrician.
 
 GROWSENSE PREMIUM — SUBSCRIPTION
-Logging food, activity and sleep every day is free, and stays free. Premium is for the long record: unlimited measurements and your full growth history, analytics over 90 days or six months, the bone-age AI second opinion, lab interpretation, and the visit-summary PDF.
+Logging food, activity and sleep every day is free, and stays free. Premium is for the long record: unlimited measurements and your full growth history, the Height Scan camera measurement, analytics over 90 days or six months, the bone-age AI second opinion, lab interpretation, live AI coach answers, and the visit-summary PDF.
 • GrowSense Premium Monthly — US$4.99 per month
 • GrowSense Premium Yearly — US$39.99 per year
 Payment is charged to your Apple Account when you confirm the purchase. The subscription renews automatically unless auto-renew is turned off at least 24 hours before the end of the current period, and your account is charged for renewal within the 24 hours before the period ends. You can manage the subscription and turn off auto-renewal in your Apple Account settings after purchase. Prices are shown in your local currency at checkout.
@@ -137,19 +151,32 @@ The demo account is deliberately on the FREE tier so both subscriptions are reac
    renewal terms, and links to our Terms of Use and Privacy Policy.
 3. "Restore purchases" sits next to that button and works without buying anything.
 The paywall is also reached from any locked feature: Medical tab → a bone-age record →
-"AI second opinion", or Analytics → the 90-day / 6-month range selector. Each opens a
-sheet whose "See subscription options" button goes to the same paywall.
+"AI second opinion", Analytics → the 90-day / 6-month range selector, or Medical tab →
+add a measurement → the locked "Scan height" button. Each opens a sheet whose
+"See subscription options" button goes to the same paywall.
+
+HEIGHT SCAN (NEW IN 1.6.0)
+Medical tab → add a measurement → "Scan height". The button renders only on
+ARKit-capable iPhones (a device probe — it will not appear in the iPad or simulator).
+On the free demo account it shows a lock and opens the Premium sheet, so the locked
+path can be verified without a child present. The measurement itself needs a person
+standing against a wall; everything runs on-device with ARKit, and no photo or video
+ever leaves the phone — only the resulting height number is saved, labelled as a
+camera measurement.
 
 WHAT PREMIUM CHANGES
 Daily food, activity and sleep logging is free and unlimited. Premium lifts the free
 account's five-measurement limit, opens the full growth history (free shows 30 days),
-and enables the bone-age AI second opinion, the lab interpretation, and the visit PDF.
+and enables the Height Scan camera measurement, the bone-age AI second opinion, the
+lab interpretation, live AI coach answers, and the visit PDF.
 
 OTHER TABS
 • Today: daily readiness score (nutrition, activity, sleep) and quick logging.
 • Analytics: WHO percentile growth chart, height velocity, weekly trends.
 • Medical: serial bone-age history; tap a scan to annotate the carpals and growth plates.
-• AI coach: sourced answers about growth, sleep and nutrition.
+• AI coach: sourced answers about growth, sleep and nutrition. On premium, a question
+  outside the answer library gets a live AI answer, marked with a "Live AI" chip and
+  counted against a monthly allowance.
 
 The bone-age AI gives an educational second opinion as a confidence range, shows its
 reasoning, never states a diagnosis, and asks on screen to be confirmed by a

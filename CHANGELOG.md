@@ -37,6 +37,15 @@ shipped one lands within half a centimetre when the phone is held steady._
   'camera_ar'`, distinct from a typed one. Hand-editing the prefilled
   number drops it back to manual — a typed value is never labelled as
   a scan.
+- **Live AI coach answers (Premium).** A coach question the sourced
+  answer library can't match now goes to a live model instead of a
+  template shrug. Library first, model second: a library hit is
+  human-verified and cited, so it always wins and never spends a
+  credit. Live answers carry a "Live AI" chip and never a citation —
+  a generated answer must not borrow a source it did not earn. The
+  monthly allowance is verified and counted server-side before the
+  model is called, with a distinct message per refusal rather than a
+  silent fall back to a template.
 
 ### Changed
 - The measurement entry card now offers "Scan height" on supported
