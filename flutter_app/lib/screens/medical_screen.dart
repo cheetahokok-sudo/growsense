@@ -1665,6 +1665,27 @@ class _EntryCardState extends State<_EntryCard> {
     });
   }
 
+  void _showScanPremiumSheet() {
+    final t = widget.i18n.t;
+    showPremiumSheet(
+      context,
+      appState: widget.appState,
+      i18n: widget.i18n,
+      emoji: '📷',
+      title: t('flutter.hscan.premium_title', 'Height Scan is Premium'),
+      body: t(
+          'flutter.hscan.premium_body',
+          'Measure your child against a wall with the camera — no '
+              'stadiometer, no tape, no pencil marks — and every scan saves '
+              'into the same growth history as a clinic measurement.'),
+      freeNote: t(
+          'flutter.hscan.premium_free_note',
+          'Typing a height in yourself stays free, and so does logging '
+              'food, activity and sleep — always.'),
+      highlightBenefitKey: 'scan',
+    );
+  }
+
   Future<void> _scanHeight() async {
     final median = await Navigator.of(context).push<double>(
         MaterialPageRoute(
@@ -1825,19 +1846,38 @@ class _EntryCardState extends State<_EntryCard> {
               ),
             ],
           ),
+          // Height Scan is Premium. The button still renders for free
+          // users — a locked door they can see converts, a hidden one
+          // doesn't. Listenable so a purchase unlocks it in place,
+          // without making the parent leave and re-open the card.
           if (_scanSupported) ...[
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 44),
-                side: const BorderSide(color: GsColors.border2),
-                foregroundColor: GsColors.accent,
-              ),
-              icon: const GsIcon('hscan_cam', size: 17),
-              label: Text(
-                  widget.i18n.t('flutter.hscan.button', 'Scan height'),
-                  style: const TextStyle(fontSize: 12.5)),
-              onPressed: _busy ? null : _scanHeight,
+            ListenableBuilder(
+              listenable: widget.appState,
+              builder: (context, _) {
+                final unlocked = widget.appState.canUseHeightScan;
+                return OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 44),
+                    side: const BorderSide(color: GsColors.border2),
+                    foregroundColor: GsColors.accent,
+                  ),
+                  icon: unlocked
+                      ? const GsIcon('hscan_cam', size: 17)
+                      : const Icon(Icons.lock_outline, size: 16),
+                  label: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(widget.i18n.t('flutter.hscan.button', 'Scan height'),
+                        style: const TextStyle(fontSize: 12.5)),
+                    if (!unlocked) ...[
+                      const SizedBox(width: 6),
+                      PremiumBadge(i18n: widget.i18n),
+                    ],
+                  ]),
+                  onPressed: _busy
+                      ? null
+                      : (unlocked ? _scanHeight : _showScanPremiumSheet),
+                );
+              },
             ),
           ],
           const SizedBox(height: 10),

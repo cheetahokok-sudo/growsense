@@ -17,7 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'analytics.dart' show calcSleepTargetMin;
 import 'app_meta.dart';
-import 'platform.dart' show kIsApplePhone;
+import 'platform.dart' show kIsApplePhone, kShowPaidUi;
 import 'recall_engine.dart' show manualEntryMeta;
 import 'wearables.dart' show googleHealthRedirectUri;
 
@@ -415,6 +415,15 @@ class AppState extends ChangeNotifier {
 
   bool get canAddMeasurement =>
       isPremium || measurementsLogged < kFreeMeasurementLimit;
+
+  /// Height Scan (camera/AR measurement) is a paid tool, alongside the
+  /// bone-age AI read and lab interpretation.
+  ///
+  /// Unlike those, the gate is CLIENT-SIDE ONLY: the measurement is
+  /// computed entirely on-device, so there is no Edge Function to
+  /// enforce it. Builds without paid UI keep it unlocked — showing a
+  /// paywall we cannot fulfil would be worse than giving it away.
+  bool get canUseHeightScan => !kShowPaidUi || isPremium;
 
   /// Whether logging [date] would create a NEW row rather than update an
   /// existing one. [addMeasurement] upserts on (child_id, recorded_date),

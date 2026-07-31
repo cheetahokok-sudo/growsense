@@ -194,6 +194,29 @@ Channel contract:
     always completed, including on reset/dispose (`cancelled`).
   - `reset`; `dispose`. Native → Dart: `onState {state: floor_found|error}`.
 
+## Tier: Premium
+
+Height Scan is a **paid** tool, alongside the bone-age AI second opinion
+and lab interpretation. The gate is `AppState.canUseHeightScan`
+(`!kShowPaidUi || isPremium`) — it delegates to `isPremium` rather than
+re-reading `subscription_tier`, because a getter that re-implements the
+tier check is exactly how a lapsed subscriber once kept the visit PDF
+forever (see `test/entitlement_test.dart`).
+
+Free users still **see** the Scan height button, with a lock icon and a
+`PremiumBadge`; tapping opens the house paywall teaser
+(`showPremiumSheet`, `highlightBenefitKey: 'scan'`) rather than a dead
+control. Typing a height by hand stays free, as does the free tier's
+5-measurement allowance.
+
+**This gate is client-side only.** Unlike the AI features there is no
+Edge Function to re-check, because the measurement is computed entirely
+on-device — the same situation as the visit-summary PDF. Enforcing
+`data_source = 'camera_ar'` server-side (RLS or a trigger) is possible
+and is deliberately **not** done: a stale or briefly-unavailable tier
+read would block a legitimate save of a real measurement, which is a
+worse failure than a bypassed gate on a local computation.
+
 Provenance rules (the honest-data part):
 - The scan median lands in the normal entry card with a 📷 suffix; weight,
   date, and the free-tier cap all behave exactly as a typed entry.

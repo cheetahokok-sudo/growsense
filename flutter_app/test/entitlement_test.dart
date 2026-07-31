@@ -92,4 +92,56 @@ void main() {
       );
     });
   });
+
+  group('AppState.canUseHeightScan', () {
+    // Height Scan runs entirely on-device, so like the visit-summary PDF
+    // there is no Edge Function re-check behind it. That makes this
+    // getter the only gate, and it must not re-implement the tier logic.
+    test('free tier cannot scan', () {
+      expect(
+        _appWith({'subscription_tier': 'free', 'tier_expires_at': null})
+            .canUseHeightScan,
+        isFalse,
+      );
+    });
+
+    test('no account row cannot scan', () {
+      expect(_appWith(null).canUseHeightScan, isFalse);
+    });
+
+    test('active premium can scan', () {
+      expect(
+        _appWith({
+          'subscription_tier': 'premium',
+          'tier_expires_at': _iso(const Duration(days: 30)),
+        }).canUseHeightScan,
+        isTrue,
+      );
+    });
+
+    test('EXPIRED premium cannot scan', () {
+      expect(
+        _appWith({
+          'subscription_tier': 'premium',
+          'tier_expires_at': _iso(const Duration(days: -1)),
+        }).canUseHeightScan,
+        isFalse,
+      );
+    });
+
+    test('tracks isPremium exactly, so expiry can never be forgotten', () {
+      for (final account in <Map<String, dynamic>?>[
+        null,
+        {'subscription_tier': 'free', 'tier_expires_at': null},
+        {'subscription_tier': 'premium', 'tier_expires_at': null},
+        {
+          'subscription_tier': 'pro',
+          'tier_expires_at': _iso(const Duration(days: -1))
+        },
+      ]) {
+        final app = _appWith(account);
+        expect(app.canUseHeightScan, app.isPremium, reason: '$account');
+      }
+    });
+  });
 }

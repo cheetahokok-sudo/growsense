@@ -142,6 +142,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final items = <(String, String, String)>[
       ('history', '📈', t('flutter.paywall.b_history',
           'Your child\'s full growth history and height-velocity trend, not just the last 30 days')),
+      ('scan', '📷', t('flutter.paywall.b_scan',
+          'Measure height with the camera — no stadiometer, no tape, no wall marks')),
       ('bone', '🦴', t('flutter.paywall.b_bone',
           'AI second opinion on bone-age X-rays, alongside your multi-hospital timeline')),
       ('labs', '🧪', t('flutter.paywall.b_labs',
