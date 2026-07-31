@@ -4209,12 +4209,12 @@
     "ar": "تراجع حتى يظهر الطفل كاملاً على الشاشة (نحو 2–2.5 متر)، وارفع الهاتف بمستوى رأس الطفل وأبقه ثابتاً"
   },
   "flutter.hscan.intro_3": {
-    "en": "Tap the feet line, then the top of the head — the app measures 3 quick bursts",
-    "th": "แตะตำแหน่งเท้า แล้วแตะยอดศีรษะ แอปจะวัดต่อเนื่อง 3 รอบ",
-    "vi": "Chạm vào vị trí bàn chân, rồi đỉnh đầu — ứng dụng sẽ đo nhanh 3 lượt",
-    "ko": "발 위치, 그다음 정수리를 탭하세요 — 앱이 3회 연속 측정합니다",
-    "zh": "先点脚部位置，再点头顶——应用会快速测量3轮",
-    "ar": "انقر موضع القدمين ثم أعلى الرأس — سيقيس التطبيق 3 جولات سريعة"
+    "en": "Adjust the lines to the feet and the head — the app measures 2–3 quick bursts",
+    "th": "ปรับเส้นให้ตรงเท้าและศีรษะ แอปจะวัดต่อเนื่อง 2–3 รอบ",
+    "vi": "Chỉnh hai vạch vào bàn chân và đỉnh đầu — ứng dụng sẽ đo nhanh 2–3 lượt",
+    "ko": "선을 발과 머리에 맞추세요 — 앱이 2–3회 연속 측정합니다",
+    "zh": "把两条线调整到脚部和头顶——应用会快速测量2–3轮",
+    "ar": "اضبط الخطين على القدمين وأعلى الرأس — سيقيس التطبيق 2–3 جولات سريعة"
   },
   "flutter.hscan.intro_4": {
     "en": "Scan at the same time of day — kids are taller in the morning",
@@ -4240,29 +4240,45 @@
     "zh": "缓慢移动手机以识别地面…",
     "ar": "حرك الهاتف ببطء ليتمكن من العثور على الأرضية…"
   },
-  "flutter.hscan.place_feet": {
-    "en": "Tap the floor between the feet, right at the ankles — not the wall edge, not the toes",
-    "th": "แตะพื้นตรงกลางระหว่างเท้า ตรงระดับข้อเท้า ไม่ใช่ขอบผนังหรือปลายเท้า",
-    "vi": "Chạm vào sàn giữa hai bàn chân, ngay chỗ mắt cá — không phải mép tường hay mũi chân",
-    "ko": "두 발 사이의 바닥, 발목 위치를 탭하세요 — 벽 모서리나 발끝이 아닙니다",
-    "zh": "点两脚之间的地面，正对脚踝——不是墙角，也不是脚尖",
-    "ar": "انقر الأرض بين القدمين عند الكاحلين — ليس حافة الحائط ولا أطراف الأصابع"
+  "flutter.hscan.drag_feet": {
+    "en": "Line this up with the floor between the feet, right at the ankles — not the wall edge, not the toes",
+    "th": "เลื่อนเส้นนี้ให้ตรงพื้นระหว่างเท้า ตรงระดับข้อเท้า ไม่ใช่ขอบผนังหรือปลายเท้า",
+    "vi": "Căn vạch này vào sàn giữa hai bàn chân, ngay chỗ mắt cá — không phải mép tường hay mũi chân",
+    "ko": "이 선을 두 발 사이의 바닥, 발목 높이에 맞추세요 — 벽 모서리나 발끝이 아닙니다",
+    "zh": "把这条线对准两脚之间的地面，正对脚踝——不是墙角，也不是脚尖",
+    "ar": "حاذِ هذا الخط مع الأرض بين القدمين عند الكاحلين — ليس حافة الحائط ولا أطراف الأصابع"
   },
-  "flutter.hscan.place_head": {
-    "en": "Tap the very top of the head — the crown, not the forehead. Flatten the hair",
-    "th": "แตะจุดสูงสุดของศีรษะ กลางกระหม่อม ไม่ใช่หน้าผาก และกดผมให้ราบ",
-    "vi": "Chạm vào điểm cao nhất của đầu — đỉnh đầu, không phải trán. Ép tóc xuống",
-    "ko": "머리의 맨 꼭대기(정수리)를 탭하세요 — 이마가 아닙니다. 머리카락은 눌러 주세요",
-    "zh": "点头部最高点——头顶正中，不是额头。请把头发压平",
-    "ar": "انقر أعلى نقطة من الرأس — قمة الرأس وليس الجبهة. اضغط الشعر ليستوي"
+  "flutter.hscan.drag_head": {
+    "en": "Line this up with the very top of the head — the crown, not the forehead. Flatten the hair",
+    "th": "เลื่อนเส้นนี้ให้ตรงจุดสูงสุดของศีรษะ กลางกระหม่อม ไม่ใช่หน้าผาก และกดผมให้ราบ",
+    "vi": "Căn vạch này vào điểm cao nhất của đầu — đỉnh đầu, không phải trán. Ép tóc xuống",
+    "ko": "이 선을 머리의 맨 꼭대기(정수리)에 맞추세요 — 이마가 아닙니다. 머리카락은 눌러 주세요",
+    "zh": "把这条线对准头部最高点——头顶正中，不是额头。请把头发压平",
+    "ar": "حاذِ هذا الخط مع أعلى نقطة من الرأس — قمة الرأس وليس الجبهة. اضغط الشعر ليستوي"
+  },
+  "flutter.hscan.preset_hint": {
+    "en": "These lines are a starting guess, not a measurement — move them onto your child",
+    "th": "เส้นสองเส้นนี้เป็นเพียงตำแหน่งเริ่มต้น ไม่ใช่ค่าที่วัดได้ กรุณาเลื่อนให้ตรงตัวเด็ก",
+    "vi": "Hai vạch này chỉ là vị trí khởi đầu, không phải kết quả đo — hãy kéo chúng vào đúng người bé",
+    "ko": "이 선들은 시작 위치일 뿐 측정값이 아닙니다 — 아이에게 맞게 옮겨 주세요",
+    "zh": "这两条线只是起始位置，不是测量结果——请把它们移到孩子身上",
+    "ar": "هذان الخطان مجرد نقطة بداية وليسا قياساً — حركهما إلى طفلك"
+  },
+  "flutter.hscan.floor_patchy": {
+    "en": "Move the mint line onto clearer floor — it needs an open patch between the feet",
+    "th": "เลื่อนเส้นสีเขียวไปที่พื้นที่โล่งกว่านี้ ต้องเป็นพื้นว่างระหว่างเท้า",
+    "vi": "Chuyển vạch xanh sang phần sàn trống hơn — cần một khoảng sàn trống giữa hai bàn chân",
+    "ko": "민트색 선을 더 깨끗한 바닥으로 옮기세요 — 두 발 사이의 빈 바닥이 필요합니다",
+    "zh": "把绿色横线移到更空的地面——需要两脚之间有一块干净地面",
+    "ar": "انقل الخط الأخضر إلى أرضية أوضح — يحتاج إلى مساحة خالية بين القدمين"
   },
   "flutter.hscan.adjust": {
-    "en": "Drag a line to fine-tune it — slow drags move it precisely. Then tap Measure",
-    "th": "ลากเส้นเพื่อปรับละเอียด ลากช้า ๆ เส้นจะขยับทีละนิด แล้วแตะ วัด",
-    "vi": "Kéo vạch để tinh chỉnh — kéo chậm vạch sẽ di chuyển chính xác. Rồi nhấn Đo",
-    "ko": "선을 드래그해 미세 조정하세요 — 천천히 끌면 정밀하게 움직입니다. 그다음 측정을 누르세요",
-    "zh": "拖动横线微调——慢慢拖动可精确移动。然后点测量",
-    "ar": "اسحب الخط للضبط الدقيق — السحب البطيء يحركه بدقة. ثم اضغط قياس"
+    "en": "Adjust the lines to the feet and the head — slow drags move precisely. Then tap Measure",
+    "th": "ปรับเส้นให้ตรงเท้าและศีรษะ ลากช้า ๆ จะขยับได้ละเอียด แล้วแตะ วัด",
+    "vi": "Chỉnh hai vạch vào bàn chân và đỉnh đầu — kéo chậm sẽ di chuyển chính xác. Rồi nhấn Đo",
+    "ko": "선을 발과 머리에 맞추세요 — 천천히 끌면 정밀하게 움직입니다. 그다음 측정을 누르세요",
+    "zh": "把两条线调整到脚部和头顶——慢慢拖动可精确移动。然后点测量",
+    "ar": "اضبط الخطين على القدمين وأعلى الرأس — السحب البطيء يحرك بدقة. ثم اضغط قياس"
   },
   "flutter.hscan.between_bursts": {
     "en": "Check the lines still sit right, then measure again",

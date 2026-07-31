@@ -2,14 +2,15 @@
 // Height Scan — camera/AR height measurement (iOS-only).
 //
 // Thin Dart wrapper over the native ARKit module in
-// ios/Runner/HeightScanView.swift. v4 flow: the phone stays STILL
-// with the whole child in frame; the parent taps a feet marker and a
-// head marker on screen (setMarkers, normalized coords), then
-// measure() samples ~15 frames over ~1 s natively and returns the
-// median with quality gates — an unstable burst is refused with a
-// reason code instead of returning a bad number. The guided flow
-// (height_scan_screen.dart) collects THREE bursts and saves the
-// median of medians.
+// ios/Runner/HeightScanView.swift. v4.2 flow: the phone stays STILL
+// with the whole child in frame; two measuring lines are pre-placed
+// (presetHead gives the head line a real-world starting position) and
+// the parent drags them onto the feet and the crown (setMarkers,
+// normalized coords). measure() then samples up to 10 unique frames
+// natively and returns the median with quality gates — a bad burst is
+// refused with a reason code instead of returning a wrong number. The
+// guided flow (height_scan_screen.dart) takes 2 bursts, and a 3rd
+// only when the first two disagree.
 //
 // Honesty contract: results save with data_source 'camera_ar', NOT
 // 'manual' — a scan is a real measurement but a different instrument,
@@ -85,15 +86,60 @@ class HeightScanController {
     });
   }
 
-  /// One measurement burst: the native side samples ~15 frames over
-  /// ~1 s (hold the phone still) and returns the median height with
+  /// Where the crown of a [heightCm]-tall child standing at the feet
+  /// marker would appear on screen, in normalized view coords. Pure
+  /// guidance — it never feeds a saved number, it just gives the head
+  /// line a starting position that means something in the room.
+  /// ok=false reasons: no_floor | behind | invalid | implausible |
+  /// not_ready. [offScreen] means the child can't fit in frame from
+  /// here (same condition as the too-close hint).
+  Future<
+      ({
+        bool ok,
+        String? reason,
+        double? headX,
+        double? headY,
+        bool offScreen,
+        double? distanceM,
+      })> presetHead({required Offset feet, double heightCm = 150}) async {
+    try {
+      final res = await _channel.invokeMethod<Map>('presetHead', {
+        'feetX': feet.dx,
+        'feetY': feet.dy,
+        'heightCm': heightCm,
+      });
+      return (
+        ok: res?['ok'] == true,
+        reason: res?['reason'] as String?,
+        headX: (res?['headX'] as num?)?.toDouble(),
+        headY: (res?['headY'] as num?)?.toDouble(),
+        offScreen: res?['offScreen'] == true,
+        distanceM: (res?['distanceM'] as num?)?.toDouble(),
+      );
+    } catch (_) {
+      // Older native binary: fall back to the fixed screen fraction
+      // rather than breaking the screen.
+      return (
+        ok: false,
+        reason: 'not_ready',
+        headX: null,
+        headY: null,
+        offScreen: false,
+        distanceM: null
+      );
+    }
+  }
+
+  /// One measurement burst: the native side samples up to 10 unique
+  /// frames (hold the phone still) and returns the median height with
   /// quality gates. ok=false reasons:
-  ///   'no_floor'   — feet marker isn't over detected floor
-  ///   'hold_still' — too few clean frames (movement / bad tracking)
-  ///   'unstable'   — frames disagree by > 1.5 cm stddev
-  ///   'no_markers' — markers not set yet
-  ///   'busy'       — a burst is already running
-  ///   'cancelled'  — view reset/disposed mid-burst
+  ///   'no_floor'     — feet marker isn't over detected floor at all
+  ///   'floor_patchy' — some floor, but the ray keeps missing it
+  ///   'hold_still'   — too few clean frames (movement / bad tracking)
+  ///   'unstable'     — frames disagree by > 1.5 cm, or camera moved
+  ///   'no_markers'   — markers not set yet
+  ///   'busy'         — a burst is already running
+  ///   'cancelled'    — view reset/disposed mid-burst
   /// distanceM = horizontal camera→feet distance, pitchDeg = head-ray
   /// elevation — both feed the honesty hints.
   Future<
