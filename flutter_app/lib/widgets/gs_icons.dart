@@ -87,6 +87,17 @@ const Map<String, String> _gsIcons = {
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 7H18.5a1.5 1.5 0 0 1 1.5 1.5V10a1.7 1.7 0 0 0 0 3.8V15.5a1.5 1.5 0 0 1-1.5 1.5H5.5a1.5 1.5 0 0 1-1.5-1.5V13.8a1.7 1.7 0 0 0 0-3.8V8.5a1.5 1.5 0 0 1 1.5-1.5Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><path d="M14.6 7.6V16.4" stroke="#2f7d74" stroke-width="1.2" stroke-dasharray="1.3 1.5"/></svg>',
   'sprout':
       '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6" stroke="#153a2b" stroke-width="1.4"/><path d="M12 15c-3 0-4.5-1.5-4.5-4.5 3 0 4.5 1.5 4.5 4.5Z" fill="#78a488"/><path d="M12 13c0-2.6 1.5-4 4-4 0 2.6-1.5 4-4 4Z" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><path d="M8 20h8" stroke="#153a2b" stroke-width="1.4"/></svg>',
+  // ── Height Scan (camera/AR measurement) ─────────────────────────
+  'hscan_cam':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8.6 6.6 9.8 4.6h4.4l1.2 2" stroke="#153a2b" stroke-width="1.4"/><rect x="3.8" y="6.6" width="16.4" height="12" rx="2.6" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><circle cx="12" cy="12.6" r="3.4" fill="none" stroke="#153a2b" stroke-width="1.4"/><circle cx="12" cy="12.6" r="1.3" fill="#2f7d74"/><circle cx="17.6" cy="9.2" r=".8" fill="#b98d3e"/></svg>',
+  'hscan_wall':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19.2 3.5v17M4 20.5h15.2" stroke="#153a2b" stroke-width="1.5"/><circle cx="14.6" cy="7.4" r="2.2" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><rect x="12.7" y="10.4" width="3.8" height="7" rx="1.8" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.3"/><path d="M13.7 17.6v2.6M15.5 17.6v2.6" stroke="#153a2b" stroke-width="1.3"/><path d="M12.9 20.1h1.6M14.7 20.1h1.6" stroke="#b98d3e" stroke-width="1.5"/></svg>',
+  'hscan_distance':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 20.5h16.8" stroke="#153a2b" stroke-width="1.5"/><rect x="15" y="4.6" width="5.2" height="9.6" rx="1.7" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><circle cx="17.6" cy="12" r=".7" fill="#2f7d74"/><path d="M3.8 10.4h8.4" stroke="#2f7d74" stroke-width="1.5"/><path d="M6.2 8.2 3.8 10.4l2.4 2.2M9.8 8.2l2.4 2.2-2.4 2.2" stroke="#2f7d74" stroke-width="1.5"/></svg>',
+  'hscan_reticle':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6.2" fill="#cfe3d5" fill-opacity=".5" stroke="#153a2b" stroke-width="1.4"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3" stroke="#153a2b" stroke-width="1.4"/><circle cx="12" cy="12" r="1.6" fill="#2f7d74"/></svg>',
+  'hscan_morning':
+      '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 15.6a4.6 4.6 0 0 1 9.2 0" fill="#cfe3d5" stroke="#153a2b" stroke-width="1.4"/><path d="M3.6 15.6h16.8" stroke="#153a2b" stroke-width="1.5"/><path d="M12 4.6v2.4M5.6 7.2l1.7 1.7M18.4 7.2l-1.7 1.7" stroke="#b98d3e" stroke-width="1.5"/><path d="M7 19h10" stroke="#78a488" stroke-width="1.4"/></svg>',
 };
 
 /// Soft tile tint per icon (defaults to pale green). Device categories

@@ -70,23 +70,40 @@ class HeightScanController {
     return null;
   }
 
-  /// First call marks the feet, second returns the reading.
-  /// Returns:
-  ///   ('feet', null)      — feet anchored, now aim at the head
-  ///   ('head', heightCm)  — one full reading captured
-  ///   ('no_surface', null)   — nothing under the crosshair, try again
-  ///   ('implausible', null)  — mark landed somewhere absurd; scan reset
-  Future<(String, double?)> markPoint() async {
+  /// First call marks the feet, second returns the reading. The native
+  /// side also drops the numbered AR level line at each mark, and joins
+  /// a finished pair with the vertical measure.
+  /// step values:
+  ///   'feet'        — feet anchored, now aim at the head
+  ///   'head'        — one full reading captured (heightCm set)
+  ///   'no_surface'  — nothing under the crosshair, try again
+  ///   'implausible' — mark landed somewhere absurd; scan reset
+  /// distanceM = camera→mark distance, for the "step back" hint.
+  Future<({String step, double? heightCm, double? distanceM})>
+      markPoint() async {
     final res = await _channel.invokeMethod<Map>('markPoint');
-    if (res == null) return ('no_surface', null);
+    if (res == null) return (step: 'no_surface', heightCm: null, distanceM: null);
     if (res['ok'] == true) {
-      return (res['step'] as String, (res['heightCm'] as num?)?.toDouble());
+      return (
+        step: res['step'] as String,
+        heightCm: (res['heightCm'] as num?)?.toDouble(),
+        distanceM: (res['distanceM'] as num?)?.toDouble(),
+      );
     }
     if (res['reason'] == 'implausible') {
       await reset();
-      return ('implausible', null);
+      return (step: 'implausible', heightCm: null, distanceM: null);
     }
-    return ('no_surface', null);
+    return (step: 'no_surface', heightCm: null, distanceM: null);
+  }
+
+  /// One mark back (removes its AR line too).
+  /// 'feet' — pending feet unmarked → aim at feet again.
+  /// 'head' — last pair reopened → drop its reading, aim at head.
+  /// 'none' — nothing to undo.
+  Future<String> undoMark() async {
+    final res = await _channel.invokeMethod<Map>('undoMark');
+    return (res?['undone'] as String?) ?? 'none';
   }
 
   Future<void> reset() => _channel.invokeMethod('reset');

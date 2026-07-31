@@ -4311,5 +4311,45 @@
     "ko": "이 키 사용",
     "zh": "使用此身高",
     "ar": "استخدام هذا الطول"
+  },
+  "flutter.hscan.feet": {
+    "en": "feet",
+    "th": "เท้า",
+    "vi": "chân",
+    "ko": "발",
+    "zh": "脚",
+    "ar": "القدمان"
+  },
+  "flutter.hscan.head": {
+    "en": "head",
+    "th": "ศีรษะ",
+    "vi": "đầu",
+    "ko": "머리",
+    "zh": "头",
+    "ar": "الرأس"
+  },
+  "flutter.hscan.redo": {
+    "en": "Redo",
+    "th": "ทำใหม่",
+    "vi": "Làm lại",
+    "ko": "다시",
+    "zh": "重做",
+    "ar": "إعادة"
+  },
+  "flutter.hscan.too_close": {
+    "en": "A little far back helps accuracy — try 2–3 steps away",
+    "th": "ถอยห่างอีกนิดจะแม่นยำขึ้น ลองห่าง 2–3 ก้าว",
+    "vi": "Lùi lại một chút sẽ chính xác hơn — thử cách 2–3 bước",
+    "ko": "조금 뒤로 물러나면 더 정확합니다 — 2–3걸음 거리에서 해보세요",
+    "zh": "稍微后退更准确——请保持2–3步距离",
+    "ar": "الابتعاد قليلاً يحسّن الدقة — جرّب من مسافة خطوتين إلى ثلاث"
+  },
+  "flutter.hscan.spread_warn": {
+    "en": "The readings disagree by {cm} cm — a fresh scan may be more accurate",
+    "th": "ค่าที่วัดได้ต่างกัน {cm} ซม. สแกนใหม่อาจแม่นยำกว่า",
+    "vi": "Các lần đo lệch nhau {cm} cm — quét lại có thể chính xác hơn",
+    "ko": "측정값이 {cm} cm 차이납니다 — 다시 스캔하면 더 정확할 수 있습니다",
+    "zh": "各次测量相差 {cm} 厘米——重新扫描可能更准确",
+    "ar": "تختلف القراءات بمقدار {cm} سم — قد يكون المسح من جديد أدق"
   }
 }

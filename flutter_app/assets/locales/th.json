@@ -777,5 +777,10 @@
  "flutter.hscan.implausible": "ค่าที่ได้ดูไม่ถูกต้อง เริ่มการวัดครั้งนี้ใหม่",
  "flutter.hscan.result_title": "สแกนเสร็จแล้ว",
  "flutter.hscan.rescan": "สแกนใหม่",
- "flutter.hscan.use": "ใช้ส่วนสูงนี้"
+ "flutter.hscan.use": "ใช้ส่วนสูงนี้",
+ "flutter.hscan.feet": "เท้า",
+ "flutter.hscan.head": "ศีรษะ",
+ "flutter.hscan.redo": "ทำใหม่",
+ "flutter.hscan.too_close": "ถอยห่างอีกนิดจะแม่นยำขึ้น ลองห่าง 2–3 ก้าว",
+ "flutter.hscan.spread_warn": "ค่าที่วัดได้ต่างกัน {cm} ซม. สแกนใหม่อาจแม่นยำกว่า"
 }

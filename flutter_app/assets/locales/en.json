@@ -777,5 +777,10 @@
  "flutter.hscan.implausible": "That doesn't look right — starting this reading over",
  "flutter.hscan.result_title": "Scan complete",
  "flutter.hscan.rescan": "Scan again",
- "flutter.hscan.use": "Use this height"
+ "flutter.hscan.use": "Use this height",
+ "flutter.hscan.feet": "feet",
+ "flutter.hscan.head": "head",
+ "flutter.hscan.redo": "Redo",
+ "flutter.hscan.too_close": "A little far back helps accuracy — try 2–3 steps away",
+ "flutter.hscan.spread_warn": "The readings disagree by {cm} cm — a fresh scan may be more accurate"
 }

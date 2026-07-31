@@ -1833,7 +1833,7 @@ class _EntryCardState extends State<_EntryCard> {
                 side: const BorderSide(color: GsColors.border2),
                 foregroundColor: GsColors.accent,
               ),
-              icon: const Icon(Icons.camera_alt_outlined, size: 16),
+              icon: const GsIcon('hscan_cam', size: 17),
               label: Text(
                   widget.i18n.t('flutter.hscan.button', 'Scan height'),
                   style: const TextStyle(fontSize: 12.5)),

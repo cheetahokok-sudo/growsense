@@ -777,5 +777,10 @@
  "flutter.hscan.implausible": "لا يبدو ذلك صحيحاً — إعادة هذه القراءة من جديد",
  "flutter.hscan.result_title": "اكتمل المسح",
  "flutter.hscan.rescan": "إعادة المسح",
- "flutter.hscan.use": "استخدام هذا الطول"
+ "flutter.hscan.use": "استخدام هذا الطول",
+ "flutter.hscan.feet": "القدمان",
+ "flutter.hscan.head": "الرأس",
+ "flutter.hscan.redo": "إعادة",
+ "flutter.hscan.too_close": "الابتعاد قليلاً يحسّن الدقة — جرّب من مسافة خطوتين إلى ثلاث",
+ "flutter.hscan.spread_warn": "تختلف القراءات بمقدار {cm} سم — قد يكون المسح من جديد أدق"
 }

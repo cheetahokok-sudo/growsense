@@ -777,5 +777,10 @@
  "flutter.hscan.implausible": "结果似乎不对——重新开始本次测量",
  "flutter.hscan.result_title": "扫描完成",
  "flutter.hscan.rescan": "重新扫描",
- "flutter.hscan.use": "使用此身高"
+ "flutter.hscan.use": "使用此身高",
+ "flutter.hscan.feet": "脚",
+ "flutter.hscan.head": "头",
+ "flutter.hscan.redo": "重做",
+ "flutter.hscan.too_close": "稍微后退更准确——请保持2–3步距离",
+ "flutter.hscan.spread_warn": "各次测量相差 {cm} 厘米——重新扫描可能更准确"
 }

@@ -19,6 +19,23 @@ Expected accuracy: ~1 cm tier on non-LiDAR phones, better on Pro (LiDAR
 mesh raycasts). Diurnal height variation is 1–2 cm, hence the intro tip
 to scan at a consistent time of day.
 
+## v2 UX (designed in the approved user-journey artifact)
+
+- **Setup illustration** on the intro (CustomPainter `_SetupScenePainter`):
+  child against the wall, parent 2–3 steps back, gold sight-lines.
+- **Six-mark sequence strip** — ①feet ①head ②feet ②head ③feet ③head —
+  static on the intro, live above the Mark button (current bold, done ✓).
+- **Numbered AR level lines**: every mark pins a dashed line with number
+  badges at both ends into the room; a completed pair is joined by a
+  **vertical measure** labelled with that reading's cm. Current reading
+  bright mint, history fades to 30%. All SceneKit, in the platform view.
+- **Redo** (`undoMark`): one mark back — pending feet unmarks, or the
+  last pair reopens (head line + measure removed, feet line restored).
+- **Honesty hints**: both marks < 1.5 m → "step back" tip; readings
+  spread > 2 cm → estimated-gold warning on the result, never blocking.
+- **No emoji** — `hscan_*` glyphs in `widgets/gs_icons.dart` (house
+  duotone grammar: #153a2b stroke, #cfe3d5 plane, teal/gold accents).
+
 ## Code map
 
 | Piece | File |

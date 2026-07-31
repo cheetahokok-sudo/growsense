@@ -777,5 +777,10 @@
  "flutter.hscan.implausible": "Kết quả có vẻ không đúng — bắt đầu lại lần đo này",
  "flutter.hscan.result_title": "Quét xong",
  "flutter.hscan.rescan": "Quét lại",
- "flutter.hscan.use": "Dùng chiều cao này"
+ "flutter.hscan.use": "Dùng chiều cao này",
+ "flutter.hscan.feet": "chân",
+ "flutter.hscan.head": "đầu",
+ "flutter.hscan.redo": "Làm lại",
+ "flutter.hscan.too_close": "Lùi lại một chút sẽ chính xác hơn — thử cách 2–3 bước",
+ "flutter.hscan.spread_warn": "Các lần đo lệch nhau {cm} cm — quét lại có thể chính xác hơn"
 }
