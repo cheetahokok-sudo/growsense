@@ -1,29 +1,31 @@
 // ══════════════════════════════════════════════════════════════════
-// GrowSense Height Scan — ARKit two-point height measurement.
+// GrowSense Height Scan — ARKit stationary-marker height measurement.
 //
-// Flow (driven from Dart over the per-view MethodChannel):
-//   1. ARKit finds the floor (horizontal plane detection).
-//   2. Parent aims the screen-centre crosshair at the child's FEET and
-//      calls markPoint → we anchor the floor Y there.
-//   3. Aims at the TOP OF THE HEAD and calls markPoint → height is the
-//      vertical delta between that hit and the floor Y. The child
-//      stands against a wall, so even if the hair itself yields no
-//      feature points, the wall plane just behind the head is hit at
-//      the same height — the Y is all we use.
-//   4. Dart repeats for 3 readings and takes the median.
+// v4 flow (driven from Dart over the per-view MethodChannel): the
+// phone stays STILL with the whole child in frame. The parent taps a
+// FEET marker (where the wall meets the floor, between the heels) and
+// a HEAD marker (the crown) on screen; Dart sends both as normalized
+// view coordinates via setMarkers. measure() then samples ~15 frames
+// over ~1 s and returns the median height with quality gates — the
+// phone never sweeps between marks, so no tracking drift or re-aim
+// error enters a reading. Dart repeats 3 bursts, median of medians.
 //
-// v2 (UX): every mark drops a numbered LEVEL LINE into the room at the
-// hit position, and a completed pair is joined by a VERTICAL MEASURE
-// line labelled with that reading's cm value — so a mark that landed
-// on the skirting board is visible immediately. Current reading is
-// bright mint; finished readings fade. undoMark steps one mark back.
-//
-// On LiDAR devices scene reconstruction is enabled, which makes the
-// head raycast hit the actual mesh instead of estimated planes —
-// this is the "phase 1.5" accuracy boost, free on Pro phones.
+// GEOMETRY (supersedes the v3 "theodolite" pull-back — same idea,
+// cleaner form, and it yields a residual quality signal): never trust
+// any raycast DEPTH at the head. Per frame:
+//   1. Raycast the FEET marker onto detected horizontal plane
+//      geometry (preferring a .floor-classified plane); snap its Y to
+//      the tracked floor anchor when they agree within 10 cm. → F
+//   2. Unproject the HEAD marker into a world ray C + s·D.
+//   3. Intersect (closest approach) that ray with the vertical line
+//      F + h·(0,1,0). h IS the height; the miss distance (residual)
+//      tells us how trustworthy the frame was.
+// The wall behind the child never determines the head depth, and the
+// per-frame residual + tracking-state + stddev gates mean an unstable
+// burst is refused ("hold still") instead of returning a bad number.
 //
 // Channel: growsense/height_scan_<viewId>
-//   Dart → native: markPoint, undoMark, reset, dispose
+//   Dart → native: setMarkers, measure, reset, dispose
 //   native → Dart: onState {state, message?}
 // ══════════════════════════════════════════════════════════════════
 
@@ -65,14 +67,20 @@ class HeightScanViewFactory: NSObject, FlutterPlatformViewFactory {
   }
 }
 
-// One completed reading's scene furniture, kept for undo + fading.
+// One completed burst's scene furniture, kept for fading + reset.
 private struct ReadingNodes {
-  let number: Int
-  let feetPos: simd_float3
-  let headPos: simd_float3
   let feetNode: SCNNode
   let headNode: SCNNode
   let measureNode: SCNNode
+}
+
+// One accepted frame within a burst.
+private struct MeasureSample {
+  let h: Float          // height in metres (the quantity of interest)
+  let residual: Float   // ray↔vertical-line miss distance
+  let feetPos: simd_float3
+  let dChild: Float     // horizontal camera→feet distance
+  let pitchDeg: Float   // head-ray elevation above horizontal
 }
 
 // ── The platform view ─────────────────────────────────────────────
@@ -84,11 +92,33 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
   private static let mint = UIColor(red: 0x78/255.0, green: 0xD6/255.0, blue: 0xA0/255.0, alpha: 1)
   private static let fadedOpacity: CGFloat = 0.3
 
-  private var hasFloorPlane = false            // any horizontal plane yet
-  private var pendingFeet: (pos: simd_float3, node: SCNNode)? // feet marked, head next
-  private var completed: [ReadingNodes] = []
+  // Burst tuning. 15 samples at 30 fps is ~0.5 s of stillness; the
+  // deadline gives slow frames room without letting a bad burst drag.
+  private static let samplesWanted = 15
+  private static let samplesMinimum = 6
+  private static let burstDeadline: CFTimeInterval = 1.2
+  private static let floorSnapTolerance: Float = 0.10
+  private static let residualLimit: Float = 0.05
+  private static let stddevLimit: Float = 0.015 // metres → 1.5 cm
 
+  private var hasFloorPlane = false      // fires the floor_found event once
+  private var floorAnchor: ARPlaneAnchor? // best-known floor plane, refreshed by ARKit
+  private var completed: [ReadingNodes] = []
   private var nextNumber: Int { completed.count + 1 }
+
+  // Markers in normalized view coordinates (0–1), set from Dart.
+  private var feetMarker: CGPoint?
+  private var headMarker: CGPoint?
+  private var provisionalFeetNode: SCNNode? // guidance-only line while placing
+
+  // In-flight burst. The FlutterResult MUST always be completed —
+  // a leaked result leaves Dart hanging on its await.
+  private var burstSamples: [MeasureSample] = []
+  private var burstFloorHits = 0
+  private var burstTicks = 0
+  private var burstStart: CFTimeInterval = 0
+  private var burstResult: FlutterResult?
+  private var displayLink: CADisplayLink?
 
   init(frame: CGRect, viewId: Int64, messenger: FlutterBinaryMessenger) {
     arView = ARSCNView(frame: frame)
@@ -99,6 +129,7 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     arView.automaticallyUpdatesLighting = true
 
     let config = ARWorldTrackingConfiguration()
+    config.worldAlignment = .gravity // world Y ∥ gravity — h is true vertical
     config.planeDetection = [.horizontal, .vertical]
     if ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) {
       config.sceneReconstruction = .mesh // LiDAR: raycast against real geometry
@@ -108,130 +139,244 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     channel.setMethodCallHandler { [weak self] call, result in
       guard let self = self else { return result(nil) }
       switch call.method {
-      case "markPoint": result(self.markPoint())
-      case "undoMark":  result(self.undoMark())
-      case "reset":     self.resetScan(); result(nil)
-      case "dispose":   self.arView.session.pause(); result(nil)
-      default:          result(FlutterMethodNotImplemented)
+      case "setMarkers": self.setMarkers(call.arguments); result(nil)
+      case "measure":    self.measure(result: result)
+      case "reset":      self.resetScan(); result(nil)
+      case "dispose":
+        self.finishBurst(["ok": false, "reason": "cancelled"])
+        self.arView.session.pause()
+        result(nil)
+      default:           result(FlutterMethodNotImplemented)
       }
     }
   }
 
   func view() -> UIView { arView }
 
-  // ── Screen-centre raycast, best available accuracy first ────────
-  // The feet mark restricts to HORIZONTAL surfaces: the floor plane is
-  // at true floor height wherever the ray lands, whereas an .any hit
-  // on the LiDAR mesh can land on the top of the foot (3–8 cm high) —
-  // one of the systematic shorteners found in device testing.
-  private func centerRaycast(alignment: ARRaycastQuery.TargetAlignment) -> simd_float4x4? {
-    let center = CGPoint(x: arView.bounds.midX, y: arView.bounds.midY)
-    // Existing plane geometry (or LiDAR mesh) is the most stable…
-    if let q = arView.raycastQuery(from: center, allowing: .existingPlaneGeometry, alignment: alignment),
-       let hit = arView.session.raycast(q).first {
-      return hit.worldTransform
+  // ── Markers ─────────────────────────────────────────────────────
+
+  /// Dart sends both markers (normalized 0–1) on every place/drag-end.
+  /// Either may be absent while the parent is still placing them.
+  private func setMarkers(_ args: Any?) {
+    guard let map = args as? [String: Any] else { return }
+    func point(_ xKey: String, _ yKey: String) -> CGPoint? {
+      guard let x = map[xKey] as? Double, let y = map[yKey] as? Double else { return nil }
+      return CGPoint(x: x, y: y)
     }
-    // …fall back to estimated planes (non-LiDAR head shots often land here).
-    if let q = arView.raycastQuery(from: center, allowing: .estimatedPlane, alignment: alignment),
+    feetMarker = point("feetX", "feetY")
+    headMarker = point("headX", "headY")
+    updateProvisionalFeetLine()
+  }
+
+  /// Guidance only: shows the parent where the feet tap landed in 3D.
+  /// May use estimated planes — never feeds the saved number.
+  private func updateProvisionalFeetLine() {
+    provisionalFeetNode?.removeFromParentNode()
+    provisionalFeetNode = nil
+    guard let marker = feetMarker else { return }
+    let screen = denormalize(marker)
+    guard let hit = raycastFloor(from: screen, allowEstimated: true) else { return }
+    let pos = simd_float3(hit.worldTransform.columns.3.x,
+                          hit.worldTransform.columns.3.y,
+                          hit.worldTransform.columns.3.z)
+    let node = addLevelLine(at: pos, number: nextNumber)
+    node.opacity = 0.55
+    provisionalFeetNode = node
+  }
+
+  private func denormalize(_ p: CGPoint) -> CGPoint {
+    CGPoint(x: p.x * arView.bounds.width, y: p.y * arView.bounds.height)
+  }
+
+  // ── Raycast + ray helpers ───────────────────────────────────────
+
+  /// Floor hit for the feet marker. Detected plane geometry only for
+  /// the real measurement (estimated is allowed just for guidance);
+  /// prefers a hit on a .floor-classified plane when one exists.
+  private func raycastFloor(from screen: CGPoint, allowEstimated: Bool) -> ARRaycastResult? {
+    if let q = arView.raycastQuery(from: screen, allowing: .existingPlaneGeometry, alignment: .horizontal) {
+      let hits = arView.session.raycast(q)
+      if let classified = hits.first(where: {
+        ($0.anchor as? ARPlaneAnchor)?.classification == .floor
+      }) {
+        return classified
+      }
+      if let first = hits.first { return first }
+    }
+    if allowEstimated,
+       let q = arView.raycastQuery(from: screen, allowing: .estimatedPlane, alignment: .horizontal),
        let hit = arView.session.raycast(q).first {
-      return hit.worldTransform
+      return hit
     }
     return nil
   }
 
-  private func cameraDistance(to pos: simd_float3) -> Double {
-    guard let cam = arView.pointOfView?.simdWorldPosition else { return 0 }
-    return Double(simd_length(pos - cam))
+  /// World-space ray through a screen point (SceneKit's equivalent of
+  /// RealityKit's ray(through:)): unproject at the near and far plane.
+  private func worldRay(through screen: CGPoint) -> (origin: simd_float3, dir: simd_float3)? {
+    let near = arView.unprojectPoint(SCNVector3(Float(screen.x), Float(screen.y), 0))
+    let far = arView.unprojectPoint(SCNVector3(Float(screen.x), Float(screen.y), 1))
+    let origin = simd_float3(near.x, near.y, near.z)
+    let dir = simd_float3(far.x - near.x, far.y - near.y, far.z - near.z)
+    let len = simd_length(dir)
+    guard len > 0.0001 else { return nil }
+    return (origin, dir / len)
   }
 
-  /// Two-step mark. Returns a map the Dart side switches on rather
-  /// than throwing — "no surface" mid-scan is normal, not an error.
-  /// distanceM lets Dart show a "step back a little" hint when the
-  /// parent is too close for clean raycast angles.
-  ///
-  /// HEAD GEOMETRY (the 4–10 cm-short fix from device testing): a ray
-  /// aimed at the crown grazes the hair and lands on the WALL behind —
-  /// a detected plane the raycast prefers, 10–15 cm past the child.
-  /// The phone is usually held ABOVE a child's crown, so the ray is
-  /// descending, and by the wall it sits below the true crown height:
-  ///   error ≈ (camY − crownY)/distance × head-to-wall gap
-  /// (worse close-up, worse for small children, worse for dark hair
-  /// that LiDAR sees straight through). The fix: never trust the head
-  /// hit's DEPTH — only its DIRECTION. The feet mark already fixed the
-  /// child's distance, so evaluate the ray AT the child's plane:
-  ///   t = dist_xz(cam → feet) / ‖dir_xz‖ ;  crownY = camY + dirY·t
-  /// If the ray hit the head itself this is unchanged; if it overshot
-  /// to the wall the overshoot term vanishes entirely. The measurement
-  /// becomes purely angular — a theodolite, not a rangefinder.
-  private func markPoint() -> [String: Any] {
-    let isFeet = pendingFeet == nil
-    guard let transform = centerRaycast(alignment: isFeet ? .horizontal : .any) else {
-      return ["ok": false, "reason": "no_surface"]
-    }
-    var pos = simd_float3(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
-
-    if isFeet {
-      let node = addLevelLine(at: pos, number: nextNumber)
-      pendingFeet = (pos, node)
-      updateOpacities() // a new reading began — everything finished fades
-      return ["ok": true, "step": "feet", "distanceM": cameraDistance(to: pos)]
-    }
-
-    let feet = pendingFeet!
-
-    // Pull the head point back from wherever the ray landed to the
-    // child's plane (the feet mark's horizontal distance from camera).
-    var dist = cameraDistance(to: pos)
-    if let cam = arView.pointOfView?.simdWorldPosition {
-      let dir = pos - cam
-      let dirXZ = simd_length(simd_float2(dir.x, dir.z))
-      let dChild = simd_length(simd_float2(feet.pos.x - cam.x, feet.pos.z - cam.z))
-      if dirXZ > 0.05 { // aiming near-vertical would blow up t; keep raw hit
-        let t = dChild / dirXZ
-        pos = cam + dir * t
-        dist = Double(dChild)
-      }
-    }
-
-    let heightM = pos.y - feet.pos.y
-    // Outside 0.4–2.2 m the parent almost certainly mis-aimed
-    // (marked a table edge, the wall skirting, a sibling…).
-    guard heightM > 0.4 && heightM < 2.2 else {
-      return ["ok": false, "reason": "implausible", "heightCm": Double(heightM * 100)]
-    }
-    let cm = Double(heightM * 100)
-
-    let headNode = addLevelLine(at: pos, number: nextNumber)
-    let measure = addVerticalMeasure(feet: feet.pos, head: pos, labelCm: cm)
-    completed.append(ReadingNodes(
-      number: nextNumber, feetPos: feet.pos, headPos: pos,
-      feetNode: feet.node, headNode: headNode, measureNode: measure))
-    pendingFeet = nil
-    updateOpacities() // the pair just finished — it stays bright for now
-    return ["ok": true, "step": "head", "heightCm": cm, "distanceM": dist]
+  /// World Y of the tracked floor plane (its refined centre, not the
+  /// raw anchor origin), read fresh at sample time — never cached.
+  private var floorY: Float? {
+    guard let a = floorAnchor else { return nil }
+    let c = a.transform * simd_float4(a.center.x, a.center.y, a.center.z, 1)
+    return c.y
   }
 
-  /// One mark back. Feet pending → unmark the feet. Otherwise reopen
-  /// the last completed pair: its head line + measure go, its feet
-  /// line comes back as the pending mark. Dart mirrors this state.
-  private func undoMark() -> [String: Any] {
-    if let feet = pendingFeet {
-      feet.node.removeFromParentNode()
-      pendingFeet = nil
-      return ["undone": "feet"]
+  // ── The burst ───────────────────────────────────────────────────
+
+  private func measure(result: @escaping FlutterResult) {
+    guard burstResult == nil else {
+      return result(["ok": false, "reason": "busy"])
     }
-    guard let last = completed.popLast() else { return ["undone": "none"] }
-    last.headNode.removeFromParentNode()
-    last.measureNode.removeFromParentNode()
-    last.feetNode.opacity = 1
-    pendingFeet = (last.feetPos, last.feetNode)
+    guard feetMarker != nil, headMarker != nil else {
+      return result(["ok": false, "reason": "no_markers"])
+    }
+    burstSamples = []
+    burstFloorHits = 0
+    burstTicks = 0
+    burstStart = CACurrentMediaTime()
+    burstResult = result
+    let link = CADisplayLink(target: self, selector: #selector(burstTick))
+    link.preferredFramesPerSecond = 30
+    link.add(to: .main, forMode: .common)
+    displayLink = link
+  }
+
+  @objc private func burstTick() {
+    guard burstResult != nil else { return finishBurst(nil) }
+    burstTicks += 1
+    let expired = CACurrentMediaTime() - burstStart > Self.burstDeadline
+    if burstSamples.count >= Self.samplesWanted || expired {
+      return finishBurst(burstVerdict())
+    }
+    guard let feet = feetMarker, let head = headMarker,
+          let frame = arView.session.currentFrame,
+          case .normal = frame.camera.trackingState else { return }
+
+    // Feet: detected floor geometry only. Y snaps to the tracked floor
+    // anchor when they agree — per-ray Y on an estimated-ish hit can
+    // float, the refined anchor is the stable truth.
+    guard let floorHit = raycastFloor(from: denormalize(feet), allowEstimated: false) else { return }
+    burstFloorHits += 1
+    var f = simd_float3(floorHit.worldTransform.columns.3.x,
+                        floorHit.worldTransform.columns.3.y,
+                        floorHit.worldTransform.columns.3.z)
+    if let fy = floorY, abs(f.y - fy) <= Self.floorSnapTolerance {
+      f.y = fy
+    }
+
+    // Head: a pure direction — closest approach of the screen ray to
+    // the vertical line rising from the feet point.
+    guard let ray = worldRay(through: denormalize(head)) else { return }
+    let c = ray.origin
+    let d = ray.dir
+    let u = simd_float3(0, 1, 0)
+    let w = c - f
+    let b = simd_dot(d, u)
+    let dd = simd_dot(d, w)
+    let e = simd_dot(u, w)
+    let denom = 1 - b * b
+    guard denom > 0.05 else { return } // ray near-vertical → unstable solve
+    let s = (b * e - dd) / denom
+    let h = (e - b * dd) / denom
+    let residual = simd_length((c + s * d) - (f + h * u))
+
+    // Per-sample gates: in front of the camera, plausible child
+    // height, ray actually passes near the vertical line.
+    guard s > 0, h > 0.4, h < 2.2, residual < Self.residualLimit else { return }
+
+    let dirXZ = simd_length(simd_float2(d.x, d.z))
+    burstSamples.append(MeasureSample(
+      h: h,
+      residual: residual,
+      feetPos: f,
+      dChild: simd_length(simd_float2(f.x - c.x, f.z - c.z)),
+      pitchDeg: atan2(d.y, dirXZ) * 180 / .pi))
+  }
+
+  /// Decide the burst outcome from what the ~1 s window collected.
+  private func burstVerdict() -> [String: Any] {
+    if burstFloorHits == 0 {
+      return ["ok": false, "reason": "no_floor"]
+    }
+    guard burstSamples.count >= Self.samplesMinimum else {
+      return ["ok": false, "reason": "hold_still"]
+    }
+
+    // Median h with MAD outlier rejection, then the spread gate.
+    let heights = burstSamples.map { $0.h }
+    let med = Self.median(heights)
+    let mad = Self.median(heights.map { abs($0 - med) })
+    let tolerance = Swift.max(0.01, 3 * mad)
+    let kept = burstSamples.filter { abs($0.h - med) <= tolerance }
+    guard kept.count >= Self.samplesMinimum else {
+      return ["ok": false, "reason": "hold_still"]
+    }
+    let keptHeights = kept.map { $0.h }
+    let finalH = Self.median(keptHeights)
+    let mean = keptHeights.reduce(0, +) / Float(keptHeights.count)
+    let variance = keptHeights.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Float(keptHeights.count)
+    let stddev = variance.squareRoot()
+    guard stddev <= Self.stddevLimit else {
+      return ["ok": false, "reason": "unstable", "stddevCm": Double(stddev * 100)]
+    }
+
+    // Draw this burst's furniture at the median-h sample's feet point.
+    let anchorSample = kept.min(by: { abs($0.h - finalH) < abs($1.h - finalH) }) ?? kept[0]
+    let feetPos = anchorSample.feetPos
+    let headPos = simd_float3(feetPos.x, feetPos.y + finalH, feetPos.z)
+    let cm = Double(finalH * 100)
+
+    provisionalFeetNode?.removeFromParentNode()
+    provisionalFeetNode = nil
+    let feetNode = addLevelLine(at: feetPos, number: nextNumber)
+    let headNode = addLevelLine(at: headPos, number: nextNumber)
+    let measureNode = addVerticalMeasure(feet: feetPos, head: headPos, labelCm: cm)
+    completed.append(ReadingNodes(feetNode: feetNode, headNode: headNode, measureNode: measureNode))
     updateOpacities()
-    return ["undone": "head"]
+
+    return [
+      "ok": true,
+      "heightCm": cm,
+      "stddevCm": Double(stddev * 100),
+      "distanceM": Double(Self.median(kept.map { $0.dChild })),
+      "pitchDeg": Double(Self.median(kept.map { $0.pitchDeg })),
+    ]
+  }
+
+  /// Single exit for a burst: stop the clock and ALWAYS answer Dart.
+  private func finishBurst(_ payload: [String: Any]?) {
+    displayLink?.invalidate()
+    displayLink = nil
+    burstSamples = []
+    if let result = burstResult {
+      burstResult = nil
+      result(payload ?? ["ok": false, "reason": "cancelled"])
+    }
+  }
+
+  private static func median(_ values: [Float]) -> Float {
+    guard !values.isEmpty else { return 0 }
+    let sorted = values.sorted()
+    let n = sorted.count
+    return n % 2 == 1 ? sorted[n / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2
   }
 
   private func resetScan() {
-    pendingFeet?.node.removeFromParentNode()
-    pendingFeet = nil
+    finishBurst(["ok": false, "reason": "cancelled"])
+    feetMarker = nil
+    headMarker = nil
+    provisionalFeetNode?.removeFromParentNode()
+    provisionalFeetNode = nil
     for r in completed {
       r.feetNode.removeFromParentNode()
       r.headNode.removeFromParentNode()
@@ -242,14 +387,10 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
 
   // ── Scene furniture ─────────────────────────────────────────────
 
-  /// Current work is bright, history fades. Mid-reading (feet pending)
-  /// every finished pair is history; between readings the pair that
-  /// just completed keeps full brightness so the parent can check
-  /// where its lines landed before moving on.
+  /// Latest burst bright, history fades.
   private func updateOpacities() {
     for (i, r) in completed.enumerated() {
-      let bright = pendingFeet == nil && i == completed.count - 1
-      let opacity: CGFloat = bright ? 1 : Self.fadedOpacity
+      let opacity: CGFloat = i == completed.count - 1 ? 1 : Self.fadedOpacity
       r.feetNode.opacity = opacity
       r.headNode.opacity = opacity
       r.measureNode.opacity = opacity
@@ -277,12 +418,11 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     return parent
   }
 
-  /// The vertical measure joining a finished pair, labelled with cm —
-  /// the tape-measure element. Placed at the pair's x/z (head hit).
+  /// The vertical measure joining a finished burst, labelled with cm —
+  /// the tape-measure element.
   private func addVerticalMeasure(feet: simd_float3, head: simd_float3, labelCm: Double) -> SCNNode {
     let h = CGFloat(head.y - feet.y)
     let parent = SCNNode()
-    // Anchor at the head's x/z, vertically centred between the levels.
     parent.simdPosition = simd_float3(head.x, (head.y + feet.y) / 2, head.z)
     let billboard = SCNBillboardConstraint()
     billboard.freeAxes = .Y
@@ -343,12 +483,45 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     return node
   }
 
-  // ── Surface feedback so Dart can gate the Mark button ───────────
+  // ── Floor tracking + surface feedback ───────────────────────────
+
+  /// Adopt the best floor candidate: a .floor-classified plane wins
+  /// outright; otherwise the LOWEST horizontal plane (rejects tables
+  /// and beds detected before the actual floor).
+  private func considerFloorCandidate(_ plane: ARPlaneAnchor) {
+    guard plane.alignment == .horizontal else { return }
+    if plane.classification == .floor {
+      floorAnchor = plane
+    } else if let current = floorAnchor {
+      if current.classification != .floor {
+        let currentY = (current.transform * simd_float4(current.center.x, current.center.y, current.center.z, 1)).y
+        let candidateY = (plane.transform * simd_float4(plane.center.x, plane.center.y, plane.center.z, 1)).y
+        if candidateY < currentY { floorAnchor = plane }
+      }
+    } else {
+      floorAnchor = plane
+    }
+  }
+
+  // Delegate callbacks arrive on the render thread; floorAnchor is
+  // read by the burst on main, so hop before touching shared state.
   func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
-    guard let plane = anchor as? ARPlaneAnchor, plane.alignment == .horizontal, !hasFloorPlane else { return }
-    hasFloorPlane = true
+    guard let plane = anchor as? ARPlaneAnchor else { return }
     DispatchQueue.main.async { [weak self] in
-      self?.channel.invokeMethod("onState", arguments: ["state": "floor_found"])
+      guard let self = self else { return }
+      self.considerFloorCandidate(plane)
+      guard plane.alignment == .horizontal, !self.hasFloorPlane else { return }
+      self.hasFloorPlane = true
+      self.channel.invokeMethod("onState", arguments: ["state": "floor_found"])
+    }
+  }
+
+  func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+    guard let plane = anchor as? ARPlaneAnchor else { return }
+    // ARKit refines planes over time; re-evaluate (classification can
+    // arrive late, and the same anchor object updates in place).
+    DispatchQueue.main.async { [weak self] in
+      self?.considerFloorCandidate(plane)
     }
   }
 
