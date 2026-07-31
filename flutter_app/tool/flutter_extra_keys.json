@@ -4193,28 +4193,28 @@
     "ar": "مسح الطول"
   },
   "flutter.hscan.intro_1": {
-    "en": "Barefoot, standing tall against a wall",
-    "th": "ยืนเท้าเปล่า ตัวตรง ชิดผนัง",
-    "vi": "Chân trần, đứng thẳng sát tường",
-    "ko": "맨발로 벽에 붙어 똑바로 서기",
-    "zh": "赤脚靠墙站直",
-    "ar": "حافي القدمين، واقفاً بشكل مستقيم مقابل الحائط"
+    "en": "Barefoot, heels and back touching the wall, standing tall",
+    "th": "ยืนเท้าเปล่า ตัวตรง ส้นเท้าและหลังชิดผนัง",
+    "vi": "Chân trần, gót chân và lưng chạm tường, đứng thẳng",
+    "ko": "맨발로 뒤꿈치와 등을 벽에 붙이고 똑바로 서기",
+    "zh": "赤脚站直，脚跟和背部贴墙",
+    "ar": "حافي القدمين، الكعبان والظهر ملاصقان للحائط، واقفاً بشكل مستقيم"
   },
   "flutter.hscan.intro_2": {
-    "en": "Stand 2–3 steps back and hold the phone steady",
-    "th": "ถอยห่าง 2–3 ก้าว ถือโทรศัพท์ให้นิ่ง",
-    "vi": "Đứng lùi 2–3 bước và giữ điện thoại ổn định",
-    "ko": "2–3걸음 뒤에서 휴대폰을 흔들리지 않게 잡기",
-    "zh": "后退2–3步，稳住手机",
-    "ar": "قف على بعد خطوتين إلى ثلاث خطوات وأمسك الهاتف بثبات"
+    "en": "Step back until the whole child fits on screen — about 2–2.5 m — then keep the phone still",
+    "th": "ถอยหลังจนเห็นตัวเด็กเต็มจอ (ประมาณ 2–2.5 ม.) แล้วถือโทรศัพท์ให้นิ่ง",
+    "vi": "Lùi lại cho đến khi thấy toàn thân bé trên màn hình — khoảng 2–2.5 m — rồi giữ điện thoại đứng yên",
+    "ko": "아이 전신이 화면에 다 보일 때까지 물러난 뒤(약 2–2.5 m) 휴대폰을 움직이지 마세요",
+    "zh": "后退到屏幕能看到孩子全身（约2–2.5米），然后保持手机不动",
+    "ar": "تراجع حتى يظهر الطفل كاملاً على الشاشة — نحو 2–2.5 متر — ثم أبقِ الهاتف ثابتاً"
   },
   "flutter.hscan.intro_3": {
-    "en": "Mark the feet, then the top of the head — 3 times",
-    "th": "มาร์กที่เท้า แล้วมาร์กที่ยอดศีรษะ ทำ 3 ครั้ง",
-    "vi": "Đánh dấu bàn chân, rồi đỉnh đầu — 3 lần",
-    "ko": "발, 그다음 머리 꼭대기 표시 — 3회 반복",
-    "zh": "先标记脚部，再标记头顶——共3次",
-    "ar": "حدد القدمين ثم أعلى الرأس — 3 مرات"
+    "en": "Tap the feet line, then the top of the head — the app measures 3 quick bursts",
+    "th": "แตะตำแหน่งเท้า แล้วแตะยอดศีรษะ แอปจะวัดต่อเนื่อง 3 รอบ",
+    "vi": "Chạm vào vị trí bàn chân, rồi đỉnh đầu — ứng dụng sẽ đo nhanh 3 lượt",
+    "ko": "발 위치, 그다음 정수리를 탭하세요 — 앱이 3회 연속 측정합니다",
+    "zh": "先点脚部位置，再点头顶——应用会快速测量3轮",
+    "ar": "انقر موضع القدمين ثم أعلى الرأس — سيقيس التطبيق 3 جولات سريعة"
   },
   "flutter.hscan.intro_4": {
     "en": "Scan at the same time of day — kids are taller in the morning",
@@ -4240,53 +4240,93 @@
     "zh": "缓慢移动手机以识别地面…",
     "ar": "حرك الهاتف ببطء ليتمكن من العثور على الأرضية…"
   },
-  "flutter.hscan.aim_feet": {
-    "en": "Aim the line where the feet touch the floor, then tap Mark",
-    "th": "เล็งเส้นไปตรงจุดที่เท้าแตะพื้น แล้วแตะ มาร์ก",
-    "vi": "Nhắm vạch vào chỗ bàn chân chạm sàn, rồi nhấn Đánh dấu",
-    "ko": "발이 바닥에 닿는 지점에 선을 맞추고 표시를 누르세요",
-    "zh": "将横线对准脚接触地面的位置，然后点击标记",
-    "ar": "وجّه الخط إلى موضع ملامسة القدمين للأرض ثم اضغط تحديد"
+  "flutter.hscan.place_feet": {
+    "en": "Tap where the wall meets the floor, right between the heels",
+    "th": "แตะตรงจุดที่ผนังจรดพื้น ตรงกลางระหว่างส้นเท้าพอดี",
+    "vi": "Chạm vào chỗ tường gặp sàn, ngay giữa hai gót chân",
+    "ko": "벽과 바닥이 만나는 지점, 두 뒤꿈치 사이를 탭하세요",
+    "zh": "点墙面与地面相接处，正好在两脚跟之间",
+    "ar": "انقر حيث يلتقي الحائط بالأرض، بين الكعبين تماماً"
   },
-  "flutter.hscan.aim_head": {
-    "en": "Rest the line on the very top of the head, then tap Mark",
-    "th": "วางเส้นให้แตะยอดศีรษะพอดี แล้วแตะ มาร์ก",
-    "vi": "Đặt vạch chạm đúng đỉnh đầu, rồi nhấn Đánh dấu",
-    "ko": "선을 정수리 맨 위에 맞추고 표시를 누르세요",
-    "zh": "将横线正好放在头顶最高处，然后点击标记",
-    "ar": "ضع الخط على أعلى نقطة من الرأس تماماً ثم اضغط تحديد"
+  "flutter.hscan.place_head": {
+    "en": "Tap the very top of the head — the crown, not the forehead. Flatten the hair",
+    "th": "แตะจุดสูงสุดของศีรษะ กลางกระหม่อม ไม่ใช่หน้าผาก และกดผมให้ราบ",
+    "vi": "Chạm vào điểm cao nhất của đầu — đỉnh đầu, không phải trán. Ép tóc xuống",
+    "ko": "머리의 맨 꼭대기(정수리)를 탭하세요 — 이마가 아닙니다. 머리카락은 눌러 주세요",
+    "zh": "点头部最高点——头顶正中，不是额头。请把头发压平",
+    "ar": "انقر أعلى نقطة من الرأس — قمة الرأس وليس الجبهة. اضغط الشعر ليستوي"
   },
-  "flutter.hscan.mark": {
-    "en": "Mark",
-    "th": "มาร์ก",
-    "vi": "Đánh dấu",
-    "ko": "표시",
-    "zh": "标记",
-    "ar": "تحديد"
+  "flutter.hscan.adjust": {
+    "en": "Drag a line to fine-tune it — slow drags move it precisely. Then tap Measure",
+    "th": "ลากเส้นเพื่อปรับละเอียด ลากช้า ๆ เส้นจะขยับทีละนิด แล้วแตะ วัด",
+    "vi": "Kéo vạch để tinh chỉnh — kéo chậm vạch sẽ di chuyển chính xác. Rồi nhấn Đo",
+    "ko": "선을 드래그해 미세 조정하세요 — 천천히 끌면 정밀하게 움직입니다. 그다음 측정을 누르세요",
+    "zh": "拖动横线微调——慢慢拖动可精确移动。然后点测量",
+    "ar": "اسحب الخط للضبط الدقيق — السحب البطيء يحركه بدقة. ثم اضغط قياس"
   },
-  "flutter.hscan.reading_n": {
-    "en": "Reading {n} of {total}",
-    "th": "ครั้งที่ {n} จาก {total}",
-    "vi": "Lần đo {n} / {total}",
-    "ko": "측정 {n} / {total}",
-    "zh": "第 {n} 次，共 {total} 次",
-    "ar": "القراءة {n} من {total}"
+  "flutter.hscan.between_bursts": {
+    "en": "Check the lines still sit right, then measure again",
+    "th": "ตรวจว่าเส้นยังอยู่ตำแหน่งถูกต้อง แล้ววัดอีกครั้ง",
+    "vi": "Kiểm tra các vạch vẫn đúng vị trí, rồi đo lại",
+    "ko": "선이 제자리에 있는지 확인한 뒤 다시 측정하세요",
+    "zh": "确认横线位置仍然正确，然后再测一次",
+    "ar": "تأكد أن الخطوط ما زالت في مكانها الصحيح ثم قس مرة أخرى"
   },
-  "flutter.hscan.no_surface": {
-    "en": "Couldn't find a surface there — steady the phone and try again",
-    "th": "ยังหาพื้นผิวตรงนั้นไม่พบ ถือโทรศัพท์ให้นิ่งแล้วลองอีกครั้ง",
-    "vi": "Không tìm thấy bề mặt ở đó — giữ chắc điện thoại và thử lại",
-    "ko": "표면을 찾지 못했습니다 — 휴대폰을 고정하고 다시 시도하세요",
-    "zh": "未能识别该处表面——请稳住手机再试一次",
-    "ar": "تعذر العثور على سطح هناك — ثبّت الهاتف وحاول مرة أخرى"
+  "flutter.hscan.hold_still": {
+    "en": "Hold the phone still…",
+    "th": "ถือโทรศัพท์นิ่ง ๆ…",
+    "vi": "Giữ điện thoại đứng yên…",
+    "ko": "휴대폰을 움직이지 마세요…",
+    "zh": "保持手机不动…",
+    "ar": "أبقِ الهاتف ثابتاً…"
   },
-  "flutter.hscan.implausible": {
-    "en": "That doesn't look right — starting this reading over",
-    "th": "ค่าที่ได้ดูไม่ถูกต้อง เริ่มการวัดครั้งนี้ใหม่",
-    "vi": "Kết quả có vẻ không đúng — bắt đầu lại lần đo này",
-    "ko": "값이 이상합니다 — 이번 측정을 다시 시작합니다",
-    "zh": "结果似乎不对——重新开始本次测量",
-    "ar": "لا يبدو ذلك صحيحاً — إعادة هذه القراءة من جديد"
+  "flutter.hscan.hold_still_retry": {
+    "en": "Couldn't get a steady reading — hold the phone still and try again",
+    "th": "ยังวัดได้ไม่นิ่งพอ ถือโทรศัพท์ให้นิ่งแล้วลองอีกครั้ง",
+    "vi": "Chưa đo được ổn định — giữ điện thoại đứng yên và thử lại",
+    "ko": "안정적인 측정값을 얻지 못했습니다 — 휴대폰을 고정하고 다시 시도하세요",
+    "zh": "未能获得稳定读数——请稳住手机再试一次",
+    "ar": "تعذر الحصول على قراءة ثابتة — ثبّت الهاتف وحاول مرة أخرى"
+  },
+  "flutter.hscan.no_floor": {
+    "en": "Can't find the floor there — aim the feet line at clear floor between the heels",
+    "th": "หาพื้นตรงนั้นไม่พบ เล็งเส้นเท้าไปที่พื้นโล่ง ๆ ระหว่างส้นเท้า",
+    "vi": "Không tìm thấy sàn ở đó — nhắm vạch chân vào phần sàn trống giữa hai gót chân",
+    "ko": "그 위치에서 바닥을 찾지 못했습니다 — 발 선을 두 뒤꿈치 사이의 빈 바닥에 맞추세요",
+    "zh": "该处未识别到地面——请将脚部横线对准两脚跟之间的空地面",
+    "ar": "تعذر العثور على الأرضية هناك — وجّه خط القدمين إلى أرضية واضحة بين الكعبين"
+  },
+  "flutter.hscan.unstable": {
+    "en": "Too much movement — hold the phone still and measure again",
+    "th": "โทรศัพท์ขยับมากไป ถือให้นิ่งแล้ววัดอีกครั้ง",
+    "vi": "Điện thoại rung quá nhiều — giữ đứng yên và đo lại",
+    "ko": "움직임이 너무 큽니다 — 휴대폰을 고정하고 다시 측정하세요",
+    "zh": "晃动过大——请稳住手机再测一次",
+    "ar": "حركة زائدة — ثبّت الهاتف وقس مرة أخرى"
+  },
+  "flutter.hscan.step_back_pitch": {
+    "en": "You're aiming steeply upward — step back until the whole child fits on screen",
+    "th": "กล้องกำลังเงยขึ้นมากไป ถอยหลังจนเห็นตัวเด็กเต็มจอ",
+    "vi": "Bạn đang chĩa máy lên quá dốc — lùi lại cho đến khi thấy toàn thân bé trên màn hình",
+    "ko": "카메라가 너무 위를 향하고 있습니다 — 아이 전신이 화면에 다 보일 때까지 물러나세요",
+    "zh": "镜头仰角过大——请后退到屏幕能看到孩子全身",
+    "ar": "أنت توجه الكاميرا لأعلى بشدة — تراجع حتى يظهر الطفل كاملاً على الشاشة"
+  },
+  "flutter.hscan.measure": {
+    "en": "Measure",
+    "th": "วัด",
+    "vi": "Đo",
+    "ko": "측정",
+    "zh": "测量",
+    "ar": "قياس"
+  },
+  "flutter.hscan.dist_label": {
+    "en": "2–2.5 m",
+    "th": "2–2.5 ม.",
+    "vi": "2–2.5 m",
+    "ko": "2–2.5 m",
+    "zh": "2–2.5米",
+    "ar": "2–2.5 م"
   },
   "flutter.hscan.result_title": {
     "en": "Scan complete",
@@ -4328,21 +4368,13 @@
     "zh": "头",
     "ar": "الرأس"
   },
-  "flutter.hscan.redo": {
-    "en": "Redo",
-    "th": "ทำใหม่",
-    "vi": "Làm lại",
-    "ko": "다시",
-    "zh": "重做",
-    "ar": "إعادة"
-  },
   "flutter.hscan.too_close": {
-    "en": "A little far back helps accuracy — try 2–3 steps away",
-    "th": "ถอยห่างอีกนิดจะแม่นยำขึ้น ลองห่าง 2–3 ก้าว",
-    "vi": "Lùi lại một chút sẽ chính xác hơn — thử cách 2–3 bước",
-    "ko": "조금 뒤로 물러나면 더 정확합니다 — 2–3걸음 거리에서 해보세요",
-    "zh": "稍微后退更准确——请保持2–3步距离",
-    "ar": "الابتعاد قليلاً يحسّن الدقة — جرّب من مسافة خطوتين إلى ثلاث"
+    "en": "Step back until the whole child fits on screen — about 2–2.5 m",
+    "th": "ถอยหลังจนเห็นตัวเด็กเต็มจอ ประมาณ 2–2.5 ม.",
+    "vi": "Lùi lại cho đến khi thấy toàn thân bé trên màn hình — khoảng 2–2.5 m",
+    "ko": "아이 전신이 화면에 다 보일 때까지 물러나세요 — 약 2–2.5 m",
+    "zh": "请后退到屏幕能看到孩子全身——约2–2.5米",
+    "ar": "تراجع حتى يظهر الطفل كاملاً على الشاشة — نحو 2–2.5 متر"
   },
   "flutter.hscan.spread_warn": {
     "en": "The readings disagree by {cm} cm — a fresh scan may be more accurate",
