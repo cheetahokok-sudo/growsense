@@ -4241,20 +4241,20 @@
     "ar": "حرك الهاتف ببطء ليتمكن من العثور على الأرضية…"
   },
   "flutter.hscan.aim_feet": {
-    "en": "Aim the circle at your child's feet, then tap Mark",
-    "th": "เล็งวงกลมไปที่เท้าของลูก แล้วแตะ มาร์ก",
-    "vi": "Nhắm vòng tròn vào bàn chân của bé, rồi nhấn Đánh dấu",
-    "ko": "원을 아이의 발에 맞추고 표시를 누르세요",
-    "zh": "将圆圈对准孩子的脚，然后点击标记",
-    "ar": "وجّه الدائرة نحو قدمي طفلك ثم اضغط تحديد"
+    "en": "Aim the line where the feet touch the floor, then tap Mark",
+    "th": "เล็งเส้นไปตรงจุดที่เท้าแตะพื้น แล้วแตะ มาร์ก",
+    "vi": "Nhắm vạch vào chỗ bàn chân chạm sàn, rồi nhấn Đánh dấu",
+    "ko": "발이 바닥에 닿는 지점에 선을 맞추고 표시를 누르세요",
+    "zh": "将横线对准脚接触地面的位置，然后点击标记",
+    "ar": "وجّه الخط إلى موضع ملامسة القدمين للأرض ثم اضغط تحديد"
   },
   "flutter.hscan.aim_head": {
-    "en": "Now aim at the top of their head and tap Mark",
-    "th": "จากนั้นเล็งที่ยอดศีรษะ แล้วแตะ มาร์ก",
-    "vi": "Bây giờ nhắm vào đỉnh đầu và nhấn Đánh dấu",
-    "ko": "이제 머리 꼭대기에 맞추고 표시를 누르세요",
-    "zh": "现在对准头顶，点击标记",
-    "ar": "الآن وجّه نحو أعلى الرأس واضغط تحديد"
+    "en": "Rest the line on the very top of the head, then tap Mark",
+    "th": "วางเส้นให้แตะยอดศีรษะพอดี แล้วแตะ มาร์ก",
+    "vi": "Đặt vạch chạm đúng đỉnh đầu, rồi nhấn Đánh dấu",
+    "ko": "선을 정수리 맨 위에 맞추고 표시를 누르세요",
+    "zh": "将横线正好放在头顶最高处，然后点击标记",
+    "ar": "ضع الخط على أعلى نقطة من الرأس تماماً ثم اضغط تحديد"
   },
   "flutter.hscan.mark": {
     "en": "Mark",

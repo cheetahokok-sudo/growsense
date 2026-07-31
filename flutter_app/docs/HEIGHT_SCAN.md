@@ -3,6 +3,49 @@
 User-facing name: **Height Scan** (สแกนส่วนสูง). Saves to `measurements`
 with `data_source: 'camera_ar'`.
 
+## Measurement algorithm (v3 — the theodolite correction)
+
+Device testing (2026-07-31, iPhone 15 Pro) showed v1/v2 readings running
+**4–10 cm short**. Two systematic mechanisms, both geometric:
+
+1. **Head-ray wall overshoot.** A ray aimed at the crown grazes the hair
+   and lands on the wall 10–15 cm behind — a detected plane the raycast
+   prefers (dark hair is near-invisible to LiDAR, making wall hits the
+   norm). The phone is held above a child's crown, so the ray descends;
+   by the wall it is below true crown height:
+   `error ≈ (camY − crownY)/distance × head-to-wall gap`.
+   Worse close up, worse for small children.
+2. **Foot-top feet marks.** With mesh reconstruction an `.any` raycast at
+   the feet can hit the top of the foot (3–8 cm above floor), raising the
+   floor reference.
+
+Fix (in `markPoint`):
+
+- **Feet raycast restricted to `.horizontal`** — it can only land on the
+  floor plane, which is at true floor height wherever the ray touches it.
+- **Head hit depth is discarded; only the ray direction is used.** The
+  feet mark fixed the child's horizontal distance `d_child`, so the crown
+  height is the ray evaluated at the child's plane:
+
+  ```
+  dir     = hit − cam            (direction; the hit may be the wall)
+  t       = d_child / ‖dir_xz‖
+  crownY  = camY + dirY · t
+  height  = crownY − floorY
+  ```
+
+  If the ray hit the head itself the result is unchanged; if it overshot
+  to the wall, the overshoot term cancels exactly. The measurement is
+  purely angular — a theodolite, not a rangefinder — so head-depth error
+  (LiDAR-through-hair, wall planes, estimated-plane noise) drops out.
+  Guard: near-vertical rays (‖dir_xz‖ < 0.05) keep the raw hit.
+- **Crosshair carries a horizontal bar** (stadiometer headboard): the
+  parent rests the *line* on the crown / at the floor contact, rather
+  than centring a circle on the head — which read a few cm low.
+
+Residual error sources: floor-plane estimate (~sub-cm), aim (~the bar
+width), hair compression (true of stadiometers too), diurnal 1–2 cm.
+
 ## How it works
 
 Two-point AR raycast, no LiDAR required (LiDAR sharpens it for free):

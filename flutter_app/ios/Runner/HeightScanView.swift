@@ -120,15 +120,19 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
   func view() -> UIView { arView }
 
   // ── Screen-centre raycast, best available accuracy first ────────
-  private func centerRaycast() -> simd_float4x4? {
+  // The feet mark restricts to HORIZONTAL surfaces: the floor plane is
+  // at true floor height wherever the ray lands, whereas an .any hit
+  // on the LiDAR mesh can land on the top of the foot (3–8 cm high) —
+  // one of the systematic shorteners found in device testing.
+  private func centerRaycast(alignment: ARRaycastQuery.TargetAlignment) -> simd_float4x4? {
     let center = CGPoint(x: arView.bounds.midX, y: arView.bounds.midY)
     // Existing plane geometry (or LiDAR mesh) is the most stable…
-    if let q = arView.raycastQuery(from: center, allowing: .existingPlaneGeometry, alignment: .any),
+    if let q = arView.raycastQuery(from: center, allowing: .existingPlaneGeometry, alignment: alignment),
        let hit = arView.session.raycast(q).first {
       return hit.worldTransform
     }
     // …fall back to estimated planes (non-LiDAR head shots often land here).
-    if let q = arView.raycastQuery(from: center, allowing: .estimatedPlane, alignment: .any),
+    if let q = arView.raycastQuery(from: center, allowing: .estimatedPlane, alignment: alignment),
        let hit = arView.session.raycast(q).first {
       return hit.worldTransform
     }
@@ -144,21 +148,51 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
   /// than throwing — "no surface" mid-scan is normal, not an error.
   /// distanceM lets Dart show a "step back a little" hint when the
   /// parent is too close for clean raycast angles.
+  ///
+  /// HEAD GEOMETRY (the 4–10 cm-short fix from device testing): a ray
+  /// aimed at the crown grazes the hair and lands on the WALL behind —
+  /// a detected plane the raycast prefers, 10–15 cm past the child.
+  /// The phone is usually held ABOVE a child's crown, so the ray is
+  /// descending, and by the wall it sits below the true crown height:
+  ///   error ≈ (camY − crownY)/distance × head-to-wall gap
+  /// (worse close-up, worse for small children, worse for dark hair
+  /// that LiDAR sees straight through). The fix: never trust the head
+  /// hit's DEPTH — only its DIRECTION. The feet mark already fixed the
+  /// child's distance, so evaluate the ray AT the child's plane:
+  ///   t = dist_xz(cam → feet) / ‖dir_xz‖ ;  crownY = camY + dirY·t
+  /// If the ray hit the head itself this is unchanged; if it overshot
+  /// to the wall the overshoot term vanishes entirely. The measurement
+  /// becomes purely angular — a theodolite, not a rangefinder.
   private func markPoint() -> [String: Any] {
-    guard let transform = centerRaycast() else {
+    let isFeet = pendingFeet == nil
+    guard let transform = centerRaycast(alignment: isFeet ? .horizontal : .any) else {
       return ["ok": false, "reason": "no_surface"]
     }
-    let pos = simd_float3(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
-    let dist = cameraDistance(to: pos)
+    var pos = simd_float3(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
 
-    if pendingFeet == nil {
+    if isFeet {
       let node = addLevelLine(at: pos, number: nextNumber)
       pendingFeet = (pos, node)
       updateOpacities() // a new reading began — everything finished fades
-      return ["ok": true, "step": "feet", "distanceM": dist]
+      return ["ok": true, "step": "feet", "distanceM": cameraDistance(to: pos)]
     }
 
     let feet = pendingFeet!
+
+    // Pull the head point back from wherever the ray landed to the
+    // child's plane (the feet mark's horizontal distance from camera).
+    var dist = cameraDistance(to: pos)
+    if let cam = arView.pointOfView?.simdWorldPosition {
+      let dir = pos - cam
+      let dirXZ = simd_length(simd_float2(dir.x, dir.z))
+      let dChild = simd_length(simd_float2(feet.pos.x - cam.x, feet.pos.z - cam.z))
+      if dirXZ > 0.05 { // aiming near-vertical would blow up t; keep raw hit
+        let t = dChild / dirXZ
+        pos = cam + dir * t
+        dist = Double(dChild)
+      }
+    }
+
     let heightM = pos.y - feet.pos.y
     // Outside 0.4–2.2 m the parent almost certainly mis-aimed
     // (marked a table edge, the wall skirting, a sibling…).
@@ -231,9 +265,9 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     billboard.freeAxes = .Y
     parent.constraints = [billboard]
 
-    parent.addChildNode(dashSegmentsNode(width: 0.9))
+    parent.addChildNode(dashSegmentsNode(width: 0.7))
 
-    for x: Float in [-0.48, 0.48] {
+    for x: Float in [-0.38, 0.38] {
       let badge = numberBadge("\(number)")
       badge.position = SCNVector3(x, 0, 0)
       parent.addChildNode(badge)
@@ -257,12 +291,13 @@ class HeightScanPlatformView: NSObject, FlutterPlatformView, ARSCNViewDelegate {
     let rail = SCNBox(width: 0.006, height: h, length: 0.006, chamferRadius: 0.003)
     rail.firstMaterial = mintMaterial()
     let railNode = SCNNode(geometry: rail)
-    // Nudge sideways so it hangs beside the child, not through them.
-    railNode.position = SCNVector3(0.35, 0, 0)
+    // Nudge sideways so it hangs beside the child, not through them —
+    // 0.25 m keeps it inside a portrait frame at 2 m (0.35 clipped).
+    railNode.position = SCNVector3(0.25, 0, 0)
     parent.addChildNode(railNode)
 
     let label = numberBadge(String(format: "%.1f", labelCm))
-    label.position = SCNVector3(0.35, 0, 0.02)
+    label.position = SCNVector3(0.25, 0, 0.02)
     parent.addChildNode(label)
 
     arView.scene.rootNode.addChildNode(parent)

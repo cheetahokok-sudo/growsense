@@ -270,9 +270,9 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
       _Phase.findingFloor => t('flutter.hscan.finding_floor',
           'Move the phone slowly so it can find the floor…'),
       _Phase.aimFeet => t('flutter.hscan.aim_feet',
-          'Aim the circle at your child\'s feet, then tap Mark'),
+          'Aim the line where the feet touch the floor, then tap Mark'),
       _Phase.aimHead => t('flutter.hscan.aim_head',
-          'Now aim at the top of their head and tap Mark'),
+          'Rest the line on the very top of the head, then tap Mark'),
       _ => '',
     };
     // Current mark index for the strip: two per finished reading, +1
@@ -307,17 +307,35 @@ class _HeightScanScreenState extends State<HeightScanScreen> {
             ]),
           ),
           const Spacer(),
+          // Crosshair with a stadiometer bar: the horizontal line is the
+          // measuring edge — the parent aligns IT with the crown (or the
+          // floor at the feet), instead of centring the circle on the
+          // head, which reads a few cm low.
           if (!done)
             IgnorePointer(
-              child: Container(
-                width: 56,
+              child: SizedBox(
+                width: 150,
                 height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: const Center(
-                    child: Icon(Icons.add, color: Colors.white, size: 20)),
+                child: Stack(alignment: Alignment.center, children: [
+                  for (final a in const [Alignment.centerLeft, Alignment.centerRight])
+                    Align(
+                      alignment: a,
+                      child: Container(
+                          width: 44,
+                          height: 2,
+                          color: Colors.white.withValues(alpha: 0.9)),
+                    ),
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Center(
+                        child: Icon(Icons.remove, color: Colors.white, size: 20)),
+                  ),
+                ]),
               ),
             ),
           const Spacer(),
