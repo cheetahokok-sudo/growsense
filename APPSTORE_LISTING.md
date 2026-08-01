@@ -1,5 +1,12 @@
 # GrowSense — App Store listing (ready to paste)
 
+> 🛑 **HOLD — do not submit 1.7.1 yet.** Version **1.5.0 is still Waiting for
+> Review** (owner-confirmed 2026-08-01) and Apple reviews one version at a
+> time. This document is now written for **1.7.1**, which covers three
+> releases that never reached the store (1.6.0 Height Scan, 1.7.0 coach food
+> digest, 1.7.1 Food Lens). Submit only once 1.5.0 is approved or rejected —
+> then attach the latest TestFlight build and use the copy below.
+
 Everything App Store Connect asks for, written out. Copy each block into the
 matching field. Fields only you can do (upload files, create the demo account,
 hit Submit) are marked **[YOU]** at the bottom.
@@ -29,7 +36,27 @@ Child growth & height tracker
 
 ---
 
-## Version 1.6.0 — What's New
+## Version 1.7.1 — What's New
+
+*(Covers everything since 1.5.0: Height Scan, the coach's food-log answers,
+and Food Lens.)*
+
+```
+Point the camera at dinner — and at the wall.
+
+Food Lens: photograph a meal and GrowSense finds the foods from its own verified library, with child-size portion estimates you can adjust. Tell it how much your child actually ate — a little, most of it, or all — and bowls and soups can take a second photo from the side, so food hidden under rice or broth gets a fairer estimate. A food it doesn't recognise is never force-matched: you pick a stand-in or add it yourself.
+
+Scan a nutrition label — Thai and English panels read straight into a custom food, with anything the scanner wasn't sure about highlighted for you to check.
+
+Height Scan: measure your child's height with the camera. Stand them heels-and-back against a wall, line up the two markers, tap Measure. It measures twice, asks for a third only when the two disagree, and refuses an unsteady reading rather than guessing.
+
+The growth coach can now answer from your own food log — "how much salmon since last month?" comes back with real servings and grams from your history, and says exactly which dates it covers.
+
+Food Lens, Height Scan and live coach answers are part of GrowSense Premium. Typing a height in yourself stays free, and so does daily logging.
+```
+
+<details><summary>Version 1.6.0 — What's New (superseded)</summary>
+
 ```
 Height Scan — measure your child's height with the iPhone camera.
 • Stand them heels-and-back against a wall, line up the two on-screen markers, tap Measure
@@ -39,6 +66,8 @@ Height Scan — measure your child's height with the iPhone camera.
 • The AI growth coach can now answer live — questions its sourced library doesn't cover get a fresh AI answer, counted against your monthly allowance
 • Height Scan and live AI answers are part of GrowSense Premium; typing a height in yourself stays free, and so does daily logging
 ```
+
+</details>
 
 <details><summary>Version 1.5.0 — What's New (superseded)</summary>
 
@@ -68,7 +97,7 @@ First release of GrowSense.
 
 ## Promotional Text (170 max — updatable anytime without review)
 ```
-Measure height with just the iPhone camera. Meals, sleep and activity become a clear picture of your child's growth — WHO percentiles and a daily readiness score.
+Photograph a meal to log it. Measure height with the iPhone camera. Food, sleep and activity become one clear picture of your child's growth, on WHO percentiles.
 ```
 
 ## Description (paste as-is)
@@ -82,6 +111,7 @@ WHAT YOU CAN DO
 • Growth trajectory — plot measurements on WHO percentile channels and see an honest projected range, not just dots on a chart.
 • Height Scan — measure standing height with just the iPhone camera. Stand your child against a wall, line up two on-screen markers, and get a reading within about half a centimetre when the phone is held steady. It refuses an unsteady reading rather than guessing, and a scanned height is always labelled as a camera measurement.
 • Bone-age history — keep every bone-age X-ray from every clinic in one timeline, annotate the scan, and bring the full story to your next consult. An optional AI reading offers an educational second opinion as a confidence range, never a diagnosis, and always asks to be confirmed by a pediatric radiologist.
+• Food Lens — photograph a meal and the foods are matched against GrowSense's own verified library, with child-size portion estimates you adjust before anything is logged; tell it how much was actually eaten, and add a side-angle photo when a bowl hides its contents. Photograph a nutrition label and it becomes a reusable custom food. Photos are analysed and then discarded — never stored.
 • Fast logging — protein-first food and impact-aware activity libraries make daily consistency easy; sync sleep and activity from a connected wearable.
 • AI growth coach — practical, sourced answers about sleep, nutrition, growth trends, puberty and clinic prep.
 • Analytics — weekly trends, height velocity, and a logging-quality view that's honest about gaps.
@@ -95,7 +125,7 @@ Accounts are created and managed by a parent or guardian. Your data is encrypted
 GrowSense is educational and does not replace medical advice. For any growth concern, talk to your pediatrician.
 
 GROWSENSE PREMIUM — SUBSCRIPTION
-Logging food, activity and sleep every day is free, and stays free. Premium is for the long record: unlimited measurements and your full growth history, the Height Scan camera measurement, analytics over 90 days or six months, the bone-age AI second opinion, lab interpretation, live AI coach answers, and the visit-summary PDF.
+Logging food, activity and sleep every day is free, and stays free. Premium is for the long record: unlimited measurements and your full growth history, the Height Scan camera measurement, Food Lens meal and label photo logging (30 scans a month), analytics over 90 days or six months, the bone-age AI second opinion, lab interpretation, live AI coach answers, and the visit-summary PDF.
 • GrowSense Premium Monthly — US$4.99 per month
 • GrowSense Premium Yearly — US$39.99 per year
 Payment is charged to your Apple Account when you confirm the purchase. The subscription renews automatically unless auto-renew is turned off at least 24 hours before the end of the current period, and your account is charged for renewal within the 24 hours before the period ends. You can manage the subscription and turn off auto-renewal in your Apple Account settings after purchase. Prices are shown in your local currency at checkout.
@@ -164,11 +194,28 @@ standing against a wall; everything runs on-device with ARKit, and no photo or v
 ever leaves the phone — only the resulting height number is saved, labelled as a
 camera measurement.
 
+FOOD LENS (NEW IN 1.7.1)
+Food tab (⊕ Quick log → Log food) → the camera button beside the search field, or
+⊕ Quick log → "Snap a meal" / "Scan a nutrition label". On the free demo account both
+show a lock and open the Premium sheet, so the locked path is verifiable without any
+food present. On a premium account it is 30 scans per month, and the remaining count
+is shown on the Food screen.
+What it does: a meal photo is matched against GrowSense's own food library — the model
+returns only library identifiers and gram RANGES, never nutrient numbers, and every
+nutrient shown is computed from the app's own cited USDA data. A food it cannot match
+is never force-matched; the parent picks a stand-in or adds their own. A label photo is
+transcribed only from what is printed; where a Thai label gives a mineral solely as a
+percentage of the Thai FDA reference intake, the milligram value is converted against
+that published table and flagged on screen for the parent to verify.
+Photos are downscaled on the device, sent for analysis, and discarded — nothing is
+stored, and no photo is retained on our servers or in the account.
+
 WHAT PREMIUM CHANGES
 Daily food, activity and sleep logging is free and unlimited. Premium lifts the free
 account's five-measurement limit, opens the full growth history (free shows 30 days),
-and enables the Height Scan camera measurement, the bone-age AI second opinion, the
-lab interpretation, live AI coach answers, and the visit PDF.
+and enables the Height Scan camera measurement, Food Lens meal and label photo logging
+(30 scans a month), the bone-age AI second opinion, the lab interpretation, live AI
+coach answers, and the visit PDF.
 
 OTHER TABS
 • Today: daily readiness score (nutrition, activity, sleep) and quick logging.
@@ -176,7 +223,9 @@ OTHER TABS
 • Medical: serial bone-age history; tap a scan to annotate the carpals and growth plates.
 • AI coach: sourced answers about growth, sleep and nutrition. On premium, a question
   outside the answer library gets a live AI answer, marked with a "Live AI" chip and
-  counted against a monthly allowance.
+  counted against a monthly allowance. A question about the child's own eating is
+  answered from their food log — the app computes every quantity and states which
+  dates the answer covers.
 
 The bone-age AI gives an educational second opinion as a confidence range, shows its
 reasoning, never states a diagnosis, and asks on screen to be confirmed by a
@@ -200,15 +249,17 @@ Subscription group **GrowSense Premium** (`22269568`):
 | `life.growsense.premium.monthly` | 6795398618 | 1 month | $4.99 (฿149 / ₫99,000) |
 | `life.growsense.premium.yearly` | 6795400758 | 1 year | $39.99 (฿999 / ₫699,000) |
 
-Product localizations (display name / description — 45 and 45 char limits):
+Product localizations (display name **30 max** / description **45 max** — Apple
+truncates silently, and the versions previously written here were 89–105 chars,
+i.e. over the limit; these fit):
 
 ```
 GrowSense Premium Monthly
-Unlimited measurements, your full growth history, longer analytics windows, bone-age AI and the visit PDF.
+Full history, Height Scan, Food Lens, bone AI
 ```
 ```
 GrowSense Premium Yearly
-A year of Premium — unlimited measurements, full history, longer analytics, bone-age AI and the visit PDF.
+A year: full history, Height Scan, Food Lens
 ```
 
 Still to fill on each product: the **review screenshot** (one shot of the paywall from
