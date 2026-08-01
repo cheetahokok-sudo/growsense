@@ -1752,6 +1752,13 @@ class AppState extends ChangeNotifier {
       return null;
     } on FunctionException catch (e) {
       final detail = e.details;
+      // The monthly abuse cap returns a human sentence in `message` —
+      // surface that, not the machine code.
+      if (detail is Map && detail['error'] == 'monthly_cap_exceeded') {
+        return (detail['message'] ??
+                'Monthly limit for this analysis reached — it resets on the 1st.')
+            .toString();
+      }
       return detail is Map
           ? (detail['error'] ?? detail['detail'] ?? e.reasonPhrase).toString()
           : (e.reasonPhrase ?? 'AI analysis failed');
@@ -1834,6 +1841,11 @@ class AppState extends ChangeNotifier {
       return null;
     } on FunctionException catch (e) {
       final detail = e.details;
+      if (detail is Map && detail['error'] == 'monthly_cap_exceeded') {
+        return (detail['message'] ??
+                'Monthly limit for this analysis reached — it resets on the 1st.')
+            .toString();
+      }
       return detail is Map
           ? (detail['error'] ?? detail['detail'] ?? e.reasonPhrase).toString()
           : (e.reasonPhrase ?? 'AI interpretation failed');

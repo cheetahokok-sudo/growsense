@@ -39,6 +39,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { checkAndCountFeatureUse } from "../_shared/usage_caps.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -229,6 +230,20 @@ Deno.serve(async (req) => {
   const isPremium = tier !== "free" && notExpired;
   if (!isPremium) {
     return jsonResponse({ error: "premium_required" }, 402);
+  }
+
+  // ── Step 3.6: Monthly abuse cap ──────────────────────────────────
+  // This is the priciest AI call in the product (Sonnet + vision).
+  // Premium is the gate; this is the bound — generous enough that a
+  // multi-hospital history backfill never hits it.
+  const capVerdict = await checkAndCountFeatureUse(adminClient, {
+    userId: user.id,
+    tier,
+    feature: "bone_age",
+    capColumn: "bone_age_monthly_cap",
+  });
+  if (!capVerdict.ok) {
+    return jsonResponse(capVerdict.body, capVerdict.status);
   }
 
   // ── Step 4: Build user message with image + context ──────────────

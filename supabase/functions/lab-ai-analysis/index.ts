@@ -37,6 +37,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { checkAndCountFeatureUse } from "../_shared/usage_caps.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -183,6 +184,17 @@ Deno.serve(async (req) => {
     !acct?.tier_expires_at || new Date(acct.tier_expires_at) > new Date();
   if (tier === "free" || !notExpired) {
     return jsonResponse({ error: "premium_required" }, 402);
+  }
+
+  // Monthly abuse cap — premium is the gate, this is the bound.
+  const capVerdict = await checkAndCountFeatureUse(adminClient, {
+    userId: user.id,
+    tier,
+    feature: "lab_ai",
+    capColumn: "lab_ai_monthly_cap",
+  });
+  if (!capVerdict.ok) {
+    return jsonResponse(capVerdict.body, capVerdict.status);
   }
 
   // ── Gather the child's growth data (server-side, never client) ───
