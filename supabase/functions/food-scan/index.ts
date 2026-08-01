@@ -81,7 +81,7 @@ const MEAL_SYSTEM_PROMPT = `You identify foods in a photo of a child's meal for 
 
 HARD RULES:
 1. Identify foods ONLY as ids from the REFERENCE LIBRARY below. Never invent ids. Never output nutrient values — the app computes nutrients itself from verified data.
-2. A food with no reasonable library match goes in "unmatched" with its plain name — do NOT force-fit a wrong id. A missed item is better than a wrong item. For each unmatched food, suggest up to 3 SAME-CATEGORY library ids a parent could knowingly log it as ("proxy_candidates").
+2. A food with no reasonable library match goes in "unmatched" with its plain name — do NOT force-fit a wrong id. A missed item is better than a wrong item. For each unmatched food, suggest up to 3 SAME-CATEGORY library ids a parent could knowingly log it as ("proxy_candidates"). Set "packaged" true when the unmatched food is a branded/packaged product whose carton, bottle, wrapper or pouch is visible in the photo (a milk carton, a yogurt cup, a snack bag) — the app then offers to read its nutrition label.
 3. Portions are RANGES in grams (low/best/high), rounded to the nearest 5 g, AS SERVED TO A CHILD of the stated age. Photos exaggerate; adult and restaurant portions are not child portions. When uncertain between two amounts choose the SMALLER — parents adjust upward easily.
 4. Use in-frame scale references: a standard dinner plate is ~23 cm across (unless a different plate size is given), a tablespoon ~15 cm long, chopsticks ~20 cm. Say nothing about scale in the output — just use it.
 5. Composite dishes (fried rice, noodle soup, congee): match the composite library entry when one exists rather than decomposing into ingredients.
@@ -120,12 +120,13 @@ const MEAL_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "best_g", "category", "proxy_candidates"],
+        required: ["name", "best_g", "category", "proxy_candidates", "packaged"],
         properties: {
           name: { type: "string" },
           best_g: { type: "integer" },
           category: { type: "string", enum: VALID_CATEGORIES },
           proxy_candidates: { type: "array", items: { type: "string" } },
+          packaged: { type: "boolean" },
         },
       },
     },
@@ -144,14 +145,15 @@ HARD RULES:
 3. serving_grams: the printed serving size in grams or ml. If printed as "1 ซอง (30 g)" style text, extract the number. null when not printed.
 4. name: the product name if visible (in the photo's packaging), translated to English with the original in parentheses; otherwise a short generic descriptor of what the label appears to belong to.
 5. energy: kcal as printed (Thai labels: กิโลแคลอรี; if only kJ is printed, divide by 4.184 and note it in low_confidence_fields).
-6. List any field you are not certain you read correctly in low_confidence_fields.
-7. If the image is not a nutrition label or is unreadable, set unreadable true with a short reason.`;
+6. Minerals printed ONLY as a percent of daily intake (e.g. "แคลเซียม 15%", "칼슘 15%") — common on Thai labels: put the percent number in rdi_percents and leave the absolute value null. Never convert percents yourself.
+7. List any field you are not certain you read correctly in low_confidence_fields.
+8. If the image is not a nutrition label or is unreadable, set unreadable true with a short reason.`;
 
 const LABEL_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: [
-    "name", "serving_grams", "basis", "values",
+    "name", "serving_grams", "basis", "values", "rdi_percents",
     "label_language", "low_confidence_fields", "unreadable", "unreadable_reason",
   ],
   properties: {
@@ -169,12 +171,53 @@ const LABEL_SCHEMA = {
         zinc_mg: { anyOf: [{ type: "number" }, { type: "null" }] },
       },
     },
+    // Minerals printed only as % of daily intake (Thai labels do this).
+    rdi_percents: {
+      type: "object",
+      additionalProperties: false,
+      required: ["calcium_pct", "zinc_pct"],
+      properties: {
+        calcium_pct: { anyOf: [{ type: "number" }, { type: "null" }] },
+        zinc_pct: { anyOf: [{ type: "number" }, { type: "null" }] },
+      },
+    },
     label_language: { type: "string" },
     low_confidence_fields: { type: "array", items: { type: "string" } },
     unreadable: { type: "boolean" },
     unreadable_reason: { type: "string" },
   },
 };
+
+// ── Thai RDI %→mg conversion (deterministic, published table) ──────
+// Thai FDA RDI (Notification 445 basis, 2,000 kcal reference), verified
+// 2026-08-01: calcium 800 mg, zinc 15 mg. Thai labels routinely print
+// minerals as %Thai RDI only ("แคลเซียม 15%") — converting against the
+// published table is arithmetic, not a guess. Converted fields are
+// reported in computed_from_rdi AND flagged needs_review so the parent
+// verifies against the package. Only applied for Thai labels; other
+// locales' reference tables are not yet verified here.
+const THAI_RDI_MG: Record<string, number> = { calcium_mg: 800, zinc_mg: 15 };
+
+function applyThaiRdi(r: Record<string, unknown>): string[] {
+  const computed: string[] = [];
+  const lang = String(r.label_language ?? "").toLowerCase();
+  if (!lang.startsWith("th")) return computed;
+  const values = (r.values ?? {}) as Record<string, number | null>;
+  const pcts = (r.rdi_percents ?? {}) as Record<string, number | null>;
+  const pairs: [string, string][] = [
+    ["calcium_mg", "calcium_pct"],
+    ["zinc_mg", "zinc_pct"],
+  ];
+  for (const [field, pctField] of pairs) {
+    const pct = pcts[pctField];
+    if (values[field] == null && typeof pct === "number" && pct > 0 && pct <= 200) {
+      values[field] = Math.round((pct / 100) * THAI_RDI_MG[field]);
+      computed.push(field);
+    }
+  }
+  r.values = values;
+  return computed;
+}
 
 // ── Deterministic label sanity checks (never auto-correct) ─────────
 function labelNeedsReview(r: Record<string, unknown>): string[] {
@@ -369,6 +412,7 @@ Deno.serve(async (req) => {
             best_g: clamp(it.best_g),
             category: "other",
             proxy_candidates: [],
+            packaged: false,
           });
           continue;
         }
@@ -384,7 +428,12 @@ Deno.serve(async (req) => {
       result.items = validItems;
       result.unmatched = unmatched;
     } else {
-      result.needs_review = labelNeedsReview(result);
+      const computed = applyThaiRdi(result);
+      result.computed_from_rdi = computed;
+      // Computed values join the review list — parent verifies them.
+      result.needs_review = [
+        ...new Set([...labelNeedsReview(result), ...computed]),
+      ];
     }
 
     return jsonResponse({ success: true, mode, result });
