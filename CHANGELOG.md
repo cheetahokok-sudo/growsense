@@ -13,6 +13,36 @@ On every release, bump `kAppVersion` / `kAppBuild` / `kBuildDate` in
 `flutter_app/assets/release_notes.json` (what users see in "What's
 new"), and add the full entry here.
 
+## [1.7.0] — 2026-08-01 · build 30
+
+_The coach can now see the food log. "How much salmon has he eaten since
+last month?" gets exact numbers from the child's own history — the app
+computes every quantity, the model only narrates._
+
+### Added
+- **History-grounded coach answers (Premium).** When a live question is
+  about food, the app builds a digest from the child's log — servings,
+  grams (one tap = one serving), protein totals and each food's share
+  of logged protein — and the model answers from those precomputed
+  numbers. It never does the arithmetic itself, and it never sees the
+  database: two indexed queries, window-clamped to 12 months, cached
+  per day.
+- **Honest coverage, always.** Answers state the window's exact dates,
+  give nutrient rates per calendar day AND per logged day when logging
+  has gaps, and use measured days only for percentages — estimated
+  days from the Recall Engine carry protein no specific food produced.
+  Omega-3 adequacy is framed against the EFSA 250 mg/day EPA+DHA
+  combined reference, never as "deficient".
+- **Follow-ups keep their subject.** Recent turns ride along with each
+  live question, so "and compared to eggs?" works.
+- Thai food names understood in questions (ปลาแซลมอน, ไข่, นม …) for
+  the most-asked foods; anything missed still gets the general
+  food-log digest.
+
+### Notes
+- A question a library answer covers still gets the library answer —
+  human-verified and cited beats generated, and costs no credit.
+
 ## [1.6.0] — 2026-07-31 · build 29
 
 _Height Scan: measuring a child's height with the phone camera, on iPhone.

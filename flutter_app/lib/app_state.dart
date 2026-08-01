@@ -1911,6 +1911,52 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // ── Coach food digest: raw-row cache ─────────────────────────────
+  // Fetched only for questions that will spend a live-AI credit, so DB
+  // traffic inherits the monthly-cap ceiling. Cached per
+  // child+day+window (same pattern as loadFoodFrequency) — repeat
+  // questions in a session do zero DB work. Fixed query budget: every
+  // digest is exactly these TWO indexed range scans, never more,
+  // regardless of question complexity.
+  String? _coachRowsKey;
+  List<Map<String, dynamic>> _coachItemRows = [];
+  List<Map<String, dynamic>> _coachDailyRows = [];
+
+  Future<
+      ({
+        List<Map<String, dynamic>> items,
+        List<Map<String, dynamic>> daily,
+      })> loadCoachFoodRows(int windowDays) async {
+    final childId = activeChildRow?['child_id'];
+    final key = '$childId|${todayISO()}|$windowDays';
+    if (_coachRowsKey == key) {
+      return (items: _coachItemRows, daily: _coachDailyRows);
+    }
+    final since =
+        localISO(DateTime.now().subtract(Duration(days: windowDays - 1)));
+    // Newest-first + limit because of PostgREST's row cap: if a window
+    // ever exceeds the limit, we keep the most recent rows and the
+    // digest's coverage line stays honest about the days it saw.
+    final items = await sb
+        .from('nutrition_log_items')
+        .select('log_date, food_id, food_name, protein_g')
+        .eq('child_id', childId)
+        .gte('log_date', since)
+        .order('log_date', ascending: false)
+        .limit(2000);
+    final daily = await sb
+        .from('daily_nutrition')
+        .select('log_date, total_protein_g, estimation_method')
+        .eq('child_id', childId)
+        .gte('log_date', since)
+        .order('log_date', ascending: false)
+        .limit(400);
+    _coachItemRows = List<Map<String, dynamic>>.from(items);
+    _coachDailyRows = List<Map<String, dynamic>>.from(daily);
+    _coachRowsKey = key;
+    return (items: _coachItemRows, daily: _coachDailyRows);
+  }
+
   /// One live coach answer via the ai-coach-proxy Edge Function.
   ///
   /// Never silently falls back to a template — each refusal has its own
@@ -1919,12 +1965,21 @@ class AppState extends ChangeNotifier {
   ///   'cap_exceeded'   — monthly allowance used up (429), cap/used set
   ///   'session_expired' — JWT rejected (401), sign in again
   ///   'failed'         — anything else
+  ///
+  /// [history] carries recent conversation turns so follow-ups keep
+  /// their context ("and compared to beef?"); the proxy caps the
+  /// message list server-side.
   Future<({bool ok, String? text, String? reason, int? cap, int? used})>
-      askCoachLive({required String system, required String question}) async {
+      askCoachLive({
+    required String system,
+    required String question,
+    List<Map<String, String>> history = const [],
+  }) async {
     try {
       final res = await sb.functions.invoke('ai-coach-proxy', body: {
         'system': system,
         'messages': [
+          ...history,
           {'role': 'user', 'content': question},
         ],
         'max_tokens': 1000,

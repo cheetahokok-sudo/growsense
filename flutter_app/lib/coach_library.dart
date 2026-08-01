@@ -232,7 +232,8 @@ Map<String, dynamic> buildCoachContext(AppState appState, WhoReference? who) {
 /// library's own rule is that an uncited answer shows no citation
 /// rather than a fabricated one, and a generated answer is held to the
 /// same standard.
-String coachSystemPrompt(Map<String, dynamic> ctx, String lang) {
+String coachSystemPrompt(Map<String, dynamic> ctx, String lang,
+    {String? foodDigest}) {
   String? f(String key) {
     final v = ctx[key];
     if (v == null) return null;
@@ -261,6 +262,21 @@ String coachSystemPrompt(Map<String, dynamic> ctx, String lang) {
       'Puberty notes: ${f('recentPubertyEvents')}',
   ];
 
+  // The digest is precomputed by the app from the child's own log —
+  // the model narrates it and must not redo (or invent) arithmetic.
+  final digestBlock = foodDigest == null
+      ? ''
+      : '''
+
+$foodDigest
+
+Food-log rules (apply only because the digest above is present):
+- The digest is the ONLY child food data you have. Its quantities and percentages are precomputed — repeat them, do not recalculate them, and never mention a food that is not listed as if it were logged.
+- State the window's start and end dates in your answer.
+- When day coverage is incomplete, give nutrient rates BOTH per calendar day AND per logged day, and say the difference comes from unlogged days. Percentages are of LOGGED protein only; below roughly 85% coverage, say the real totals may be higher than logged.
+- Your own nutrition knowledge (typical nutrient content per 100 g, intake guidance) is allowed on top of the digest quantities, but always as clearly labelled typical values in ranges — never presented as measured data.
+- For omega-3 adequacy, compare TOTAL EPA+DHA combined across all listed fish against the EFSA adequate intake of about 250 mg/day, and name the queried food's share separately. Never say "deficient" from log data — say where intake sits relative to the reference.''';
+
   return '''
 You are the GrowSense coach, answering a parent's question about their own child's growth.
 
@@ -274,7 +290,7 @@ Rules:
 - Never diagnose, and never name a medication or dose. For anything that sounds clinical, say it is worth raising with their pediatrician.
 - Do not cite studies, papers, or guidelines — you have not been given sources, and an invented citation is worse than none.
 - Never tell a parent their child is "getting shorter" or use shrinking language: children do not lose height. Slower growth is "growing more slowly".
-- Be warm, concrete and brief — a few short paragraphs at most. Use the child's name only when the answer is actually about them.
+- Be warm, concrete and brief — a few short paragraphs at most. Use the child's name only when the answer is actually about them.$digestBlock
 ''';
 }
 

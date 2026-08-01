@@ -115,10 +115,44 @@ blocked by CORS — a failure that appears only in the browser console.
 The native iOS app sends no `Origin` header and is unaffected either
 way, so this breaks web while iOS looks fine.
 
-## Known gap
+## Food digest — history-grounded answers (v1, build 30)
 
-Live answers are not yet grounded in food or activity history, so a
-question like *"how much beef did he eat last month?"* gets an honest
-"I can't see that" rather than an answer. Closing it means adding a
-nutrition-history summariser to `buildCoachContext()` — the highest-value
-next step for this feature.
+A live question about food is grounded in the child's own log via
+`lib/coach_digest.dart`. The three-layer contract:
+
+1. **The app owns quantities.** One `nutrition_log_items` row is one
+   serving; grams = tap count × `servingGrams`. Every sum and
+   percentage is precomputed in `buildFoodDigest()` — the model reads
+   answers, it never does arithmetic and never sees the database.
+2. **The model owns nutrition knowledge** (nutrient content per 100 g,
+   intake guidance), forced by the prompt into labelled typical-value
+   ranges — never presented as measured.
+3. **Honesty rules bind them**: the window's exact dates are stated,
+   rates come per calendar day AND per logged day when coverage is
+   incomplete, percentages use measured days only (Recall-Engine
+   estimated rows carry protein no food produced), omega-3 adequacy is
+   framed against EFSA's 250 mg/day EPA+DHA combined and never as
+   "deficient".
+
+Flow: `scanCoachQuestion()` (deterministic — English food names, a
+curated Thai alias list, nutrition keywords, time phrases clamped to
+365 days) → `AppState.loadCoachFoodRows()` (exactly two indexed range
+scans, cached per child+day+window; the credit cap meters DB traffic
+because the digest only builds for questions that will spend a credit)
+→ digest rides inside the system prompt (≤3.5k chars against the
+proxy's 8k cap) → one model call. Recent turns ride in `messages` so
+follow-ups keep their subject. A digest failure never blocks the
+answer — it degrades to the ungrounded (but honest) reply.
+
+Tests: `test/coach_digest_test.dart` — serving math, estimation-method
+filtering, window clamps (the "10 years" question), Thai aliases,
+no-entries honesty, prompt-budget worst case.
+
+## Known gaps
+
+- Activity and sleep history are not yet in the digest — the design
+  (registry-style domain modules, app-curated AASM/WHO references) is
+  in the approved methodology; they are additive, not new machinery.
+- Food-name matching beyond English + the Thai alias list falls back
+  to the generic top-foods digest — graceful, but a vi/ko/zh alias
+  table would sharpen it.

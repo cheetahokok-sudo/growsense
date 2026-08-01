@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_state.dart';
+import '../coach_digest.dart';
 import '../coach_library.dart';
+import '../food_data.dart';
 import '../growth_math.dart';
 import '../i18n.dart';
 import '../theme.dart';
@@ -189,9 +191,44 @@ class _CoachScreenState extends State<CoachScreen> {
       return;
     }
 
+    // Ground the answer in the food log when the question is about
+    // food. The digest is an enhancement, never a gate — any failure
+    // here still produces an (ungrounded but honest) live answer.
+    String? digest;
+    try {
+      final foods = await loadFoodReference();
+      final scan = scanCoachQuestion(text, foods);
+      if (scan.nutritionRelated) {
+        final rows = await widget.appState.loadCoachFoodRows(scan.windowDays);
+        digest = buildFoodDigest(
+          scan: scan,
+          itemRows: rows.items,
+          dailyRows: rows.daily,
+          foodsById: {for (final f in foods) f.id: f},
+          today: DateTime.now(),
+          proteinTargetG: (_ctx['proteinTargetG'] as num?)?.toDouble(),
+        );
+      }
+    } catch (e) {
+      debugPrint('[coach] digest build failed, answering without: $e');
+    }
+
+    // Recent turns so follow-ups keep their subject ("and compared to
+    // beef?"). The just-added question and the thinking bubble are
+    // excluded; the proxy caps the list server-side anyway.
+    final history = [
+      for (final m in _messages)
+        if (!m.thinking && m.text.isNotEmpty)
+          {'role': m.fromUser ? 'user' : 'assistant', 'content': m.text},
+    ];
+    if (history.isNotEmpty) history.removeLast(); // the question itself
+    final recent =
+        history.length > 6 ? history.sublist(history.length - 6) : history;
+
     final res = await widget.appState.askCoachLive(
-      system: coachSystemPrompt(_ctx, widget.i18n.code),
+      system: coachSystemPrompt(_ctx, widget.i18n.code, foodDigest: digest),
       question: text.trim(),
+      history: recent,
     );
     if (!mounted) return;
     setState(() {
