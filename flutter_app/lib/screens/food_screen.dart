@@ -72,6 +72,7 @@ class _FoodScreenState extends State<FoodScreen> {
     });
     widget.appState.loadCustomFoods();
     widget.appState.loadFoodFrequency();
+    if (widget.appState.canUseFoodScan) widget.appState.loadFoodScanUsage();
   }
 
   Future<void> _dismissExplainer() async {
@@ -283,6 +284,15 @@ class _FoodScreenState extends State<FoodScreen> {
                 ],
               ),
             ),
+            // Food Lens allowance — quiet until it starts running low.
+            if (appState.canUseFoodScan &&
+                appState.foodScanUsageLoaded &&
+                appState.foodScanRemaining != null)
+              _ScanAllowanceLine(
+                remaining: appState.foodScanRemaining!,
+                cap: appState.foodScanCap!,
+                i18n: widget.i18n,
+              ),
             const SizedBox(height: 8),
             SizedBox(
               height: 36,
@@ -711,6 +721,58 @@ class _CustomEmptyHint extends StatelessWidget {
           height: 1.5,
           color: GsColors.text3,
         ),
+      ),
+    );
+  }
+}
+
+/// How many Food Lens scans are left this month. Meal photos, label
+/// scans, a side-angle re-analysis and a read-label handoff each spend
+/// one, so the number is shown rather than left as a surprise. Colour
+/// follows the coach credit-chip grammar: accent → gold when low → red
+/// at zero.
+class _ScanAllowanceLine extends StatelessWidget {
+  const _ScanAllowanceLine({
+    required this.remaining,
+    required this.cap,
+    required this.i18n,
+  });
+  final int remaining;
+  final int cap;
+  final I18n i18n;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = i18n.t;
+    final color = remaining == 0
+        ? GsColors.flag
+        : (remaining <= 5 ? GsColors.estimatedDark : GsColors.text3);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      child: Row(
+        children: [
+          Icon(Icons.auto_awesome, size: 12, color: color),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              remaining == 0
+                  ? t(
+                      'flutter.fscan.allowance_none',
+                      'Food Lens scans used up — resets on the 1st',
+                    )
+                  : t(
+                      'flutter.fscan.allowance',
+                      'Food Lens · {n} of {cap} scans left this month',
+                      {'n': '$remaining', 'cap': '$cap'},
+                    ),
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: remaining <= 5 ? FontWeight.w700 : FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

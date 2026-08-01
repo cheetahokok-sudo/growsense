@@ -840,5 +840,7 @@
  "flutter.fscan.side_view_btn": "أضف صورة من زاوية جانبية — أدق للأوعية والشوربات",
  "flutter.fscan.looks_label_title": "يبدو أن هذه بطاقة تغذية",
  "flutter.fscan.looks_label_body": "لم يُعثر على طعام محضّر في الصورة — لكن يمكن قراءة الملصق وتحويله إلى طعام يمكن تسجيله أو حفظه.",
- "flutter.fscan.analyze_label": "تحليل الملصق"
+ "flutter.fscan.analyze_label": "تحليل الملصق",
+ "flutter.fscan.allowance": "Food Lens · بقي {n} من {cap} عملية مسح هذا الشهر",
+ "flutter.fscan.allowance_none": "انتهت عمليات مسح Food Lens — تُجدَّد في اليوم الأول"
 }

@@ -840,5 +840,7 @@
  "flutter.fscan.side_view_btn": "添加侧面角度照片——碗装和汤类更准确",
  "flutter.fscan.looks_label_title": "这看起来是营养标签",
  "flutter.fscan.looks_label_body": "照片中未发现餐食——但可以读取标签，生成可记录或保存的食物。",
- "flutter.fscan.analyze_label": "分析标签"
+ "flutter.fscan.analyze_label": "分析标签",
+ "flutter.fscan.allowance": "Food Lens · 本月剩余 {n}/{cap} 次扫描",
+ "flutter.fscan.allowance_none": "Food Lens 扫描次数已用完——每月 1 日重置"
 }

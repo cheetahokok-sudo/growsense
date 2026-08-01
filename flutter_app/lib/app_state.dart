@@ -1806,6 +1806,26 @@ class AppState extends ChangeNotifier {
 
   bool foodScanRunning = false;
 
+  /// Cached Food Lens allowance for the counter line. `foodScanCap` null
+  /// = unlimited or not yet loaded (the UI shows nothing rather than a
+  /// guess). Refreshed from the server after every scan, so the extra
+  /// scans spent by a side-angle re-analysis or a read-label handoff are
+  /// reflected too.
+  int? foodScanCap;
+  int foodScanUsed = 0;
+  bool foodScanUsageLoaded = false;
+
+  int? get foodScanRemaining =>
+      foodScanCap == null ? null : math.max(0, foodScanCap! - foodScanUsed);
+
+  Future<void> loadFoodScanUsage() async {
+    final u = await foodScanUsage();
+    foodScanCap = u.cap;
+    foodScanUsed = u.used;
+    foodScanUsageLoaded = true;
+    notifyListeners();
+  }
+
   /// Send 1–2 photos to the food-scan Edge Function. [mode] is 'meal'
   /// or 'label'. Photos are downscaled + re-encoded (EXIF stripped)
   /// off the UI thread and sent transiently — nothing is stored.
@@ -1870,6 +1890,43 @@ class AppState extends ChangeNotifier {
     } finally {
       foodScanRunning = false;
       notifyListeners();
+      // Re-read the authoritative counter rather than guessing: the
+      // server counts BEFORE calling Anthropic, so even a failed AI call
+      // spends a scan, while premium/cap refusals spend none.
+      unawaited(loadFoodScanUsage());
+    }
+  }
+
+  /// Food Lens allowance for the current month: (cap, used). `cap` null
+  /// means unlimited (or unreadable — the UI then shows nothing rather
+  /// than a wrong number).
+  ///
+  /// ⚠️ `year_month` is built in **UTC** to match the server's counter
+  /// key (`_shared/usage_caps.ts` uses getUTCFullYear/getUTCMonth). Using
+  /// local time would read the wrong row between 00:00–07:00 Bangkok on
+  /// the 1st and show a full allowance the server hasn't granted. This is
+  /// deliberately NOT the local-date rule that governs a child's log date.
+  Future<({int? cap, int used})> foodScanUsage() async {
+    try {
+      final tier = (account?['subscription_tier'] as String?) ?? 'free';
+      final limit = await sb
+          .from('subscription_tier_limits')
+          .select('food_scan_monthly_cap')
+          .eq('tier', tier)
+          .maybeSingle();
+      final cap = (limit?['food_scan_monthly_cap'] as num?)?.toInt();
+      final now = DateTime.now().toUtc();
+      final ym = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+      final usage = await sb
+          .from('ai_feature_usage_monthly')
+          .select('call_count')
+          .eq('user_id', sb.auth.currentUser?.id ?? '')
+          .eq('year_month', ym)
+          .eq('feature', 'food_scan')
+          .maybeSingle();
+      return (cap: cap, used: (usage?['call_count'] as num?)?.toInt() ?? 0);
+    } catch (_) {
+      return (cap: null, used: 0);
     }
   }
 

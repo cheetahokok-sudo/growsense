@@ -13,6 +13,7 @@
 
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -59,6 +60,16 @@ bool _gate(BuildContext context, AppState appState, I18n i18n) {
 
 Future<Uint8List?> _pickPhoto(BuildContext context, I18n i18n) async {
   final t = i18n.t;
+  // On the web build ImageSource.camera is just a file chooser on
+  // desktop, so don't promise a camera — offer one honest action.
+  if (kIsWeb) {
+    try {
+      final f = await ImagePicker().pickImage(source: ImageSource.gallery);
+      return f == null ? null : await f.readAsBytes();
+    } catch (_) {
+      return null;
+    }
+  }
   final source = await showModalBottomSheet<ImageSource>(
     context: context,
     backgroundColor: GsColors.surface,

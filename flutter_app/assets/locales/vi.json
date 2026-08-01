@@ -840,5 +840,7 @@
  "flutter.fscan.side_view_btn": "Thêm ảnh góc nghiêng — chính xác hơn cho bát và canh",
  "flutter.fscan.looks_label_title": "Ảnh này giống nhãn dinh dưỡng",
  "flutter.fscan.looks_label_body": "Không thấy món ăn trong ảnh — nhưng có thể đọc nhãn thành một món để ghi hoặc lưu lại.",
- "flutter.fscan.analyze_label": "Phân tích nhãn"
+ "flutter.fscan.analyze_label": "Phân tích nhãn",
+ "flutter.fscan.allowance": "Food Lens · còn {n}/{cap} lượt quét tháng này",
+ "flutter.fscan.allowance_none": "Đã dùng hết lượt Food Lens — đặt lại vào ngày 1"
 }

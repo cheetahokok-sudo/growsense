@@ -840,5 +840,7 @@
  "flutter.fscan.side_view_btn": "Add a side-angle photo — better for bowls & soups",
  "flutter.fscan.looks_label_title": "This looks like a nutrition label",
  "flutter.fscan.looks_label_body": "No prepared food found in the photo — but the label can be read into a food you can log or save.",
- "flutter.fscan.analyze_label": "Analyze label"
+ "flutter.fscan.analyze_label": "Analyze label",
+ "flutter.fscan.allowance": "Food Lens · {n} of {cap} scans left this month",
+ "flutter.fscan.allowance_none": "Food Lens scans used up — resets on the 1st"
 }
