@@ -88,7 +88,8 @@ HARD RULES:
 6. Food in a bowl, soup, or covered by rice/noodles cannot be fully seen: set container to "bowl" and wants_side_view true so the app can ask the parent for a fullness estimate or a side-angle photo.
 7. "confidence" is about IDENTIFICATION, not grams. Grams are always rough — the app tells the parent that.
 8. If the image is not food or is unreadably poor, return an empty items array and explain briefly in not_food_note.
-9. If a region hint is given, prefer that region's dishes when a dish is ambiguous between regions.
+9. If the image is primarily a PACKAGED PRODUCT, its packaging, or a printed NUTRITION LABEL rather than prepared food on a plate, set looks_like_label true (the app then offers to read the label instead) and describe it briefly in not_food_note.
+10. If a region hint is given, prefer that region's dishes when a dish is ambiguous between regions.
 
 REFERENCE LIBRARY (id | name | region | category):
 ${INDEX_LINES}`;
@@ -96,7 +97,7 @@ ${INDEX_LINES}`;
 const MEAL_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["items", "unmatched", "wants_side_view", "not_food_note"],
+  required: ["items", "unmatched", "wants_side_view", "looks_like_label", "not_food_note"],
   properties: {
     items: {
       type: "array",
@@ -131,6 +132,7 @@ const MEAL_SCHEMA = {
       },
     },
     wants_side_view: { type: "boolean" },
+    looks_like_label: { type: "boolean" },
     not_food_note: { type: "string" },
   },
 };

@@ -10,7 +10,8 @@
         "Tell it how much your child actually ate — a little, most of it, or all — so what's logged is what went in, not what was served. Bowls and soups get their own fullness check.",
         "A food it doesn't recognise is never force-matched: you choose a stand-in from the library, or add it yourself.",
         "Scan a nutrition label: Thai and English panels are read straight into a custom food. Numbers it wasn't sure about are highlighted for you to verify, and Thai %RDI values are converted against the official Thai FDA table.",
-        "Spot a packaged product in a meal photo and GrowSense offers to read its label from the same shot — no second photo.",
+        "Spot a packaged product in a meal photo and GrowSense offers to read its label from the same shot — no second photo. Photographed just the label by mistake? It offers to analyze it instead of refusing.",
+        "Bowls and soups can take a second photo from a side angle — food hiding under rice or broth gets a fairer estimate.",
         "Calories now appear at scan time alongside protein. Meal photos are analysed and discarded — never stored.",
         "Food Lens is part of Premium (30 scans a month). Logging by hand, the full food library and your custom foods stay free."
       ]

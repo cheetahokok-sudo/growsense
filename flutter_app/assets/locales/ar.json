@@ -836,5 +836,9 @@
  "flutter.paywall.b_foodscan": "التقط صورة للطبق أو ملصق التغذية — الذكاء الاصطناعي يجد الأطعمة والكميات وأنت تؤكد",
  "flutter.fscan.usual_chip": "المعتاد: {g} غ — انقر للاستخدام",
  "flutter.fscan.read_label": "قراءة ملصق التغذية",
- "flutter.food.custom_energy": "الطاقة (سعرة) · اختياري"
+ "flutter.food.custom_energy": "الطاقة (سعرة) · اختياري",
+ "flutter.fscan.side_view_btn": "أضف صورة من زاوية جانبية — أدق للأوعية والشوربات",
+ "flutter.fscan.looks_label_title": "يبدو أن هذه بطاقة تغذية",
+ "flutter.fscan.looks_label_body": "لم يُعثر على طعام محضّر في الصورة — لكن يمكن قراءة الملصق وتحويله إلى طعام يمكن تسجيله أو حفظه.",
+ "flutter.fscan.analyze_label": "تحليل الملصق"
 }

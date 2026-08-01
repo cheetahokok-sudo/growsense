@@ -133,6 +133,10 @@ class FoodScanResult {
   final List<MealScanItem> items;
   final List<MealScanUnmatched> unmatched;
   final bool wantsSideView;
+
+  /// The meal photo was actually a packaged product / nutrition label —
+  /// the UI offers to analyze it as a label instead of refusing.
+  final bool looksLikeLabel;
   final String notFoodNote;
   final LabelScanResult? label;
 
@@ -145,6 +149,7 @@ class FoodScanResult {
       items = const [],
       unmatched = const [],
       wantsSideView = false,
+      looksLikeLabel = false,
       notFoodNote = '',
       label = null;
 
@@ -159,6 +164,7 @@ class FoodScanResult {
           MealScanUnmatched.fromJson((u as Map).cast<String, dynamic>()),
       ],
       wantsSideView = (j['result']?['wants_side_view']) as bool? ?? false,
+      looksLikeLabel = (j['result']?['looks_like_label']) as bool? ?? false,
       notFoodNote = (j['result']?['not_food_note']) as String? ?? '',
       label = j['mode'] == 'label' && j['result'] is Map
           ? LabelScanResult.fromJson(

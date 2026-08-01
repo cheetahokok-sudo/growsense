@@ -34,7 +34,12 @@ recognizes; verified data calculates; the parent confirms._
   only as %Thai RDI are converted against the official Thai FDA table
   (Ca 800 mg, Zn 15 mg) and flagged for the parent to verify. A packaged
   product spotted in a meal photo offers "Read nutrition label" from the
-  same shot.
+  same shot; a meal photo that turns out to BE a label offers "Analyze
+  label" instead of refusing.
+- **Side-angle photo for bowls.** When the scan involves a bowl/soup (or
+  the AI asks for it), the confirm sheet offers a second ~45° photo and
+  re-analyzes the meal with both shots — food hidden under rice or broth
+  gets a fairer estimate.
 - **Energy surfaces.** kcal now shows at scan time (confirm-sheet total)
   and as an optional field on custom foods; it is also collected quietly
   across the food library (57/96 foods backfilled from cited USDA

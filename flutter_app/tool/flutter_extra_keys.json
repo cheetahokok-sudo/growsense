@@ -4783,5 +4783,37 @@
     "ko": "열량 (kcal) · 선택",
     "zh": "能量 (kcal) · 可选",
     "ar": "الطاقة (سعرة) · اختياري"
+  },
+  "flutter.fscan.side_view_btn": {
+    "en": "Add a side-angle photo — better for bowls & soups",
+    "th": "เพิ่มรูปมุมข้าง — แม่นขึ้นสำหรับชามและซุป",
+    "vi": "Thêm ảnh góc nghiêng — chính xác hơn cho bát và canh",
+    "ko": "측면 사진 추가 — 그릇·국물 요리에 더 정확",
+    "zh": "添加侧面角度照片——碗装和汤类更准确",
+    "ar": "أضف صورة من زاوية جانبية — أدق للأوعية والشوربات"
+  },
+  "flutter.fscan.looks_label_title": {
+    "en": "This looks like a nutrition label",
+    "th": "ดูเหมือนเป็นฉลากโภชนาการ",
+    "vi": "Ảnh này giống nhãn dinh dưỡng",
+    "ko": "영양성분표로 보입니다",
+    "zh": "这看起来是营养标签",
+    "ar": "يبدو أن هذه بطاقة تغذية"
+  },
+  "flutter.fscan.looks_label_body": {
+    "en": "No prepared food found in the photo — but the label can be read into a food you can log or save.",
+    "th": "ไม่พบอาหารปรุงสำเร็จในรูป — แต่สามารถอ่านฉลากเป็นรายการอาหารเพื่อบันทึกหรือเก็บไว้ใช้ได้",
+    "vi": "Không thấy món ăn trong ảnh — nhưng có thể đọc nhãn thành một món để ghi hoặc lưu lại.",
+    "ko": "사진에서 조리된 음식을 찾지 못했습니다 — 대신 라벨을 읽어 기록하거나 저장할 수 있습니다.",
+    "zh": "照片中未发现餐食——但可以读取标签，生成可记录或保存的食物。",
+    "ar": "لم يُعثر على طعام محضّر في الصورة — لكن يمكن قراءة الملصق وتحويله إلى طعام يمكن تسجيله أو حفظه."
+  },
+  "flutter.fscan.analyze_label": {
+    "en": "Analyze label",
+    "th": "วิเคราะห์ฉลาก",
+    "vi": "Phân tích nhãn",
+    "ko": "라벨 분석",
+    "zh": "分析标签",
+    "ar": "تحليل الملصق"
   }
 }

@@ -836,5 +836,9 @@
  "flutter.paywall.b_foodscan": "拍摄餐盘或营养标签——AI 识别食物和份量，由您确认",
  "flutter.fscan.usual_chip": "平常 {g} 克——点按使用",
  "flutter.fscan.read_label": "读取营养标签",
- "flutter.food.custom_energy": "能量 (kcal) · 可选"
+ "flutter.food.custom_energy": "能量 (kcal) · 可选",
+ "flutter.fscan.side_view_btn": "添加侧面角度照片——碗装和汤类更准确",
+ "flutter.fscan.looks_label_title": "这看起来是营养标签",
+ "flutter.fscan.looks_label_body": "照片中未发现餐食——但可以读取标签，生成可记录或保存的食物。",
+ "flutter.fscan.analyze_label": "分析标签"
 }

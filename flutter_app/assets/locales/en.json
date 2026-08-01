@@ -836,5 +836,9 @@
  "flutter.paywall.b_foodscan": "Snap a photo of the plate or a nutrition label — AI finds the foods and portions, you confirm",
  "flutter.fscan.usual_chip": "usual: {g} g — tap to use",
  "flutter.fscan.read_label": "Read nutrition label",
- "flutter.food.custom_energy": "Energy (kcal) · opt"
+ "flutter.food.custom_energy": "Energy (kcal) · opt",
+ "flutter.fscan.side_view_btn": "Add a side-angle photo — better for bowls & soups",
+ "flutter.fscan.looks_label_title": "This looks like a nutrition label",
+ "flutter.fscan.looks_label_body": "No prepared food found in the photo — but the label can be read into a food you can log or save.",
+ "flutter.fscan.analyze_label": "Analyze label"
 }

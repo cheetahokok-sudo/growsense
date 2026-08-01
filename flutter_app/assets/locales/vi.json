@@ -836,5 +836,9 @@
  "flutter.paywall.b_foodscan": "Chụp đĩa ăn hoặc nhãn dinh dưỡng — AI tìm món và khẩu phần, bạn xác nhận",
  "flutter.fscan.usual_chip": "thường: {g} g — chạm để dùng",
  "flutter.fscan.read_label": "Đọc nhãn dinh dưỡng",
- "flutter.food.custom_energy": "Năng lượng (kcal) · tùy chọn"
+ "flutter.food.custom_energy": "Năng lượng (kcal) · tùy chọn",
+ "flutter.fscan.side_view_btn": "Thêm ảnh góc nghiêng — chính xác hơn cho bát và canh",
+ "flutter.fscan.looks_label_title": "Ảnh này giống nhãn dinh dưỡng",
+ "flutter.fscan.looks_label_body": "Không thấy món ăn trong ảnh — nhưng có thể đọc nhãn thành một món để ghi hoặc lưu lại.",
+ "flutter.fscan.analyze_label": "Phân tích nhãn"
 }

@@ -166,81 +166,132 @@ Future<void> startMealScan(
   final photo = await _pickPhoto(context, i18n);
   if (photo == null || !context.mounted) return;
 
-  final result = await _runWithSpinner(
-    context,
-    i18n,
-    appState.runFoodScan(
-      photos: [photo],
-      mode: 'meal',
-      regionHint: regionHintForLang(i18n.code),
-    ),
-  );
-  if (!context.mounted) return;
-  if (result.error != null) {
-    _showError(context, appState, i18n, result.error!);
-    return;
-  }
-
-  if (result.items.isEmpty && result.unmatched.isEmpty) {
-    final note = result.notFoodNote;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: GsColors.estimatedDark,
-        content: Text(
-          note.isNotEmpty
-              ? note
-              : i18n.t('flutter.fscan.no_food', "Couldn't find food in this photo — try a closer, brighter shot."),
-        ),
+  // The loop exists for ONE re-entry path: the confirm sheet can ask
+  // for a side-angle photo (bowls, food hidden under rice/soup) — the
+  // meal is then re-analyzed with BOTH shots.
+  Uint8List? sidePhoto;
+  while (true) {
+    final result = await _runWithSpinner(
+      context,
+      i18n,
+      appState.runFoodScan(
+        photos: [photo, ?sidePhoto],
+        mode: 'meal',
+        regionHint: regionHintForLang(i18n.code),
       ),
     );
-    return;
+    if (!context.mounted) return;
+    if (result.error != null) {
+      _showError(context, appState, i18n, result.error!);
+      return;
+    }
+
+    if (result.items.isEmpty && result.unmatched.isEmpty) {
+      // Not a meal. If it's a packaged product / printed label, don't
+      // refuse — offer to analyze the label and let the parent decide
+      // how to log (owner call, 2026-08-01).
+      if (result.looksLikeLabel) {
+        final analyze = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: GsColors.surface,
+            title: Text(
+              i18n.t('flutter.fscan.looks_label_title',
+                  'This looks like a nutrition label'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              i18n.t('flutter.fscan.looks_label_body',
+                  'No prepared food found in the photo — but the label can be read into a food you can log or save.'),
+              style: const TextStyle(fontSize: 12.5, color: GsColors.text2),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(i18n.t('common.cancel', 'Cancel')),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(
+                  i18n.t('flutter.fscan.analyze_label', 'Analyze label'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        );
+        if (analyze == true && context.mounted) {
+          await _analyzeLabelPhoto(context, appState, i18n, photo);
+        }
+        return;
+      }
+      final note = result.notFoodNote;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: GsColors.estimatedDark,
+          content: Text(
+            note.isNotEmpty
+                ? note
+                : i18n.t('flutter.fscan.no_food', "Couldn't find food in this photo — try a closer, brighter shot."),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final foods = {for (final f in await loadFoodReference()) f.id: f};
+    final ids = [for (final it in result.items) it.foodId];
+    final usualProtein = await appState.latestLoggedProtein(ids);
+    if (!context.mounted) return;
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: GsColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(GsRadius.lg)),
+      ),
+      builder: (_) => _MealConfirmSheet(
+        appState: appState,
+        i18n: i18n,
+        result: result,
+        foods: foods,
+        usualProtein: usualProtein,
+        // Kept so a packaged unmatched item can have its label read from
+        // the SAME shot — no re-photograph.
+        photoBytes: photo,
+        // The side-view button hides once a second angle was provided.
+        hasSideView: sidePhoto != null,
+      ),
+    );
+    if (action != 'side_view' || !context.mounted) return;
+    final side = await _pickPhoto(context, i18n);
+    if (side == null || !context.mounted) return;
+    sidePhoto = side; // loop: re-analyze with both photos (one more scan)
   }
-
-  final foods = {for (final f in await loadFoodReference()) f.id: f};
-  final ids = [for (final it in result.items) it.foodId];
-  final usualProtein = await appState.latestLoggedProtein(ids);
-  if (!context.mounted) return;
-
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: GsColors.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(GsRadius.lg)),
-    ),
-    builder: (_) => _MealConfirmSheet(
-      appState: appState,
-      i18n: i18n,
-      result: result,
-      foods: foods,
-      usualProtein: usualProtein,
-      // Kept so a packaged unmatched item can have its label read from
-      // the SAME shot — no re-photograph.
-      photoBytes: photo,
-    ),
-  );
 }
 
 // ── Label scan ─────────────────────────────────────────────────────
 
-Future<void> startLabelScan(
+/// Analyze [photo] as a nutrition label and open the custom-food sheet
+/// (prefilled on success, empty on an unreadable label). Shared by the
+/// direct label-scan entry, the meal-scan handoff dialog, and the
+/// packaged-unmatched chip. Returns the sheet result ('added' | ...).
+Future<String?> _analyzeLabelPhoto(
   BuildContext context,
   AppState appState,
   I18n i18n,
+  Uint8List photo,
 ) async {
-  if (!_gate(context, appState, i18n)) return;
-  final photo = await _pickPhoto(context, i18n);
-  if (photo == null || !context.mounted) return;
-
   final result = await _runWithSpinner(
     context,
     i18n,
     appState.runFoodScan(photos: [photo], mode: 'label'),
   );
-  if (!context.mounted) return;
+  if (!context.mounted) return null;
   if (result.error != null) {
     _showError(context, appState, i18n, result.error!);
-    return;
+    return null;
   }
 
   final label = result.label;
@@ -256,16 +307,26 @@ Future<void> startLabelScan(
       ),
     );
     // Open the empty sheet anyway so the parent can type what they see.
-    await showCustomFoodSheet(context, appState: appState, i18n: i18n);
-    return;
+    return showCustomFoodSheet(context, appState: appState, i18n: i18n);
   }
 
-  await showCustomFoodSheet(
+  return showCustomFoodSheet(
     context,
     appState: appState,
     i18n: i18n,
     prefill: LabelPrefill.fromLabel(label),
   );
+}
+
+Future<void> startLabelScan(
+  BuildContext context,
+  AppState appState,
+  I18n i18n,
+) async {
+  if (!_gate(context, appState, i18n)) return;
+  final photo = await _pickPhoto(context, i18n);
+  if (photo == null || !context.mounted) return;
+  await _analyzeLabelPhoto(context, appState, i18n, photo);
 }
 
 // ── Meal confirm sheet ─────────────────────────────────────────────
@@ -307,6 +368,7 @@ class _MealConfirmSheet extends StatefulWidget {
     required this.foods,
     required this.usualProtein,
     required this.photoBytes,
+    required this.hasSideView,
   });
 
   final AppState appState;
@@ -315,6 +377,10 @@ class _MealConfirmSheet extends StatefulWidget {
   final Map<String, FoodItem> foods;
   final Map<String, double> usualProtein;
   final Uint8List photoBytes;
+
+  /// True when this analysis already used a second (side-angle) photo —
+  /// the "add side view" button hides then.
+  final bool hasSideView;
 
   @override
   State<_MealConfirmSheet> createState() => _MealConfirmSheetState();
@@ -385,37 +451,11 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
   /// as a custom food, and drop it into this meal ready to log.
   Future<void> _readLabel(MealScanUnmatched u) async {
     final appState = widget.appState;
-    final i18n = widget.i18n;
-    final result = await _runWithSpinner(
+    final saved = await _analyzeLabelPhoto(
       context,
-      i18n,
-      appState.runFoodScan(photos: [widget.photoBytes], mode: 'label'),
-    );
-    if (!mounted) return;
-    if (result.error != null) {
-      _showError(context, appState, i18n, result.error!);
-      return;
-    }
-    final label = result.label;
-    if (label == null || label.unreadable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: GsColors.estimatedDark,
-          content: Text(
-            label != null && label.unreadableReason.isNotEmpty
-                ? label.unreadableReason
-                : i18n.t('flutter.fscan.label_unreadable',
-                    "Couldn't read this label — try a flatter, brighter shot of the nutrition panel."),
-          ),
-        ),
-      );
-      return;
-    }
-    final saved = await showCustomFoodSheet(
-      context,
-      appState: appState,
-      i18n: i18n,
-      prefill: LabelPrefill.fromLabel(label),
+      appState,
+      widget.i18n,
+      widget.photoBytes,
     );
     if (!mounted || saved != 'added') return;
     // addCustomFood prepends the new row.
@@ -567,6 +607,30 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
                 ],
               ),
             ),
+            // Second-angle photo: bowls/soups hide food from a top-down
+            // shot — a ~45° side view lets the AI re-estimate with depth.
+            if (!widget.hasSideView &&
+                (widget.result.wantsSideView ||
+                    _rows.any((r) => r.included && r.isBowl)))
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(context, 'side_view'),
+                  icon: const Icon(Icons.photo_camera_outlined, size: 16),
+                  label: Text(
+                    t('flutter.fscan.side_view_btn',
+                        'Add a side-angle photo — better for bowls & soups'),
+                    style: const TextStyle(fontSize: 11.5),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: GsColors.accentDark,
+                    side: BorderSide(
+                      color: GsColors.accent.withValues(alpha: 0.45),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
             const SizedBox(height: 10),
             _eatenControl(t),
             const SizedBox(height: 10),

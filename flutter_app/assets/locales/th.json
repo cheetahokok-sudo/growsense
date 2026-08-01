@@ -836,5 +836,9 @@
  "flutter.paywall.b_foodscan": "ถ่ายรูปจานอาหารหรือฉลากโภชนาการ — AI หาชนิดอาหารและปริมาณ คุณเป็นคนยืนยัน",
  "flutter.fscan.usual_chip": "ปกติ {g} ก. — แตะเพื่อใช้",
  "flutter.fscan.read_label": "อ่านฉลากโภชนาการ",
- "flutter.food.custom_energy": "พลังงาน (kcal) · ไม่บังคับ"
+ "flutter.food.custom_energy": "พลังงาน (kcal) · ไม่บังคับ",
+ "flutter.fscan.side_view_btn": "เพิ่มรูปมุมข้าง — แม่นขึ้นสำหรับชามและซุป",
+ "flutter.fscan.looks_label_title": "ดูเหมือนเป็นฉลากโภชนาการ",
+ "flutter.fscan.looks_label_body": "ไม่พบอาหารปรุงสำเร็จในรูป — แต่สามารถอ่านฉลากเป็นรายการอาหารเพื่อบันทึกหรือเก็บไว้ใช้ได้",
+ "flutter.fscan.analyze_label": "วิเคราะห์ฉลาก"
 }
