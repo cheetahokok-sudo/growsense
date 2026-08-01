@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "1.7.0",
+      "build": 30,
+      "date": "2026-08-01",
+      "title": "The coach can see the food log",
+      "highlights": [
+        "Ask the coach about your child's actual eating — \"how much salmon since last month?\" — and the answer comes from their own food log: exact servings, grams, and each food's share of logged protein.",
+        "Every answer says which dates it covers and how many days had food logs, so a number is never more confident than your logging.",
+        "Follow-up questions keep the thread — \"and compared to eggs?\" just works.",
+        "Live AI answers remain part of Premium and count against the monthly allowance shown above the chat. Library answers stay free."
+      ]
+    },
+    {
       "version": "1.6.0",
       "build": 29,
       "date": "2026-07-31",
