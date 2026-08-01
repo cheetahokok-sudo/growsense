@@ -833,5 +833,8 @@
  "flutter.fscan.premium_title": "Food Lens is a Premium tool",
  "flutter.fscan.premium_body": "Photograph a meal or a nutrition label and let AI find the foods and portions — you confirm, GrowSense computes the growth nutrients from verified data.",
  "flutter.fscan.premium_free_note": "Logging foods by hand, the full food library and your custom foods stay free.",
- "flutter.paywall.b_foodscan": "Snap a photo of the plate or a nutrition label — AI finds the foods and portions, you confirm"
+ "flutter.paywall.b_foodscan": "Snap a photo of the plate or a nutrition label — AI finds the foods and portions, you confirm",
+ "flutter.fscan.usual_chip": "usual: {g} g — tap to use",
+ "flutter.fscan.read_label": "Read nutrition label",
+ "flutter.food.custom_energy": "Energy (kcal) · opt"
 }

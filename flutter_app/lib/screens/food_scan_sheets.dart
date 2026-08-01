@@ -214,6 +214,9 @@ Future<void> startMealScan(
       result: result,
       foods: foods,
       usualProtein: usualProtein,
+      // Kept so a packaged unmatched item can have its label read from
+      // the SAME shot — no re-photograph.
+      photoBytes: photo,
     ),
   );
 }
@@ -276,7 +279,7 @@ class _RowState {
     required this.confidence,
     required this.isBowl,
     this.nameOverride,
-    this.usualPortion = false,
+    this.usualG,
   });
 
   final String foodId;
@@ -286,7 +289,12 @@ class _RowState {
   final String confidence;
   final bool isBowl;
   final String? nameOverride;
-  final bool usualPortion;
+
+  /// The family's last confirmed portion, offered as a tappable chip —
+  /// the PHOTO estimate always wins the prefill (owner call, 2026-08-01:
+  /// early logs are fixed library servings, so memory was worse than
+  /// the photo).
+  final int? usualG;
   bool included = true;
   double fullness = 1.0; // bowls: how full it was served
 }
@@ -298,6 +306,7 @@ class _MealConfirmSheet extends StatefulWidget {
     required this.result,
     required this.foods,
     required this.usualProtein,
+    required this.photoBytes,
   });
 
   final AppState appState;
@@ -305,6 +314,7 @@ class _MealConfirmSheet extends StatefulWidget {
   final FoodScanResult result;
   final Map<String, FoodItem> foods;
   final Map<String, double> usualProtein;
+  final Uint8List photoBytes;
 
   @override
   State<_MealConfirmSheet> createState() => _MealConfirmSheetState();
@@ -313,6 +323,7 @@ class _MealConfirmSheet extends StatefulWidget {
 class _MealConfirmSheetState extends State<_MealConfirmSheet> {
   final List<_RowState> _rows = [];
   final List<MealScanUnmatched> _pendingUnmatched = [];
+  late final Map<String, FoodItem> _foods = {...widget.foods};
   double _eaten = 1.0; // all | most (~2/3) | a little (~1/3)
   bool _logging = false;
 
@@ -324,33 +335,109 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
     for (final it in widget.result.items) {
       final food = widget.foods[it.foodId];
       if (food == null) continue;
-      // Household portion memory: prefill with the family's last
-      // confirmed portion of this food when we can derive it.
-      int served = it.bestG;
-      var usual = false;
+      // Prefill is ALWAYS the photo's best estimate. The family's last
+      // confirmed portion (derived from their own logs) is offered as a
+      // one-tap chip instead — memory assists, the photo decides.
+      int? usualG;
       final lastProtein = widget.usualProtein[it.foodId];
       if (lastProtein != null && food.proteinPer100g > 0) {
         final grams = _snap5(lastProtein / food.proteinPer100g * 100);
-        if (grams >= 5 && grams <= 500) {
-          served = grams;
-          usual = true;
-        }
+        if (grams >= 5 && grams <= 500 && grams != it.bestG) usualG = grams;
       }
       _rows.add(_RowState(
         foodId: it.foodId,
-        servedG: served,
+        servedG: it.bestG,
         lowG: it.lowG,
         highG: it.highG,
         confidence: it.confidence,
         isBowl: it.isBowl,
-        usualPortion: usual,
+        usualG: usualG,
       ));
     }
     _pendingUnmatched.addAll(widget.result.unmatched);
   }
 
+  /// A just-saved custom_foods row → FoodItem (per-100g back-calc, same
+  /// convention as the food screen's browse merge).
+  FoodItem _customRowToFoodItem(Map<String, dynamic> r) {
+    final grams = (r['serving_grams'] as num?)?.toDouble() ?? 100;
+    double? per100(dynamic v) =>
+        (v == null || grams <= 0) ? null : (v as num).toDouble() / grams * 100;
+    return FoodItem.fromJson({
+      'id': 'custom_${r['custom_food_id']}',
+      'name': r['name'],
+      'emoji': '⭐',
+      'region': 'global',
+      'category': 'custom',
+      'per100g': {
+        'protein_g': per100(r['protein_g']) ?? 0,
+        'zinc_mg': per100(r['zinc_mg']),
+        'calcium_mg': per100(r['calcium_mg']),
+        'energy_kcal': per100(r['energy_kcal']),
+      },
+      'servingGrams': grams,
+      'source': 'Custom food',
+    });
+  }
+
+  /// Packaged product spotted in the meal photo: read its nutrition
+  /// label from the SAME shot (one more scan against the cap), save it
+  /// as a custom food, and drop it into this meal ready to log.
+  Future<void> _readLabel(MealScanUnmatched u) async {
+    final appState = widget.appState;
+    final i18n = widget.i18n;
+    final result = await _runWithSpinner(
+      context,
+      i18n,
+      appState.runFoodScan(photos: [widget.photoBytes], mode: 'label'),
+    );
+    if (!mounted) return;
+    if (result.error != null) {
+      _showError(context, appState, i18n, result.error!);
+      return;
+    }
+    final label = result.label;
+    if (label == null || label.unreadable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: GsColors.estimatedDark,
+          content: Text(
+            label != null && label.unreadableReason.isNotEmpty
+                ? label.unreadableReason
+                : i18n.t('flutter.fscan.label_unreadable',
+                    "Couldn't read this label — try a flatter, brighter shot of the nutrition panel."),
+          ),
+        ),
+      );
+      return;
+    }
+    final saved = await showCustomFoodSheet(
+      context,
+      appState: appState,
+      i18n: i18n,
+      prefill: LabelPrefill.fromLabel(label),
+    );
+    if (!mounted || saved != 'added') return;
+    // addCustomFood prepends the new row.
+    final row = appState.customFoods.isNotEmpty ? appState.customFoods.first : null;
+    if (row == null) return;
+    final item = _customRowToFoodItem(row);
+    setState(() {
+      _foods[item.id] = item;
+      _rows.add(_RowState(
+        foodId: item.id,
+        servedG: _snap5(item.servingGrams),
+        lowG: 0,
+        highG: 0,
+        confidence: 'high', // read from the label, not estimated
+        isBowl: false,
+      ));
+      _pendingUnmatched.remove(u);
+    });
+  }
+
   void _adoptProxy(MealScanUnmatched u, String proxyId) {
-    final food = widget.foods[proxyId];
+    final food = _foods[proxyId];
     if (food == null) return;
     setState(() {
       _rows.add(_RowState(
@@ -375,7 +462,7 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
     setState(() => _logging = true);
     var failures = 0;
     for (final r in included) {
-      final food = widget.foods[r.foodId]!;
+      final food = _foods[r.foodId]!;
       final g = _finalGrams(r);
       double perG(double per100) => per100 * g / 100;
       double r1(double v) => (v * 10).roundToDouble() / 10;
@@ -429,8 +516,19 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
     final protein = [
       for (final r in _rows)
         if (r.included)
-          widget.foods[r.foodId]!.proteinPer100g * _finalGrams(r) / 100,
+          _foods[r.foodId]!.proteinPer100g * _finalGrams(r) / 100,
     ].fold<double>(0, (a, b) => a + b);
+    // Energy surfaces at scan time (owner call 2026-08-01) — summed over
+    // foods whose kcal is collected; omitted entirely when none are.
+    double kcal = 0;
+    var anyKcal = false;
+    for (final r in _rows) {
+      final e = _foods[r.foodId]!.energyPer100g;
+      if (r.included && e != null) {
+        kcal += e * _finalGrams(r) / 100;
+        anyKcal = true;
+      }
+    }
 
     return Padding(
       padding: EdgeInsets.only(
@@ -489,7 +587,8 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  '≈ ${protein.toStringAsFixed(protein >= 10 ? 0 : 1)} ${t('flutter.g_protein', 'g protein')}',
+                  '≈ ${protein.toStringAsFixed(protein >= 10 ? 0 : 1)} ${t('flutter.g_protein', 'g protein')}'
+                  '${anyKcal ? ' · ≈ ${kcal.round()} kcal' : ''}',
                   style: const TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
@@ -549,7 +648,7 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
 
   Widget _itemRow(_RowState r) {
     final t = widget.i18n.t;
-    final food = widget.foods[r.foodId]!;
+    final food = _foods[r.foodId]!;
     final showRange = r.lowG > 0 && r.highG > r.lowG;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -587,8 +686,6 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
                       [
                         if (showRange)
                           '${r.lowG}–${r.highG} g',
-                        if (r.usualPortion)
-                          t('flutter.fscan.usual_portion', 'usual portion'),
                         if (r.confidence == 'low')
                           t('flutter.fscan.conf_low_chip', 'low confidence'),
                       ].join(' · '),
@@ -599,6 +696,19 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
                             : GsColors.text3,
                       ),
                     ),
+                    if (r.usualG != null && r.usualG != r.servedG)
+                      GestureDetector(
+                        onTap: () => setState(() => r.servedG = r.usualG!),
+                        child: Text(
+                          t('flutter.fscan.usual_chip', 'usual: {g} g — tap to use',
+                              {'g': '${r.usualG}'}),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: GsColors.accent,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -676,7 +786,7 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
     final t = widget.i18n.t;
     final candidates = [
       for (final id in u.proxyCandidates)
-        if (widget.foods.containsKey(id)) widget.foods[id]!,
+        if (_foods.containsKey(id)) _foods[id]!,
     ];
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -702,6 +812,24 @@ class _MealConfirmSheetState extends State<_MealConfirmSheet> {
             spacing: 6,
             runSpacing: 6,
             children: [
+              // Packaged product: the best answer is its own label, read
+              // from the same photo — leads the chip row.
+              if (u.packaged)
+                ActionChip(
+                  avatar: const Icon(Icons.document_scanner_outlined,
+                      size: 14, color: GsColors.accentDark),
+                  label: Text(
+                    t('flutter.fscan.read_label', 'Read nutrition label'),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: GsColors.accentDark,
+                    ),
+                  ),
+                  backgroundColor: GsColors.accentLight,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _readLabel(u),
+                ),
               for (final f in candidates)
                 ActionChip(
                   label: Text(

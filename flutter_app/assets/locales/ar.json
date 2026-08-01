@@ -833,5 +833,8 @@
  "flutter.fscan.premium_title": "Food Lens أداة بريميوم",
  "flutter.fscan.premium_body": "صوّر وجبة أو ملصق تغذية ودع الذكاء الاصطناعي يجد الأطعمة والكميات — أنت تؤكد، وGrowSense يحسب عناصر النمو من بيانات موثّقة.",
  "flutter.fscan.premium_free_note": "تسجيل الأطعمة يدوياً ومكتبة الأطعمة الكاملة وأطعمتك المخصصة تبقى مجانية.",
- "flutter.paywall.b_foodscan": "التقط صورة للطبق أو ملصق التغذية — الذكاء الاصطناعي يجد الأطعمة والكميات وأنت تؤكد"
+ "flutter.paywall.b_foodscan": "التقط صورة للطبق أو ملصق التغذية — الذكاء الاصطناعي يجد الأطعمة والكميات وأنت تؤكد",
+ "flutter.fscan.usual_chip": "المعتاد: {g} غ — انقر للاستخدام",
+ "flutter.fscan.read_label": "قراءة ملصق التغذية",
+ "flutter.food.custom_energy": "الطاقة (سعرة) · اختياري"
 }

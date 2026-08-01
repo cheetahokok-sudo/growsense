@@ -835,6 +835,7 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
   final _protein = TextEditingController();
   final _zinc = TextEditingController();
   final _calcium = TextEditingController();
+  final _energy = TextEditingController();
   bool _saving = false;
   String? _error;
 
@@ -859,6 +860,7 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
       _protein.text = _fmtNum(e['protein_g']);
       _zinc.text = _fmtNum(e['zinc_mg']);
       _calcium.text = _fmtNum(e['calcium_mg']);
+      _energy.text = _fmtNum(e['energy_kcal']);
       return;
     }
     final p = widget.prefill;
@@ -868,12 +870,13 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
       _protein.text = _fmtNum(p.proteinG);
       _zinc.text = _fmtNum(p.zincMg);
       _calcium.text = _fmtNum(p.calciumMg);
+      _energy.text = _fmtNum(p.energyKcal);
     }
   }
 
   @override
   void dispose() {
-    for (final c in [_name, _grams, _desc, _protein, _zinc, _calcium]) {
+    for (final c in [_name, _grams, _desc, _protein, _zinc, _calcium, _energy]) {
       c.dispose();
     }
     super.dispose();
@@ -969,6 +972,7 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
             proteinG: protein,
             zincMg: double.tryParse(_zinc.text.trim()),
             calciumMg: double.tryParse(_calcium.text.trim()),
+            energyKcal: double.tryParse(_energy.text.trim()),
           )
         : await widget.appState.addCustomFood(
             name: name,
@@ -977,8 +981,7 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
             proteinG: protein,
             zincMg: double.tryParse(_zinc.text.trim()),
             calciumMg: double.tryParse(_calcium.text.trim()),
-            // Label scan: energy rides along silently ("collect quietly").
-            energyKcal: widget.prefill?.energyKcal,
+            energyKcal: double.tryParse(_energy.text.trim()),
           );
     if (!mounted) return;
     if (err != null) {
@@ -1085,6 +1088,23 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
                   review: _review.contains('calcium_mg'),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              // Energy surfaced 2026-08-01 (owner call — balanced matrix,
+              // illness recovery groundwork). Half-width, optional.
+              Expanded(
+                child: _field(
+                  _energy,
+                  t('flutter.food.custom_energy', 'Energy (kcal) · opt'),
+                  number: true,
+                  review: _review.contains('energy_kcal'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(child: SizedBox()),
             ],
           ),
           if (_error != null) ...[

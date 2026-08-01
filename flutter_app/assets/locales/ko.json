@@ -833,5 +833,8 @@
  "flutter.fscan.premium_title": "Food Lens는 프리미엄 기능입니다",
  "flutter.fscan.premium_body": "식사나 영양성분표를 촬영하면 AI가 음식과 양을 찾아줍니다 — 부모가 확인하면 GrowSense가 검증된 데이터로 성장 영양소를 계산합니다.",
  "flutter.fscan.premium_free_note": "수동 기록, 전체 음식 라이브러리, 커스텀 음식은 계속 무료입니다.",
- "flutter.paywall.b_foodscan": "접시나 영양성분표를 촬영하세요 — AI가 음식과 양을 찾고 부모가 확인합니다"
+ "flutter.paywall.b_foodscan": "접시나 영양성분표를 촬영하세요 — AI가 음식과 양을 찾고 부모가 확인합니다",
+ "flutter.fscan.usual_chip": "평소 {g} g — 눌러서 적용",
+ "flutter.fscan.read_label": "영양성분표 읽기",
+ "flutter.food.custom_energy": "열량 (kcal) · 선택"
 }

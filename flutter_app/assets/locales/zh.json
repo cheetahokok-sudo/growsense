@@ -833,5 +833,8 @@
  "flutter.fscan.premium_title": "Food Lens 是高级版功能",
  "flutter.fscan.premium_body": "拍摄餐食或营养标签，AI 识别食物和份量——您确认后，GrowSense 用经过验证的数据计算成长营养素。",
  "flutter.fscan.premium_free_note": "手动记录、完整食物库和自定义食物仍然免费。",
- "flutter.paywall.b_foodscan": "拍摄餐盘或营养标签——AI 识别食物和份量，由您确认"
+ "flutter.paywall.b_foodscan": "拍摄餐盘或营养标签——AI 识别食物和份量，由您确认",
+ "flutter.fscan.usual_chip": "平常 {g} 克——点按使用",
+ "flutter.fscan.read_label": "读取营养标签",
+ "flutter.food.custom_energy": "能量 (kcal) · 可选"
 }

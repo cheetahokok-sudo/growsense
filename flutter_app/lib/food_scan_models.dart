@@ -34,6 +34,9 @@ class MealScanUnmatched {
   final int bestG;
   final String category;
   final List<String> proxyCandidates; // valid library ids, <=3
+  /// Branded carton/wrapper visible in the photo — the app offers to
+  /// read its nutrition label from the same shot.
+  final bool packaged;
 
   MealScanUnmatched.fromJson(Map<String, dynamic> j)
     : name = j['name'] as String? ?? '',
@@ -41,7 +44,8 @@ class MealScanUnmatched {
       category = j['category'] as String? ?? 'other',
       proxyCandidates = [
         for (final c in (j['proxy_candidates'] as List? ?? [])) c.toString(),
-      ];
+      ],
+      packaged = j['packaged'] as bool? ?? false;
 }
 
 class LabelScanResult {

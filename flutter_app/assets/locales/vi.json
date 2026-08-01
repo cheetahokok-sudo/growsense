@@ -833,5 +833,8 @@
  "flutter.fscan.premium_title": "Food Lens là công cụ Premium",
  "flutter.fscan.premium_body": "Chụp bữa ăn hoặc nhãn dinh dưỡng để AI nhận diện món và khẩu phần — bạn xác nhận, GrowSense tính dưỡng chất tăng trưởng từ dữ liệu đã kiểm chứng.",
  "flutter.fscan.premium_free_note": "Ghi món thủ công, thư viện món ăn đầy đủ và món tự tạo vẫn miễn phí.",
- "flutter.paywall.b_foodscan": "Chụp đĩa ăn hoặc nhãn dinh dưỡng — AI tìm món và khẩu phần, bạn xác nhận"
+ "flutter.paywall.b_foodscan": "Chụp đĩa ăn hoặc nhãn dinh dưỡng — AI tìm món và khẩu phần, bạn xác nhận",
+ "flutter.fscan.usual_chip": "thường: {g} g — chạm để dùng",
+ "flutter.fscan.read_label": "Đọc nhãn dinh dưỡng",
+ "flutter.food.custom_energy": "Năng lượng (kcal) · tùy chọn"
 }

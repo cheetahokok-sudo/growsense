@@ -535,6 +535,7 @@ class AppState extends ChangeNotifier {
     required double proteinG,
     double? zincMg,
     double? calciumMg,
+    double? energyKcal,
   }) async {
     try {
       final row = await sb
@@ -546,6 +547,7 @@ class AppState extends ChangeNotifier {
             'protein_g': proteinG,
             'zinc_mg': zincMg,
             'calcium_mg': calciumMg,
+            'energy_kcal': energyKcal,
           })
           .eq('custom_food_id', customFoodId)
           .select()
