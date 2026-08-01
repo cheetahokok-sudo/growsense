@@ -9,6 +9,7 @@ import 'account_screen.dart';
 import 'activity_screen.dart';
 import 'analytics_screen.dart';
 import 'coach_screen.dart';
+import 'food_scan_sheets.dart';
 import 'food_screen.dart';
 import 'medical_modules.dart';
 import 'medical_screen.dart';
@@ -88,6 +89,10 @@ class _HomeShellState extends State<HomeShell> {
                 LabResultsScreen(appState: widget.appState, i18n: widget.i18n),
           ),
         );
+      case 'scan_meal':
+        startMealScan(context, widget.appState, widget.i18n);
+      case 'scan_label':
+        startLabelScan(context, widget.appState, widget.i18n);
     }
   }
 
@@ -151,6 +156,26 @@ class _HomeShellState extends State<HomeShell> {
                         label: t('flutter.log_activity', 'Log activity'),
                         tint: GsColors.measured,
                         onTap: () => go('activity'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Food Lens — camera-first logging (premium; the flows
+                  // show the paywall sheet themselves when locked).
+                  Row(
+                    children: [
+                      _QuickTile(
+                        emoji: '📸',
+                        label: t('flutter.fscan.snap_meal', 'Snap a meal'),
+                        tint: GsColors.accent,
+                        onTap: () => go('scan_meal'),
+                      ),
+                      const SizedBox(width: 12),
+                      _QuickTile(
+                        emoji: '🏷️',
+                        label: t('flutter.fscan.scan_label', 'Scan a nutrition label'),
+                        tint: GsColors.estimated,
+                        onTap: () => go('scan_label'),
                       ),
                     ],
                   ),

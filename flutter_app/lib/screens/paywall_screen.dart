@@ -144,6 +144,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
           'Your child\'s full growth history and height-velocity trend, not just the last 30 days')),
       ('scan', '📷', t('flutter.paywall.b_scan',
           'Measure height with the camera — no stadiometer, no tape, no wall marks')),
+      ('foodscan', '📸', t('flutter.paywall.b_foodscan',
+          'Snap a photo of the plate or a nutrition label — AI finds the foods and portions, you confirm')),
       ('bone', '🦴', t('flutter.paywall.b_bone',
           'AI second opinion on bone-age X-rays, alongside your multi-hospital timeline')),
       ('labs', '🧪', t('flutter.paywall.b_labs',

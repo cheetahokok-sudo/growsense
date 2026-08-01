@@ -4,8 +4,37 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
 import '../food_data.dart';
+import '../food_scan_models.dart';
 import '../i18n.dart';
 import '../theme.dart';
+import '../widgets/premium_gate.dart';
+import 'food_scan_sheets.dart';
+
+/// Open the add/edit custom-food sheet. Public so Food Lens (label
+/// scan, unmatched-food shortcut) can open it prefilled from anywhere.
+/// Returns 'added' | 'saved' | 'deleted' | null (dismissed).
+Future<String?> showCustomFoodSheet(
+  BuildContext context, {
+  required AppState appState,
+  required I18n i18n,
+  Map<String, dynamic>? existing,
+  LabelPrefill? prefill,
+}) {
+  return showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: GsColors.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(GsRadius.lg)),
+    ),
+    builder: (context) => _CustomFoodSheet(
+      appState: appState,
+      i18n: i18n,
+      existing: existing,
+      prefill: prefill,
+    ),
+  );
+}
 
 /// Food tab — the preset library with search + category filter,
 /// mirroring the PWA's food browse modal. Tapping Log records a
@@ -133,18 +162,11 @@ class _FoodScreenState extends State<FoodScreen> {
   }
 
   Future<void> _openCustomFoodSheet({Map<String, dynamic>? existing}) async {
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: GsColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(GsRadius.lg)),
-      ),
-      builder: (context) => _CustomFoodSheet(
-        appState: widget.appState,
-        i18n: widget.i18n,
-        existing: existing,
-      ),
+    final result = await showCustomFoodSheet(
+      context,
+      appState: widget.appState,
+      i18n: widget.i18n,
+      existing: existing,
     );
     if (result == null || !mounted) return;
     final t = widget.i18n.t;
@@ -199,19 +221,66 @@ class _FoodScreenState extends State<FoodScreen> {
               _ExplainerCard(i18n: widget.i18n, onDismiss: _dismissExplainer),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: TextField(
-                onChanged: (v) => setState(() => _query = v),
-                decoration: InputDecoration(
-                  hintText: t('flutter.search_foods', 'Search {n} foods…', {
-                    'n': '${all.length}',
-                  }),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    size: 20,
-                    color: GsColors.text3,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      onChanged: (v) => setState(() => _query = v),
+                      decoration: InputDecoration(
+                        hintText: t(
+                          'flutter.search_foods',
+                          'Search {n} foods…',
+                          {'n': '${all.length}'},
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          size: 20,
+                          color: GsColors.text3,
+                        ),
+                        isDense: true,
+                      ),
+                    ),
                   ),
-                  isDense: true,
-                ),
+                  const SizedBox(width: 8),
+                  // Food Lens: snap the plate instead of searching.
+                  Tooltip(
+                    message: t('flutter.fscan.snap_meal', 'Snap a meal'),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(GsRadius.sm),
+                      onTap: () =>
+                          startMealScan(context, appState, widget.i18n),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: GsColors.accentLight,
+                          borderRadius: BorderRadius.circular(GsRadius.sm),
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const Icon(
+                              Icons.photo_camera_outlined,
+                              size: 22,
+                              color: GsColors.accentDark,
+                            ),
+                            if (!appState.canUseFoodScan)
+                              const Positioned(
+                                right: 4,
+                                bottom: 4,
+                                child: Icon(
+                                  Icons.lock,
+                                  size: 11,
+                                  color: GsColors.estimatedDark,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 8),
@@ -253,7 +322,7 @@ class _FoodScreenState extends State<FoodScreen> {
                   // yet) — so creating one is the obvious first step.
                   ? ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                      itemCount: 1 + (filtered.isEmpty ? 1 : filtered.length),
+                      itemCount: 2 + (filtered.isEmpty ? 1 : filtered.length),
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, i) {
                         if (i == 0) {
@@ -262,10 +331,21 @@ class _FoodScreenState extends State<FoodScreen> {
                             onTap: _openCustomFoodSheet,
                           );
                         }
+                        if (i == 1) {
+                          return _ScanLabelTile(
+                            i18n: widget.i18n,
+                            locked: !appState.canUseFoodScan,
+                            onTap: () => startLabelScan(
+                              context,
+                              appState,
+                              widget.i18n,
+                            ),
+                          );
+                        }
                         if (filtered.isEmpty) {
                           return _CustomEmptyHint(i18n: widget.i18n);
                         }
-                        final f = filtered[i - 1];
+                        final f = filtered[i - 2];
                         return _FoodRow(
                           food: f,
                           onLog: _log,
@@ -636,6 +716,57 @@ class _CustomEmptyHint extends StatelessWidget {
   }
 }
 
+/// Food Lens entry in the "Mine" tab: photograph a nutrition panel and
+/// get the custom-food sheet prefilled from what the label says.
+class _ScanLabelTile extends StatelessWidget {
+  const _ScanLabelTile({
+    required this.i18n,
+    required this.locked,
+    required this.onTap,
+  });
+  final I18n i18n;
+  final bool locked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: GsColors.surface,
+          borderRadius: BorderRadius.circular(GsRadius.md),
+          border: Border.all(color: GsColors.accent.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              locked ? Icons.lock_outline : Icons.document_scanner_outlined,
+              size: 18,
+              color: GsColors.accent,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              i18n.t('flutter.fscan.scan_label', 'Scan a nutrition label'),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: GsColors.accent,
+              ),
+            ),
+            if (locked) ...[
+              const SizedBox(width: 6),
+              PremiumBadge(i18n: i18n),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AddCustomTile extends StatelessWidget {
   const _AddCustomTile({required this.i18n, required this.onTap});
   final I18n i18n;
@@ -682,10 +813,16 @@ class _CustomFoodSheet extends StatefulWidget {
     required this.appState,
     required this.i18n,
     this.existing,
+    this.prefill,
   });
   final AppState appState;
   final I18n i18n;
   final Map<String, dynamic>? existing;
+
+  /// Label-scan prefill (add mode only). Fields the validation pass
+  /// flagged get an amber "check this" highlight; the label's energy
+  /// value rides along silently into custom_foods.energy_kcal.
+  final LabelPrefill? prefill;
 
   @override
   State<_CustomFoodSheet> createState() => _CustomFoodSheetState();
@@ -702,24 +839,35 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
   String? _error;
 
   bool get _isEdit => widget.existing != null;
+  Set<String> get _review =>
+      _isEdit ? const {} : (widget.prefill?.needsReview ?? const {});
+
+  static String _fmtNum(dynamic v) {
+    final d = (v as num?)?.toDouble();
+    if (d == null) return '';
+    return d == d.roundToDouble() ? d.toInt().toString() : '$d';
+  }
 
   @override
   void initState() {
     super.initState();
     final e = widget.existing;
     if (e != null) {
-      String fmtNum(dynamic v) {
-        final d = (v as num?)?.toDouble();
-        if (d == null) return '';
-        return d == d.roundToDouble() ? d.toInt().toString() : '$d';
-      }
-
       _name.text = e['name'] as String? ?? '';
-      _grams.text = fmtNum(e['serving_grams']);
+      _grams.text = _fmtNum(e['serving_grams']);
       _desc.text = e['serving_description'] as String? ?? '';
-      _protein.text = fmtNum(e['protein_g']);
-      _zinc.text = fmtNum(e['zinc_mg']);
-      _calcium.text = fmtNum(e['calcium_mg']);
+      _protein.text = _fmtNum(e['protein_g']);
+      _zinc.text = _fmtNum(e['zinc_mg']);
+      _calcium.text = _fmtNum(e['calcium_mg']);
+      return;
+    }
+    final p = widget.prefill;
+    if (p != null) {
+      _name.text = p.name;
+      _grams.text = _fmtNum(p.servingGrams);
+      _protein.text = _fmtNum(p.proteinG);
+      _zinc.text = _fmtNum(p.zincMg);
+      _calcium.text = _fmtNum(p.calciumMg);
     }
   }
 
@@ -829,6 +977,8 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
             proteinG: protein,
             zincMg: double.tryParse(_zinc.text.trim()),
             calciumMg: double.tryParse(_calcium.text.trim()),
+            // Label scan: energy rides along silently ("collect quietly").
+            energyKcal: widget.prefill?.energyKcal,
           );
     if (!mounted) return;
     if (err != null) {
@@ -863,12 +1013,28 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
           ),
           const SizedBox(height: 2),
           Text(
-            t(
-              'flutter.food.custom_hint',
-              "Enter what's on the label for one serving.",
-            ),
+            widget.prefill != null && !_isEdit
+                ? t(
+                    'flutter.fscan.label_prefilled',
+                    'Read from your label photo — check the numbers, then save.',
+                  )
+                : t(
+                    'flutter.food.custom_hint',
+                    "Enter what's on the label for one serving.",
+                  ),
             style: const TextStyle(fontSize: 11.5, color: GsColors.text3),
           ),
+          if (_review.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              '⚠ ${t('flutter.fscan.label_review', 'Amber fields were hard to read — please verify them against the package.')}',
+              style: const TextStyle(
+                fontSize: 11,
+                color: GsColors.estimatedDark,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           _field(_name, t('flutter.food.custom_name', 'Food name')),
           const SizedBox(height: 10),
@@ -880,6 +1046,7 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
                   _grams,
                   t('flutter.food.custom_grams', 'Serving size (g)'),
                   number: true,
+                  review: _review.contains('serving_grams'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -888,6 +1055,7 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
                   _protein,
                   t('flutter.food.custom_protein', 'Protein (g)'),
                   number: true,
+                  review: _review.contains('protein_g'),
                 ),
               ),
             ],
@@ -905,6 +1073,7 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
                   _zinc,
                   t('flutter.food.custom_zinc', 'Zinc (mg) · opt'),
                   number: true,
+                  review: _review.contains('zinc_mg'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -913,6 +1082,7 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
                   _calcium,
                   t('flutter.food.custom_calcium', 'Calcium (mg) · opt'),
                   number: true,
+                  review: _review.contains('calcium_mg'),
                 ),
               ),
             ],
@@ -954,7 +1124,12 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
     );
   }
 
-  Widget _field(TextEditingController c, String label, {bool number = false}) {
+  Widget _field(
+    TextEditingController c,
+    String label, {
+    bool number = false,
+    bool review = false,
+  }) {
     return TextField(
       controller: c,
       keyboardType: number
@@ -964,6 +1139,15 @@ class _CustomFoodSheetState extends State<_CustomFoodSheet> {
         labelText: label,
         isDense: true,
         border: const OutlineInputBorder(),
+        // Amber = "the scanner wasn't sure — verify against the package".
+        enabledBorder: review
+            ? const OutlineInputBorder(
+                borderSide: BorderSide(color: GsColors.estimated, width: 1.6),
+              )
+            : null,
+        labelStyle: review
+            ? const TextStyle(color: GsColors.estimatedDark)
+            : null,
       ),
     );
   }

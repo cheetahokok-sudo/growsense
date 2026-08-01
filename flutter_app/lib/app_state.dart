@@ -17,17 +17,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'analytics.dart' show calcSleepTargetMin;
 import 'app_meta.dart';
+import 'food_scan_models.dart';
 import 'platform.dart' show kIsApplePhone, kShowPaidUi;
 import 'recall_engine.dart' show manualEntryMeta;
 import 'wearables.dart' show googleHealthRedirectUri;
 
-/// Downscale an X-ray to <=800px JPEG for AI vision analysis — same
-/// 800px/0.85 rule as the PWA's canvas downscale. Top-level so it can
-/// run through compute() off the UI thread (no-op isolate on web).
-Uint8List downscaleXrayJpeg(Uint8List bytes) {
+/// Downscale a photo to a bounded JPEG for AI vision analysis. The
+/// re-encode also strips EXIF (location etc.) before anything leaves
+/// the device.
+Uint8List _downscaleJpeg(Uint8List bytes, int maxDim) {
   final decoded = img.decodeImage(bytes);
   if (decoded == null) return bytes;
-  const maxDim = 800;
   img.Image out = decoded;
   if (decoded.width > maxDim || decoded.height > maxDim) {
     out = decoded.width >= decoded.height
@@ -36,6 +36,18 @@ Uint8List downscaleXrayJpeg(Uint8List bytes) {
   }
   return Uint8List.fromList(img.encodeJpg(out, quality: 85));
 }
+
+/// X-ray: <=800px JPEG — same 800px/0.85 rule as the PWA's canvas
+/// downscale. Top-level so it can run through compute() off the UI
+/// thread (no-op isolate on web).
+Uint8List downscaleXrayJpeg(Uint8List bytes) => _downscaleJpeg(bytes, 800);
+
+/// Food Lens meal photo: 800px is plenty for dish recognition.
+Uint8List downscaleMealJpeg(Uint8List bytes) => _downscaleJpeg(bytes, 800);
+
+/// Food Lens label photo: nutrition-panel text needs more resolution
+/// to transcribe reliably.
+Uint8List downscaleLabelJpeg(Uint8List bytes) => _downscaleJpeg(bytes, 1400);
 
 /// Local-calendar-day ISO string (YYYY-MM-DD). Deliberately NOT
 /// DateTime.toIso8601String().split('T') — that would be UTC and
@@ -278,6 +290,8 @@ class AppState extends ChangeNotifier {
     double? calciumMg,
     double? ironMg,
     double? vitaminDIu,
+    double? energyKcal,
+    String? logMethod,
   }) async {
     final childId = activeChildId;
     if (childId == null) return 'No child selected';
@@ -296,6 +310,12 @@ class AppState extends ChangeNotifier {
             // Minor co-factors — auto-captured, Analytics-only.
             'iron_mg': ironMg,
             'vitamin_d_iu': vitaminDIu,
+            // Quiet energy layer + provenance (Food Lens, 2026-08).
+            // Keys included only when set so manual logging keeps
+            // working before migrations/2026-08-01_food_scan_caps.sql
+            // is applied (DB defaults cover the omitted columns).
+            'energy_kcal': ?energyKcal,
+            'log_method': ?logMethod,
             'created_by': sb.auth.currentUser?.id,
           })
           .select()
@@ -425,6 +445,12 @@ class AppState extends ChangeNotifier {
   /// paywall we cannot fulfil would be worse than giving it away.
   bool get canUseHeightScan => !kShowPaidUi || isPremium;
 
+  /// Food Lens (meal photo + label scan) is a paid tool. Unlike Height
+  /// Scan this IS server-enforced (food-scan Edge Function: 402 for
+  /// free tiers + monthly food_scan cap) — this getter only decides
+  /// whether the UI shows the lock badge before calling.
+  bool get canUseFoodScan => !kShowPaidUi || isPremium;
+
   /// Whether logging [date] would create a NEW row rather than update an
   /// existing one. [addMeasurement] upserts on (child_id, recorded_date),
   /// so re-saving a date that already has a measurement is an edit.
@@ -463,6 +489,7 @@ class AppState extends ChangeNotifier {
     required double proteinG,
     double? zincMg,
     double? calciumMg,
+    double? energyKcal,
   }) async {
     final childId = activeChildId;
     if (childId == null) return 'No child selected';
@@ -485,6 +512,9 @@ class AppState extends ChangeNotifier {
             'protein_g': proteinG,
             'zinc_mg': zincMg,
             'calcium_mg': calciumMg,
+            // Quiet energy layer (label scan). Included only when set so
+            // manual adds keep working before the food_scan migration.
+            'energy_kcal': ?energyKcal,
             'created_by': sb.auth.currentUser?.id,
           })
           .select()
@@ -1767,6 +1797,105 @@ class AppState extends ChangeNotifier {
     } finally {
       boneAgeAiRunning = false;
       notifyListeners();
+    }
+  }
+
+  // ── Food Lens (meal photo + label scan) ─────────────────────────
+
+  bool foodScanRunning = false;
+
+  /// Send 1–2 photos to the food-scan Edge Function. [mode] is 'meal'
+  /// or 'label'. Photos are downscaled + re-encoded (EXIF stripped)
+  /// off the UI thread and sent transiently — nothing is stored.
+  Future<FoodScanResult> runFoodScan({
+    required List<Uint8List> photos,
+    required String mode,
+    String? regionHint,
+    double? plateHintCm,
+  }) async {
+    if (photos.isEmpty || photos.length > 2) {
+      return FoodScanResult.failure('Provide one or two photos');
+    }
+    foodScanRunning = true;
+    notifyListeners();
+    try {
+      final shrink = mode == 'label' ? downscaleLabelJpeg : downscaleMealJpeg;
+      final images = <Map<String, String>>[];
+      for (final p in photos) {
+        final resized = await compute(shrink, p);
+        images.add({
+          'base64': base64Encode(resized),
+          'media_type': 'image/jpeg',
+        });
+      }
+      final res = await sb.functions.invoke(
+        'food-scan',
+        body: {
+          'mode': mode,
+          'images': images,
+          'child_id': activeChildId,
+          // App language mapped to a food region by the caller; the
+          // model only uses it to break ties between similar dishes.
+          'region_hint': ?regionHint,
+          'plate_hint_cm': ?plateHintCm,
+        },
+      );
+      final data = res.data as Map<String, dynamic>?;
+      if (data == null || data['error'] != null) {
+        return FoodScanResult.failure(
+          (data?['error'] ?? 'AI service returned no result').toString(),
+        );
+      }
+      return FoodScanResult.fromJson(data);
+    } on FunctionException catch (e) {
+      final detail = e.details;
+      if (detail is Map && detail['error'] == 'monthly_cap_exceeded') {
+        return FoodScanResult.failure(
+          (detail['message'] ??
+                  'Monthly limit for this analysis reached — it resets on the 1st.')
+              .toString(),
+        );
+      }
+      // premium_required flows through here verbatim — the UI matches
+      // it against premiumRequiredError to open the paywall sheet.
+      return FoodScanResult.failure(
+        detail is Map
+            ? (detail['error'] ?? detail['detail'] ?? e.reasonPhrase).toString()
+            : (e.reasonPhrase ?? 'AI analysis failed'),
+      );
+    } catch (e) {
+      return FoodScanResult.failure(e.toString());
+    } finally {
+      foodScanRunning = false;
+      notifyListeners();
+    }
+  }
+
+  /// "Usual portion" memory: the most recently logged protein amount
+  /// per food for the active child. The confirm sheet derives grams
+  /// from it (grams = protein_g / proteinPer100g × 100) so a repeat
+  /// meal prefills with the family's own confirmed portion instead of
+  /// the AI's generic estimate.
+  Future<Map<String, double>> latestLoggedProtein(List<String> foodIds) async {
+    final childId = activeChildId;
+    if (childId == null || foodIds.isEmpty) return {};
+    try {
+      final rows = await sb
+          .from('nutrition_log_items')
+          .select('food_id, protein_g, logged_at')
+          .eq('child_id', childId)
+          .inFilter('food_id', foodIds)
+          .order('logged_at', ascending: false)
+          .limit(50);
+      final out = <String, double>{};
+      for (final r in rows as List) {
+        final id = r['food_id'] as String?;
+        final p = (r['protein_g'] as num?)?.toDouble();
+        if (id != null && p != null && !out.containsKey(id)) out[id] = p;
+      }
+      return out;
+    } catch (_) {
+      return {}; // prefill is a nicety — never block the sheet on it
     }
   }
 

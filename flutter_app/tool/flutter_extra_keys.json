@@ -4511,5 +4511,253 @@
     "ko": "측정값이 {cm} cm 차이납니다 — 다시 스캔하면 더 정확할 수 있습니다",
     "zh": "各次测量相差 {cm} 厘米——重新扫描可能更准确",
     "ar": "تختلف القراءات بمقدار {cm} سم — قد يكون المسح من جديد أدق"
+  },
+  "flutter.fscan.snap_meal": {
+    "en": "Snap a meal",
+    "th": "ถ่ายรูปมื้ออาหาร",
+    "vi": "Chụp bữa ăn",
+    "ko": "식사 촬영",
+    "zh": "拍摄餐食",
+    "ar": "التقط صورة الوجبة"
+  },
+  "flutter.fscan.scan_label": {
+    "en": "Scan a nutrition label",
+    "th": "สแกนฉลากโภชนาการ",
+    "vi": "Quét nhãn dinh dưỡng",
+    "ko": "영양성분표 스캔",
+    "zh": "扫描营养标签",
+    "ar": "مسح ملصق التغذية"
+  },
+  "flutter.fscan.take_photo": {
+    "en": "Take a photo",
+    "th": "ถ่ายรูป",
+    "vi": "Chụp ảnh",
+    "ko": "사진 찍기",
+    "zh": "拍照",
+    "ar": "التقاط صورة"
+  },
+  "flutter.fscan.from_gallery": {
+    "en": "Choose from gallery",
+    "th": "เลือกจากคลังภาพ",
+    "vi": "Chọn từ thư viện",
+    "ko": "갤러리에서 선택",
+    "zh": "从相册选择",
+    "ar": "اختيار من المعرض"
+  },
+  "flutter.fscan.analyzing": {
+    "en": "Analyzing photo…",
+    "th": "กำลังวิเคราะห์รูปภาพ…",
+    "vi": "Đang phân tích ảnh…",
+    "ko": "사진 분석 중…",
+    "zh": "正在分析照片…",
+    "ar": "جارٍ تحليل الصورة…"
+  },
+  "flutter.fscan.no_food": {
+    "en": "Couldn't find food in this photo — try a closer, brighter shot.",
+    "th": "ไม่พบอาหารในรูปนี้ — ลองถ่ายใกล้ขึ้นและสว่างขึ้น",
+    "vi": "Không tìm thấy món ăn trong ảnh — hãy chụp gần hơn và sáng hơn.",
+    "ko": "사진에서 음식을 찾지 못했습니다 — 더 가깝고 밝게 찍어 보세요.",
+    "zh": "未能在照片中找到食物——请靠近一些、在更亮的光线下拍摄。",
+    "ar": "لم يتم العثور على طعام في هذه الصورة — جرّب لقطة أقرب وأكثر إضاءة."
+  },
+  "flutter.fscan.label_unreadable": {
+    "en": "Couldn't read this label — try a flatter, brighter shot of the nutrition panel.",
+    "th": "อ่านฉลากนี้ไม่ได้ — ลองถ่ายให้ฉลากเรียบและสว่างขึ้น",
+    "vi": "Không đọc được nhãn này — hãy chụp bảng dinh dưỡng phẳng hơn và sáng hơn.",
+    "ko": "라벨을 읽지 못했습니다 — 영양성분표를 더 평평하고 밝게 찍어 보세요.",
+    "zh": "无法读取此标签——请将营养成分表拍得更平整、更明亮。",
+    "ar": "تعذّرت قراءة هذا الملصق — جرّب لقطة أوضح وأكثر استواءً لجدول التغذية."
+  },
+  "flutter.fscan.confirm_title": {
+    "en": "Check before logging",
+    "th": "ตรวจสอบก่อนบันทึก",
+    "vi": "Kiểm tra trước khi ghi",
+    "ko": "기록 전 확인",
+    "zh": "记录前请核对",
+    "ar": "تحقّق قبل التسجيل"
+  },
+  "flutter.fscan.grams_hint": {
+    "en": "Estimated from one photograph — grams are rough. Adjust anything, then log.",
+    "th": "ประมาณจากรูปถ่ายหนึ่งรูป — น้ำหนักกรัมเป็นค่าคร่าว ๆ ปรับได้ตามจริงแล้วค่อยบันทึก",
+    "vi": "Ước tính từ một bức ảnh — số gam chỉ là gần đúng. Điều chỉnh rồi ghi lại.",
+    "ko": "사진 한 장으로 추정한 값입니다 — 그램은 대략치입니다. 조정 후 기록하세요.",
+    "zh": "由一张照片估算——克数为粗略值。可先调整再记录。",
+    "ar": "تقدير من صورة واحدة — الجرامات تقريبية. عدّل ما تشاء ثم سجّل."
+  },
+  "flutter.fscan.ate_label": {
+    "en": "Child ate:",
+    "th": "ลูกกินไป:",
+    "vi": "Bé đã ăn:",
+    "ko": "아이가 먹은 양:",
+    "zh": "孩子吃了:",
+    "ar": "أكل الطفل:"
+  },
+  "flutter.fscan.ate_little": {
+    "en": "A little",
+    "th": "นิดหน่อย",
+    "vi": "Một ít",
+    "ko": "조금",
+    "zh": "一点",
+    "ar": "قليلاً"
+  },
+  "flutter.fscan.ate_most": {
+    "en": "Most of it",
+    "th": "เกือบหมด",
+    "vi": "Gần hết",
+    "ko": "거의 다",
+    "zh": "大部分",
+    "ar": "معظمه"
+  },
+  "flutter.fscan.ate_all": {
+    "en": "All",
+    "th": "หมดจาน",
+    "vi": "Hết sạch",
+    "ko": "전부",
+    "zh": "全部",
+    "ar": "كله"
+  },
+  "flutter.fscan.bowl_full": {
+    "en": "Bowl was:",
+    "th": "ชามตอนเสิร์ฟ:",
+    "vi": "Bát lúc dọn:",
+    "ko": "그릇 상태:",
+    "zh": "碗盛了:",
+    "ar": "كان الوعاء:"
+  },
+  "flutter.fscan.bowl_full_full": {
+    "en": "full",
+    "th": "เต็มชาม",
+    "vi": "đầy",
+    "ko": "가득",
+    "zh": "满",
+    "ar": "ممتلئ"
+  },
+  "flutter.fscan.usual_portion": {
+    "en": "usual portion",
+    "th": "ปริมาณที่กินประจำ",
+    "vi": "khẩu phần quen thuộc",
+    "ko": "평소 양",
+    "zh": "平常份量",
+    "ar": "الحصة المعتادة"
+  },
+  "flutter.fscan.conf_low_chip": {
+    "en": "low confidence",
+    "th": "ความมั่นใจต่ำ",
+    "vi": "độ tin cậy thấp",
+    "ko": "낮은 확신도",
+    "zh": "置信度低",
+    "ar": "ثقة منخفضة"
+  },
+  "flutter.fscan.conf_low": {
+    "en": "Some foods were identified with low confidence — check them.",
+    "th": "บางรายการระบุได้ด้วยความมั่นใจต่ำ — โปรดตรวจสอบ",
+    "vi": "Một số món được nhận diện với độ tin cậy thấp — hãy kiểm tra.",
+    "ko": "일부 음식은 확신도가 낮습니다 — 확인해 주세요.",
+    "zh": "部分食物识别置信度较低——请核对。",
+    "ar": "تم التعرّف على بعض الأطعمة بثقة منخفضة — يرجى التحقق."
+  },
+  "flutter.fscan.conf_bowl": {
+    "en": "Bowl contents are partly hidden — fullness chips help.",
+    "th": "ของในชามมองไม่เห็นทั้งหมด — ใช้ตัวเลือกความเต็มชามช่วยได้",
+    "vi": "Đồ trong bát bị che một phần — hãy dùng lựa chọn độ đầy.",
+    "ko": "그릇 속은 일부만 보입니다 — 가득참 선택이 도움이 됩니다.",
+    "zh": "碗内食物部分被遮挡——请使用碗满程度选项。",
+    "ar": "محتويات الوعاء مخفية جزئياً — تساعد خيارات الامتلاء."
+  },
+  "flutter.fscan.conf_ok": {
+    "en": "Estimated from a photo · confirmed by you.",
+    "th": "ประมาณจากรูปถ่าย · ยืนยันโดยคุณ",
+    "vi": "Ước tính từ ảnh · do bạn xác nhận.",
+    "ko": "사진으로 추정 · 부모가 확인.",
+    "zh": "照片估算 · 由您确认。",
+    "ar": "تقدير من صورة · بتأكيدك."
+  },
+  "flutter.fscan.not_in_library": {
+    "en": "not in the library",
+    "th": "ไม่มีในคลังอาหาร",
+    "vi": "không có trong thư viện",
+    "ko": "라이브러리에 없음",
+    "zh": "不在食物库中",
+    "ar": "غير موجود في المكتبة"
+  },
+  "flutter.fscan.log_as": {
+    "en": "Log as",
+    "th": "บันทึกเป็น",
+    "vi": "Ghi là",
+    "ko": "다음으로 기록:",
+    "zh": "记录为",
+    "ar": "سجّل كـ"
+  },
+  "flutter.fscan.log_btn": {
+    "en": "Log to {slot}",
+    "th": "บันทึกลง{slot}",
+    "vi": "Ghi vào {slot}",
+    "ko": "{slot}에 기록",
+    "zh": "记录到{slot}",
+    "ar": "سجّل في {slot}"
+  },
+  "flutter.fscan.logged_n": {
+    "en": "{n} foods → {slot}",
+    "th": "{n} รายการ → {slot}",
+    "vi": "{n} món → {slot}",
+    "ko": "{n}개 음식 → {slot}",
+    "zh": "{n} 项食物 → {slot}",
+    "ar": "{n} أطعمة ← {slot}"
+  },
+  "flutter.fscan.logged_partial": {
+    "en": "Some items could not be saved ({n} failed)",
+    "th": "บางรายการบันทึกไม่สำเร็จ ({n} รายการ)",
+    "vi": "Một số món chưa lưu được ({n} lỗi)",
+    "ko": "일부 항목을 저장하지 못했습니다 ({n}개 실패)",
+    "zh": "部分项目未能保存（{n} 项失败）",
+    "ar": "تعذّر حفظ بعض العناصر ({n} فشلت)"
+  },
+  "flutter.fscan.label_prefilled": {
+    "en": "Read from your label photo — check the numbers, then save.",
+    "th": "อ่านจากรูปฉลากของคุณ — ตรวจตัวเลขแล้วกดบันทึก",
+    "vi": "Đọc từ ảnh nhãn của bạn — kiểm tra các con số rồi lưu.",
+    "ko": "라벨 사진에서 읽었습니다 — 숫자를 확인한 뒤 저장하세요.",
+    "zh": "已从标签照片读取——请核对数字后保存。",
+    "ar": "قُرئت من صورة الملصق — تحقّق من الأرقام ثم احفظ."
+  },
+  "flutter.fscan.label_review": {
+    "en": "Amber fields were hard to read — please verify them against the package.",
+    "th": "ช่องสีทองอ่านได้ไม่ชัด — โปรดเทียบกับบรรจุภัณฑ์อีกครั้ง",
+    "vi": "Các ô màu hổ phách khó đọc — hãy đối chiếu lại với bao bì.",
+    "ko": "황색 필드는 판독이 어려웠습니다 — 포장과 대조해 주세요.",
+    "zh": "琥珀色字段较难识别——请对照包装核实。",
+    "ar": "الحقول الكهرمانية كانت صعبة القراءة — يرجى مطابقتها مع العبوة."
+  },
+  "flutter.fscan.premium_title": {
+    "en": "Food Lens is a Premium tool",
+    "th": "Food Lens เป็นเครื่องมือพรีเมียม",
+    "vi": "Food Lens là công cụ Premium",
+    "ko": "Food Lens는 프리미엄 기능입니다",
+    "zh": "Food Lens 是高级版功能",
+    "ar": "Food Lens أداة بريميوم"
+  },
+  "flutter.fscan.premium_body": {
+    "en": "Photograph a meal or a nutrition label and let AI find the foods and portions — you confirm, GrowSense computes the growth nutrients from verified data.",
+    "th": "ถ่ายรูปมื้ออาหารหรือฉลากโภชนาการ ให้ AI ช่วยหาชนิดอาหารและปริมาณ — คุณยืนยัน แล้ว GrowSense คำนวณสารอาหารเพื่อการเติบโตจากข้อมูลที่ตรวจสอบแล้ว",
+    "vi": "Chụp bữa ăn hoặc nhãn dinh dưỡng để AI nhận diện món và khẩu phần — bạn xác nhận, GrowSense tính dưỡng chất tăng trưởng từ dữ liệu đã kiểm chứng.",
+    "ko": "식사나 영양성분표를 촬영하면 AI가 음식과 양을 찾아줍니다 — 부모가 확인하면 GrowSense가 검증된 데이터로 성장 영양소를 계산합니다.",
+    "zh": "拍摄餐食或营养标签，AI 识别食物和份量——您确认后，GrowSense 用经过验证的数据计算成长营养素。",
+    "ar": "صوّر وجبة أو ملصق تغذية ودع الذكاء الاصطناعي يجد الأطعمة والكميات — أنت تؤكد، وGrowSense يحسب عناصر النمو من بيانات موثّقة."
+  },
+  "flutter.fscan.premium_free_note": {
+    "en": "Logging foods by hand, the full food library and your custom foods stay free.",
+    "th": "การบันทึกอาหารด้วยตนเอง คลังอาหารทั้งหมด และอาหารที่คุณสร้างเอง ยังใช้ฟรีเหมือนเดิม",
+    "vi": "Ghi món thủ công, thư viện món ăn đầy đủ và món tự tạo vẫn miễn phí.",
+    "ko": "수동 기록, 전체 음식 라이브러리, 커스텀 음식은 계속 무료입니다.",
+    "zh": "手动记录、完整食物库和自定义食物仍然免费。",
+    "ar": "تسجيل الأطعمة يدوياً ومكتبة الأطعمة الكاملة وأطعمتك المخصصة تبقى مجانية."
+  },
+  "flutter.paywall.b_foodscan": {
+    "en": "Snap a photo of the plate or a nutrition label — AI finds the foods and portions, you confirm",
+    "th": "ถ่ายรูปจานอาหารหรือฉลากโภชนาการ — AI หาชนิดอาหารและปริมาณ คุณเป็นคนยืนยัน",
+    "vi": "Chụp đĩa ăn hoặc nhãn dinh dưỡng — AI tìm món và khẩu phần, bạn xác nhận",
+    "ko": "접시나 영양성분표를 촬영하세요 — AI가 음식과 양을 찾고 부모가 확인합니다",
+    "zh": "拍摄餐盘或营养标签——AI 识别食物和份量，由您确认",
+    "ar": "التقط صورة للطبق أو ملصق التغذية — الذكاء الاصطناعي يجد الأطعمة والكميات وأنت تؤكد"
   }
 }
