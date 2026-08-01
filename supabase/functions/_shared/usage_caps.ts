@@ -30,8 +30,11 @@ export async function checkAndCountFeatureUse(
   opts: {
     userId: string;
     tier: string;
-    feature: "bone_age" | "lab_ai";
-    capColumn: "bone_age_monthly_cap" | "lab_ai_monthly_cap";
+    feature: "bone_age" | "lab_ai" | "food_scan";
+    capColumn:
+      | "bone_age_monthly_cap"
+      | "lab_ai_monthly_cap"
+      | "food_scan_monthly_cap";
   },
 ): Promise<CapVerdict> {
   const { data: limits } = await adminClient

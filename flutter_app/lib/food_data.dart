@@ -27,6 +27,9 @@ class FoodItem {
   // cited USDA record; null = not collected yet (never a guess).
   final double? ironPer100g;
   final double? vitaminDIuPer100g;
+  // v2.3: energy joins the quiet layer (Food Lens, 2026-08) — logged with
+  // photo-scanned meals, surfaced later by the illness recovery mode.
+  final double? energyPer100g;
   final double servingGrams;
   final String source;
 
@@ -44,6 +47,7 @@ class FoodItem {
       sodiumPer100g = ((j['per100g']?['sodium_mg']) as num?)?.toDouble(),
       ironPer100g = ((j['per100g']?['iron_mg']) as num?)?.toDouble(),
       vitaminDIuPer100g = ((j['per100g']?['vitamin_d_iu']) as num?)?.toDouble(),
+      energyPer100g = ((j['per100g']?['energy_kcal']) as num?)?.toDouble(),
       servingGrams = (j['servingGrams'] as num?)?.toDouble() ?? 100,
       source = j['source'] as String? ?? '';
 
@@ -60,6 +64,8 @@ class FoodItem {
   double? get vitaminDIuPerServing => vitaminDIuPer100g == null
       ? null
       : vitaminDIuPer100g! * servingGrams / 100;
+  double? get energyPerServing =>
+      energyPer100g == null ? null : energyPer100g! * servingGrams / 100;
 
   /// A food is flagged "Salty" when it is a high-sodium food in its own
   /// right (≥500 mg/100g) — a property of the food, not the serving, so

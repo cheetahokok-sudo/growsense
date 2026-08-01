@@ -24,6 +24,12 @@
 // PHASE 2: backfill iron_mg + vitamin_d_iu across all foods from their
 // FDC records (cleanest via the USDA FDC API by the IDs already cited).
 //
+// v2.3 (2026-08-01): optional per100g.energy_kcal — energy joins the quiet
+// layer for Food Lens (photo meal logging) and the future illness recovery
+// mode. Backfilled from each food's cited FDC record (nutrient 208, Atwater
+// fallback); 57/96 collected. Foods citing legacy NDB numbers (not FDC ids)
+// or with no single record stay undefined — never guessed.
+//
 // All values per-100g cooked/as-eaten basis (USDA FoodData Central
 // or noted national database). Where a nutrient is genuinely absent
 // from the source checked it is null — never guessed.
@@ -49,7 +55,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'egg',
     prepNote: 'hard-boiled',
     portionVisual: '1 whole egg',
-    per100g: { protein_g: 12.60, zinc_mg: 1.06, calcium_mg: 50.0, iron_mg: 1.19, vitamin_d_iu: 87 },
+    per100g: { protein_g: 12.60, zinc_mg: 1.06, calcium_mg: 50.0, iron_mg: 1.19, vitamin_d_iu: 87, energy_kcal: 155 },
     servingGrams: 50,
     source: 'USDA FDC 173424 — Egg, whole, cooked, hard-boiled'
   },
@@ -60,7 +66,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'dairy',
     prepNote: 'whole milk, 3.25% fat',
     portionVisual: '~1/3 cup (small glass)',
-    per100g: { protein_g: 3.16, zinc_mg: 0.37, calcium_mg: 112.99, iron_mg: 0.03, vitamin_d_iu: 51 },
+    per100g: { protein_g: 3.16, zinc_mg: 0.37, calcium_mg: 112.99, iron_mg: 0.03, vitamin_d_iu: 51, energy_kcal: 61 },
     servingGrams: 100,
     source: 'USDA FDC 171265 — Milk, whole, 3.25% milkfat, with added vitamin D'
   },
@@ -71,7 +77,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'dairy',
     prepNote: '1 slice',
     portionVisual: '~3 dice stacked',
-    per100g: { protein_g: 23.70, zinc_mg: 3.10, calcium_mg: 721.0, iron_mg: 0.14, vitamin_d_iu: 24 },
+    per100g: { protein_g: 23.70, zinc_mg: 3.10, calcium_mg: 721.0, iron_mg: 0.14, vitamin_d_iu: 24, energy_kcal: 403 },
     servingGrams: 28,
     source: 'USDA FDC 173414 — Cheese, cheddar'
   },
@@ -82,7 +88,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'chicken',
     prepNote: 'cooked, skinless, boneless',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 32.06, zinc_mg: 0.94, calcium_mg: 6.0, iron_mg: 0.49, vitamin_d_iu: 1 },
+    per100g: { protein_g: 32.06, zinc_mg: 0.94, calcium_mg: 6.0, iron_mg: 0.49, vitamin_d_iu: 1, energy_kcal: 157 },
     servingGrams: 30,
     source: 'USDA FDC 171140 — Chicken, broiler/fryers, breast, skinless, boneless, meat only, cooked, braised'
   },
@@ -93,7 +99,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'fish',
     prepNote: 'cooked, wild Atlantic',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 25.41, zinc_mg: 0.82, calcium_mg: 15.0, iron_mg: 1.03 },
+    per100g: { protein_g: 25.41, zinc_mg: 0.82, calcium_mg: 15.0, iron_mg: 1.03, energy_kcal: 182 },
     servingGrams: 30,
     source: 'USDA FDC 171998 — Fish, salmon, Atlantic, wild, cooked, dry heat'
   },
@@ -104,7 +110,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'seafood',
     prepNote: 'cooked',
     portionVisual: '1 medium shrimp (tap ~3× for a typical 3-shrimp portion)',
-    per100g: { protein_g: 23.98, zinc_mg: 1.64, calcium_mg: 64.0, iron_mg: 0.51 },
+    per100g: { protein_g: 23.98, zinc_mg: 1.64, calcium_mg: 64.0, iron_mg: 0.51, energy_kcal: 99 },
     servingGrams: 28,
     source: 'USDA FDC 175180 — Crustaceans, shrimp, cooked'
   },
@@ -115,7 +121,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'beef',
     prepNote: 'top sirloin, cooked, broiled, lean',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 30.0, zinc_mg: 5.71, calcium_mg: 19.29, iron_mg: 1.87, vitamin_d_iu: 4 },
+    per100g: { protein_g: 30.0, zinc_mg: 5.71, calcium_mg: 19.29, iron_mg: 1.87, vitamin_d_iu: 4, energy_kcal: 178 },
     servingGrams: 30,
     source: 'USDA FDC 174054 — Beef, top sirloin, steak, separable lean only, trimmed to 1/8" fat, all grades, cooked, broiled'
   },
@@ -126,7 +132,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'dairy',
     prepNote: 'plain, whole milk',
     portionVisual: '~1/3 cup (small pot)',
-    per100g: { protein_g: 3.50, zinc_mg: 0.57, calcium_mg: 121.0, iron_mg: 0.05, vitamin_d_iu: 2 },
+    per100g: { protein_g: 3.50, zinc_mg: 0.57, calcium_mg: 121.0, iron_mg: 0.05, vitamin_d_iu: 2, energy_kcal: 61 },
     servingGrams: 100,
     source: 'USDA FDC 171284 — Yogurt, plain, whole milk'
   },
@@ -148,7 +154,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'plant',
     prepNote: 'smooth',
     portionVisual: '~2 tbsp',
-    per100g: { protein_g: 21.88, zinc_mg: 2.66, calcium_mg: 54.06, iron_mg: 2.16, vitamin_d_iu: 0 },
+    per100g: { protein_g: 21.88, zinc_mg: 2.66, calcium_mg: 54.06, iron_mg: 2.16, vitamin_d_iu: 0, energy_kcal: 83 },
     servingGrams: 32,
     source: "USDA FDC 174294 — Peanut Butter, smooth"
   },
@@ -170,7 +176,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'pork',
     prepNote: 'lean, cooked, roasted',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 28.62, zinc_mg: 2.5, calcium_mg: 18.0, iron_mg: 1.09, vitamin_d_iu: 27 },
+    per100g: { protein_g: 28.62, zinc_mg: 2.5, calcium_mg: 18.0, iron_mg: 1.09, vitamin_d_iu: 27, energy_kcal: 209 },
     servingGrams: 30,
     source: 'USDA FDC 168233 — Pork, fresh, loin, whole, separable lean only, cooked, roasted'
   },
@@ -181,7 +187,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'pork',
     prepNote: 'cooked, pan-fried',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 33.89, zinc_mg: 3.06, calcium_mg: 11.11, sodium_mg: 1717.0, iron_mg: 0.95, vitamin_d_iu: 17 },
+    per100g: { protein_g: 33.89, zinc_mg: 3.06, calcium_mg: 11.11, sodium_mg: 1717.0, iron_mg: 0.95, vitamin_d_iu: 17, energy_kcal: 468 },
     servingGrams: 28,
     source: 'USDA FDC 168322 — Pork, cured, bacon, pre-sliced, cooked, pan-fried. NOTE: high sodium — one 28g tap provides ~9% of a child\'s daily recommended sodium intake.'
   },
@@ -200,7 +206,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'deli',
     prepNote: 'sliced, regular ~11% fat',
     portionVisual: '1 sandwich slice',
-    per100g: { protein_g: 16.60, zinc_mg: 1.90, calcium_mg: 6.0, sodium_mg: 1203.0, iron_mg: 1.02, vitamin_d_iu: 29 },
+    per100g: { protein_g: 16.60, zinc_mg: 1.90, calcium_mg: 6.0, sodium_mg: 1203.0, iron_mg: 1.02, vitamin_d_iu: 29, energy_kcal: 164 },
     servingGrams: 28,
     source: 'USDA FDC 173864 — Ham, sliced, regular (approximately 11% fat). NOTE: processed/high sodium — one 28 g slice ≈ 337 mg sodium (~22% of a young child\'s daily limit).'
   },
@@ -211,7 +217,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'deli',
     prepNote: 'sliced, low-salt deli',
     portionVisual: '1 sandwich slice',
-    per100g: { protein_g: 13.70, zinc_mg: 1.10, calcium_mg: 5.0, sodium_mg: 772.0, iron_mg: 0.63, vitamin_d_iu: 2 },
+    per100g: { protein_g: 13.70, zinc_mg: 1.10, calcium_mg: 5.0, sodium_mg: 772.0, iron_mg: 0.63, vitamin_d_iu: 2, energy_kcal: 109 },
     servingGrams: 28,
     source: 'USDA FDC 174572 — Turkey breast, low salt, prepackaged or deli, luncheon meat. Leaner and lower-sodium than most cold cuts, but still salty.'
   },
@@ -233,7 +239,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'deli',
     prepNote: 'dry/hard, thin slices',
     portionVisual: '3 very thin slices',
-    per100g: { protein_g: 22.60, zinc_mg: 4.20, calcium_mg: 13.0, sodium_mg: 2261.0, iron_mg: 1.52 },
+    per100g: { protein_g: 22.60, zinc_mg: 4.20, calcium_mg: 13.0, sodium_mg: 2261.0, iron_mg: 1.52, energy_kcal: 425 },
     servingGrams: 10,
     source: 'USDA FDC 174603 — Salami, dry or hard, pork. NOTE: very high sodium — thin slices only; 10 g ≈ 226 mg sodium (~15% of a young child\'s daily limit).'
   },
@@ -244,7 +250,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'deli',
     prepNote: 'beef frankfurter',
     portionVisual: '1 whole hot dog',
-    per100g: { protein_g: 11.70, zinc_mg: 2.10, calcium_mg: 13.0, sodium_mg: 810.0, iron_mg: 0.34, vitamin_d_iu: 0 },
+    per100g: { protein_g: 11.70, zinc_mg: 2.10, calcium_mg: 13.0, sodium_mg: 810.0, iron_mg: 0.34, vitamin_d_iu: 0, energy_kcal: 47 },
     servingGrams: 45,
     source: 'USDA FDC 171357 — Frankfurter, beef. NOTE: processed/high sodium — one frank ≈ 365 mg sodium (~24% of a young child\'s daily limit).'
   },
@@ -255,7 +261,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'deli',
     prepNote: 'canned',
     portionVisual: '1 piece',
-    per100g: { protein_g: 10.50, zinc_mg: 1.60, calcium_mg: 10.0, sodium_mg: 879.0, iron_mg: 0.88, vitamin_d_iu: 25 },
+    per100g: { protein_g: 10.50, zinc_mg: 1.60, calcium_mg: 10.0, sodium_mg: 879.0, iron_mg: 0.88, vitamin_d_iu: 25, energy_kcal: 230 },
     servingGrams: 16,
     source: 'USDA FDC 172942 — Sausage, Vienna, canned, chicken, beef, pork. NOTE: processed/high sodium.'
   },
@@ -266,7 +272,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'fish',
     prepNote: 'raw, wild Atlantic — sashimi / sushi use',
     portionVisual: 'matchbox-sized (tap ~3× for a deck-of-cards portion)',
-    per100g: { protein_g: 19.88, zinc_mg: 0.64, calcium_mg: 12.00, iron_mg: 0.8 },
+    per100g: { protein_g: 19.88, zinc_mg: 0.64, calcium_mg: 12.00, iron_mg: 0.8, energy_kcal: 142 },
     servingGrams: 30,
     source: 'USDA FDC 173686 — Fish, salmon, Atlantic, wild, raw'
   },
@@ -288,7 +294,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'seafood',
     prepNote: 'Dungeness, cooked',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 22.35, zinc_mg: 5.41, calcium_mg: 59.06, iron_mg: 0.43 },
+    per100g: { protein_g: 22.35, zinc_mg: 5.41, calcium_mg: 59.06, iron_mg: 0.43, energy_kcal: 110 },
     servingGrams: 30,
     source: 'USDA FDC 172007 — Crustaceans, crab, dungeness, cooked, moist heat'
   },
@@ -299,7 +305,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'fish',
     prepNote: 'yellowfin, cooked',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 29.18, zinc_mg: 0.45, calcium_mg: 4.00, iron_mg: 0.92, vitamin_d_iu: 82 },
+    per100g: { protein_g: 29.18, zinc_mg: 0.45, calcium_mg: 4.00, iron_mg: 0.92, vitamin_d_iu: 82, energy_kcal: 130 },
     servingGrams: 30,
     source: 'USDA FDC 172006 — Fish, tuna, yellowfin, fresh, cooked, dry heat'
   },
@@ -310,7 +316,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'fish',
     prepNote: 'cooked',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 26.18, zinc_mg: 0.41, calcium_mg: 14.00, iron_mg: 0.69, vitamin_d_iu: 150 },
+    per100g: { protein_g: 26.18, zinc_mg: 0.41, calcium_mg: 14.00, iron_mg: 0.69, vitamin_d_iu: 150, energy_kcal: 128 },
     servingGrams: 30,
     source: 'USDA FDC 175177 — Fish, tilapia, cooked, dry heat'
   },
@@ -321,7 +327,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'chicken',
     prepNote: 'roasted, meat and skin',
     portionVisual: 'matchbox-sized (tap ~3× for a full deck-of-cards portion)',
-    per100g: { protein_g: 23.50, zinc_mg: 2.57, calcium_mg: 12.00, iron_mg: 2.7, vitamin_d_iu: 4 },
+    per100g: { protein_g: 23.50, zinc_mg: 2.57, calcium_mg: 12.00, iron_mg: 2.7, vitamin_d_iu: 4, energy_kcal: 201 },
     servingGrams: 30,
     source: 'USDA FDC 172411 — Duck, domesticated, meat only, cooked, roasted'
   },
@@ -332,7 +338,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'global', category: 'plant',
     prepNote: 'soybean paste — condiment, not a protein portion',
     portionVisual: '~1 tbsp (typical soup serving)',
-    per100g: { protein_g: 12.94, zinc_mg: 2.59, calcium_mg: 57.06, iron_mg: 2.49, vitamin_d_iu: 0 },
+    per100g: { protein_g: 12.94, zinc_mg: 2.59, calcium_mg: 57.06, iron_mg: 2.49, vitamin_d_iu: 0, energy_kcal: 198 },
     servingGrams: 17,
     source: 'USDA FDC 172442 — Miso. NOTE: very high sodium — a single 1-tbsp tap provides ~28% of a child\'s daily recommended sodium intake.'
   },
@@ -359,7 +365,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'cn', category: 'pork',
     prepNote: 'boiled, pork and chive filling',
     portionVisual: '2 small dumplings (tap to add more)',
-    per100g: { protein_g: 9.30, zinc_mg: 1.12, calcium_mg: 18.0, iron_mg: 0.1 },
+    per100g: { protein_g: 9.30, zinc_mg: 1.12, calcium_mg: 18.0, iron_mg: 0.1, energy_kcal: 81 },
     servingGrams: 40,
     source: 'USDA FDC 1104381 — Dumpling, with meat and vegetable filling, boiled'
   },
@@ -381,7 +387,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'cn', category: 'pork',
     prepNote: 'large pork meatball, stewed and tender',
     portionVisual: '~1/3 of a large meatball (tap 3× for one full meatball)',
-    per100g: { protein_g: 15.20, zinc_mg: 2.10, calcium_mg: 14.0, iron_mg: 2.93, vitamin_d_iu: 2 },
+    per100g: { protein_g: 15.20, zinc_mg: 2.10, calcium_mg: 14.0, iron_mg: 2.93, vitamin_d_iu: 2, energy_kcal: 256 },
     servingGrams: 40,
     source: 'USDA FDC 174034 — Pork, ground, lean, cooked, braised (with bread soaker / tofu dilution reducing per-100g protein)'
   },
@@ -392,7 +398,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'cn', category: 'pork',
     prepNote: 'sweet marinated roasted pork',
     portionVisual: '2–3 thin slices (matchbox size; tap 3× for a teenager portion)',
-    per100g: { protein_g: 24.50, zinc_mg: 2.31, calcium_mg: 12.0, iron_mg: 1.15, vitamin_d_iu: 10 },
+    per100g: { protein_g: 24.50, zinc_mg: 2.31, calcium_mg: 12.0, iron_mg: 1.15, vitamin_d_iu: 10, energy_kcal: 147 },
     servingGrams: 35,
     source: 'USDA FDC 167905 — Pork, shoulder, cooked, roasted (Char Siu marinade variation)'
   },
@@ -403,7 +409,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'cn', category: 'plant',
     prepNote: 'soybean curd stewed in mild brown sauce',
     portionVisual: '~2–3 small cubes (tap to multiply)',
-    per100g: { protein_g: 8.50, zinc_mg: 0.85, calcium_mg: 145.0, iron_mg: 10.78, vitamin_d_iu: 0 },
+    per100g: { protein_g: 8.50, zinc_mg: 0.85, calcium_mg: 145.0, iron_mg: 10.78, vitamin_d_iu: 0, energy_kcal: 328 },
     servingGrams: 40,
     source: 'USDA FDC 172447 — Tofu, prepared with calcium sulfate, braised'
   },
@@ -436,7 +442,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'cn', category: 'fish',
     prepNote: 'white fish seasoned with mild soy and ginger',
     portionVisual: '1 small matchbox-sized chunk (tap 3× for a large fillet portion)',
-    per100g: { protein_g: 22.50, zinc_mg: 0.52, calcium_mg: 15.0, iron_mg: 0.69, vitamin_d_iu: 150 },
+    per100g: { protein_g: 22.50, zinc_mg: 0.52, calcium_mg: 15.0, iron_mg: 0.69, vitamin_d_iu: 150, energy_kcal: 128 },
     servingGrams: 35,
     source: 'USDA FDC 175177 — Fish, tilapia/perch, cooked, steamed'
   },
@@ -447,7 +453,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'cn', category: 'seafood',
     prepNote: 'boiled, pure shrimp filling wrapped in thin pastry',
     portionVisual: '2 small wontons (tap to add)',
-    per100g: { protein_g: 12.10, zinc_mg: 0.95, calcium_mg: 32.0, iron_mg: 0.51 },
+    per100g: { protein_g: 12.10, zinc_mg: 0.95, calcium_mg: 32.0, iron_mg: 0.51, energy_kcal: 99 },
     servingGrams: 30,
     source: 'USDA FDC 175180 — Crustaceans, shrimp, boiled; calcium estimated from shrimp filling + wheat wrapper combination'
   },
@@ -474,7 +480,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'kr', category: 'egg',
     prepNote: 'layered pan-fried egg roll — classic banchan',
     portionVisual: '1–2 medium cut slices (classic side-dish size)',
-    per100g: { protein_g: 11.20, zinc_mg: 1.01, calcium_mg: 48.0, iron_mg: 1.19, vitamin_d_iu: 87 },
+    per100g: { protein_g: 11.20, zinc_mg: 1.01, calcium_mg: 48.0, iron_mg: 1.19, vitamin_d_iu: 87, energy_kcal: 155 },
     servingGrams: 35,
     source: 'USDA FDC 173424 — Egg, whole, cooked, pan-fried (rolled variation)'
   },
@@ -496,7 +502,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'kr', category: 'beef',
     prepNote: 'sweet minced beef and pork patties, grilled',
     portionVisual: '1 small mini patty (tap 2–3× for older kids)',
-    per100g: { protein_g: 18.90, zinc_mg: 3.90, calcium_mg: 16.0, iron_mg: 2.93, vitamin_d_iu: 2 },
+    per100g: { protein_g: 18.90, zinc_mg: 3.90, calcium_mg: 16.0, iron_mg: 2.93, vitamin_d_iu: 2, energy_kcal: 256 },
     servingGrams: 40,
     source: 'USDA FDC 174034 / 174054 — Minced beef and pork blend, seasoned, grilled'
   },
@@ -518,7 +524,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'kr', category: 'plant',
     prepNote: 'seasoned with sesame oil and salt — ultra-light topping/snack',
     portionVisual: '1 mini packet (~8 tiny sheets)',
-    per100g: { protein_g: 28.10, zinc_mg: 2.10, calcium_mg: 320.0, iron_mg: 1.85 },
+    per100g: { protein_g: 28.10, zinc_mg: 2.10, calcium_mg: 320.0, iron_mg: 1.85, energy_kcal: 117 },
     servingGrams: 5,
     source: 'USDA FDC 169429 — Seaweed, laver, roasted. NOTE: very high sodium per weight — 1 mini packet (~5g) provides ~170mg sodium (~7% of a child\'s daily limit).'
   },
@@ -529,7 +535,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'kr', category: 'plant',
     prepNote: 'silken tofu cooked in mild broth',
     portionVisual: '~1/4 cup scooped (tap to multiply)',
-    per100g: { protein_g: 5.10, zinc_mg: 0.51, calcium_mg: 85.0, iron_mg: 0.64, vitamin_d_iu: 0 },
+    per100g: { protein_g: 5.10, zinc_mg: 0.51, calcium_mg: 85.0, iron_mg: 0.64, vitamin_d_iu: 0, energy_kcal: 54 },
     servingGrams: 50,
     source: 'USDA FDC 172446 — Tofu, silken'
   },
@@ -540,7 +546,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'kr', category: 'fish',
     prepNote: 'salted and grilled crisp',
     portionVisual: '1 small side fillet fragment (matchbox size)',
-    per100g: { protein_g: 23.80, zinc_mg: 0.90, calcium_mg: 15.0, iron_mg: 0.04 },
+    per100g: { protein_g: 23.80, zinc_mg: 0.90, calcium_mg: 15.0, iron_mg: 0.04, energy_kcal: 275 },
     servingGrams: 35,
     source: 'USDA FDC 173663 — Fish, mackerel, Atlantic, cooked, dry heat'
   },
@@ -589,7 +595,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'ae', category: 'chicken',
     prepNote: 'yogurt-marinated grilled chicken cubes',
     portionVisual: '2 chicken chunks (tap 2–3× for a full long skewer)',
-    per100g: { protein_g: 29.10, zinc_mg: 0.95, calcium_mg: 18.0, iron_mg: 0.49, vitamin_d_iu: 1 },
+    per100g: { protein_g: 29.10, zinc_mg: 0.95, calcium_mg: 18.0, iron_mg: 0.49, vitamin_d_iu: 1, energy_kcal: 157 },
     servingGrams: 40,
     source: 'USDA FDC 171140 — Chicken breast, marinated with yogurt, grilled'
   },
@@ -600,7 +606,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'ae', category: 'plant',
     prepNote: 'smooth puréed yellow lentils — Ramadan staple',
     portionVisual: '1/2 small deep bowl (liquid base; tap 2–3× for a standard soup plate)',
-    per100g: { protein_g: 4.80, zinc_mg: 0.61, calcium_mg: 14.0, iron_mg: 3.33, vitamin_d_iu: 0 },
+    per100g: { protein_g: 4.80, zinc_mg: 0.61, calcium_mg: 14.0, iron_mg: 3.33, vitamin_d_iu: 0, energy_kcal: 116 },
     servingGrams: 100,
     source: 'USDA FDC 172421 — Lentils, mature seeds, cooked, boiled (soup dilution)'
   },
@@ -622,7 +628,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'ae', category: 'beef',
     prepNote: 'minced beef and lamb grilled skewer',
     portionVisual: '1/2 of a standard long skewer log',
-    per100g: { protein_g: 24.10, zinc_mg: 5.10, calcium_mg: 18.0, iron_mg: 1.87, vitamin_d_iu: 4 },
+    per100g: { protein_g: 24.10, zinc_mg: 5.10, calcium_mg: 18.0, iron_mg: 1.87, vitamin_d_iu: 4, energy_kcal: 178 },
     servingGrams: 35,
     source: 'USDA FDC 174054 — Beef and lamb ground blend, cooked, grilled'
   },
@@ -633,7 +639,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'ae', category: 'chicken',
     prepNote: 'spiced chicken pulled from traditional Gulf rice dish',
     portionVisual: 'small shredded pile (matchbox size; tap to add more)',
-    per100g: { protein_g: 27.20, zinc_mg: 1.20, calcium_mg: 14.0, iron_mg: 0.49, vitamin_d_iu: 1 },
+    per100g: { protein_g: 27.20, zinc_mg: 1.20, calcium_mg: 14.0, iron_mg: 0.49, vitamin_d_iu: 1, energy_kcal: 157 },
     servingGrams: 35,
     source: 'USDA FDC 171140 — Chicken meat, spiced, moist-heat cooked'
   },
@@ -644,7 +650,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'ae', category: 'plant',
     prepNote: 'fried chickpea/fava bean croquettes',
     portionVisual: '2 small round balls (tap to multiply)',
-    per100g: { protein_g: 13.30, zinc_mg: 1.50, calcium_mg: 54.0, iron_mg: 0.35 },
+    per100g: { protein_g: 13.30, zinc_mg: 1.50, calcium_mg: 54.0, iron_mg: 0.35, energy_kcal: 133 },
     servingGrams: 35,
     source: 'USDA FDC 174242 — Falafel, commercial'
   },
@@ -666,7 +672,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'ae', category: 'plant',
     prepNote: 'creamy chickpea and tahini spread',
     portionVisual: '~1.5 tablespoons scooped',
-    per100g: { protein_g: 7.90, zinc_mg: 1.80, calcium_mg: 38.0, iron_mg: 2.89, vitamin_d_iu: 0 },
+    per100g: { protein_g: 7.90, zinc_mg: 1.80, calcium_mg: 38.0, iron_mg: 2.89, vitamin_d_iu: 0, energy_kcal: 164 },
     servingGrams: 30,
     source: 'USDA FDC 173757 — Hummus, commercial'
   },
@@ -677,7 +683,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'ae', category: 'fish',
     prepNote: 'local Gulf white fish fillet, baked mild',
     portionVisual: '1 small matchbox-sized piece (tap 3× for a teenager meal)',
-    per100g: { protein_g: 21.40, zinc_mg: 0.48, calcium_mg: 24.0, iron_mg: 0.66, vitamin_d_iu: 1097 },
+    per100g: { protein_g: 21.40, zinc_mg: 0.48, calcium_mg: 24.0, iron_mg: 0.66, vitamin_d_iu: 1097, energy_kcal: 186 },
     servingGrams: 35,
     source: 'USDA FDC 171965 — Fish, Grouper/Sea Bream, cooked, dry heat'
   },
@@ -693,7 +699,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'th', category: 'pork',
     prepNote: 'sweet marinated tender pork — Thai street staple',
     portionVisual: '1 small skewer (meat section only; tap to add extra sticks)',
-    per100g: { protein_g: 25.40, zinc_mg: 2.40, calcium_mg: 14.0, iron_mg: 1.09, vitamin_d_iu: 27 },
+    per100g: { protein_g: 25.40, zinc_mg: 2.40, calcium_mg: 14.0, iron_mg: 1.09, vitamin_d_iu: 27, energy_kcal: 209 },
     servingGrams: 35,
     source: 'Thai Food Composition / USDA FDC 168233 — Pork loin/shoulder marinated, grilled'
   },
@@ -726,7 +732,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'th', category: 'pork',
     prepNote: 'stir-fried minced pork with sweet basil, non-spicy version',
     portionVisual: '1.5 heaped tablespoons (tap to add)',
-    per100g: { protein_g: 16.80, zinc_mg: 2.85, calcium_mg: 18.0, iron_mg: 2.93, vitamin_d_iu: 2 },
+    per100g: { protein_g: 16.80, zinc_mg: 2.85, calcium_mg: 18.0, iron_mg: 2.93, vitamin_d_iu: 2, energy_kcal: 256 },
     servingGrams: 40,
     source: 'USDA FDC 174034 — Pork, ground, stir-fried with aromatics'
   },
@@ -737,7 +743,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'th', category: 'chicken',
     prepNote: 'skinless, ultra-tender poached chicken breast/thigh',
     portionVisual: '3 flat sliced strips (matchbox size; tap 3–4× for older kids)',
-    per100g: { protein_g: 28.40, zinc_mg: 1.15, calcium_mg: 9.0, iron_mg: 0.49, vitamin_d_iu: 1 },
+    per100g: { protein_g: 28.40, zinc_mg: 1.15, calcium_mg: 9.0, iron_mg: 0.49, vitamin_d_iu: 1, energy_kcal: 157 },
     servingGrams: 35,
     source: 'USDA FDC 171140 — Chicken, breast/thigh, skinless, cooked, boiled/poached'
   },
@@ -781,7 +787,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'th', category: 'seafood',
     prepNote: 'stir-fried shelled shrimp with garlic and sweet soy',
     portionVisual: '~3 small/medium shrimp (matchbox weight)',
-    per100g: { protein_g: 23.98, zinc_mg: 1.64, calcium_mg: 40.0, iron_mg: 0.51 },
+    per100g: { protein_g: 23.98, zinc_mg: 1.64, calcium_mg: 40.0, iron_mg: 0.51, energy_kcal: 99 },
     servingGrams: 30,
     source: 'USDA FDC 175180 — Crustaceans, shrimp, cooked'
   },
@@ -808,7 +814,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'vn', category: 'pork',
     prepNote: 'tender pork stewed in coconut water — Vietnamese home staple',
     portionVisual: '1 chunk of tender lean pork, matchbox size (egg excluded)',
-    per100g: { protein_g: 18.20, zinc_mg: 2.10, calcium_mg: 24.0, iron_mg: 1.09, vitamin_d_iu: 27 },
+    per100g: { protein_g: 18.20, zinc_mg: 2.10, calcium_mg: 24.0, iron_mg: 1.09, vitamin_d_iu: 27, energy_kcal: 209 },
     servingGrams: 40,
     source: 'USDA FDC 168233 / 173424 blend — Pork shoulder and egg braised'
   },
@@ -819,7 +825,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'vn', category: 'beef',
     prepNote: 'thin beef slices flash-boiled in broth — log broth separately',
     portionVisual: '~3 tender flat ribbons of meat (tap to add counts)',
-    per100g: { protein_g: 28.10, zinc_mg: 5.40, calcium_mg: 10.0, iron_mg: 1.87, vitamin_d_iu: 4 },
+    per100g: { protein_g: 28.10, zinc_mg: 5.40, calcium_mg: 10.0, iron_mg: 1.87, vitamin_d_iu: 4, energy_kcal: 178 },
     servingGrams: 35,
     source: 'USDA FDC 174054 — Beef, eye of round / flank slices, cooked in broth'
   },
@@ -863,7 +869,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'vn', category: 'seafood',
     prepNote: 'shelled shrimp cooked down sweet-savory in sugar and fish sauce',
     portionVisual: '~4 small shrimp',
-    per100g: { protein_g: 24.50, zinc_mg: 1.70, calcium_mg: 40.0, iron_mg: 0.51 },
+    per100g: { protein_g: 24.50, zinc_mg: 1.70, calcium_mg: 40.0, iron_mg: 0.51, energy_kcal: 99 },
     servingGrams: 28,
     source: 'USDA FDC 175180 — Crustaceans, shrimp; calcium estimated for pan-reduced preparation'
   },
@@ -885,7 +891,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'vn', category: 'egg',
     prepNote: 'pan-fried whole quail eggs, lightly salted — ubiquitous Vietnamese street snack',
     portionVisual: '3 small whole quail eggs (tap to add more)',
-    per100g: { protein_g: 13.05, zinc_mg: 1.47, calcium_mg: 64.0, iron_mg: 1.48, vitamin_d_iu: 69 },
+    per100g: { protein_g: 13.05, zinc_mg: 1.47, calcium_mg: 64.0, iron_mg: 1.48, vitamin_d_iu: 69, energy_kcal: 154 },
     servingGrams: 30,
     source: 'USDA FDC 172185 — Quail eggs, whole, cooked (pan-fried; moisture comparable to canned drained)'
   },
@@ -896,7 +902,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'vn', category: 'plant',
     prepNote: 'puffed fried tofu cubes simmered soft with green onions and tomato',
     portionVisual: '~2 small cubes with sauce coating',
-    per100g: { protein_g: 9.80, zinc_mg: 0.98, calcium_mg: 180.0, iron_mg: 10.78, vitamin_d_iu: 0 },
+    per100g: { protein_g: 9.80, zinc_mg: 0.98, calcium_mg: 180.0, iron_mg: 10.78, vitamin_d_iu: 0, energy_kcal: 328 },
     servingGrams: 45,
     source: 'USDA FDC 172447 — Tofu, fried cubes, simmered with sauce'
   },
@@ -907,7 +913,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'vn', category: 'pork',
     prepNote: 'thin cleanly boiled tender pork slices — eaten with fish sauce dip',
     portionVisual: '2 thin ribbon slices (matchbox weight)',
-    per100g: { protein_g: 21.10, zinc_mg: 1.95, calcium_mg: 12.0, iron_mg: 0.63, vitamin_d_iu: 21 },
+    per100g: { protein_g: 21.10, zinc_mg: 1.95, calcium_mg: 12.0, iron_mg: 0.63, vitamin_d_iu: 21, energy_kcal: 170 },
     servingGrams: 35,
     source: 'USDA FDC 168238 — Pork, fresh, belly, cooked, water-boiled'
   },
@@ -923,7 +929,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'us', category: 'beef',
     prepNote: 'grilled ground lean beef patty, meat only (no bun)',
     portionVisual: '1/2 of a standard junior burger patty (tap 2–3× for big kids)',
-    per100g: { protein_g: 26.54, zinc_mg: 5.86, calcium_mg: 18.0, iron_mg: 2.6, vitamin_d_iu: 2 },
+    per100g: { protein_g: 26.54, zinc_mg: 5.86, calcium_mg: 18.0, iron_mg: 2.6, vitamin_d_iu: 2, energy_kcal: 250 },
     servingGrams: 40,
     source: 'USDA FDC 174032 — Beef, ground, 80% lean / 20% fat, cooked, grilled patty'
   },
@@ -945,7 +951,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'us', category: 'chicken',
     prepNote: 'oven-roasted deli or carved skinless meat',
     portionVisual: '1.5 thin deli slices folded (matchbox size)',
-    per100g: { protein_g: 24.70, zinc_mg: 1.41, calcium_mg: 14.0, iron_mg: 0.88, vitamin_d_iu: 0 },
+    per100g: { protein_g: 24.70, zinc_mg: 1.41, calcium_mg: 14.0, iron_mg: 0.88, vitamin_d_iu: 0, energy_kcal: 59 },
     servingGrams: 30,
     source: 'USDA FDC 171161 — Turkey, breast, meat only, cooked, roasted'
   },
@@ -956,7 +962,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'us', category: 'fish',
     prepNote: 'minced white fish, breaded and oven-baked',
     portionVisual: '1.5 fish sticks (tap to increase count)',
-    per100g: { protein_g: 14.29, zinc_mg: 0.43, calcium_mg: 29.0, iron_mg: 0.64 },
+    per100g: { protein_g: 14.29, zinc_mg: 0.43, calcium_mg: 29.0, iron_mg: 0.64, energy_kcal: 236 },
     servingGrams: 35,
     source: 'USDA FDC 174194 — Fish, fish sticks, frozen, prepared'
   },
@@ -989,7 +995,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'us', category: 'pork',
     prepNote: 'pan-fried country breakfast sausage link',
     portionVisual: '2 small mini links (tap to add counts)',
-    per100g: { protein_g: 19.38, zinc_mg: 2.22, calcium_mg: 15.0, iron_mg: 0.28, vitamin_d_iu: 0 },
+    per100g: { protein_g: 19.38, zinc_mg: 2.22, calcium_mg: 15.0, iron_mg: 0.28, vitamin_d_iu: 0, energy_kcal: 51 },
     servingGrams: 26,
     source: 'USDA FDC 168194 — Pork, sausage, link/patty, cooked, pan-fried. NOTE: high sodium — two links (~52g) provide ~540mg sodium (~22% of a child\'s daily limit).'
   },
@@ -1000,7 +1006,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'us', category: 'beef',
     prepNote: 'boiled or grilled beef frankfurter, no bun',
     portionVisual: '1 single standard link (classic toddler/kid baseline)',
-    per100g: { protein_g: 11.60, zinc_mg: 2.15, calcium_mg: 13.0, iron_mg: 0.82 },
+    per100g: { protein_g: 11.60, zinc_mg: 2.15, calcium_mg: 13.0, iron_mg: 0.82, energy_kcal: 216 },
     servingGrams: 45,
     source: 'USDA FDC 174221 — Frankfurters, beef. NOTE: high sodium — one 45g link provides ~270mg sodium (~11% of a child\'s daily limit).'
   },
@@ -1022,7 +1028,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'us', category: 'chicken',
     prepNote: 'cooked dark meat drumstick/thigh, shredded, skinless',
     portionVisual: 'small shredded bundle (matchbox size; tap to add)',
-    per100g: { protein_g: 26.24, zinc_mg: 1.94, calcium_mg: 11.0, iron_mg: 1.78 },
+    per100g: { protein_g: 26.24, zinc_mg: 1.94, calcium_mg: 11.0, iron_mg: 1.78, energy_kcal: 142 },
     servingGrams: 30,
     source: 'USDA FDC 171143 — Chicken, broilers or fryers, thigh/drumstick meat only, cooked, roasted'
   },
@@ -1082,7 +1088,7 @@ const FOOD_REFERENCE_DATA = [
     region: 'eu', category: 'pork',
     prepNote: 'mild lightly smoked parboiled pork sausage link',
     portionVisual: '1 single standard thin link',
-    per100g: { protein_g: 12.20, zinc_mg: 2.10, calcium_mg: 11.0, iron_mg: 0.82 },
+    per100g: { protein_g: 12.20, zinc_mg: 2.10, calcium_mg: 11.0, iron_mg: 0.82, energy_kcal: 216 },
     servingGrams: 40,
     source: 'German BLS / USDA FDC 174221 — Wiener Würstchen. NOTE: high sodium — one 40g link provides ~360mg sodium (~15% of a child\'s daily limit).'
   },
