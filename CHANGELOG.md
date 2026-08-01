@@ -13,6 +13,41 @@ On every release, bump `kAppVersion` / `kAppBuild` / `kBuildDate` in
 `flutter_app/assets/release_notes.json` (what users see in "What's
 new"), and add the full entry here.
 
+## [1.7.1] — 2026-08-01 · build 31
+
+_Food Lens: point the camera at dinner. Photo → foods from GrowSense's own
+cited library → parent-confirmed portions → growth nutrients. The AI
+recognizes; verified data calculates; the parent confirms._
+
+### Added
+- **Snap-a-Meal (Premium).** Meal photo → foods matched against the app's
+  own 96-food regional library (closed set — the model returns ids and
+  gram RANGES only, never nutrient values; an invented id is discarded
+  server-side). Portions prefill from the photo's best estimate, rounded
+  to 5 g, with the family's usual portion offered as a tap-to-use chip.
+  A served-vs-eaten control (a little / most / all) and bowl-fullness
+  chips record what actually went in. Unmatched foods are never
+  force-fit — same-category "log as" stand-ins or add-your-own.
+- **Label Scan (Premium).** Nutrition-panel photo (Thai/Korean/VN/CN/AR/EN)
+  transcribed into a prefilled custom food — the photo is the citation.
+  Deterministic sanity checks flag suspect fields amber; minerals printed
+  only as %Thai RDI are converted against the official Thai FDA table
+  (Ca 800 mg, Zn 15 mg) and flagged for the parent to verify. A packaged
+  product spotted in a meal photo offers "Read nutrition label" from the
+  same shot.
+- **Energy surfaces.** kcal now shows at scan time (confirm-sheet total)
+  and as an optional field on custom foods; it is also collected quietly
+  across the food library (57/96 foods backfilled from cited USDA
+  records) and every log row — groundwork for illness-recovery guidance.
+- One shared quiet cap: 30 scans/month across both modes (server-enforced
+  along with the premium gate). Photos are transient — downscaled,
+  EXIF-stripped, analysed, discarded.
+
+### Changed
+- `nutrition_log_items` rows now carry `log_method` ('manual' |
+  'photo_ai') and `energy_kcal`; `custom_foods` gains `energy_kcal`.
+  (Migration `2026-08-01_food_scan_caps.sql`, applied 2026-08-01.)
+
 ## [1.7.0] — 2026-08-01 · build 30
 
 _The coach can now see the food log. "How much salmon has he eaten since
