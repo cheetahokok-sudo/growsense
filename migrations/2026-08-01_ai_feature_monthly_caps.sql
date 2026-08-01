@@ -8,10 +8,11 @@
 -- Budget math (2026-08-01, Anthropic pricing Haiku $1/$5, Sonnet
 -- $3/$15 per MTok; net revenue ≈ $4.24/mo after Apple 15%):
 --   coach   50/mo × ~$0.0065 = $0.33   (existing cap)
---   bone    15/mo × ~$0.03   = $0.45   (covers a multi-hospital
---                                       history backfill month)
---   lab     30/mo × ~$0.01   = $0.30
---   worst case ≈ $1.08/user-month — hit only by deliberate maxing;
+--   bone     8/mo × ~$0.03   = $0.24   (owner's call: hammering
+--                                       protection; a larger history
+--                                       backfill spreads over months)
+--   lab     16/mo × ~$0.01   = $0.16
+--   worst case ≈ $0.73/user-month — hit only by deliberate maxing;
 --   expected blended usage ≈ $0.07/user-month (~1.6% of net).
 --
 -- Cap semantics: 0 = not in plan, NULL = unlimited, N = N/UTC-month.
@@ -34,7 +35,7 @@ COMMENT ON COLUMN subscription_tier_limits.lab_ai_monthly_cap IS
   'Monthly lab AI interpretations. 0 = not in plan, NULL = unlimited.';
 
 UPDATE subscription_tier_limits
-   SET bone_age_monthly_cap = 15, lab_ai_monthly_cap = 30
+   SET bone_age_monthly_cap = 8, lab_ai_monthly_cap = 16
  WHERE tier <> 'free';
 
 UPDATE subscription_tier_limits

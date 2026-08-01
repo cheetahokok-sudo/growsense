@@ -234,8 +234,9 @@ Deno.serve(async (req) => {
 
   // ── Step 3.6: Monthly abuse cap ──────────────────────────────────
   // This is the priciest AI call in the product (Sonnet + vision).
-  // Premium is the gate; this is the bound — generous enough that a
-  // multi-hospital history backfill never hits it.
+  // Premium is the gate; this is the bound (owner-set: hammering
+  // protection). A larger multi-hospital backfill spreads across
+  // months — the X-rays store fine, only the AI read is metered.
   const capVerdict = await checkAndCountFeatureUse(adminClient, {
     userId: user.id,
     tier,
