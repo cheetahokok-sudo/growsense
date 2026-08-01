@@ -29,7 +29,9 @@
 --
 -- ⚠️ Supabase SQL editor: plain DDL, no dollar-quoted bodies — run
 -- this file as one execution, then the verification queries below.
--- Applied to production: PENDING
+-- Applied to production: 2026-08-01 ✅ (verified via schema dump: CHECK
+-- includes food_scan; all 4 columns + comments present. food-scan edge
+-- function deployed the same day.)
 -- ════════════════════════════════════════════════════════════════
 
 ALTER TABLE ai_feature_usage_monthly
