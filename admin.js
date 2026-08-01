@@ -173,6 +173,77 @@ async function setAICoachModeAdmin(mode, btn) {
 }
 
 // ══════════════════════════════════════════
+// AI USAGE MONITOR — per-family counters for the current UTC month
+// against each cap (coach 50 / bone-age 8 / lab 16), through the
+// system_admin-guarded admin_list_ai_usage RPC. The reset is a
+// support gesture for a specific request; every reset lands in
+// admin_audit_log with the before-counts.
+// ══════════════════════════════════════════
+async function loadAndRenderAdminAIUsagePanel() {
+  const el = document.getElementById('aiUsageTable');
+  if (!el) return;
+  const { data, error } = await sb.rpc('admin_list_ai_usage');
+  if (error) {
+    el.innerHTML = '<div class="setup-note">Could not load AI usage: '
+      + escHtml(error.message)
+      + ' — has migrations/2026-08-01_admin_ai_usage_tools.sql been applied?</div>';
+    return;
+  }
+  const rows = data || [];
+  if (!rows.length) {
+    el.innerHTML = '<div class="setup-note">No accounts found.</div>';
+    return;
+  }
+  const cell = (used, cap) => {
+    const capTxt = (cap === null || cap === undefined) ? '∞' : cap;
+    const hot = cap && used >= cap;
+    return `<td style="text-align:center;${hot ? 'color:var(--flag);font-weight:700;' : ''}">${used}/${capTxt}</td>`;
+  };
+  el.innerHTML = `
+    <table class="admin-table">
+      <thead><tr>
+        <th>Family</th><th>Tier</th>
+        <th style="text-align:center;">Coach</th>
+        <th style="text-align:center;">Bone age</th>
+        <th style="text-align:center;">Lab</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${escHtml(r.email)}</td>
+            <td>${escHtml(r.tier)}</td>
+            ${cell(r.coach_used, r.coach_cap)}
+            ${cell(r.bone_used, r.bone_cap)}
+            ${cell(r.lab_used, r.lab_cap)}
+            <td style="text-align:right;white-space:nowrap;">
+              <button class="btn-ghost" onclick="resetAIUsage('${r.user_id}', 'coach', '${escHtml(r.email)}')">↺ coach</button>
+              <button class="btn-ghost" onclick="resetAIUsage('${r.user_id}', 'bone_age', '${escHtml(r.email)}')">↺ bone</button>
+              <button class="btn-ghost" onclick="resetAIUsage('${r.user_id}', 'lab_ai', '${escHtml(r.email)}')">↺ lab</button>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+async function resetAIUsage(userId, feature, email) {
+  const label = { coach: 'coach', bone_age: 'bone-age', lab_ai: 'lab' }[feature] || feature;
+  if (!confirm(`Reset this month's ${label} AI count for ${email}?\n\nTheir counter returns to 0 for the rest of this month. The reset is recorded in the audit log.`)) return;
+  const notes = prompt('Reason (goes in the audit log):', '') || null;
+  const { error } = await sb.rpc('admin_reset_ai_usage', {
+    p_target_user_id: userId,
+    p_feature: feature,
+    p_notes: notes
+  });
+  if (error) {
+    showToast('⚠️', 'Reset failed: ' + error.message);
+    return;
+  }
+  showToast('✅', `${label} usage reset for ${email}`);
+  await loadAndRenderAdminAIUsagePanel();
+}
+
+// ══════════════════════════════════════════
 // ARCHIVED DATA — reads through SECURITY DEFINER functions, same as
 // the original (see migration_fix_children_rls_recursion.sql for why
 // plain views don't work here).
@@ -367,6 +438,7 @@ async function initAdminDashboard() {
   await renderAdminOverviewStats();
 
   await loadAndRenderAdminAIModePanel();
+  await loadAndRenderAdminAIUsagePanel();
   await loadAndRenderAdminArchivePanel();
 }
 
