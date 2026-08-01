@@ -15,7 +15,9 @@
 -- Both functions follow change_user_subscription_tier's pattern:
 -- SECURITY DEFINER + an in-body system_admin check on auth.uid(),
 -- and every reset writes admin_audit_log.
--- Applied to production: PENDING
+-- Applied to production: 2026-08-01 — but statement 1 failed at runtime
+-- with 42804 (user_accounts.email is text, return column declared varchar);
+-- statement 2 is fine. Fixed statement 1 (email cast) re-apply: PENDING
 -- ════════════════════════════════════════════════════════════════
 
 -- ── Statement 1: the monitoring list ────────────────────────────
@@ -48,7 +50,7 @@ begin
 
   return query
   select ua.user_id,
-         ua.email,
+         ua.email::varchar,  -- live column is text; RETURN QUERY is strict about varchar vs text (42804)
          coalesce(ua.subscription_tier, 'free')::varchar,
          coalesce(l.call_count, 0),
          stl.live_ai_monthly_cap,
